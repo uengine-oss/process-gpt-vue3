@@ -721,7 +721,7 @@ function openInEditor() {
             name: processName.value || procDefId,
             entry: PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD,
             mode: PROCESS_HIERARCHY_MODE.VIEW,
-            left: PROCESS_HIERARCHY_PANEL_STATE.COLLAPSED,
+            left: PROCESS_HIERARCHY_PANEL_STATE.EXPANDED,
             right: PROCESS_HIERARCHY_PANEL_STATE.OPEN,
             rightTab: PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE,
             reviewId: approvalState.value?.id || reviewId.value

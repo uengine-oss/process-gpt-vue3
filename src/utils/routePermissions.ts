@@ -103,6 +103,14 @@ export const MENU_DEFINITIONS: MenuDefinition[] = [
         icon: 'delegation',
         requiredRole: 'owner'
     },
+    {
+        // 통합 용어 사전 — 프로세스별 용어 정의 조회 (편집은 속성패널에서, RLS 가 editor+ 로 제한)
+        path: '/glossary',
+        label: '용어 사전',
+        section: 'process',
+        icon: 'document',
+        requiredRole: 'viewer'
+    },
 
     // 분석
     {
@@ -150,6 +158,13 @@ export const MENU_DEFINITIONS: MenuDefinition[] = [
         requiredRole: 'admin'
     },
     {
+        path: '/admin-console/option-lists',
+        label: '목록 관리',
+        section: 'admin',
+        icon: 'list-bold-duotone',
+        requiredRole: 'admin'
+    },
+    {
         path: '/admin-console/data-freeze',
         label: '수정 잠금',
         section: 'admin',
@@ -168,6 +183,13 @@ export const MENU_DEFINITIONS: MenuDefinition[] = [
         label: '시스템 운영',
         section: 'admin',
         icon: 'settings',
+        requiredRole: 'admin'
+    },
+    {
+        path: '/admin-console/security-settings',
+        label: '보안 설정',
+        section: 'admin',
+        icon: 'user-lock',
         requiredRole: 'admin'
     },
     {
@@ -279,6 +301,37 @@ export const MENU_DEFINITIONS: MenuDefinition[] = [
         requiredRole: 'admin'
     },
     {
+        path: '/admin-console/task-catalog',
+        label: '카탈로그',
+        section: 'admin',
+        icon: 'list-bold-duotone',
+        requiredRole: 'admin'
+    },
+    {
+        // 메뉴 관리 — 테넌트별 메뉴 표시(숨김/이름/순서) + 메뉴별 필요 역할 조정 + 사용자 정의 메뉴
+        path: '/admin-console/menu-settings',
+        label: '메뉴 관리',
+        section: 'admin',
+        icon: 'menu',
+        requiredRole: 'admin'
+    },
+    {
+        // 용어·분류 설정 — 계층 레벨명, 진행 단계명·색상, 카드 보기 분류축, 도메인 추론, 역할 표시 라벨
+        path: '/admin-console/terminology',
+        label: '용어·분류 설정',
+        section: 'admin',
+        icon: 'write',
+        requiredRole: 'admin'
+    },
+    {
+        // 운영 정책 — 공람 기간·경보·정체 일수, 휴지통 보존 일수, FTE/원가 기준
+        path: '/admin-console/operation-policy',
+        label: '운영 정책',
+        section: 'admin',
+        icon: 'tuning-square-2-linear',
+        requiredRole: 'admin'
+    },
+    {
         path: '/work-assignment',
         label: '업무분장',
         section: 'admin',
@@ -342,6 +395,16 @@ function matchByPath<T>(table: Record<string, T>, path: string): T | null {
 /** 주어진 경로의 데이터 접근 하한 (없으면 null) */
 export function lookupMinRole(path: string): RoleType | null {
     return matchByPath(ROUTE_MIN_ROLES, path);
+}
+
+/** 경로 → 메뉴 한글 라벨 매핑 (MENU_DEFINITIONS 에서 자동 파생). 활동 로그의 페이지명 표기 등에 사용. */
+export const ROUTE_LABELS: Record<string, string> = Object.fromEntries(
+    MENU_DEFINITIONS.filter((m) => m.path).map((m) => [m.path, m.label])
+);
+
+/** 주어진 경로의 메뉴 한글 라벨 (정확 일치 → 최장 prefix, 없으면 null) */
+export function lookupMenuLabel(path: string): string | null {
+    return matchByPath(ROUTE_LABELS, path);
 }
 
 /**

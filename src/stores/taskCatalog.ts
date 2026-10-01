@@ -393,6 +393,8 @@ export const PROCESS_PANEL_SECTION_DEFS: PanelSectionDef[] = [
     // PPI 는 관리자가 스코프를 옮길 수 있는 섹션 — process 스코프 행이 있을 때만 렌더된다
     { id: 'ppi', scope: 'process', key: 'ppi', fallbackOrder: 45 },
     { id: 'manual_links', scope: 'process', key: 'manual_links', fallbackOrder: 50 },
+    // 용어 정의 사전 (PAL) — 프로세스에서 쓰는 용어 정리, 스튜디오에서 노출/순서 제어
+    { id: 'glossary', scope: 'process', key: 'glossary', fallbackOrder: 55 },
     { id: 'api_integrations_summary', scope: 'process', key: 'api_integrations_summary', fallbackOrder: 60 },
     { id: 'system_list', scope: 'process', key: 'system_list', fallbackOrder: 70 },
     { id: 'related_project_list', scope: 'process', key: 'related_project_list', fallbackOrder: 80 },
@@ -414,6 +416,8 @@ export const TASK_PANEL_SECTION_DEFS: PanelSectionDef[] = [
     { id: 'task_basic', scope: 'task', key: 'name', fallbackOrder: 20 },
     // 사용자 정의 그룹 섹션은 일반(task_basic) 바로 뒤에 고정 (같은 order, 정의 순서로 뒤)
     { id: 'custom_groups', scope: 'task', key: 'name', fallbackOrder: 20 },
+    // 카탈로그 적용·등록 도구 (PAL) — 기본은 일반 다음, 스튜디오에서 노출/순서 제어
+    { id: 'task_catalog', scope: 'task', key: 'task_catalog', fallbackOrder: 30 },
     { id: 'form_link', scope: 'task', key: 'form_link', fallbackOrder: 40 },
     { id: 'raci', scope: 'task', key: 'raci', fallbackOrder: 50 },
     { id: 'task_io', scope: 'task', key: 'task_io', fallbackOrder: 60 },
@@ -538,6 +542,10 @@ export const useTaskCatalogStore = defineStore({
             this.error = null;
             try {
                 const backend = BackendFactory.createBackend();
+                // 등록/수정 구분: 저장 전 기존 항목 존재 여부로 판단 (id 가 있으면 수정)
+                const isUpdate = !!item.id;
+                const before = isUpdate ? this.catalogItems.find((c) => c.id === item.id) : undefined;
+                const beforeSnapshot = before ? { ...before } : null;
                 const saved = await backend.saveTaskCatalog(item);
                 const index = this.catalogItems.findIndex((c) => c.id === saved.id);
                 if (index !== -1) {
@@ -545,6 +553,15 @@ export const useTaskCatalogStore = defineStore({
                 } else {
                     this.catalogItems.push(saved);
                 }
+                // 활동 로그: 저장 성공 후에만 기록 (writeAdminAuditLog 는 실패를 내부에서 삼킨다)
+                await useAdminConsoleStore().writeAdminAuditLog({
+                    action: isUpdate ? 'task_catalog_update' : 'task_catalog_create',
+                    target_type: 'task_catalog',
+                    target_id: saved.id,
+                    target_name: saved.name || saved.display_name || saved.id,
+                    before_value: beforeSnapshot,
+                    after_value: saved
+                });
                 return saved;
             } catch (error: any) {
                 console.error('Failed to save catalog item:', error);
@@ -560,8 +577,19 @@ export const useTaskCatalogStore = defineStore({
             this.error = null;
             try {
                 const backend = BackendFactory.createBackend();
+                // 삭제 전 스냅샷 확보 (삭제 후에는 목록에서 사라진다)
+                const before = this.catalogItems.find((c) => c.id === id);
                 await backend.deleteTaskCatalog(id);
                 this.catalogItems = this.catalogItems.filter((c) => c.id !== id);
+                // 활동 로그: 삭제 성공 후에만 기록
+                await useAdminConsoleStore().writeAdminAuditLog({
+                    action: 'task_catalog_delete',
+                    target_type: 'task_catalog',
+                    target_id: id,
+                    target_name: before?.name || before?.display_name || id,
+                    before_value: before ? { ...before } : null,
+                    after_value: null
+                });
             } catch (error: any) {
                 console.error('Failed to delete catalog item:', error);
                 this.error = error.message;
@@ -656,10 +684,12 @@ export const useTaskCatalogStore = defineStore({
             const existing = new Set(this.propertySchemas.map((s) => `${panelPropertyScope(s)}::${s.property_key}`));
             // 새 테넌트처럼 패널 연결 행이 하나도 없을 때만 기본 세트를 만든다.
             // 사용자가 개별 행을 영구 삭제한 뒤 다음 진입에서 되살아나는 것을 막는다.
+            // 예외: autoSeed 항목(나중에 추가된 섹션)은 키가 DB에 전혀 없으면 기존
+            // 테넌트에도 생성한다 — 스튜디오에서 노출/순서를 제어하려면 행이 필요하다.
             const hasPanelProperties = this.propertySchemas.some(isPanelPropertySchema);
-            const missing = hasPanelProperties
-                ? []
-                : BUILTIN_PANEL_PROPERTIES.filter((p) => !existing.has(`${p.taskType}::${p.key}`));
+            const missing = BUILTIN_PANEL_PROPERTIES.filter(
+                (p) => (!hasPanelProperties || p.autoSeed) && !existing.has(`${p.taskType}::${p.key}`)
+            );
             for (const prop of missing) {
                 await this.saveSchema({
                     task_type: prop.taskType,

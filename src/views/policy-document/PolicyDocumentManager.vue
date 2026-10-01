@@ -4,6 +4,8 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { useAdminConsoleStore } from '@/stores/adminConsole';
 import { formatKST } from '@/utils/datetime';
 import { listPolicyDocuments, listPolicyUsages } from '@/services/policyDocumentService';
+// 정책문서를 가져간 사건도 다운로드 이력에 남는다 (docs/security.md 3-3).
+import { DOWNLOAD_ACTIONS, recordFileDownload } from '@/shared/downloadAudit';
 
 type PolicyKind = 'file' | 'link';
 type Policy = {
@@ -325,6 +327,8 @@ async function submitFileUpload() {
                         name: file.name,
                         kind: 'file',
                         file_path: filePath,
+                        // 어느 버킷인지 남긴다. 내려받기·삭제가 'files' 를 넘겨짚지 않게.
+                        file_bucket: uploaded?.bucket || 'files',
                         file_size_bytes: file.size,
                         author_id: currentUser.value.id || null,
                         author_name: currentUser.value.name || null,
@@ -445,9 +449,17 @@ async function downloadPolicy(policy: Policy) {
     let file = policy.file;
     if (!file && policy.file_path) {
         try {
-            const { data, error } = await supabase.storage.from(policy.file_bucket || 'files').download(policy.file_path);
+            const bucket = policy.file_bucket || 'files';
+            const { data, error } = await supabase.storage.from(bucket).download(policy.file_path);
             if (error) throw error;
             file = new File([data], policy.name, { type: data.type });
+            await recordFileDownload({
+                bucket,
+                path: policy.file_path,
+                fileName: policy.name,
+                action: DOWNLOAD_ACTIONS.DOWNLOAD,
+                metadata: { source: 'PolicyDocumentManager.downloadPolicy', policy_id: policy.id ?? null }
+            });
         } catch (e) {
             console.error('[auditPolicy] 다운로드 실패:', e);
             return;
@@ -528,9 +540,18 @@ async function openPreview(policy: Policy) {
     let file = policy.file;
     if (!file && policy.file_path) {
         try {
-            const { data, error } = await supabase.storage.from(policy.file_bucket || 'files').download(policy.file_path);
+            const bucket = policy.file_bucket || 'files';
+            const { data, error } = await supabase.storage.from(bucket).download(policy.file_path);
             if (error) throw error;
             file = new File([data], policy.name, { type: data.type });
+            // 미리보기도 파일 내용을 내려받는다. 다만 "가져갔다" 와 구분되도록 action='view'.
+            await recordFileDownload({
+                bucket,
+                path: policy.file_path,
+                fileName: policy.name,
+                action: DOWNLOAD_ACTIONS.VIEW,
+                metadata: { source: 'PolicyDocumentManager.openPreview', policy_id: policy.id ?? null }
+            });
         } catch (e) {
             console.error('[auditPolicy] 미리보기 다운로드 실패:', e);
             return;

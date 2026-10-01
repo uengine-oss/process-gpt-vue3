@@ -34,6 +34,10 @@ import ReportField from '@/components/ui/field/ReportField.vue';
 import SlideField from '@/components/ui/field/SlideField.vue';
 import BpmnUengineField from '@/components/ui/field/BpmnUengineField.vue';
 
+/** 값을 담는 입력 필드 태그들. 레이아웃 태그(row-layout 등)는 포함하지 않는다. */
+const FIELD_TAG_SELECTOR =
+    'text-field, select-field, checkbox-field, radio-field, file-field, folder-field, boolean-field, textarea-field, user-select-field, report-field, slide-field, bpmn-uengine-field';
+
 export default {
     props: {
         // 폼 HTML 데이터를 전달시켜서 렌더링시키기 위해서
@@ -130,8 +134,45 @@ export default {
         },
 
         updateFormHTML(newHTML, readonly) {
-            this.copyFormHTML = readonly ? this._setReadOnlyToAllFields(newHTML) : newHTML;
+            const bound = this._ensureFieldBindings(newHTML);
+            this.copyFormHTML = readonly ? this._setReadOnlyToAllFields(bound) : bound;
             this.cachedHFunc = null;
+        },
+
+        /**
+         * v-model 이 빠진 필드에 바인딩을 넣어 준다.
+         *
+         * 폼 정의가 늘 디자이너를 거쳐 오는 것은 아니다. 프로세스 정의와 함께
+         * 생성된 폼에는 row-layout 도 v-model 도 없이 필드 태그만 있는 경우가
+         * 흔하다. 그대로 두면 화면에는 멀쩡히 그려지지만 **입력한 값이 어디에도
+         * 담기지 않아** 빈 값으로 제출된다 — 사용자는 이유를 알 수 없다.
+         *
+         * 이미 바인딩이 있거나 row-layout 이 slotProps 로 값을 넘기는 폼은
+         * 건드리지 않는다. 손댈 곳은 '묶어 줄 사람이 아무도 없는' 필드뿐이다.
+         */
+        _ensureFieldBindings(targetHTML) {
+            if (!targetHTML || targetHTML.indexOf('-field') === -1) return targetHTML;
+
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(targetHTML, 'text/html');
+
+                let patched = false;
+                doc.querySelectorAll(FIELD_TAG_SELECTOR).forEach((field) => {
+                    if (field.hasAttribute('v-model') || field.closest('row-layout')) return;
+
+                    const name = field.getAttribute('name');
+                    if (!name) return;
+
+                    field.setAttribute('v-model', `formValues['${name}']`);
+                    patched = true;
+                });
+
+                return patched ? doc.body.innerHTML : targetHTML;
+            } catch (error) {
+                console.error('Error adding form field bindings:', error);
+                return targetHTML;
+            }
         },
 
         _setReadOnlyToAllFields(targetHTML) {
@@ -139,9 +180,7 @@ export default {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(targetHTML, 'text/html');
 
-                const fields = doc.querySelectorAll(
-                    'text-field, select-field, checkbox-field, radio-field, file-field, folder-field, boolean-field, textarea-field, user-select-field, report-field, slide-field, bpmn-uengine-field'
-                );
+                const fields = doc.querySelectorAll(FIELD_TAG_SELECTOR);
 
                 fields.forEach((field) => {
                     field.setAttribute('readonly', 'true');

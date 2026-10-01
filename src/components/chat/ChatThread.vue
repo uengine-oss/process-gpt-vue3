@@ -22,19 +22,24 @@
                 }"
             >
                 <div v-if="!isMyMessage(msg)" class="message-avatar">
-                    <v-avatar size="32" :color="msg.role === 'user' ? 'primary' : 'grey-lighten-2'">
-                        <v-icon size="18" :color="msg.role === 'user' ? 'white' : 'grey-darken-1'">
-                            {{ msg.role === 'user' ? 'mdi-account' : 'mdi-robot-outline' }}
+                    <!--
+                        보낸 이가 사람이면 그 사람 얼굴을, 에이전트일 때만 로봇을 쓴다.
+                        사람 얼굴 자리에 로봇이 서 있으면 누가 한 일인지 알 수 없다.
+                    -->
+                    <v-avatar size="32" :color="msg.avatar ? undefined : isAgentMessage(msg) ? 'grey-lighten-2' : 'primary'">
+                        <v-img v-if="msg.avatar" :src="msg.avatar" />
+                        <v-icon v-else size="18" :color="isAgentMessage(msg) ? 'grey-darken-1' : 'white'">
+                            {{ isAgentMessage(msg) ? 'mdi-robot-outline' : 'mdi-account' }}
                         </v-icon>
                     </v-avatar>
                 </div>
                 <div class="message-content" :class="{ 'message-content--my': isMyMessage(msg) }">
                     <div v-if="!isMyMessage(msg)" class="message-header">
                         <span class="message-sender">{{ assistantLabel(msg) }}</span>
-                        <span class="message-time">{{ formatTime(msg.timeStamp) }}</span>
                     </div>
 
-                    <div class="bubble-wrap" :class="{ 'bubble-wrap--my': isMyMessage(msg) }">
+                    <!-- 글도 첨부도 없이 산출물 카드만 남은 말은 빈 말풍선을 그리지 않는다. -->
+                    <div v-if="hasBubbleBody(msg)" class="bubble-wrap" :class="{ 'bubble-wrap--my': isMyMessage(msg) }">
                         <div class="bubble" :class="{ 'bubble--my': isMyMessage(msg) }">
                             <div
                                 v-if="msg.content && msg.content.trim && msg.content.trim().length > 0"
@@ -44,7 +49,11 @@
 
                             <div v-if="msg.images && msg.images.length > 0" class="attached-images mt-2">
                                 <div v-for="(image, imgIdx) in msg.images" :key="imgIdx" class="attached-image-item">
-                                    <img :src="image.url || image" class="attached-image" @click="emitPreviewImage(image.url || image)" />
+                                    <img
+                                        :src="signedSrc(image, 'chat-images')"
+                                        class="attached-image"
+                                        @click="emitPreviewImage(image)"
+                                    />
                                     <v-btn
                                         icon
                                         size="x-small"
@@ -97,10 +106,26 @@
                         </div>
                     </div>
 
+                    <!--
+                        이 말과 함께 남은 산출물. 글줄로 풀어 적지 않고 산출물 칸과 같은 카드로 보여 준다 —
+                        누르면 원본 폼이 열린다. 클로드가 대화 안의 파일을 카드로 보여 주는 것과 같다.
+                    -->
+                    <div v-if="msg.outputCard" class="message-output" :class="{ 'message-output--my': isMyMessage(msg) }">
+                        <OutputCard :item="msg.outputCard" />
+                    </div>
+                    <div
+                        v-if="msg.outputCard && !hasBubbleBody(msg) && msg.timeStamp"
+                        class="bubble-time message-output-time"
+                        :class="{ 'message-output-time--my': isMyMessage(msg) }"
+                    >
+                        {{ formatTime(msg.timeStamp) }}
+                    </div>
+
                     <details v-if="hasExecutionDetails(msg)" class="tool-calls">
                         <summary class="tool-calls__summary">
                             <v-icon size="14" color="primary" class="mr-1">mdi-timeline-check-outline</v-icon>
-                            실행 상세 {{ executionDetailCount(msg) }}건
+                            <!-- 휴대폰에서는 채팅방과 같은 클로드식 한 줄(Chat.toolSummaryLabel 참고). -->
+                            {{ phoneShell ? `도구 ${executionDetailCount(msg)}개 실행함` : `실행 상세 ${executionDetailCount(msg)}건` }}
                         </summary>
                         <div v-for="skill in msg.executionSkills || []" :key="`skill-${skill}`" class="tool-call-item">
                             <v-icon size="14" color="success" class="mr-1">mdi-lightning-bolt-outline</v-icon>
@@ -285,10 +310,19 @@
 
 <script>
 import HumanFeedbackPanel from '@/components/ui/HumanFeedbackPanel.vue';
+// 첨부 이미지·파일은 비공개 버킷에 있다. 주소는 그릴 때 서명해서 만든다.
+import { storageUrlMixin } from '@/utils/storageUrl';
+import OutputCard from '@/components/apps/todolist/OutputCard.vue';
+import { usePhoneShell } from '@/shared/phoneShell';
 
 export default {
     name: 'ChatThread',
-    components: { HumanFeedbackPanel },
+    components: { HumanFeedbackPanel, OutputCard },
+    mixins: [storageUrlMixin],
+    setup() {
+        const { active: phoneShell } = usePhoneShell();
+        return { phoneShell };
+    },
     props: {
         messages: { type: Array, default: () => [] },
         currentUserEmail: { type: String, default: '' },
@@ -301,6 +335,20 @@ export default {
     },
     emits: ['preview-image', 'preview-bpmn', 'open-external-url', 'human-feedback-submit', 'human-feedback-skip'],
     methods: {
+        /**
+         * 로봇 얼굴을 쓸 메시지인가.
+         * isAgent 를 실어 보내면 그 말을 따르고, 없으면 예전처럼 역할로 본다 —
+         * 채팅방은 이 값을 보내지 않으므로 사람만 사람 얼굴을 갖는다.
+         */
+        isAgentMessage(msg) {
+            if (msg && typeof msg.isAgent === 'boolean') return msg.isAgent;
+            return !!msg && msg.role !== 'user';
+        },
+        /** 말풍선에 넣을 것(글 · 이미지 · 첨부 파일)이 있는가. */
+        hasBubbleBody(msg) {
+            const text = msg && typeof msg.content === 'string' ? msg.content.trim() : '';
+            return !!(text || (msg && msg.images && msg.images.length) || (msg && msg.pdfFile));
+        },
         isMyMessage(msg) {
             const myEmail = (this.currentUserEmail || '').toString();
             if (!myEmail) return false;
@@ -312,17 +360,23 @@ export default {
                 if (container) container.scrollTop = container.scrollHeight;
             });
         },
-        emitPreviewImage(url) {
+        async emitPreviewImage(url) {
             if (!url) return;
-            this.$emit('preview-image', url);
+            // 메시지에 남은 값은 경로이거나 옛 공개 URL 이다. 열기 직전에 서명한다.
+            const signed = await this.signedUrl(url, 'chat-images');
+            if (!signed) return;
+            this.$emit('preview-image', signed);
         },
         emitPreviewBpmn(bpmn) {
             if (!bpmn) return;
             this.$emit('preview-bpmn', bpmn);
         },
-        emitOpenExternalUrl(url) {
+        async emitOpenExternalUrl(url) {
             if (!url) return;
-            this.$emit('open-external-url', url);
+            // 우리 저장소 주소면 서명하고, 바깥 주소면 그대로 넘긴다.
+            const resolved = await this.signedUrl(url);
+            if (!resolved) return;
+            this.$emit('open-external-url', resolved);
         },
         hasPdf2bpmnResultSections(message) {
             const result = message?.pdf2bpmnResult || {};
@@ -399,8 +453,10 @@ export default {
         async downloadAttachment(url, filename) {
             if (!url) return;
             const name = filename || this.getFilenameFromUrl(url) || 'download';
+            // 비공개 버킷이라 저장된 주소를 그냥 fetch 하면 400 이다. 먼저 서명한다.
+            const target = (await this.signedUrl(url)) || url;
             try {
-                const res = await fetch(url);
+                const res = await fetch(target);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const blob = await res.blob();
                 const objectUrl = URL.createObjectURL(blob);
@@ -565,6 +621,14 @@ export default {
 
 .message-item.my-message {
     justify-content: flex-end;
+
+    /*
+     * Chat.vue 가 전역으로 `.my-message { background: … !important }` 를 깔아 둔다.
+     * 거기서는 그 클래스가 말풍선 자체에 붙지만, 여기서는 줄 전체에 붙어 있어
+     * 말풍선 밖까지 색이 번졌다. 줄에서는 지우고 말풍선에만 남긴다.
+     */
+    background-color: transparent !important;
+    border-radius: 0 !important;
 }
 
 .message-avatar {
@@ -591,13 +655,20 @@ export default {
 
 .bubble-wrap--my {
     align-items: flex-end;
+    /* 내 말은 화면 절반을 넘지 않게 — 넘으면 판때기처럼 보인다. */
+    max-width: min(560px, 76%);
 }
 
 .bubble {
     background: var(--cds-bg-neutral);
     border-radius: 12px;
     padding: 10px 12px;
-    width: fit-content;
+    /*
+     * 글 너비에 맞춘다. fit-content 는 줄바꿈이 없는 긴 글에서 허용 폭까지
+     * 부풀 수 있어, 줄바꿈이 있는 글의 가장 긴 줄에 맞도록 max-content 로 못 박고
+     * 넘칠 때만 max-width 가 잡아 준다.
+     */
+    width: max-content;
     max-width: 100%;
 }
 
@@ -613,7 +684,23 @@ export default {
 }
 
 .bubble-time--my {
-    align-self: flex-start; /* 말풍선 좌측 하단 느낌 */
+    /* 말풍선과 같은 쪽에 붙인다 — 왼쪽에 떨어져 있으면 말풍선 안의 글처럼 보였다. */
+    align-self: flex-end;
+}
+
+/* 말과 함께 남은 산출물 카드. 말풍선과 같은 쪽에, 너무 넓어지지 않게. */
+.message-output {
+    width: min(100%, 420px);
+    margin-top: 6px;
+}
+
+.message-output--my {
+    margin-left: auto;
+}
+
+/* 카드만 남은 말의 시각 — 카드와 같은 쪽 아래에. */
+.message-output-time--my {
+    text-align: right;
 }
 
 .message-header {

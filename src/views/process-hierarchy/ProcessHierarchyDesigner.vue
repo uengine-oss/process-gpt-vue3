@@ -247,6 +247,18 @@
                         </v-btn>
                     </template>
                 </v-tooltip>
+                <v-tooltip
+                    v-if="isPal"
+                    :text="$t('validation.ruleOverviewTooltip') || '전체 태스크의 필수 Rule을 모아 확인합니다'"
+                    location="bottom"
+                >
+                    <template #activator="{ props: tt }">
+                        <v-btn v-bind="tt" variant="text" size="small" :disabled="!processNameText" @click="openRuleOverview">
+                            <v-icon start size="16">mdi-clipboard-check-outline</v-icon>
+                            Rule
+                        </v-btn>
+                    </template>
+                </v-tooltip>
                 <v-tooltip text="현재 BPMN XML을 보거나 수정합니다" location="bottom">
                     <template #activator="{ props: tt }">
                         <v-btn v-bind="tt" variant="text" size="small" :disabled="!processNameText" @click="openXmlDialog">
@@ -256,7 +268,26 @@
                     </template>
                 </v-tooltip>
                 <v-divider vertical class="mx-1" />
-                <v-tooltip text="현재 다이어그램을 이미지(PNG)로 저장합니다" location="bottom">
+                <!-- PAL: 이미지/BPMN/PDF 통합 내보내기 메뉴 — 비 PAL 은 기존 이미지 버튼 유지 -->
+                <v-menu v-if="isPal" location="bottom">
+                    <template #activator="{ props: menu }">
+                        <v-tooltip text="다이어그램·설정을 이미지/BPMN/PDF로 내보냅니다" location="bottom">
+                            <template #activator="{ props: tt }">
+                                <v-btn v-bind="{ ...menu, ...tt }" variant="text" size="small" :disabled="!processNameText">
+                                    <v-icon start size="16">mdi-tray-arrow-down</v-icon>
+                                    내보내기
+                                    <v-icon end size="14">mdi-chevron-down</v-icon>
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                    </template>
+                    <v-list density="compact">
+                        <v-list-item prepend-icon="mdi-image-outline" title="이미지 (PNG)" @click="capturePng" />
+                        <v-list-item prepend-icon="mdi-file-code-outline" title="BPMN 파일 (.bpmn)" @click="exportBpmnXml" />
+                        <v-list-item prepend-icon="mdi-file-pdf-box" title="PDF 문서" @click="isViewPdfExport = true" />
+                    </v-list>
+                </v-menu>
+                <v-tooltip v-else text="현재 다이어그램을 이미지(PNG)로 저장합니다" location="bottom">
                     <template #activator="{ props: tt }">
                         <v-btn v-bind="tt" variant="text" size="small" :disabled="!processNameText" @click="capturePng">
                             <v-icon start size="16">mdi-image-outline</v-icon>
@@ -580,6 +611,15 @@
             @changed="raciMatrixDirty = true"
         />
 
+        <!-- PDF 내보내기 (PAL): 다이어그램 + 프로세스/Lane/Task 설정 + 통합 RACI 정의서 -->
+        <ProcessPdfExportDialog
+            v-if="isPal"
+            v-model="isViewPdfExport"
+            :processDefinition="processDefinition"
+            :processName="processName"
+            :definitionList="definitionList"
+        />
+
         <v-dialog v-model="xmlDialog" max-width="1100">
             <v-card rounded="lg">
                 <v-card-title class="d-flex align-center pa-4 pb-2">
@@ -624,32 +664,50 @@
         </v-dialog>
 
         <!-- Validation Results Dialog -->
-        <v-dialog v-model="validationDialog" max-width="500">
+        <v-dialog v-model="validationDialog" max-width="640">
             <v-card>
                 <v-card-title class="d-flex align-center">
-                    <v-icon color="warning" class="mr-2">mdi-alert-circle-outline</v-icon>
+                    <v-icon :color="validationResults.length ? 'warning' : 'success'" class="mr-2">
+                        {{ validationResults.length ? 'mdi-alert-circle-outline' : 'mdi-check-circle-outline' }}
+                    </v-icon>
                     {{ $t('validation.title') || 'BPMN 검증 결과' }}
                 </v-card-title>
-                <v-card-text>
-                    <div class="text-body-2 mb-3">{{ $t('validation.warningMessage') || '다음 문제가 발견되었습니다:' }}</div>
-                    <v-list density="compact" class="validation-result-list">
-                        <v-list-item
-                            v-for="(result, i) in validationResults"
-                            :key="i"
-                            @click="focusElement(result.elementId)"
-                            :class="{ 'cursor-pointer': result.elementId }"
-                        >
-                            <template v-slot:prepend>
-                                <v-icon :color="result.level === 'error' ? 'error' : 'warning'" size="18">
-                                    {{ result.level === 'error' ? 'mdi-alert-circle' : 'mdi-alert' }}
-                                </v-icon>
-                            </template>
-                            <v-list-item-title class="text-body-2">{{ result.message }}</v-list-item-title>
-                            <v-list-item-subtitle v-if="result.elementName" class="text-caption">
-                                {{ result.elementName }}
-                            </v-list-item-subtitle>
-                        </v-list-item>
-                    </v-list>
+                <v-card-text class="validation-dialog-body">
+                    <template v-if="validationResults.length">
+                        <div class="text-body-2 mb-3">{{ $t('validation.warningMessage') || '다음 문제가 발견되었습니다:' }}</div>
+                        <v-list density="compact" class="validation-result-list">
+                            <v-list-item
+                                v-for="(result, i) in validationResults"
+                                :key="i"
+                                @click="focusElement(result.elementId)"
+                                :class="{ 'cursor-pointer': result.elementId }"
+                            >
+                                <template v-slot:prepend>
+                                    <v-icon :color="result.level === 'error' ? 'error' : 'warning'" size="18">
+                                        {{ result.level === 'error' ? 'mdi-alert-circle' : 'mdi-alert' }}
+                                    </v-icon>
+                                </template>
+                                <v-list-item-title class="text-body-2">{{ result.message }}</v-list-item-title>
+                                <v-list-item-subtitle v-if="result.elementName" class="text-caption">
+                                    {{ result.elementName }}
+                                </v-list-item-subtitle>
+                            </v-list-item>
+                        </v-list>
+                    </template>
+                    <div v-else class="text-body-2 d-flex align-center">
+                        <v-icon color="success" size="18" class="mr-1">mdi-check</v-icon>
+                        {{ $t('validation.passed') || 'BPMN 구조 검증 통과 — 발견된 문제가 없습니다.' }}
+                    </div>
+
+                    <!-- 필수 Rule 체크리스트: 검증 후 사람이 Rule 준수를 직접 확인하는 영역 (AI 미사용) -->
+                    <template v-if="mandatoryRuleChecklist.length">
+                        <v-divider class="my-3" />
+                        <MandatoryRuleChecklist
+                            :key="'validate-' + validationRunSeq"
+                            :entries="mandatoryRuleChecklist"
+                            @focus="focusElement"
+                        />
+                    </template>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
@@ -657,6 +715,31 @@
                         {{ $t('validation.clearOverlays') || 'Clear Overlays' }}
                     </v-btn>
                     <v-btn @click="validationDialog = false">{{ $t('common.close') || 'Close' }}</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- 필수 Rule 모아보기 (PAL) — RACI 매트릭스처럼 전체 태스크의 Rule을 한곳에서 확인 -->
+        <v-dialog v-model="ruleOverviewDialog" max-width="640">
+            <v-card>
+                <v-card-title class="d-flex align-center">
+                    <v-icon color="primary" class="mr-2">mdi-clipboard-check-outline</v-icon>
+                    {{ $t('validation.ruleOverviewTitle') || '필수 Rule 모아보기' }}
+                </v-card-title>
+                <v-card-text class="validation-dialog-body">
+                    <MandatoryRuleChecklist
+                        v-if="ruleOverviewEntries.length"
+                        :key="'overview-' + ruleOverviewSeq"
+                        :entries="ruleOverviewEntries"
+                        @focus="focusElement"
+                    />
+                    <div v-else class="text-body-2 text-medium-emphasis py-6 text-center">
+                        {{ $t('validation.ruleOverviewEmpty') || '필수 Rule이 입력된 태스크가 없습니다. 속성패널의 "필수 Rule(통제)" 섹션에서 입력할 수 있습니다.' }}
+                    </div>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer />
+                    <v-btn @click="ruleOverviewDialog = false">{{ $t('common.close') || 'Close' }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -1059,11 +1142,13 @@ import { useTaskCatalogStore } from '@/stores/taskCatalog';
 import { toSafeText } from '@/utils/safeText';
 import { formatKST as formatKSTUtil } from '@/utils/datetime';
 import { validateBpmnModel, reportToConsoleItems } from '@/services/bpmnValidationService';
-import { collectProcessRequiredViolations } from '@/utils/processSchemaValidation';
+import { collectProcessRequiredViolations, collectMandatoryRuleChecklist } from '@/utils/processSchemaValidation';
 import { useBpmnExport } from '@/composables/useBpmnExport';
 import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
 import ExecutableProcessView from '@/views/process-hierarchy/blueprint/ExecutableProcessView.vue';
 import RaciMatrixDialog from '@/components/designer/RaciMatrixDialog.vue';
+import ProcessPdfExportDialog from '@/components/designer/ProcessPdfExportDialog.vue';
+import MandatoryRuleChecklist from '@/components/designer/MandatoryRuleChecklist.vue';
 import { AN_STUDIO_KEY } from '@/composables/anStudio/useAnStudio';
 import { canUseExecFeatures } from '@/utils/execFeatureGate';
 import { canUseAiFeatures } from '@/utils/aiFeatureGate';
@@ -1097,7 +1182,15 @@ const EMPTY_TOBE_BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
 
 export default {
     name: 'ProcessHierarchyDesigner',
-    components: { BpmnuEngine, ProgressBadge, OpenUiRenderer, ExecutableProcessView, RaciMatrixDialog },
+    components: {
+        BpmnuEngine,
+        ProgressBadge,
+        OpenUiRenderer,
+        ExecutableProcessView,
+        RaciMatrixDialog,
+        MandatoryRuleChecklist,
+        ProcessPdfExportDialog
+    },
     // 순서도 페이지(ProcessHierarchy)가 provide 하는 공유 AN Studio — Exec(실행형) 뷰의 상태 소스
     inject: { anStudio: { from: AN_STUDIO_KEY, default: null } },
     props: {
@@ -1218,8 +1311,16 @@ export default {
             partitionCtxMenu: { show: false, x: 0, y: 0, elementId: null, elementName: '', currentBlockId: null },
             validationDialog: false,
             isViewRaciMatrix: false,
+            isViewPdfExport: false,
             raciMatrixDirty: false,
             validationResults: [],
+            // 필수 Rule 체크리스트 (PAL): 검증 다이얼로그용 목록 + 리마운트(상태 초기화) 시퀀스
+            mandatoryRuleChecklist: [],
+            validationRunSeq: 0,
+            // 필수 Rule 모아보기 다이얼로그 (PAL)
+            ruleOverviewDialog: false,
+            ruleOverviewEntries: [],
+            ruleOverviewSeq: 0,
             validationOverlayIds: [],
             validationMarkerIds: [],
             activeMode: 'as-is',
@@ -1261,6 +1362,9 @@ export default {
         /** 툴바 title 우측 표기 — 영구 UUID 우선, 조회 전/실패 시 legacy id */
         displayDefinitionId() {
             return this.definitionUuid || this.definitionPath;
+        },
+        isPal() {
+            return !!window.$pal;
         },
         pipelineRegisterableResults() {
             return (this.genPipelineResponse?.results || []).filter((item) => !item?.error && item?.xml);
@@ -1749,6 +1853,24 @@ export default {
                 bpmnViewer: bpmnVue.bpmnViewer,
                 processName: this.processName || 'Process Diagram'
             });
+        },
+        /** BPMN(XML) 내보내기 — 현재 캔버스의 XML 을 .bpmn 파일로 다운로드 (가져오기 버튼으로 재사용 가능) */
+        async exportBpmnXml() {
+            const xml = await this.getCurrentXml();
+            if (!xml) {
+                this.$toast?.error('내보낼 BPMN XML을 가져오지 못했습니다.');
+                return;
+            }
+            const fileName = `${(this.processName || 'process').replace(/[\\/:*?"<>|]/g, '_')}.bpmn`;
+            const blob = new Blob([xml], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         },
         normalizeBpmnText(value) {
             if (!value) return '';
@@ -2800,6 +2922,7 @@ export default {
         clearValidation() {
             this.clearValidationOverlays();
             this.validationResults = [];
+            this.mandatoryRuleChecklist = [];
             this.validationDialog = false;
         },
 
@@ -3988,7 +4111,12 @@ export default {
             // [3.1.3] 검증 결과 emit (에러 레벨 포함)
             this.$emit('validationDone', results);
 
-            if (results.length > 0) {
+            // 필수 Rule 체크리스트 (PAL 전용): BPMN 검증과 별개로, mandatory_rule 속성이 있는
+            // 태스크를 사람이 하나씩 확인하도록 다이얼로그에 함께 표시한다.
+            this.mandatoryRuleChecklist = this.isPal ? collectMandatoryRuleChecklist(modeler) : [];
+            this.validationRunSeq += 1;
+
+            if (results.length > 0 || this.mandatoryRuleChecklist.length > 0) {
                 this.validationResults = results;
                 this.validationDialog = true;
             } else {
@@ -3996,6 +4124,16 @@ export default {
                     this.$toast.success(this.$t('processHierarchy.validationPassed') || '검증 통과');
                 }
             }
+        },
+
+        /** 필수 Rule 모아보기 — 검증과 동일한 체크리스트 UI로 전체 태스크의 Rule을 확인 */
+        openRuleOverview() {
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            if (!modeler) return;
+            this.ruleOverviewEntries = collectMandatoryRuleChecklist(modeler);
+            this.ruleOverviewSeq += 1;
+            this.ruleOverviewDialog = true;
         }
     }
 };
@@ -4312,6 +4450,12 @@ export default {
 
 .cursor-pointer {
     cursor: pointer;
+}
+
+/* 검증·Rule 모아보기 다이얼로그: 목록이 길어질 수 있어 내부 스크롤 */
+.validation-dialog-body {
+    max-height: 65vh;
+    overflow-y: auto;
 }
 
 /* 검증 결과 다이얼로그: 메시지가 잘리지 않고 전체가 보이도록 줄바꿈 허용 */

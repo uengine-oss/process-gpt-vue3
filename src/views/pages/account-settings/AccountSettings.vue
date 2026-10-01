@@ -11,7 +11,8 @@
                             <v-tab value="LayoutSettings">
                                 <v-icon class="mr-2" size="20">mdi-view-dashboard-outline</v-icon>{{ $t('headerMenu.layoutSetting') }}
                             </v-tab>
-                            <template v-if="admin">
+                            <!-- PAL 모드는 관리 기능이 별도 메뉴(관리자 콘솔 등)로 분리돼 계정/레이아웃 설정만 남긴다 -->
+                            <template v-if="admin && !isPalMode">
                                 <!-- 계정 설정 -->
                                 <v-tab value="ManageAccess">
                                     <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }}
@@ -69,7 +70,7 @@
                             <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
                         </v-tabs>
                         <div
-                            v-if="!gs"
+                            v-if="!gs && !isPalMode"
                             @click="goToTenantManage"
                             class="settings-tenant-manage-btn v-tab-style text-none"
                             style="letter-spacing: 0"
@@ -122,7 +123,24 @@
                             <v-icon class="mr-2" size="16">mdi-view-dashboard-outline</v-icon>{{ $t('headerMenu.layoutSetting') }}
                         </v-btn>
 
-                        <template v-if="admin">
+                        <!--
+                            관리자 갈래는 접어 둔다.
+
+                            휴대폰 폭에서 이 버튼들이 세 줄을 차지해 정작 계정·테마가
+                            화면 밖으로 밀렸다. 지우지는 않는다 — 급할 때 여기서 들어갈
+                            길은 남겨 두고, 평소에는 접어 둔다.
+                        -->
+                        <v-btn
+                            v-if="admin && !isPalMode"
+                            variant="text"
+                            color="default"
+                            size="small"
+                            @click="showAdminTools = !showAdminTools"
+                        >
+                            <v-icon class="mr-2" size="16">{{ showAdminTools ? 'mdi-chevron-up' : 'mdi-cog-outline' }}</v-icon>관리
+                        </v-btn>
+
+                        <template v-if="admin && showAdminTools">
                             <v-btn
                                 variant="text"
                                 color="default"
@@ -227,7 +245,14 @@
                             </template>
                         </template>
 
-                        <v-btn v-if="!gs" variant="text" color="default" size="small" @click="goToTenantManage">
+                        <!-- 조직 만들기·전환은 PC 에서 하는 일이다. '관리' 안으로 넣는다. -->
+                        <v-btn
+                            v-if="!gs && showAdminTools && !isPalMode"
+                            variant="text"
+                            color="default"
+                            size="small"
+                            @click="goToTenantManage"
+                        >
                             <Icons :icon="'office'" :size="16" class="mr-2" />{{ $t('accountTab.tenantManage') }}
                         </v-btn>
                     </div>
@@ -284,10 +309,10 @@
                             </div>
                         </v-window-item>
 
-                        <!-- KnowledgeFiles: 지식 베이스 파일 관리 -->
+                        <!-- KnowledgeFiles: 지식 베이스 지도 -->
                         <v-window-item v-if="!isUEngineMode" value="KnowledgeFiles">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
-                                <KnowledgeFilesTab />
+                            <div :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: 80vh'">
+                                <KnowledgeMap />
                             </div>
                         </v-window-item>
 
@@ -374,7 +399,7 @@ import { getMainDomainUrl } from '@/utils/domainUtils';
 import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
 import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
-import KnowledgeFilesTab from '@/components/pages/account-settings/KnowledgeFilesTab.vue';
+import KnowledgeMap from '@/components/knowledge/map/KnowledgeMap.vue';
 import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import CodeEditTab from '@/components/pages/account-settings/CodeEditTab.vue';
@@ -399,7 +424,7 @@ export default {
         AccountTab,
         ManageAccessTab,
         DriveTab,
-        KnowledgeFilesTab,
+        KnowledgeMap,
         MCPServerTab,
         MCPEnvSecretTab,
         CodeEditTab,
@@ -414,6 +439,8 @@ export default {
     },
     data() {
         return {
+            /** 작은 화면에서 관리자 갈래를 펼쳤는지. 기본은 접힘. */
+            showAdminTools: false,
             tab: '',
             superAdmin: localStorage.getItem('role') === 'superAdmin',
             tabItems: [
@@ -446,11 +473,20 @@ export default {
         isUEngineMode() {
             return window.$mode === 'uEngine';
         },
+        // PAL 모드는 관리 기능을 별도 메뉴(관리자 콘솔·조직도 등)로 분리 — 설정 페이지엔 계정/레이아웃만 남긴다
+        isPalMode() {
+            return !!window.$pal;
+        },
         gs() {
             return window.$gs;
         },
         isMobile() {
-            return window.innerWidth <= 768;
+            /*
+             * window.innerWidth 를 그대로 읽으면 한 번 계산되고 끝난다 — 창을
+             * 좁히거나 넓혀도 새로고침 전까지 레이아웃이 그대로였다.
+             * globalIsMobile 은 main.ts 가 resize 마다 갱신하는 반응형 값이다.
+             */
+            return this.globalIsMobile ? this.globalIsMobile.value : window.innerWidth <= 768;
         }
     },
     watch: {
@@ -479,11 +515,27 @@ export default {
                 'TaskCatalog',
                 'OrgChartGroup'
             ]);
+            // PAL 모드에서 숨긴 관리 탭 전체 — ?tab= 쿼리로 직접 진입해도 Account 로 보정한다
+            const hiddenInPal = new Set([
+                'ManageAccess',
+                'Drive',
+                'KnowledgeFiles',
+                'MCP-Servers',
+                'MCP-Environments',
+                'CodeEdit',
+                'ConnectionInfo',
+                'Github',
+                'GlossaryManage',
+                'TaskCatalog',
+                'OrgChartGroup'
+            ]);
             if (!this.tab) {
                 this.tab = 'Account';
                 return;
             }
-            if (this.gs && hiddenInGs.has(this.tab)) {
+            if (this.isPalMode && hiddenInPal.has(this.tab)) {
+                this.tab = 'Account';
+            } else if (this.gs && hiddenInGs.has(this.tab)) {
                 this.tab = 'Account';
             } else if (this.isUEngineMode && hiddenInUEngine.has(this.tab)) {
                 this.tab = 'Account';

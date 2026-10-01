@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { externalLinks, isBlank, normalizeSource, render } from './markdown.js';
+import { escapeSingleTildes, externalLinks, isBlank, normalizeSource, render } from './markdown.js';
 
 // 파서·소독기는 브라우저에서만 돈다. 여기서는 이 파일이 정한 규칙만 본다.
 const deps = { parse: (t) => `<p>${t}</p>`, sanitize: (h) => h };
@@ -71,6 +71,22 @@ describe('render', () => {
             }
         });
         assert.match(sanitized, /target="_blank"/);
+    });
+
+    it('일반 물결표는 보존하고 Markdown 취소선은 유지한다', () => {
+        assert.equal(escapeSingleTildes('약 ~10분~ 소요, ~~삭제~~'), '약 &#126;10분&#126; 소요, ~~삭제~~');
+    });
+
+    it('렌더링 전에 단일 물결표를 이스케이프한다', () => {
+        let parsed = '';
+        render('약 ~10분~ 소요', {
+            parse: (text) => {
+                parsed = text;
+                return text;
+            },
+            sanitize: (html) => html
+        });
+        assert.equal(parsed, '약 &#126;10분&#126; 소요');
     });
 });
 

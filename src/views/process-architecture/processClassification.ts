@@ -1,30 +1,74 @@
-export type ProcessStageColumn = 'design' | 'build' | 'monitor' | 'control' | 'shared';
+/**
+ * 프로세스 분류축(카드 보기 열) + 도메인 판정.
+ *
+ * 열 정의(key/라벨/색/아이콘/키워드/폴백)는 테넌트 설정 `process_classification` 으로 바뀔 수 있다.
+ * tenantCustomizationService 가 부트스트랩 시 `setProcessClassificationConfig` 로 주입하며,
+ * 설정이 없는 테넌트는 기본 5열(설계·구축·감시·제어·공통)로 이전과 똑같이 동작한다.
+ *
+ * 저장 규약: proc_map 의 major.category 등 분류 필드에는 열 **key** 를 기록한다.
+ * 읽을 때는 key/라벨/키워드 모두 허용하므로 라벨('설계')로 저장된 옛 데이터도 같은 열로 읽힌다.
+ */
+import { reactive } from 'vue';
+import {
+    DEFAULT_CLASSIFICATION,
+    inferStageColumnFromCode as inferColumnFromCode,
+    matchStageColumn,
+    normalizeClassification
+} from '@/utils/tenantCustomizationCore';
 
-export const PROCESS_STAGE_LABELS: Record<ProcessStageColumn, string> = {
-    design: '설계',
-    build: '구축',
-    monitor: '감시',
-    control: '제어',
-    shared: '공통'
-};
+/** 열 key. 기본 5열은 'design' | 'build' | 'monitor' | 'control' | 'shared' 이지만 테넌트가 확장할 수 있다. */
+export type ProcessStageColumn = string;
 
-export const PROCESS_STAGE_ORDER: ProcessStageColumn[] = ['design', 'build', 'monitor', 'control', 'shared'];
+export interface ProcessStageColumnDef {
+    key: string;
+    label: string;
+    color: string;
+    icon: string;
+    keywords: string[];
+}
 
-const PROCESS_STAGE_KEYWORDS: Record<ProcessStageColumn, string[]> = {
-    design: ['설계', 'design', '계획', 'plan', 'planning'],
-    build: ['구축', 'build', '개발', 'develop', 'implement', 'implementation'],
-    monitor: ['감시', 'monitor', '모니터', '관제', 'surveillance'],
-    control: ['제어', 'control', '통제', '관리', 'manage', 'management'],
-    shared: ['공통', 'shared', 'common']
-};
+export interface ProcessClassificationConfig {
+    columns: ProcessStageColumnDef[];
+    fallback_key: string;
+    infer_stage_from_code: boolean;
+    infer_domain: boolean;
+}
 
-const PROCESS_STAGE_BY_SEQUENCE: Record<string, ProcessStageColumn> = {
-    '1': 'design',
-    '2': 'build',
-    '3': 'monitor',
-    '4': 'control',
-    '5': 'shared'
-};
+/** 현재 적용 중인 분류 설정 (reactive — 화면 computed 가 열 목록 변경을 따라간다) */
+const activeConfig = reactive<ProcessClassificationConfig>(normalizeClassification(DEFAULT_CLASSIFICATION));
+
+export function setProcessClassificationConfig(config: unknown) {
+    const next = normalizeClassification(config);
+    activeConfig.columns = next.columns;
+    activeConfig.fallback_key = next.fallback_key;
+    activeConfig.infer_stage_from_code = next.infer_stage_from_code;
+    activeConfig.infer_domain = next.infer_domain;
+}
+
+export function getProcessClassificationConfig(): ProcessClassificationConfig {
+    return activeConfig;
+}
+
+export function getProcessStageColumns(): ProcessStageColumnDef[] {
+    return activeConfig.columns;
+}
+
+export function getProcessStageOrder(): ProcessStageColumn[] {
+    return activeConfig.columns.map((c) => c.key);
+}
+
+export function getProcessStageLabel(column: ProcessStageColumn): string {
+    return activeConfig.columns.find((c) => c.key === column)?.label || column;
+}
+
+export function getFallbackStageColumn(): ProcessStageColumn {
+    return activeConfig.fallback_key;
+}
+
+/** 도메인 텍스트 추론(이름/ID 부분 문자열 매칭) 사용 여부 — 테넌트 설정 infer_domain */
+export function isDomainInferenceEnabled(): boolean {
+    return activeConfig.infer_domain;
+}
 
 function normalize(value: unknown): string {
     return String(value ?? '').trim();
@@ -35,33 +79,11 @@ function normalizeLower(value: unknown): string {
 }
 
 export function isProcessStageValue(value: unknown): boolean {
-    const text = normalizeLower(value);
-    if (!text) return false;
-
-    return Object.entries(PROCESS_STAGE_LABELS).some(([columnKey, label]) => {
-        if (text === normalizeLower(label) || text === columnKey) return true;
-        return PROCESS_STAGE_KEYWORDS[columnKey as ProcessStageColumn].some((keyword) => text === normalizeLower(keyword));
-    });
+    return matchStageColumn(value, activeConfig.columns, true) !== null;
 }
 
 function getStageColumnFromText(value: unknown, exactOnly = false): ProcessStageColumn | null {
-    const text = normalizeLower(value);
-    if (!text) return null;
-
-    for (const [columnKey, label] of Object.entries(PROCESS_STAGE_LABELS)) {
-        const key = columnKey as ProcessStageColumn;
-        if (text === normalizeLower(label) || text === key) return key;
-        if (PROCESS_STAGE_KEYWORDS[key].some((keyword) => text === normalizeLower(keyword))) return key;
-    }
-
-    if (exactOnly) return null;
-
-    for (const [columnKey, keywords] of Object.entries(PROCESS_STAGE_KEYWORDS)) {
-        const key = columnKey as ProcessStageColumn;
-        if (keywords.some((keyword) => text.includes(normalizeLower(keyword)))) return key;
-    }
-
-    return null;
+    return matchStageColumn(value, activeConfig.columns, exactOnly);
 }
 
 export function getProcessStageColumnFromValue(value: unknown, exactOnly = false): ProcessStageColumn | null {
@@ -90,17 +112,13 @@ export function getExplicitMajorStageColumn(major: any): ProcessStageColumn | nu
 }
 
 function inferStageColumnFromCode(value: unknown): ProcessStageColumn | null {
-    const text = normalize(value);
-    if (!text) return null;
-
-    const match = text.match(/(?:^|[^A-Za-z0-9])([A-Z])\.(\d+)(?=\.|[^0-9]|$)/i);
-    if (!match) return null;
-
-    return PROCESS_STAGE_BY_SEQUENCE[match[2]] || null;
+    if (!activeConfig.infer_stage_from_code) return null;
+    return inferColumnFromCode(value, activeConfig.columns);
 }
 
 function inferStageColumnFromSubProcesses(major: any): ProcessStageColumn | null {
-    const counts: Partial<Record<ProcessStageColumn, number>> = {};
+    if (!activeConfig.infer_stage_from_code) return null;
+    const counts: Record<string, number> = {};
     for (const sub of major?.sub_proc_list || []) {
         const column = inferStageColumnFromCode(sub?.id) || inferStageColumnFromCode(sub?.name);
         if (!column) continue;
@@ -111,7 +129,7 @@ function inferStageColumnFromSubProcesses(major: any): ProcessStageColumn | null
     let bestCount = 0;
     for (const [column, count] of Object.entries(counts)) {
         if ((count || 0) > bestCount) {
-            bestColumn = column as ProcessStageColumn;
+            bestColumn = column;
             bestCount = count || 0;
         }
     }
@@ -129,16 +147,17 @@ export function getMajorStageColumn(major: any): ProcessStageColumn {
     const legacyDomainColumn = getStageColumnFromText(major?.domain, true) || getStageColumnFromText(major?.domain_id, true);
     if (legacyDomainColumn) return legacyDomainColumn;
 
-    return getStageColumnFromText(major?.name) || 'shared';
+    return getStageColumnFromText(major?.name) || activeConfig.fallback_key;
 }
 
 export function getMajorStageLabel(major: any): string {
-    return PROCESS_STAGE_LABELS[getMajorStageColumn(major)];
+    return getProcessStageLabel(getMajorStageColumn(major));
 }
 
 export function getMajorStageSortIndex(major: any): number {
-    const index = PROCESS_STAGE_ORDER.indexOf(getMajorStageColumn(major));
-    return index >= 0 ? index : PROCESS_STAGE_ORDER.length;
+    const order = getProcessStageOrder();
+    const index = order.indexOf(getMajorStageColumn(major));
+    return index >= 0 ? index : order.length;
 }
 
 export function compareMajorsByStage(a: any, b: any): number {
@@ -184,7 +203,12 @@ function inferDomainFromCodeLabel(value: unknown): string {
     return normalize(match?.[1]);
 }
 
+/**
+ * 명시 필드가 없는 major 의 도메인을 텍스트에서 추론한다.
+ * 테넌트 도메인 목록(domains)만 근거로 쓴다 — 고정 시드는 없다. 추론이 꺼져 있으면 항상 ''.
+ */
 export function inferMajorBusinessDomain(major: any, domains: any[] = []): string {
+    if (!activeConfig.infer_domain) return '';
     for (const sub of major?.sub_proc_list || []) {
         const inferredFromSub = findKnownDomainInText(`${sub?.id || ''} ${sub?.name || ''}`, domains) || inferDomainFromCodeLabel(sub?.id) || inferDomainFromCodeLabel(sub?.name);
         if (inferredFromSub) return inferredFromSub;
@@ -197,21 +221,24 @@ export function inferMajorBusinessDomain(major: any, domains: any[] = []): strin
     );
 }
 
-export function getMajorBusinessDomain(major: any, domains: any[] = []): string {
+/** major 에 명시적으로 기록된 도메인 값(추론 제외). 없으면 ''. */
+export function getExplicitMajorDomain(major: any, domains: any[] = []): string {
     const rawCandidates = [major?.domain, major?.domain_id, major?.business_domain, major?.businessDomain, major?.network_domain, major?.networkDomain];
-
     const domainList = domains || [];
     for (const candidate of rawCandidates) {
         const value = normalize(candidate);
         if (!value) continue;
-
-        // 도메인 목록에서 매칭되면 정규화된 이름 반환
         const matched = domainList.find((d: any) => d?.name === value || d?.id === value);
         if (matched) return matched.name || matched.id;
-
-        // 명시적 값이 있으면 그대로 반환
         return value;
     }
+    return '';
+}
+
+export function getMajorBusinessDomain(major: any, domains: any[] = []): string {
+    const domainList = domains || [];
+    const explicit = getExplicitMajorDomain(major, domainList);
+    if (explicit) return explicit;
 
     const inferred = inferMajorBusinessDomain(major, domainList);
     if (!inferred) return '';

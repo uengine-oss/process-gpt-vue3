@@ -71,6 +71,17 @@
                                             >
                                                 {{ participantsPreviewText }}
                                             </span>
+                                            <v-chip
+                                                v-if="roomOrchestrationLabel"
+                                                size="x-small"
+                                                variant="tonal"
+                                                color="primary"
+                                                class="orchestration-chip"
+                                                :title="roomOrchestrationLabel"
+                                            >
+                                                <v-icon size="12" start>mdi-robot-outline</v-icon>
+                                                {{ roomOrchestrationLabel }}
+                                            </v-chip>
                                             <!-- 에이전트 연결중(웜업) 표시: 참가자 옆 원형 로딩 -->
                                             <template v-if="hasAgentWarming">
                                                 <v-progress-circular indeterminate color="primary" :size="14" :width="2" />
@@ -79,6 +90,11 @@
                                     </div>
                                 </div>
                                 <div class="header-right">
+                                    <!--
+                                        휴대폰 간소화 화면에서는 이 머리 줄 대신 앱바를 쓴다(클로드 모바일처럼
+                                        제목 한 줄 + 오른쪽 단추). 단추는 새로 만들지 않고 앱바로 옮겨 간다.
+                                    -->
+                                    <Teleport to="#pg-m-appbar-actions" :disabled="!phoneShell">
                                     <v-btn
                                         v-if="hasArtifactPanel"
                                         icon
@@ -86,6 +102,7 @@
                                         density="comfortable"
                                         size="small"
                                         :color="artifactSidebarVisible ? 'primary' : undefined"
+                                        aria-label="산출물"
                                         @click="toggleArtifactSidebar"
                                     >
                                         <v-icon size="18">mdi-file-document-outline</v-icon>
@@ -137,6 +154,7 @@
                                             </v-list>
                                         </v-card>
                                     </v-menu>
+                                    </Teleport>
                                 </div>
                             </div>
                             <v-divider class="header-divider" />
@@ -805,6 +823,9 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import { agentStableId, isUuid as isUuidStable, slugToUuid } from '@/utils/agentId.js';
+import axios from 'axios';
+import { isArtifactUrlFresh, usableArtifactUrl } from '@/utils/artifactLinks.js';
+import { isDocumentFile, isTurnArtifactRecord } from '@/shared/workspaceFiles/index.js';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import Chat from '@/components/ui/Chat.vue';
 import VoiceAgentDesktopMode from '@/components/ui/VoiceAgentDesktopMode.vue';
@@ -815,12 +836,17 @@ import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import ArtifactPanel from '@/components/ArtifactPanel.vue';
 import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/processArtifactPanel.js';
 import { buildHitlPanel, shouldRestoreFromAssistantContent } from '@/shared/hitl/index.js';
+import { shouldSteerInsteadOfNewTurn } from '@/shared/steering/index.js';
 import { shouldGenerateChatRoomName as sharedShouldGenerateChatRoomName } from '@/shared/chatRoom/index.js';
 import { formatToolName as sharedFormatToolName } from '@/shared/toolNames/index.js';
+import { parseMcpToolOutput } from '@/shared/toolOutput';
+import { askUserFeedbackOf } from '@/shared/askUser';
+import { chatFailureMessage, createPersistCircuit } from '@/shared/chatFailure/index.js';
 import { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 import { useCodexFolderStore } from '@/stores/codexFolder';
+import { usePhoneShell, setPhoneShellTitle } from '@/shared/phoneShell';
 import { normalizeOrchestration } from '@/utils/orchestration';
 import agentRouterService from '@/services/AgentRouterService';
 import deepAgentRouterService, { DeepAgentRouterService } from '@/services/DeepAgentRouterService';
@@ -830,6 +856,7 @@ import { getTenantId, resolveTenantId } from '@/utils/tenant';
 import { isLegacyProcessDefinition, convertLegacyProcessDefinitionToElements } from '@/utils/legacyProcessDefinition';
 import { processGptAgent } from '@/constants/processGptAgent';
 import { PROCESS_GPT_AGENT_ID } from '@/constants/processGptAgent';
+import { isStorageObjectUrl, resolveStorageUrl } from '@/shared/storageUrl';
 
 const backend = BackendFactory.createBackend();
 const fixedLangchainMainAgentService = new FixedBaseWorkAssistantAgentService('/agent');
@@ -860,10 +887,12 @@ export default {
     name: 'ChatRoomPage',
     // 지식 선택은 전역 스토어(단일 소스). 이 페이지가 방 lifecycle(로드/저장/이월)을 이 스토어로 조율.
     setup() {
+        const { active: phoneShellActive } = usePhoneShell();
         return {
             knowledgeStore: useKnowledgeSelectionStore(),
             // 원본 폴더 업로드 게이트 — 덜 올라온 상태로 턴이 시작되지 않게 한다.
-            codexFolderStore: useCodexFolderStore()
+            codexFolderStore: useCodexFolderStore(),
+            phoneShellActive
         };
     },
     props: {
@@ -896,6 +925,9 @@ export default {
             // 서버(SDK)가 chats row 를 INSERT 하기 전까지 프런트엔드 전용 상태 저장을 보류할 때 쓰는
             // 마지막 안전망 timer. { [roomId:msgUuid]: timeoutId }
             _serverRowPersistFallbackTimers: {},
+            // 프런트엔드 전용 상태 저장의 연속 실패 차단기. 실패하는 저장을 계속 다시
+            // 부르면 브라우저 커넥션 풀이 말라 채팅 요청까지 막힌다(운영 사고).
+            _persistCircuit: createPersistCircuit(),
             // deepagent HITL(request_human_input)로 멈춘 방의 run_state 보관.
             // 사용자가 패널 대신 일반 입력창으로 답해도 같은 그래프 세션으로 resume 되게 하는 안전망.
             // { [roomId]: run_state }
@@ -1025,6 +1057,26 @@ export default {
         };
     },
     computed: {
+        /**
+         * 휴대폰 간소화 화면의 앱 틀 안에 있는가.
+         * 다른 화면에 끼워 넣은 채팅(embedded)은 앱바의 주인이 아니므로 제외한다.
+         */
+        phoneShell() {
+            return !!this.phoneShellActive && !this.embedded;
+        },
+        /**
+         * 이 방이 쓰는 에이전트 서비스(오케스트레이션) 표시 라벨.
+         *
+         * 대화가 시작된 방은 오케스트레이션을 바꿀 수 없다(선택 UI 비노출).
+         * 그래서 과거 방을 열면 어떤 에이전트가 답하는지 알 수 없었다 — 헤더에 읽기 전용으로 보여준다.
+         * 방 컨텍스트에 명시적 값이 없으면 실제로 쓰이는 기본값(deepagents)을 그대로 표시한다.
+         */
+        roomOrchestrationLabel() {
+            const ctx = this.readChatRoomContext(this.currentChatRoom);
+            const value = normalizeOrchestration(ctx?.orchestration);
+            const key = value === 'codex' ? 'chats.codexAgent' : value === 'langchain-react' ? 'chats.basicAgent' : 'chats.deepAgent';
+            return this.$t(key);
+        },
         // 지식 선택 — 전역 스토어 프록시(읽기 전용). 쓰기는 knowledgeStore 액션 사용.
         selectedKnowledgeDocs() {
             return this.knowledgeStore.docs;
@@ -1418,6 +1470,12 @@ export default {
         }
     },
     async mounted() {
+        // 산출물 패널을 폰에서 '사람이 눌렀을 때만' 열기 위해 마지막으로 누른 때를 적어 둔다
+        // (watch.artifactSidebarVisible). 캡처 단계에서 들어 어느 단추든 놓치지 않는다.
+        this._phoneTapListener = () => {
+            this._phoneLastTapAt = Date.now();
+        };
+        document.addEventListener('pointerdown', this._phoneTapListener, true);
         try {
             if (!this.userInfo) this.userInfo = await backend.getUserInfo();
         } catch (e) {
@@ -1441,6 +1499,27 @@ export default {
         }
     },
     watch: {
+        /** 휴대폰 앱바 제목은 방 이름이다. 이름을 바꾸면 그대로 따라간다. */
+        'currentChatRoom.name': {
+            immediate: true,
+            handler(name) {
+                if (!this.embedded) setPhoneShellTitle(name || '', '/chat');
+            }
+        },
+        /**
+         * 휴대폰에서는 산출물 패널이 화면 전체를 덮는다.
+         *
+         * 데스크톱에서는 옆에 붙는 패널이라 에이전트가 도구를 쓰거나 파일을 만들 때
+         * 저절로 열어도 대화가 가려지지 않는다. 폰에서 똑같이 열면 방에 들어가자마자,
+         * 또 답이 오는 중간에 화면이 통째로 가려진다. 클로드 모바일처럼 사람이 눌렀을
+         * 때만 연다 — 방금 화면을 누른 적이 없는데 열리려 하면 도로 닫는다.
+         * 여는 곳이 여러 군데(스트리밍 이벤트, 복원, 카드 클릭)라 하나하나 막지 않고 여기서 거른다.
+         */
+        artifactSidebarVisible(open) {
+            if (!open || !this.phoneShell) return;
+            const tappedJustNow = Date.now() - (this._phoneLastTapAt || 0) < 1500;
+            if (!tappedJustNow) this.artifactSidebarVisible = false;
+        },
         selectedKnowledgeDocs() {
             this.onKnowledgeSelectionChanged();
         },
@@ -1492,6 +1571,7 @@ export default {
         }
     },
     async beforeUnmount() {
+        if (this._phoneTapListener) document.removeEventListener('pointerdown', this._phoneTapListener, true);
         this.stopChatAccessHeartbeat();
         this.EventBus.emit('chat-room-unselected');
         try {
@@ -3227,6 +3307,7 @@ export default {
         },
 
         async attachToActiveStream(roomId) {
+            let attachKey = '';
             try {
                 if (!roomId) return;
                 // 단일 에이전트 방에서만 시도한다 — attach 응답에 agentId가 없어도
@@ -3239,11 +3320,19 @@ export default {
                 // 이미 스트리밍 중(예: 방금 내가 보낸 메시지의 sendMessageStream)이면 건너뜀
                 if (this.activeStreams[agentId]) return;
 
+                // 재접속도 방의 오케스트레이션(deepagents/codex)에 맞는 서버로 붙어야 한다.
+                const attachRouter = this.getAgentRouterForOrchestration(this.getRoomOrchestration());
+                // 재접속 엔드포인트가 없는 런타임(기본 에이전트 등)은 건너뛴다 — 없는 주소로 404 를 내지 않게.
+                // 중지 컨트롤러를 등록하기 **전에** 판단해야 한다. 등록한 뒤에 돌아가면 컨트롤러가 남아,
+                // 아무것도 돌지 않는 방에서 입력창이 계속 '중지' 단추로 보였다.
+                if (typeof attachRouter?.attachToStream !== 'function' || attachRouter.supportsStreamAttach === false) return;
+
                 const userJwt = (await getValidToken()) || '';
                 const tenantId = getTenantId();
 
                 const abortController = new AbortController();
                 const abortKey = `${roomId}:attach:${agentId}`;
+                attachKey = abortKey;
                 this.agentAbortControllers[abortKey] = abortController;
 
                 let seeded = false;
@@ -3263,13 +3352,23 @@ export default {
                     this.messages.splice(idx, 1);
                 };
 
-                // 재접속도 방의 오케스트레이션(deepagents/codex)에 맞는 서버로 붙어야 한다.
-                const attachRouter = this.getAgentRouterForOrchestration(this.getRoomOrchestration());
-                // 재접속을 지원하지 않는 런타임(codex)은 건너뛴다 — 없는 엔드포인트로 404 를 내지 않게.
-                if (typeof attachRouter?.attachToStream !== 'function' || attachRouter.supportsStreamAttach === false) return;
                 await attachRouter.attachToStream(
                     roomId,
                     {
+                        // 재접속한 화면도 접수·반영을 똑같이 본다(스냅샷의 pending_steers 포함).
+                        onSteerAccepted: (event) => {
+                            if ((this.currentChatRoom?.id || this.roomId) !== roomId) return;
+                            this.noteSteerAccepted(event);
+                        },
+                        onSteerApplied: (event) => {
+                            if ((this.currentChatRoom?.id || this.roomId) !== roomId) return;
+                            // 본 스트림과 같은 처리 — 그때까지의 작업을 확정하고 새 말풍선을 연다.
+                            this.sealAssistantSegmentForSteer(agentId, roomId);
+                            full = '';
+                            const msg = this.activeStreams[agentId];
+                            if (msg) msg.content = '생각 중...';
+                            this.noteSteerApplied(event);
+                        },
                         onToken: (content) => {
                             // roomId가 바뀐 뒤 도착한 잔여 이벤트는 무시
                             if ((this.currentChatRoom?.id || this.roomId) !== roomId) return;
@@ -3300,8 +3399,47 @@ export default {
                             }
                             this.$nextTick(() => this.scrollToBottomSafe());
                         },
-                        onDone: () => {
-                            // 최종 메시지는 Realtime INSERT(handleRealtimeMessage)가 처리한다.
+                        onDone: (content, payload) => {
+                            if ((this.currentChatRoom?.id || this.roomId) !== roomId) return;
+                            this.setAgentStatus(agentId, { state: 'ready', message: '' });
+                            const msg = this.activeStreams[agentId];
+                            if (!msg) return;
+                            // Realtime INSERT 는 streamMsg 를 activeStreams 에 남겨 두고 돌아간다
+                            // — 끝내는 것은 여기다. 안 끝내면 isLoading 말풍선이 남아 스피너가
+                            // 영원히 돈다.
+                            const doneFiles = Array.isArray(payload?.files) ? payload.files : [];
+                            for (const file of doneFiles) this.pushRenderedDocxArtifact(file, msg);
+                            if (doneFiles.length) {
+                                const existing = Array.isArray(msg.pdfFiles) ? msg.pdfFiles : [];
+                                const seen = new Set(existing.map((f) => (f?.url || f?.fileUrl || f?.name || '').toString()));
+                                msg.pdfFiles = [
+                                    ...existing,
+                                    ...doneFiles.filter((f) => f && !seen.has((f.url || f.fileUrl || f.name || '').toString()))
+                                ];
+                            }
+                            const finalContent = (content ?? '').toString();
+                            if (finalContent && finalContent !== 'NO_RESPONSE') msg.content = finalContent;
+                            msg.toolCalls = (Array.isArray(msg.toolCalls) ? msg.toolCalls : []).map((tc) =>
+                                tc?.status === 'running' ? { ...tc, status: 'done', endedAt: new Date().toISOString() } : tc
+                            );
+                            msg.isLoading = false;
+                            msg.openuiIsStreaming = false;
+                            delete this.activeStreams[agentId];
+                            const keys = new Set([msg.rowUuid, msg.uuid, msg.clientUuid].filter(Boolean));
+                            const landedIdx = this.messages.findIndex(
+                                (m) => m && (keys.has(m.uuid) || keys.has(m.rowUuid) || keys.has(m.clientUuid))
+                            );
+                            let landed;
+                            if (landedIdx === -1) {
+                                landed = this.normalizeAssistantMessageForDisplay(msg);
+                                this.messages.push(landed);
+                                this._stableSortMessages(this.messages);
+                            } else {
+                                landed = this.messages[landedIdx];
+                                this.carryOptimisticOnlyFields(msg, landed);
+                            }
+                            this.persistMessageFrontendState(landed, roomId, { force: true });
+                            this.$nextTick(() => this.scrollToBottomSafe());
                         },
                         onError: (err) => {
                             console.warn('[ChatRoomPage] attachToStream 오류(무시):', err?.message || err);
@@ -3315,6 +3453,8 @@ export default {
             } catch (e) {
                 // attach는 부가 기능이므로 실패해도 기존 흐름에 영향 없이 조용히 무시
                 console.warn('[ChatRoomPage] attachToActiveStream 실패(무시):', e?.message || e);
+                // 실패했어도 붙잡은 스트림은 없다 — 중지 단추가 남지 않게 컨트롤러를 거둔다.
+                if (attachKey) delete this.agentAbortControllers[attachKey];
             }
         },
         /** 방을 나가거나 전환할 때 그 방의 attach 재접속 연결만 정리한다(일반 에이전트 생성 스트림은 유지). */
@@ -3407,6 +3547,13 @@ export default {
                             streamMsg.uuid = incoming.uuid || streamMsg.uuid;
                             streamMsg.clientUuid = incoming.clientUuid || streamMsg.clientUuid || streamMsg.uuid;
                             this.carryOptimisticOnlyFields(incoming, streamMsg);
+                            // 서버가 본문을 확정해 보냈으면 그것이 이 턴의 답이다. 아래
+                            // persist 가 streamMsg 를 통째로 다시 쓰므로, 여기서 받아두지
+                            // 않으면 서버가 저장한 답변이 '생각 중...' 으로 되돌아간다.
+                            // (SSE 가 끊겨 onDone 이 오지 않은 18분짜리 제안서 턴이 파일
+                            // 링크만 남고 본문을 잃었다.) 시작 시점의 placeholder INSERT 는
+                            // content 가 placeholder 라 이 분기에 걸리지 않는다.
+                            this.adoptServerFinalContent(streamMsg, incoming, matchKey);
                             this.persistMessageFrontendState(streamMsg, roomId);
                             return;
                         }
@@ -5040,13 +5187,35 @@ export default {
                     }
                 }
 
+                // ---- 진행 중인 턴이 있으면 새 턴을 돌리는 대신 방향을 바꾼다 ----
+                // 이게 없으면 작업 중에 보낸 수정 지시가 그 턴을 **대체**해, 지금까지 한
+                // 작업을 버리고 처음부터 다시 시작한다. 사용자가 원한 것은 방향 수정이다.
+                if (await this.trySteerActiveAgentTurn(roomId, msg.content || '', payload)) {
+                    // 작업 중에 보낸 수정 지시라는 사실을 메시지에 남긴다.
+                    //
+                    // 방에 다시 들어오면 에이전트가 그 사이에 한 일은 최종 답변 하나로 접혀
+                    // 보인다. 이 표시가 없으면 사용자 메시지 두 개가 잇따라 전송된 것처럼
+                    // 읽히고, 두 번째 말이 왜 저기 있는지 알 길이 없다.
+                    msg.steering = true;
+                    this.upsertMessageByKeys(msg);
+                    if (canWrite && !hideUserMessage) {
+                        await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+                    }
+                    return;
+                }
+
                 // ---- 멀티 에이전트 라우팅/스트리밍 ----
                 const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', msg.mentionedUsers || [], msg);
                 if (agentTargets.length > 0) {
                     await this.streamAgents(agentTargets, msg.content || '', payload);
                 }
             } catch (e) {
-                // ignore
+                // 여기를 조용히 넘기면 안 된다. 스트림이 시작되기 전에 실패하면
+                // (chats 저장, 방 갱신, 첨부 저장 …) onError 가 불릴 일도 없어서,
+                // 사용자에게는 자기 말풍선만 남고 아무 설명도 없다. 운영에서 실제로
+                // 그렇게 채팅이 멎었고 원인은 로그를 봐야 알 수 있었다.
+                console.error('[handleSendMessage] 전송 실패:', e);
+                this.showChatFailure(e);
             } finally {
                 this.isSending = false;
                 this.focusComposerInput();
@@ -5751,7 +5920,14 @@ export default {
             return out;
         },
 
-        buildMessageForAgent(userText, payload, policy) {
+        /**
+         * 에이전트에게 보낼 본문. 첨부는 `[InputData]` 블록으로 알린다.
+         *
+         * 주소는 **보내기 직전에 다시 서명한다.** 방에 쌓인 파일(session_files)은
+         * 며칠 전 메시지에서 꺼내 오는데, 그때 만든 서명 주소는 이미 만료됐다.
+         * 만료된 주소를 보내면 에이전트는 "첨부된 문서가 없습니다" 로 답한다.
+         */
+        async buildMessageForAgent(userText, payload, policy) {
             let messageForAgent = (userText || '').toString();
             // 첨부 정보는 기존 방식처럼 [InputData]로 전달
             const normalizedFiles = this.normalizePayloadFiles(payload);
@@ -5791,13 +5967,14 @@ export default {
             const hasSessionFile = sessionFiles.length > 0;
             if (hasImages || hasCurrentFile || hasSessionFile || payload?.hwpxUrl || payload?.hwpxEdit) {
                 const inputData = {};
-                if (hasImages) inputData.images = payload.images;
+                if (hasImages) inputData.images = await this.signAttachmentUrls(payload.images, 'chat-images');
                 if (hasCurrentFile) {
+                    const signedFiles = await this.signAttachmentUrls(normalizedFiles);
                     // 하위 호환: 첫 파일은 file, 전체는 files
-                    inputData.file = normalizedFiles[0];
-                    inputData.files = normalizedFiles;
+                    inputData.file = signedFiles[0];
+                    inputData.files = signedFiles;
                 }
-                if (hasSessionFile) inputData.session_files = sessionFiles;
+                if (hasSessionFile) inputData.session_files = await this.signAttachmentUrls(sessionFiles);
                 if (payload?.hwpxUrl) inputData.hwpx_url = payload.hwpxUrl;
                 if (payload?.hwpxEdit) inputData.hwpx_edit = payload.hwpxEdit;
                 messageForAgent += `\n\n[InputData]\n${JSON.stringify(inputData)}`;
@@ -5810,6 +5987,41 @@ export default {
 
             // must_reply (침묵 정책 제거)
             return messageForAgent;
+        },
+
+        /**
+         * 첨부 목록의 주소를 지금 열리는 것으로 바꾼다.
+         *
+         * 우리 저장소를 가리키면 새 서명 주소로, 바깥 주소(memento 등)면 그대로.
+         * 주소 칸 이름이 저장 시기마다 달라 채워진 칸을 모두 갱신한다.
+         */
+        async signAttachmentUrls(files, bucket = 'files') {
+            const urlKeys = ['url', 'fileUrl', 'publicUrl', 'signedUrl', 'fullPath'];
+            const list = Array.isArray(files) ? files : [];
+            return await Promise.all(
+                list.map(async (f) => {
+                    if (!f || typeof f !== 'object') return f;
+
+                    const current = urlKeys.map((k) => f[k]).find((v) => typeof v === 'string' && v);
+                    // 다시 서명할 수 있는 것만 손댄다.
+                    //   · 우리 Storage 주소            → 되돌려 읽어 새로 서명
+                    //   · bucket 과 path 를 둘 다 가진 것 → 그대로 서명
+                    // memento 가 준 주소·경로는 규칙이 달라 건드리지 않는다.
+                    //   (그쪽 file_path 를 버킷 경로로 넘겨짚으면 없는 객체를 가리킨다)
+                    const target = isStorageObjectUrl(current) ? current : f.bucket && f.path ? f : null;
+                    if (!target) return f;
+
+                    const signed = await resolveStorageUrl(target, { bucket });
+                    if (!signed) return f;
+
+                    const next = { ...f };
+                    for (const key of urlKeys) {
+                        if (next[key]) next[key] = signed;
+                    }
+                    if (!next.url && !next.fileUrl) next.fileUrl = signed;
+                    return next;
+                })
+            );
         },
 
         normalizeInputFile(file) {
@@ -5970,7 +6182,9 @@ export default {
          * 아니라 매번 새로 만들어지므로 판정에서 제외한다 — 원본 json 이 검사되므로 충분하다.
          */
         _isWorkspaceGroupSaved(files) {
-            const list = (files || []).filter((f) => f && !f.derived);
+            // 문서 산출물(docx·pdf)은 저장 대상이 아니다 — 내용이 없어 해시를 남길 수 없고,
+            // 판정에 넣으면 문서 하나 때문에 이미 저장한 스킬이 영원히 '저장 안 됨' 이 된다.
+            const list = (files || []).filter((f) => f && !f.derived && !isDocumentFile(f));
             if (!list.length) return false;
             return list.every((f) => !!f.savedHash && f.savedHash === this._workspaceContentHash(f.content));
         },
@@ -5982,7 +6196,7 @@ export default {
         _markWorkspaceFilesSaved(list) {
             const stamps = {};
             for (const f of list || []) {
-                if (!f || !f.path || f.derived) continue;
+                if (!f || !f.path || f.derived || isDocumentFile(f)) continue;
                 const hash = this._workspaceContentHash(f.content);
                 stamps[f.path] = hash;
                 f.savedHash = hash;
@@ -6542,6 +6756,8 @@ export default {
                     this.handleWorkspaceFileEdit(panelId, payload);
                 } else if (action === 'ai-edit-file') {
                     this.aiEditWorkspaceFile(panelId, payload);
+                } else if (action === 'resolve-url') {
+                    this._resolveWorkspaceFileUrl(payload);
                 } else if (action === 'navigate-process') {
                     // 산출물 '편집' → 내부 편집기로 이동(임시저장 draft 를 수정). kind 별 라우팅.
                     const kind = (payload && payload.kind ? payload.kind : 'process').toString();
@@ -6553,6 +6769,58 @@ export default {
                     else path = `/definitions/${id}`;
                     this.$router.push({ path }).catch(() => {});
                 }
+            }
+        },
+
+        /**
+         * 턴이 끝난 뒤 도착한 산출물을 얹을 메시지.
+         *
+         * 서버는 최종 답변을 chats row 에 쓰고, 그 realtime 알림을 받은 화면은 스트리밍
+         * 메시지를 확정하며 activeStreams 에서 지운다. 문서 산출물은 그 직전에 나가므로
+         * 둘은 같은 순간을 다툰다 — 진 경우 영속할 자리를 잃는다. 확정된 마지막 답변이
+         * 그 자리다.
+         */
+        _lastPersistableAssistantMessage(agentId) {
+            const list = Array.isArray(this.messages) ? this.messages : [];
+            const wanted = (agentId || '').toString();
+            for (let i = list.length - 1; i >= 0; i--) {
+                const m = list[i];
+                if (!m || !['assistant', 'agent'].includes((m.role || '').toString())) continue;
+                if (!(m.rowUuid || m.uuid)) continue;
+                const mAgentId = (m.agentId || '').toString();
+                // 에이전트를 알 수 있으면 같은 에이전트의 답변에만 얹는다.
+                if (wanted && mAgentId && mAgentId !== wanted) continue;
+                return m;
+            }
+            return null;
+        },
+
+        /**
+         * 문서 산출물의 받을 수 있는 주소를 보장한다.
+         *
+         * 서명 주소는 한 시간이면 죽는다. 어제 대화를 다시 연 사람에게는 목록에 파일이
+         * 보이는데 눌러도 아무것도 안 나오는 상태가 된다 — 파일은 비공개 버킷에 그대로
+         * 있으므로 `file_id` 로 새 주소를 받아 항목에 반영한다. 항목 객체는 패널 배열과
+         * 같은 것이라, 주소를 채워 넣으면 뷰어가 그대로 다시 그린다.
+         */
+        async _resolveWorkspaceFileUrl(payload) {
+            // 기다리는 쪽(다운로드 버튼)이 영원히 멈추지 않게, 어떤 경로로 끝나도 알린다.
+            const done = typeof payload?.done === 'function' ? payload.done : () => {};
+            try {
+                const path = (payload?.path || '').toString();
+                if (!path) return;
+                for (const arr of Object.values(this.roomWorkspaceFilesByGroup || {})) {
+                    const file = (arr || []).find((f) => f && f.path === path && isDocumentFile(f));
+                    if (!file) continue;
+                    try {
+                        await usableArtifactUrl(file, this.requestArtifactUrl);
+                    } catch (e) {
+                        /* 주소를 못 받으면 들고 있던 주소가 전부다 — 지어낸 주소를 넣지 않는다. */
+                    }
+                    return;
+                }
+            } finally {
+                done();
             }
         },
 
@@ -7193,6 +7461,22 @@ export default {
         },
 
         /**
+         * 이 메시지가 같은 파일을 이미 산출물로 들고 있는가.
+         *
+         * 본문에서 hwpx 링크를 긁어 파일 카드를 만드는 아래 경로는 서버가 산출물을
+         * 안 실어 보내던 시절의 보완책이다. 지금은 서버가 `pdfFiles` 로 제대로 주므로,
+         * 그대로 두면 같은 파일이 두 번 뜨고 긁어 만든 쪽은 이름이 스토리지 uuid 로 나온다.
+         */
+        hasPublishedArtifactFor(msg, url) {
+            const bare = (value) => (value || '').toString().split('?')[0];
+            const target = bare(url);
+            if (!target) return false;
+            return (Array.isArray(msg?.pdfFiles) ? msg.pdfFiles : []).some(
+                (file) => bare(file?.url) === target || bare(file?.fileUrl) === target
+            );
+        },
+
+        /**
          * 텍스트 메시지에 raw hwpx/html 마크다운 링크가 있는 경우:
          * - 링크 줄 제거 (정제된 텍스트 반환)
          * - message.pdfFile 세팅 (hwpx 파일 카드)
@@ -7221,7 +7505,7 @@ export default {
                 // 빈 줄 3개 이상 → 2개로 정리
                 .replace(/\n{3,}/g, '\n\n')
                 .trim();
-            if (hwpxFileUrl && !msg.pdfFile) {
+            if (hwpxFileUrl && !msg.pdfFile && !this.hasPublishedArtifactFor(msg, hwpxFileUrl)) {
                 const fileName = decodeURIComponent(hwpxFileUrl.split('/').pop() || 'document.hwpx');
                 msg.pdfFile = {
                     url: hwpxFileUrl,
@@ -7248,7 +7532,7 @@ export default {
                 const content = (msg.content || '').toString();
 
                 // ① 이미 hwpxFileUrl이 확인된 메시지: pdfFile 세팅
-                if (msg.hwpxFileUrl && !msg.pdfFile) {
+                if (msg.hwpxFileUrl && !msg.pdfFile && !this.hasPublishedArtifactFor(msg, msg.hwpxFileUrl)) {
                     const fileName = decodeURIComponent(msg.hwpxFileUrl.split('/').pop() || 'document.hwpx');
                     msg.pdfFile = {
                         url: msg.hwpxFileUrl,
@@ -7354,11 +7638,32 @@ export default {
                 const fileSha = (file.sha256 || '').toString();
                 const ofSha = (view.of_sha256 || '').toString();
                 if (fileSha && ofSha && fileSha !== ofSha) return null;
-                return { renderer: view.renderer, url: view.url, pageCount: view.page_count || null };
+                return {
+                    renderer: view.renderer,
+                    url: view.url,
+                    pageCount: view.page_count || null,
+                    // 렌더도 비공개 버킷에 있다. 주소는 만료되므로 되살릴 열쇠를 함께 넘긴다.
+                    fileId: view.file_id || '',
+                    urlExpiresAt: view.url_expires_at || ''
+                };
             }
             const preview = file.preview;
-            if (preview?.kind === 'pdf' && preview.url) return { renderer: 'pdf', url: preview.url, pageCount: preview.page_count || null };
-            if (preview?.kind === 'file' && preview.url) return { renderer: 'html', url: preview.url, pageCount: null };
+            if (preview?.kind === 'pdf' && preview.url)
+                return {
+                    renderer: 'pdf',
+                    url: preview.url,
+                    pageCount: preview.page_count || null,
+                    fileId: preview.file_id || '',
+                    urlExpiresAt: preview.url_expires_at || ''
+                };
+            if (preview?.kind === 'file' && preview.url)
+                return {
+                    renderer: 'html',
+                    url: preview.url,
+                    pageCount: null,
+                    fileId: preview.file_id || '',
+                    urlExpiresAt: preview.url_expires_at || ''
+                };
             return null;
         },
 
@@ -7372,30 +7677,92 @@ export default {
         /** done.files와 저장된 pdfFiles 모두 같은 서버 PDF 미리보기 계약을 사용한다. */
         pushRenderedDocxArtifact(file, msgIdxOrRef) {
             const view = this.resolveArtifactView(file);
-            if (!this.isDocxPayload(file) || view?.renderer !== 'pdf') return false;
+            // 서버가 PDF 뷰를 붙였다는 것이 이 패널을 띄울 조건 전부다. 확장자는 보지 않는다 —
+            // .docx 만 통과시키던 탓에 서버가 18쪽 렌더까지 붙여 보낸 hwpx 가 미리보기 없이
+            // 다운로드 버튼만 남았다(복원 경로도 같은 문을 지나므로 새로고침해도 안 떴다).
+            if (view?.renderer !== 'pdf') return false;
             const fileUrl = file.file_url || file.fileUrl || file.url || '';
             if (!fileUrl) return false;
             const fileName = file.file_name || file.fileName || file.name || 'document.docx';
             const msg = typeof msgIdxOrRef === 'number' ? this.messages?.[msgIdxOrRef] : msgIdxOrRef;
             // 완성본은 자기 초안 탭을 대신한다 — 남겨두면 '작성 중' 카드가 계속 붙어 있다.
-            this.artifactPanels = this.artifactPanels.filter(
-                (panel) => !(panel.data?.draft === true && panel.data?.fileName === fileName)
-            );
+            this.artifactPanels = this.artifactPanels.filter((panel) => !(panel.data?.draft === true && panel.data?.fileName === fileName));
             const status = this.resolveArtifactStatus(file);
+            const artifactKey = file.artifact_id || file.file_id || fileUrl;
             this.pushArtifactPanel({
                 type: 'docx',
                 label: fileName,
                 data: {
-                    fileUrl, fileName, previewUrl: view.url, messageId: msg?.uuid || null,
+                    fileUrl,
+                    fileName,
+                    // 이 탭이 PDF 미리보기라는 사실은 주소와 별개다. 주소가 만료돼 비어 있어도
+                    // 뷰어는 떠 있어야 한다 — 아래에서 새 주소를 받아 채운다.
+                    isPdfPreview: true,
+                    previewUrl: isArtifactUrlFresh({ url_expires_at: view.urlExpiresAt }) ? view.url : '',
+                    previewFileId: view.fileId || '',
+                    previewExpiresAt: view.urlExpiresAt || '',
+                    messageId: msg?.uuid || null,
                     // 같은 산출물의 새 판은 같은 탭을 덮어쓴다(버전은 배지로 보인다).
-                    artifactKey: file.artifact_id || file.file_id || fileUrl,
-                    fileId: file.file_id || '', sha256: file.sha256 || '', turnId: file.turn_id || '',
+                    artifactKey,
+                    fileId: file.file_id || '',
+                    fileExpiresAt: file.url_expires_at || '',
+                    sha256: file.sha256 || '',
+                    turnId: file.turn_id || '',
                     pageCount: view.pageCount,
                     // 검수 미통과여도 문서는 보여준다. 판정은 배지로만 알린다.
-                    qualityGate: status?.gate || '', qualityGateDetail: status?.detail || ''
+                    qualityGate: status?.gate || '',
+                    qualityGateDetail: status?.detail || ''
                 }
             });
+            // 주소가 죽어 있으면 지금 되살린다. 기다리지 않는다 — 탭은 이미 떠 있고
+            // 뷰어가 "새로 받는 중" 을 보여준다.
+            this.refreshArtifactPanelUrls(artifactKey);
             return true;
+        },
+
+        /**
+         * 패널이 들고 있는 주소를 살아 있는 것으로 바꾼다.
+         *
+         * 산출물과 그 렌더는 비공개 버킷에 있고 주소는 한 시간이면 죽는다. 만료된 주소를
+         * 그대로 iframe 에 걸면 브라우저가 저장소의 오류 JSON 을 문서인 양 그린다 —
+         * 사용자에게는 문서가 깨진 것처럼 보인다. 실제로 그렇게 나갔다.
+         *
+         * 미리보기(렌더)와 원본은 각자 다른 객체라 각자 되살린다.
+         */
+        async refreshArtifactPanelUrls(artifactKey) {
+            const panel = this.artifactPanels.find((p) => p.type === 'docx' && p.data?.artifactKey === artifactKey);
+            if (!panel) return;
+            const data = panel.data;
+
+            if (data.previewFileId) {
+                const holder = {
+                    url: data.previewUrl,
+                    file_id: data.previewFileId,
+                    url_expires_at: data.previewExpiresAt
+                };
+                const fresh = await usableArtifactUrl(holder, this.requestArtifactUrl);
+                if (fresh) {
+                    data.previewUrl = fresh;
+                    data.previewExpiresAt = holder.url_expires_at || '';
+                }
+            }
+
+            if (data.fileId) {
+                const holder = { url: data.fileUrl, file_id: data.fileId, url_expires_at: data.fileExpiresAt };
+                const fresh = await usableArtifactUrl(holder, this.requestArtifactUrl);
+                if (fresh) {
+                    data.fileUrl = fresh;
+                    data.fileExpiresAt = holder.url_expires_at || '';
+                }
+            }
+        },
+
+        /** Memento 에 새 주소를 청한다. 산출물은 비공개 버킷에 있고 주소는 한 시간이면 죽는다. */
+        async requestArtifactUrl(fileId) {
+            const { data } = await axios.get('/memento/artifact-url', {
+                params: { tenant_id: window.$tenantName, file_id: fileId }
+            });
+            return data;
         },
 
         activeDocumentContext() {
@@ -7405,8 +7772,10 @@ export default {
             const data = panel.data;
             return {
                 fileName: data.fileName || panel.label,
-                file_id: data.fileId || '', artifact_id: data.artifactKey || data.fileUrl,
-                sha256: data.sha256 || '', turn_id: data.turnId || ''
+                file_id: data.fileId || '',
+                artifact_id: data.artifactKey || data.fileUrl,
+                sha256: data.sha256 || '',
+                turn_id: data.turnId || ''
             };
         },
 
@@ -7483,6 +7852,41 @@ export default {
                     }
                 }
             }
+            // 안전망 — 산출물 레코드로는 남았는데 작업 폴더 항목이 없는 문서를 되살린다.
+            //
+            // 실시간 file_artifact 는 보내는 스트림으로 오고, 턴을 끝내는 done 은 붙은
+            // 스트림으로 온다. 문서 산출물은 턴 끝에 나가서 그 둘이 같은 순간을 다투고,
+            // 지면 화면에서 통째로 사라졌다 — 말풍선에 링크는 있는데 작업 폴더만 빈 방이
+            // 그렇게 생겼다. 받을 수 있는 파일이 레코드에 있는 한, 방을 다시 열면 보여야 한다.
+            const knownNames = new Set(Object.values(mergedByPath).map((f) => this._workspaceFileBaseName(f)));
+            const roomKeyForPath = (this.currentChatRoom?.id || this.roomId || '').toString();
+            for (const m of this.messages || []) {
+                if (!m || !['assistant', 'agent'].includes((m.role || '').toString())) continue;
+                for (const f of Array.isArray(m.pdfFiles) ? m.pdfFiles : []) {
+                    if (!isTurnArtifactRecord(f)) continue;
+                    const name = (f.name || f.fileName || '').toString();
+                    if (!name || knownNames.has(name.toLowerCase())) continue;
+                    knownNames.add(name.toLowerCase());
+                    // 레코드에는 작업 폴더 경로가 없다. 방 폴더 아래로 둔다 — 같은 이름이
+                    // 이미 있으면 위에서 걸렀으므로 실제 항목을 밀어내지 않는다.
+                    mergedByPath[`/workspace/.bpmn/${roomKeyForPath}/${name}`] = {
+                        path: `/workspace/.bpmn/${roomKeyForPath}/${name}`,
+                        name,
+                        ext: '',
+                        content: '',
+                        op: 'create',
+                        truncated: false,
+                        status: 'done',
+                        document: true,
+                        url: (f.url || f.fileUrl || '').toString(),
+                        file_id: (f.file_id || f.fileId || '').toString(),
+                        url_expires_at: (f.url_expires_at || f.urlExpiresAt || '').toString(),
+                        contentType: (f.contentType || f.content_type || '').toString(),
+                        size_bytes: Number(f.size_bytes) || 0
+                    };
+                }
+            }
+
             const mergedFiles = Object.values(mergedByPath);
             if (mergedFiles.length > 0) {
                 this.roomWorkspaceFilesByGroup = {};
@@ -8256,7 +8660,7 @@ export default {
 
                 let full = '';
                 let lastScrollAt = 0;
-                const messageForAgent = this.buildMessageForAgent(userText, payload, agentTarget.policy);
+                const messageForAgent = await this.buildMessageForAgent(userText, payload, agentTarget.policy);
                 const maybeScroll = () => {
                     const now = Date.now();
                     if (now - lastScrollAt < 120) return;
@@ -8388,9 +8792,7 @@ export default {
                                           source_type: d.sourceType || 'drive',
                                           file_name: d.file_name || d.name || '',
                                           mime_type: d.mimeType || '',
-                                          folder_path: d.folderPath || '',
-                                          // 역할(양식/사업개요 등) — 백엔드 초안 템플릿/자료 구분에 필수
-                                          doc_role: d.docRole || d.doc_role || 'content'
+                                          folder_path: d.folderPath || ''
                                       }))
                                 : [];
                             // 이번 메시지에 첨부·업로드된 파일도 memento file_id(=storage path)로
@@ -8436,6 +8838,18 @@ export default {
                         full += token;
                         // 실제 반영은 applyStreamedContent 에서 60ms 단위로 묶어 수행한다.
                         scheduleStreamedContent();
+                    },
+                    // 수정 지시의 접수와 반영은 서로 다른 이벤트다 — 접수만으로 반영된
+                    // 것처럼 보이면 사용자는 아직 안 바뀐 결과를 바뀐 것으로 읽는다.
+                    onSteerAccepted: (event) => this.noteSteerAccepted(event),
+                    onSteerApplied: (event) => {
+                        // 개입 전까지의 작업을 하나의 메시지로 확정하고, 새 말풍선을 연다.
+                        // 확정된 메시지는 사용자의 수정 지시보다 **위**에 남으므로, 방에 다시
+                        // 들어와도 "작업하던 중에 끼어들었다" 는 순서가 그대로 보인다.
+                        this.sealAssistantSegmentForSteer(agentId, targetRoomId);
+                        full = '';
+                        applyStreamedContent();
+                        this.noteSteerApplied(event);
                     },
                     onPlanTools: (tools) => {
                         try {
@@ -8534,8 +8948,6 @@ export default {
                         // deepagent 가 샌드박스 workspace 에 만든/수정한 산출물 파일을 Claude Desktop식
                         // '작업 폴더 + 미리보기' UI(type:'files')로 실시간 표시한다.
                         try {
-                            const msg = this.activeStreams[agentId];
-                            if (!msg) return;
                             const path = ((evt && evt.path) || '').toString();
                             if (!path) return;
                             const entry = {
@@ -8547,14 +8959,32 @@ export default {
                                 truncated: !!evt.truncated,
                                 status: 'done'
                             };
-                            // 메시지에 영속(by path) — 새로고침 복원용
+                            // 문서 산출물(docx·pdf 등)은 바이너리라 내용이 아니라 주소로 온다.
+                            // 주소는 한 시간이면 죽지만 파일은 비공개 버킷에 남아 있어서,
+                            // file_id 로 새 주소를 받아 간다(_resolveWorkspaceFileUrl).
+                            const artifactUrl = (evt.url || evt.file_url || '').toString();
+                            if (artifactUrl) {
+                                entry.document = true;
+                                entry.url = artifactUrl;
+                                entry.file_id = (evt.file_id || '').toString();
+                                entry.url_expires_at = (evt.url_expires_at || '').toString();
+                                entry.contentType = (evt.content_type || evt.contentType || '').toString();
+                                entry.size_bytes = Number(evt.size_bytes) || 0;
+                            }
+                            // 패널은 방 단위다. 진행 중인 답변을 찾지 못해도 띄운다 —
+                            // 문서 산출물(docx·pdf)은 턴 끝에 와서, 서버가 최종 답변을 쓰는 순간
+                            // 지워지는 activeStreams 와 경쟁한다. 거기서 지면 패널이 아예 안 생겨
+                            // "링크는 있는데 작업 폴더는 비어 있는" 방이 됐다.
+                            this.upsertWorkspaceFilesPanel(entry);
+                            // 메시지에 영속(by path) — 새로고침 복원용.
+                            // 턴이 막 끝났으면 확정된 마지막 답변에 얹는다.
+                            const msg = this.activeStreams[agentId] || this._lastPersistableAssistantMessage(agentId);
+                            if (!msg) return;
                             const files = Array.isArray(msg.workspaceFiles) ? msg.workspaceFiles : [];
                             const mi = files.findIndex((f) => f.path === path);
                             if (mi === -1) files.push(entry);
                             else files[mi] = { ...files[mi], ...entry };
                             msg.workspaceFiles = files;
-                            // 방 단위 단일 패널로 통합(메시지가 여러 개여도 탭은 하나) — 같은 방 uuid 디렉터리의 파일을 한 곳에.
-                            this.upsertWorkspaceFilesPanel(entry);
                             // file_artifact는 서버의 기본 chat INSERT에 포함되지 않으므로 별도 병합 저장한다.
                             this.scheduleMessageFrontendStatePersist(msg);
                         } catch (e) {}
@@ -8686,6 +9116,9 @@ export default {
                                 }
                             }
                             msg.toolCalls = toolCalls;
+                            if (lastRunningTool?.name?.includes('execute_process')) {
+                                this.noteExecutedInstance(output);
+                            }
                             // file_artifact can persist the message just before tool_end.
                             // Persist the terminal state as well so reopening the room does
                             // not restore a stale "실행 중" bubble for a completed call.
@@ -8735,26 +9168,25 @@ export default {
                             // human feedback 도구 결과 감지 (일반화)
                             if (lastRunningTool && lastRunningTool.name) {
                                 try {
-                                    const fbParsed = typeof output === 'string' ? JSON.parse(output) : output;
+                                    // MCP 결과는 content=[{'type':'text', ...}] 로 감싸여 오기도 한다 — 같은 파서로 읽는다.
+                                    const fbParsed = this.parseToolOutput(output);
                                     if (fbParsed && typeof fbParsed === 'object') {
                                         const isLegacyListRef =
                                             lastRunningTool.name.includes('list_reference_documents') &&
                                             fbParsed.user_request_type === 'select_items' &&
                                             Array.isArray(fbParsed.items);
-                                        const isAskUserWithUI =
-                                            fbParsed.user_request_type === 'ask_user' &&
-                                            (typeof fbParsed.feedback_type === 'string' ||
-                                                Array.isArray(fbParsed.items) ||
-                                                (fbParsed.option_meta && typeof fbParsed.option_meta === 'object'));
-                                        if (isLegacyListRef || isAskUserWithUI) {
-                                            lastRunningTool.__humanFeedback = fbParsed;
+                                        // 질문 + 제안만 오는 ask_user(MCP)도 패널로 띄운다(shared/askUser).
+                                        const askUser = isLegacyListRef ? null : askUserFeedbackOf(fbParsed);
+                                        if (isLegacyListRef || askUser) {
+                                            const feedback = askUser || fbParsed;
+                                            lastRunningTool.__humanFeedback = feedback;
                                             hasHumanFeedback = true;
                                             const fallbackText = isLegacyListRef
                                                 ? '참고할 문서를 검색했습니다. 생성 옵션을 선택해 주세요.'
-                                                : fbParsed.question || '생성 옵션을 선택해 주세요.';
+                                                : feedback.question || '생성 옵션을 선택해 주세요.';
                                             msg.content = fallbackText;
                                             if (!msg.__humanFeedback) {
-                                                msg.__humanFeedback = fbParsed;
+                                                msg.__humanFeedback = feedback;
                                             }
                                         }
                                     }
@@ -8873,6 +9305,10 @@ export default {
                     onDone: async (content, doneEvent) => {
                         // 60ms 배칭으로 아직 반영되지 않은 마지막 토큰들을 먼저 확정한다.
                         flushStreamedContentNow();
+                        // 스트림은 여기서 끝났다 — 더 중지할 것이 없으므로 중지 단추도 바로 거둔다.
+                        // 예전에는 이 함수 맨 끝에서 지웠는데, 중간의 HITL return 이나 저장(await) 실패로
+                        // 그 줄에 닿지 못하면 답이 끝난 뒤에도 입력창이 계속 '중지' 로 남아 있었다.
+                        delete this.agentAbortControllers[abortKey];
                         const finalContent = (content || full || '').toString().trim();
 
                         // deepagent interrupt(request_human_input) 종료 마커 처리:
@@ -8908,6 +9344,8 @@ export default {
                                     ...doneFiles.filter((f) => f && !seen.has((f.url || f.fileUrl || f.name || '').toString()))
                                 ];
                             }
+                            // 지식베이스 블록 인용(file_id·블록 범위·발췌). pdfFiles 와 같은 이유로 메시지에 싣는다.
+                            if (Array.isArray(doneEvent?.sources) && doneEvent.sources.length) msg.sources = doneEvent.sources;
                             const msgToolCalls = Array.isArray(msg.toolCalls) ? msg.toolCalls : [];
                             msg.toolCalls = msgToolCalls.map((toolCall) =>
                                 toolCall?.status === 'running'
@@ -8976,7 +9414,9 @@ export default {
                                 console.warn('[ChatRoomPage] onDone hwpx/artifact 파싱 실패(무시):', e?.message || e);
                             }
 
-                            msg.content = msg.__humanFeedback ? '' : safeFinal || full || '';
+                            // __serverContent: realtime 으로 이미 받아둔 서버 확정 본문.
+                            // done 이 빈 본문으로 오더라도 그걸 지우지는 않는다.
+                            msg.content = msg.__humanFeedback ? '' : safeFinal || full || msg.__serverContent || '';
                             displayContent = this.extractDisplayAssistantContent(msg.content);
                             msg.isLoading = false;
                             msg.contentType = 'text';
@@ -9190,6 +9630,8 @@ export default {
                     clearTimeout(streamFlushTimer);
                     streamFlushTimer = null;
                 }
+                // 스트림 호출이 돌아왔으면 중지할 것이 없다 — 콜백이 하나도 불리지 않았어도 중지 단추를 거둔다.
+                delete this.agentAbortControllers[abortKey];
             });
 
             await Promise.all(promises);
@@ -10641,10 +11083,14 @@ export default {
             this.imagePreviewDialog = true;
         },
 
-        openExternalUrl(url) {
+        async openExternalUrl(url) {
             if (!url) return;
             try {
-                window.open(url, '_blank');
+                // 자식(Chat·ChatThread)은 이미 서명해서 넘기지만, 답변 본문의 링크처럼
+                // 곧바로 들어오는 값도 있다. 우리 저장소 주소면 여기서 서명하고,
+                // 바깥 주소는 그대로 통과한다(버킷이 비공개라 서명 없이는 400).
+                const target = (await resolveStorageUrl(url)) || url;
+                window.open(target, '_blank');
             } catch (e) {}
         },
 
@@ -10693,6 +11139,135 @@ export default {
             // 계속 돌아가 LLM/도구 호출을 소비하고 산출물까지 만든다 — 사용자에겐
             // "중지를 눌렀는데 계속 동작"으로 보인다. 서버에도 중지를 알린다(베스트 에포트).
             this.stopAgentTurnOnServer(rid);
+        },
+
+        /** 이 방에서 지금 에이전트 턴이 돌고 있는가(스트리밍 중인 말풍선이 있는가). */
+        hasActiveAgentTurn() {
+            const streams = this.activeStreams || {};
+            return Object.keys(streams).some((k) => !!streams[k]);
+        },
+
+        /**
+         * 작업이 끝나기 전에 보낸 메시지를 **수정 지시**로 보낸다. 보냈으면 true.
+         *
+         * 중지하고 다시 시키는 것도, 새 턴으로 이전 턴을 대체하는 것도 지금까지의 작업을
+         * 버린다. 수정 지시는 맥락을 유지한 채 지시만 바꾼다.
+         *
+         * 아래 경우는 손대지 않고 기존 경로(새 턴)로 넘긴다 —
+         *   - 돌고 있는 턴이 없다(= 평범한 첫 메시지)
+         *   - 첨부가 있다(수정 지시는 텍스트만 나른다)
+         *   - 사람 확인(HITL) 답변이다(그 답변 자체가 이미 방향 전환이고, 재개 경로가 따로 있다)
+         *   - 서버가 미지원·턴 없음 등으로 거절했다
+         */
+        async trySteerActiveAgentTurn(roomId, text, payload) {
+            const rid = (roomId || this.currentChatRoom?.id || this.roomId || '').toString();
+            const message = (text || '').toString().trim();
+            if (!rid) return false;
+            // 무엇을 수정 지시로 볼지는 @/shared/steering 이 정한다. 여기서 다시 판단하면
+            // 모바일과 갈라지고, 갈라지면 한쪽에서 사람 확인 답변이 가로채여 대화가 멎는다.
+            if (!shouldSteerInsteadOfNewTurn({ hasActiveTurn: this.hasActiveAgentTurn(), text: message, payload })) {
+                return false;
+            }
+
+            const router = this.getAgentRouterForOrchestration(payload?.orchestration || this.getRoomOrchestration());
+            if (!router || typeof router.steerStream !== 'function') return false;
+
+            let result;
+            try {
+                const [userJwt, tenantId] = await Promise.all([getValidToken(), resolveTenantId()]);
+                result = await router.steerStream(rid, message, {
+                    userJwt: userJwt || '',
+                    tenantId,
+                    userUid: this.userInfo?.id || this.userInfo?.uid || ''
+                });
+            } catch (e) {
+                console.warn('[Steer] 수정 지시 전송 실패 — 새 턴으로 되돌린다:', e);
+                return false;
+            }
+
+            if (!result?.accepted) {
+                // 거절도 따로 알리지 않는다 — 호출한 쪽이 평범한 새 메시지로 되돌리므로
+                // 사용자에게는 메시지가 그대로 전송되고 답이 오는 것으로 보인다.
+                console.info('[Steer] 수정 지시가 접수되지 않았다 — 새 턴으로 진행:', result?.reason || '');
+                return false;
+            }
+
+            this.noteSteerAccepted(result);
+            return true;
+        },
+
+        /**
+         * 수정 지시가 반영되는 시점에, 그때까지의 작업을 **하나의 완결된 메시지로 확정**한다.
+         *
+         * 이것이 없으면 방에 다시 들어왔을 때 에이전트가 그 사이에 한 일이 최종 답변 하나로
+         * 접혀 버려서, 사용자 메시지 두 개(원래 지시·수정 지시)가 잇따라 전송된 것처럼 보인다.
+         * 두 번째 말이 왜 저기 있는지 화면만 봐서는 알 수 없다.
+         *
+         * 확정한 메시지의 시각은 **턴이 시작된 시각**을 그대로 쓴다. 사용자의 수정 지시보다
+         * 앞선 시각이어야 그 위에 놓이고, 그래야 "작업하던 중에 끼어들었다" 는 순서가 남는다.
+         */
+        async sealAssistantSegmentForSteer(agentId, roomId) {
+            const live = this.activeStreams[agentId];
+            if (!live) return;
+            const hasText = !!(live.content || '').toString().trim() && !this._isPlaceholderContent(live.content);
+            const hasWork = Array.isArray(live.toolCalls) && live.toolCalls.length > 0;
+            if (!hasText && !hasWork) return; // 아직 보여 줄 것이 없으면 끊지 않는다
+
+            const sealedUuid = this.uuid();
+            const sealed = this.normalizeAssistantMessageForDisplay({
+                ...live,
+                uuid: sealedUuid,
+                clientUuid: sealedUuid,
+                rowUuid: null,
+                isLoading: false,
+                // 이 행은 서버가 저장하지 않는다(서버는 턴의 최종 답변 하나만 저장한다).
+                // 그래서 여기서 직접 저장해야 다시 들어왔을 때도 남는다.
+                __serverPersisted: false
+            });
+            this.messages.push(sealed);
+            this._stableSortMessages(this.messages);
+
+            // 새 말풍선으로 갈아 끼운다. 같은 객체를 비우면 방금 확정한 메시지와 참조가 얽혀
+            // 이후 토큰이 확정본까지 덮어쓴다.
+            const freshUuid = this.uuid();
+            this.activeStreams[agentId] = {
+                ...live,
+                uuid: freshUuid,
+                clientUuid: freshUuid,
+                rowUuid: null,
+                content: '생각 중...',
+                toolCalls: [],
+                executionSkills: [],
+                executionConnectors: [],
+                isLoading: true,
+                timeStamp: new Date().toISOString()
+            };
+
+            try {
+                const rid = (roomId || this.currentChatRoom?.id || this.roomId || '').toString();
+                if (rid && this.shouldClientWriteChatDb(this.getRoomOrchestration())) {
+                    await backend.putObject(`db://chats/${sealedUuid}`, { uuid: sealedUuid, id: rid, messages: sealed });
+                }
+            } catch (e) {
+                // 저장에 실패해도 화면에는 남는다 — 이 턴을 실패시킬 이유는 아니다.
+                console.warn('[Steer] 개입 직전 작업 저장 실패(화면에는 유지):', e);
+            }
+        },
+
+        /**
+         * 수정 지시를 받았다(아직 반영 전).
+         *
+         * 화면에 따로 알리지 않는다. 사용자가 보낸 말은 이미 말풍선으로 올라가 있고,
+         * 반영은 이어지는 답변으로 드러난다 — 그 위에 알림 배지를 얹으면 대화 흐름 밖에
+         * 뜬 또 하나의 상태 표시가 되어, 읽을 것이 늘 뿐 알려 주는 것은 없다.
+         */
+        noteSteerAccepted(event) {
+            console.info('[Steer] 접수:', event?.directive_id || '');
+        },
+
+        /** 수정 지시가 실제로 반영되기 시작했다. 위와 같은 이유로 알리지 않는다. */
+        noteSteerApplied(event) {
+            console.info('[Steer] 반영:', event?.directive_id || '');
         },
 
         /** deepagents 서버에서 진행 중인 턴을 실제로 취소한다(중지 버튼용). */
@@ -10898,6 +11473,37 @@ export default {
             });
         },
 
+        /**
+         * 서버가 확정한 본문을 스트리밍 말풍선에 반영한다.
+         *
+         * 서버는 턴 시작에 '생각 중...' row 를 넣고 끝에 같은 uuid 로 본문을 덮어쓴다.
+         * 따라서 placeholder 가 아닌 content 가 realtime 으로 오면 그 턴은 서버에서
+         * 끝난 것이다. SSE 가 끊겨 onDone 이 못 오면 이 신호가 유일한 완료 통지라,
+         * 여기서 본문을 받고 로딩도 내려야 말풍선이 영원히 돌지 않는다.
+         * 늦게 도착한 onDone 은 같은 객체를 다시 확정하므로 충돌하지 않는다.
+         */
+        adoptServerFinalContent(streamMsg, incoming, agentId) {
+            if (!streamMsg || !incoming || typeof incoming !== 'object') return false;
+            const serverContent = (incoming.content ?? '').toString();
+            if (!serverContent.trim() || this._isPlaceholderContent(serverContent)) return false;
+            // persistMessageFrontendState 가 placeholder 로 되덮는 것을 막는 안전망.
+            streamMsg.__serverContent = serverContent;
+            if (serverContent === (streamMsg.content ?? '').toString()) return false;
+            streamMsg.content = serverContent;
+            streamMsg.contentType = incoming.contentType || streamMsg.contentType || 'text';
+            if (incoming.timeStamp) streamMsg.timeStamp = incoming.timeStamp;
+            streamMsg.isLoading = false;
+            // 도구 타임라인이 'running' 으로 얼어붙으면 완료된 턴이 진행 중처럼 보인다.
+            if (Array.isArray(streamMsg.toolCalls)) {
+                streamMsg.toolCalls = streamMsg.toolCalls.map((toolCall) =>
+                    toolCall?.status === 'running' ? { ...toolCall, status: 'done', endedAt: new Date().toISOString() } : toolCall
+                );
+            }
+            if (agentId) this.setAgentStatus(agentId, { state: 'ready', message: '' });
+            this.$nextTick(() => this.scrollToBottomSafe());
+            return true;
+        },
+
         carryOptimisticOnlyFields(fromMsg, toMsg) {
             if (!fromMsg || !toMsg || typeof fromMsg !== 'object' || typeof toMsg !== 'object') return toMsg;
             const carryKeys = [
@@ -10913,7 +11519,12 @@ export default {
                 'openuiIsStreaming',
                 'openuiStreamQuestionId',
                 'agentLogs',
-                'agentPlan'
+                'agentPlan',
+                // 서버가 chats row 에 넣는 산출물 링크. 여기 없으면 프런트 객체로 row 를
+                // 저장할 때 통째로 지워져 다운로드 버튼과 아티팩트 미리보기가 사라진다.
+                'pdfFiles',
+                // 서버가 넣는 지식베이스 인용 출처(done.sources).
+                'sources'
             ];
             for (const key of carryKeys) {
                 const incomingVal = toMsg[key];
@@ -10969,6 +11580,33 @@ export default {
                 msg.__serverPersisted = false;
                 this.persistMessageFrontendState(msg, roomId, { force: true });
             }, delay);
+        },
+
+        /**
+         * 채팅이 실패했다는 것을 화면에 남긴다.
+         *
+         * 토스트가 아니라 대화 말풍선으로 남기는 이유: 실패는 그 자리에 남아 있어야
+         * 한다. 토스트는 몇 초 뒤 사라지고, 잠깐 자리를 비운 사용자는 자기 질문에
+         * 답이 없는 것만 보게 된다.
+         */
+        showChatFailure(error) {
+            try {
+                const online = typeof navigator !== 'undefined' ? navigator.onLine : undefined;
+                this.messages.push(
+                    this.normalizeAssistantMessageForDisplay({
+                        uuid: this.uuid(),
+                        role: 'assistant',
+                        content: chatFailureMessage(error, { online }),
+                        timeStamp: new Date().toISOString(),
+                        isError: true,
+                        isLoading: false
+                    })
+                );
+                this.$nextTick(() => this.scrollToBottomSafe());
+            } catch (e) {
+                // 실패를 알리다 또 실패하면 조용히 넘긴다 — 여기서 던지면 원래 오류까지 가린다.
+                console.warn('[showChatFailure] 실패 표시 자체가 실패:', e);
+            }
         },
 
         async persistMessageFrontendState(msg, roomId, { force = false } = {}) {
@@ -11045,6 +11683,13 @@ export default {
                     msg.__humanFeedbackPersisted = true;
                 }
                 const messagesToSave = { ...msg };
+                // 이 저장은 messages jsonb 를 통째로 교체한다. 서버가 확정한 본문 위에
+                // 아직 placeholder 인 클라이언트 본문을 쓰면 답변이 사라지므로, 그때는
+                // content 만 서버가 쓴 값으로 되돌려 둔다. 다른 필드는 그대로 저장한다.
+                if (this._isPlaceholderContent(messagesToSave.content) && msg.__serverContent) {
+                    messagesToSave.content = msg.__serverContent;
+                }
+                delete messagesToSave.__serverContent;
                 delete messagesToSave.rowUuid;
                 delete messagesToSave.isOptimistic;
                 delete messagesToSave.isLoading;
@@ -11052,14 +11697,44 @@ export default {
                 delete messagesToSave.__feStateKey;
                 delete messagesToSave.__humanFeedbackPersisted;
                 delete messagesToSave.__serverPersisted;
+                // 실패하는 저장을 계속 다시 부르면 브라우저 커넥션 풀이 마르고, 그러면
+                // 채팅 요청 자체가 나가지 못한다. 운영에서 그렇게 채팅이 멎었다
+                // (putObject 95회 연속 실패 → ERR_INSUFFICIENT_RESOURCES).
+                // 이건 화면 보조 상태라, 못 남기더라도 채팅을 막아서는 안 된다.
+                if (!this._persistCircuit.shouldAttempt()) return;
                 await backend.putObject(`db://chats/${msgUuid}`, {
                     uuid: msgUuid,
                     id: targetRoomId,
                     messages: messagesToSave
                 });
+                this._persistCircuit.recordSuccess();
             } catch (e) {
                 console.warn('[FrontendState] persistMessageFrontendState 실패:', e);
+                // 저장 실패로 상태 키를 이미 갱신해 두면, 같은 상태를 다시 시도하지
+                // 않게 되어 회복 기회를 잃는다. 되돌린다.
+                if (msg && typeof msg === 'object') delete msg.__feStateKey;
+                if (this._persistCircuit.recordFailure()) {
+                    this.cancelServerRowPersistFallbacks();
+                    this.showChatFailure(
+                        new Error(
+                            `대화 상태 저장에 반복 실패했습니다. 화면 표시용 정보(도구 실행 내역 등)가 일부 저장되지 않을 수 있습니다. 원인: ${
+                                (e && (e.message || e.toString())) || '알 수 없음'
+                            }`
+                        )
+                    );
+                }
             }
+        },
+
+        /** 차단기가 열렸을 때, 예약돼 있던 저장 타이머도 함께 거둔다. */
+        cancelServerRowPersistFallbacks() {
+            try {
+                const timers = this._serverRowPersistFallbackTimers || {};
+                for (const key of Object.keys(timers)) {
+                    clearTimeout(timers[key]);
+                    delete timers[key];
+                }
+            } catch (e) {}
         },
 
         /**
@@ -11072,138 +11747,26 @@ export default {
 
         // MCP 도구 output 파싱 (WorkAssistantChatPanel의 구현을 동일하게 사용)
         parseToolOutput(outputStr) {
-            if (!outputStr) return null;
-            if (typeof outputStr === 'object') return outputStr;
+            return parseMcpToolOutput(outputStr);
+        },
 
-            const sanitizeForJsonParse = (s) => {
-                if (typeof s !== 'string') return s;
-                let out = '';
-                let inString = false;
-                let escaped = false;
-
-                for (let i = 0; i < s.length; i++) {
-                    const ch = s[i];
-
-                    if (ch === '\n' || ch === '\r' || ch === '\t') continue;
-
-                    if (inString) {
-                        out += ch;
-                        if (escaped) {
-                            escaped = false;
-                        } else if (ch === '\\') {
-                            escaped = true;
-                        } else if (ch === '"') {
-                            inString = false;
-                        }
-                        continue;
-                    }
-
-                    if (ch === '"') {
-                        inString = true;
-                        out += ch;
-                        continue;
-                    }
-
-                    if (ch === '\\') {
-                        const next = s[i + 1];
-                        if (next === 'n' || next === 'r' || next === 't') {
-                            i++;
-                            continue;
-                        }
-                    }
-
-                    out += ch;
-                }
-
-                return out.trim();
-            };
-
-            const normalizeNewlines = (val) => {
-                if (typeof val !== 'string') return val;
-                return val.replace(/\\\\\\\\n/g, '\\\\n').replace(/\\\\n/g, '\n');
-            };
-
-            const normalizeParsedObject = (parsed) => {
-                if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
-                    parsed.image_analysis_result = normalizeNewlines(parsed.image_analysis_result);
-                }
-                return parsed;
-            };
-
-            const tryParseJsonSafely = (source) => {
-                if (typeof source !== 'string') return null;
-                const trimmed = source.trim();
-                if (!trimmed) return null;
-
-                const candidates = [
-                    trimmed,
-                    sanitizeForJsonParse(trimmed),
-                    trimmed.replace(/\\'/g, "'"),
-                    sanitizeForJsonParse(trimmed.replace(/\\'/g, "'")),
-                    trimmed.replace(/\\\\/g, '\\').replace(/\\'/g, "'"),
-                    sanitizeForJsonParse(trimmed.replace(/\\\\/g, '\\').replace(/\\'/g, "'"))
-                ];
-
-                for (const candidate of candidates) {
-                    try {
-                        return normalizeParsedObject(JSON.parse(candidate));
-                    } catch (e) {
-                        // 다음 후보로 재시도
-                    }
-                }
-                return null;
-            };
-
-            const extractContentField = (rawText) => {
-                if (typeof rawText !== 'string' || !rawText.startsWith('content=')) return null;
-                const quote = rawText[8];
-                if (quote !== "'" && quote !== '"') return null;
-                // 원래는 (?:\\.|(?!\1)[\s\S])* 형태의 백트래킹 정규식을 썼는데, 이스케이프 문자(\)가
-                // 많이 섞인 큰 문자열(예: read_file로 읽은 스킬 문서 원문)에 대해 catastrophic
-                // backtracking을 일으켜 메인 스레드가 무한정 멈추는 원인이었다(CPU 프로파일로 확인).
-                // "이스케이프 아닌 문자 연속" / "이스케이프 쌍" 을 겹치지 않게 번갈아 매칭하는
-                // 선형 시간 패턴으로 교체한다.
-                const body = rawText.slice(9);
-                const safePattern = quote === "'" ? /^[^'\\]*(?:\\.[^'\\]*)*/ : /^[^"\\]*(?:\\.[^"\\]*)*/;
-                const m = safePattern.exec(body);
-                const content = m[0];
-                const rest = body.slice(content.length);
-                if (rest[0] !== quote) return null;
-                const afterQuote = rest.slice(1);
-                if (afterQuote === '' || /^\s+\w+=/.test(afterQuote)) {
-                    return content;
-                }
-                return null;
-            };
-
-            const tryParseFromText = (rawText) => {
-                if (typeof rawText !== 'string') return null;
-
-                const directParsed = tryParseJsonSafely(rawText);
-                if (directParsed) return directParsed;
-
-                const contentField = extractContentField(rawText);
-                if (contentField) {
-                    const parsedFromContent = tryParseJsonSafely(contentField);
-                    if (parsedFromContent) return parsedFromContent;
-                }
-
-                const firstBrace = rawText.indexOf('{');
-                const lastBrace = rawText.lastIndexOf('}');
-                if (firstBrace >= 0 && lastBrace > firstBrace) {
-                    const jsonSlice = rawText.substring(firstBrace, lastBrace + 1);
-                    const parsedFromSlice = tryParseJsonSafely(jsonSlice);
-                    if (parsedFromSlice) return parsedFromSlice;
-                }
-
-                return null;
-            };
-
-            const parsed = tryParseFromText(outputStr);
-            if (parsed) return parsed;
-
-            console.warn('[ChatRoomPage.parseToolOutput] JSON 파싱 실패');
-            return null;
+        /**
+         * 채팅에서 프로세스를 시작했다.
+         *
+         * 전에는 여기서 곧장 인스턴스 화면으로 넘겼다. 그러면 대화하던 채팅방을 잃고, 나중에
+         * 채팅방을 다시 열어도 무엇을 시작했는지 보이지 않았다. 이제 채팅방에 머물고, 대화 안의
+         * 실행 카드(Chat.vue — shared/processLaunch)를 눌러야 인스턴스 채팅으로 넘어간다.
+         * 여기서는 사이드바의 인스턴스 목록만 새로 고친다.
+         */
+        noteExecutedInstance(output) {
+            try {
+                const parsed = this.parseToolOutput(output);
+                const instanceId = parsed?.process_instance_id || parsed?.processInstanceId || parsed?.instance_id || null;
+                if (!instanceId || parsed?.error) return;
+                this.EventBus.emit('instances-updated');
+            } catch (error) {
+                console.error('[ChatRoomPage] 실행된 인스턴스를 알리지 못했습니다.', error);
+            }
         }
     }
 };
@@ -11399,6 +11962,10 @@ export default {
 
 .header-title {
     min-width: 0;
+}
+
+.orchestration-chip {
+    flex: 0 0 auto;
 }
 
 .room-name {

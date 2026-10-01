@@ -60,6 +60,20 @@ export function isBlank(value) {
 }
 
 /**
+ * marked의 GFM 파서는 단일 물결표도 취소선으로 해석한다.
+ * 일반 문장의 물결표는 보존하되, 의도한 Markdown 취소선(~~...~~)은 유지한다.
+ */
+export function escapeSingleTildes(value) {
+    const source = normalizeSource(value);
+    return source.replace(/~/g, (match, index, text) => {
+        const prev = text[index - 1];
+        const next = text[index + 1];
+        if (prev === '~' || next === '~') return match;
+        return '&#126;';
+    });
+}
+
+/**
  * 마크다운 → 안전한 HTML.
  *
  * 파서와 소독기를 밖에서 넣을 수 있게 해 두었다. 이 규칙(무엇을 꺼내고,
@@ -72,7 +86,7 @@ export function render(value, deps = {}) {
     const parse = deps.parse || defaultParse;
     const sanitize = deps.sanitize || defaultSanitize;
 
-    return sanitize(externalLinks(parse(source)));
+    return sanitize(externalLinks(parse(escapeSingleTildes(source))));
 }
 
 marked.setOptions({ gfm: true, breaks: true });

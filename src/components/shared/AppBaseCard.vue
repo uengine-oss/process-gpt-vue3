@@ -11,6 +11,22 @@ const props = defineProps({
     customMenuName: {
         type: String,
         default: ''
+    },
+    /**
+     * 좁은 화면에서 목록을 본문 자리에 그릴지.
+     *
+     * 왜 필요한가
+     *   좁은 화면에서는 왼쪽 목록(left-part)이 아예 렌더되지 않고 서랍으로만
+     *   들어간다. 그래서 아직 아무것도 고르지 않은 상태로 들어오면 **본문이 빈
+     *   화면**이 된다 — 무엇을 골라야 할지도 보이지 않는다. 휴대폰으로 채팅에
+     *   들어온 사람이 실제로 이 화면을 만난다.
+     *
+     *   고르기 전에는 목록을, 고른 뒤에는 그 내용을 본문에 둔다. 쓰는 쪽에서
+     *   "아직 고르지 않았다" 를 넘겨 준다.
+     */
+    preferLeftOnMobile: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -76,9 +92,15 @@ const slotName = computed(() => {
     // 1279px 이하일 때 특정 경로에서는 leftpart를 right-part에 표시
     if (isWidthUnder1279.value && (path === '/definition-map' || /^\/definitions\//.test(path) || /^\/dmn\//.test(path))) {
         return 'leftpart';
-    } else {
-        return 'rightpart';
     }
+
+    // 좁은 화면에서 아직 아무것도 고르지 않았으면 목록을 본문에 둔다.
+    // 그러지 않으면 빈 화면만 보이고, 목록이 서랍 안에 있다는 것을 알 길이 없다.
+    if (!lgAndUp.value && props.preferLeftOnMobile) {
+        return 'mobileLeftContent';
+    }
+
+    return 'rightpart';
 });
 
 watch(sDrawer, (val) => {
@@ -241,7 +263,12 @@ const rightPartStyle = computed(() => {
                 </template>
                 <span>{{ menuName }}</span>
             </v-tooltip>
-            <slot :name="slotName"></slot>
+            <!--
+              closeDrawer 를 함께 넘긴다. 이 자리에 mobileLeftContent 가 올 수
+              있는데, 그 안의 목록은 항목을 고른 뒤 서랍을 닫으려고 이 함수를
+              부른다. 넘기지 않으면 고르는 순간 없는 함수를 불러 실패한다.
+            -->
+            <slot :name="slotName" :closeDrawer="handleCloseDrawer"></slot>
         </div>
 
         <!---right chat conversation -->

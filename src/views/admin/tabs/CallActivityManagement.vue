@@ -110,25 +110,26 @@
                     <span class="cell-date">{{ formatDateTime(item.saved_at) }}</span>
                 </template>
                 <template v-slot:[`item.actions`]="{ item }">
-                    <ProcessHierarchyOpenButton :id="item.id" :name="item.name" />
-                    <v-btn
-                        v-if="item.kind !== 'module'"
-                        :icon="item.kind === 'template' ? 'mdi-file-star' : 'mdi-file-star-outline'"
-                        size="x-small"
-                        variant="text"
-                        :color="item.kind === 'template' ? 'warning' : undefined"
-                        :title="item.kind === 'template' ? '템플릿 해제' : '템플릿 지정'"
-                        :loading="templateTogglingId === item.id"
-                        @click="toggleTemplate(item)"
-                    />
-                    <v-btn
-                        icon="mdi-trash-can-outline"
-                        size="x-small"
-                        variant="text"
-                        color="error"
-                        title="삭제"
-                        @click="openDeleteDialog(item)"
-                    />
+                    <div class="cell-actions">
+                        <ProcessHierarchyOpenButton :id="item.id" :name="item.name" />
+                        <v-btn
+                            :icon="item.kind === 'template' ? 'mdi-file-star' : 'mdi-file-star-outline'"
+                            size="x-small"
+                            variant="text"
+                            :color="item.kind === 'template' ? 'warning' : undefined"
+                            :title="item.kind === 'template' ? '템플릿 해제' : '템플릿 지정'"
+                            :loading="templateTogglingId === item.id"
+                            @click="toggleTemplate(item)"
+                        />
+                        <v-btn
+                            icon="mdi-trash-can-outline"
+                            size="x-small"
+                            variant="text"
+                            color="error"
+                            title="삭제"
+                            @click="openDeleteDialog(item)"
+                        />
+                    </div>
                 </template>
             </v-data-table>
         </v-card-text>
@@ -173,6 +174,7 @@ import UserIdentityText from '@/components/ui/common/UserIdentityText.vue';
 import { formatIdentityName } from '@/utils/userIdentity';
 import { isCallActivitySubModule, isTemplateDefinition } from '@/utils/processStages';
 import { formatDateTimeKST } from '@/utils/datetime';
+import { writeActivityLog } from '@/services/activityAuditLog';
 
 type ProcessKind = 'process' | 'module' | 'template';
 
@@ -430,9 +432,10 @@ export default defineComponent({
         }
 
         // 템플릿 지정/해제 — 마커는 definition.type('template') 이 정본 (processStages.isTemplateDefinition 규약).
-        // 모듈(call-activity-sub)은 마커 충돌을 피하기 위해 대상에서 제외한다(버튼 미노출).
+        // 모듈(call-activity-sub)은 type 슬롯을 모듈 마커가 쓰고 있으므로
+        // definition.isTemplate 불리언 플래그로 마킹해 두 마커가 공존하게 한다.
         async function toggleTemplate(item: CallActivityItem) {
-            if (!supabase || item.kind === 'module' || templateTogglingId.value) return;
+            if (!supabase || templateTogglingId.value) return;
             templateTogglingId.value = item.id;
             try {
                 const { data, error } = await supabase
@@ -444,11 +447,14 @@ export default defineComponent({
                 if (error) throw error;
 
                 const definition = { ...((data?.definition as Record<string, unknown>) || {}) };
+                const isModule = String(definition.type ?? '') === 'call-activity-sub';
                 const makeTemplate = item.kind !== 'template';
                 if (makeTemplate) {
-                    definition.type = 'template';
-                } else if (definition.type === 'template') {
-                    delete definition.type;
+                    if (isModule) definition.isTemplate = true;
+                    else definition.type = 'template';
+                } else {
+                    if (definition.type === 'template') delete definition.type;
+                    delete definition.isTemplate;
                 }
 
                 const { error: updateError } = await supabase
@@ -458,7 +464,7 @@ export default defineComponent({
                     .eq('tenant_id', tenantId);
                 if (updateError) throw updateError;
 
-                item.kind = makeTemplate ? 'template' : 'process';
+                item.kind = makeTemplate ? 'template' : isModule ? 'module' : 'process';
             } catch (e) {
                 console.error('Failed to toggle template marker:', e);
             } finally {
@@ -486,6 +492,14 @@ export default defineComponent({
                 items.value = items.value.filter((i) => i.id !== target.id);
                 totalCount.value = items.value.length;
                 deleteDialog.value.visible = false;
+
+                // 활동 로그 — 실패해도 삭제 흐름을 막지 않는다 (fire-and-forget)
+                writeActivityLog({
+                    action: 'call_activity_delete',
+                    target_type: 'process',
+                    target_id: target.id,
+                    target_name: target.name || target.id
+                });
             } catch (e) {
                 console.error('Failed to delete:', e);
             } finally {
@@ -534,12 +548,22 @@ export default defineComponent({
 /* page-header / sk-page-card / sk-page-card-text / sk-data-table / cell-* 클래스는
    src/assets/css/SKGlobalStyle.scss 에 글로벌 정의되어 있음 */
 
+/* max-width를 %가 아닌 px로 고정해야 td가 내용 길이만큼 늘어나 다른 컬럼을 밀어내지 않는다 */
 .cell-description {
     display: inline-block;
-    max-width: 100%;
+    max-width: 300px;
     overflow: hidden;
     text-overflow: ellipsis;
     vertical-align: bottom;
+    white-space: nowrap;
+}
+
+/* 액션 버튼 3개(열기·템플릿·삭제)가 좁은 컬럼에서 줄바꿈되지 않게 한 줄 고정 */
+.cell-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
     white-space: nowrap;
 }
 

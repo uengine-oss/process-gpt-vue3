@@ -2,8 +2,8 @@ import {
     getExplicitMajorStageColumn,
     getMajorBusinessDomain,
     getProcessStageColumnFromValue,
-    isProcessStageValue,
-    PROCESS_STAGE_LABELS
+    getProcessStageLabel,
+    isProcessStageValue
 } from './processClassification';
 import type { ProcessStageColumn } from './processClassification';
 
@@ -84,7 +84,7 @@ function findMegaByStage(map: any, stage: string, preferredMegaId = ''): any | n
     if (preferredMega) return preferredMega;
 
     const targetColumn = getProcessStageColumnFromValue(stage) || getProcessStageColumnFromValue(stage, true);
-    const targetLabel = targetColumn ? PROCESS_STAGE_LABELS[targetColumn] : stage;
+    const targetLabel = targetColumn ? getProcessStageLabel(targetColumn) : stage;
     const normalizedStage = String(stage || '').trim();
 
     for (const mega of map?.mega_proc_list || []) {
@@ -164,10 +164,11 @@ export function applyMajorStageMove(map: any, options: MoveMajorOptions): boolea
     const major = source.major;
     const businessDomain = getMajorBusinessDomain(major, options.domains || []);
     const targetColumn = getProcessStageColumnFromValue(options.newStage);
-    const stageLabel = targetColumn ? PROCESS_STAGE_LABELS[targetColumn] : options.newStage;
+    // 분류 필드에는 라벨('설계')이 아니라 열 key('design')를 기록한다 — 테넌트가 라벨을 바꿔도 데이터가 깨지지 않는다.
+    const stageValue = targetColumn || options.newStage;
     const targetMega = findMegaByStage(map, options.newStage, options.targetMegaId);
 
-    applyStageFields(major, stageLabel);
+    applyStageFields(major, stageValue);
 
     if (businessDomain) {
         if (isProcessStageValue(major.domain)) major.domain = businessDomain;
@@ -197,7 +198,7 @@ export function normalizeMajorStagePlacement(map: any): boolean {
             const explicitStageColumn = getExplicitMajorStageColumn(major);
             if (!explicitStageColumn) continue;
 
-            const targetMega = findMegaByStage(map, PROCESS_STAGE_LABELS[explicitStageColumn]);
+            const targetMega = findMegaByStage(map, explicitStageColumn);
             if (!targetMega || targetMega === sourceMega) continue;
 
             const majorId = major.id || major.pid || major.proc_def_id;

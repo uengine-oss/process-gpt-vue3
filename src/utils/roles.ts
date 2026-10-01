@@ -10,6 +10,8 @@
  * | Viewer   | 공지사항 및 권한 신청 화면 조회                                                |
  */
 
+import { reactive } from 'vue';
+
 export const ROLES = {
     ADMIN: 'admin',
     OWNER: 'owner',
@@ -29,8 +31,16 @@ export const ROLE_HIERARCHY: RoleType[] = [
     ROLES.VIEWER
 ];
 
-/** 역할별 표시 정보 */
-export const ROLE_META: Record<RoleType, { label: string; labelEn: string; color: string; icon: string; description: string }> = {
+export interface RoleMeta {
+    label: string;
+    labelEn: string;
+    color: string;
+    icon: string;
+    description: string;
+}
+
+/** 코드 기본 표시 정보 — 테넌트 오버라이드 해제 시 되돌릴 원본 */
+const ROLE_META_DEFAULTS: Record<RoleType, RoleMeta> = {
     [ROLES.ADMIN]: {
         label: '관리자',
         labelEn: 'Admin',
@@ -67,6 +77,33 @@ export const ROLE_META: Record<RoleType, { label: string; labelEn: string; color
         description: '공지사항·관리자 요청 화면 조회'
     }
 };
+
+/**
+ * 역할별 표시 정보.
+ * reactive 라 테넌트 설정(role_labels)이 적용되면 이를 읽는 모든 화면이 즉시 갱신된다.
+ * 역할 추가/삭제는 DB CHECK 와 RLS 레벨 매핑에 박혀 있어 범위 밖 — 표시명·설명만 바뀐다.
+ */
+export const ROLE_META: Record<RoleType, RoleMeta> = reactive({
+    [ROLES.ADMIN]: { ...ROLE_META_DEFAULTS[ROLES.ADMIN] },
+    [ROLES.OWNER]: { ...ROLE_META_DEFAULTS[ROLES.OWNER] },
+    [ROLES.EDITOR]: { ...ROLE_META_DEFAULTS[ROLES.EDITOR] },
+    [ROLES.REVIEWER]: { ...ROLE_META_DEFAULTS[ROLES.REVIEWER] },
+    [ROLES.VIEWER]: { ...ROLE_META_DEFAULTS[ROLES.VIEWER] }
+});
+
+export function getDefaultRoleMeta(role: RoleType): RoleMeta {
+    return ROLE_META_DEFAULTS[role];
+}
+
+/** 테넌트 역할 라벨 설정을 반영한다. 항목이 없거나 빈 값이면 코드 기본값으로 되돌린다. */
+export function applyRoleLabelOverrides(overrides: Partial<Record<RoleType, { label?: string; description?: string }>> | null | undefined) {
+    for (const role of ROLE_HIERARCHY) {
+        const base = ROLE_META_DEFAULTS[role];
+        const next = overrides?.[role] || {};
+        ROLE_META[role].label = next.label || base.label;
+        ROLE_META[role].description = next.description || base.description;
+    }
+}
 
 const ROLE_LEVEL: Record<string, number> = {
     [ROLES.ADMIN]: 100,

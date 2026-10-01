@@ -10,7 +10,15 @@
                     {{ userRole }}
                 </span>
             </div>
-            <div>
+            <div class="d-flex">
+                <!-- PAL 모드는 상단 헤더(ProfileDD)가 없어 이 버튼이 계정 설정의 유일한 진입점이다. 비 PAL은 헤더 톱니가 있으므로 숨긴다. -->
+                <v-tooltip v-if="isPalMode" :text="$t('ExtraBox.accountSettings')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn icon class="bg-lightprimary mr-1" flat size="small" :to="'/account-settings'" v-bind="props">
+                            <Icon icon="mdi-cog-outline" class="text-primary" width="20" height="20" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
                 <v-tooltip :text="$t('ExtraBox.logOut')">
                     <template v-slot:activator="{ props }">
                         <v-btn icon class="bg-lightprimary" flat size="small" @click="logout()" v-bind="props">
@@ -44,6 +52,9 @@ export default defineComponent({
     computed: {
         userRole() {
             return this.isAdmin ? 'Admin' : '';
+        },
+        isPalMode() {
+            return !!window.$pal;
         }
     },
     mounted() {

@@ -111,6 +111,8 @@
                 v-if="showRestructureMode && isAdmin"
                 :procMap="procMap"
                 :domains="domains"
+                :metricsMap="metricsMap"
+                :initialOperation="restructureInitialOperation"
                 :maintenanceMode="maintenanceMode"
                 :cutoverJobs="adminStore.cutoverJobs"
                 @applyDraft="applyRestructureDraft"
@@ -273,6 +275,30 @@
                             @click="openDomainAddDialog"
                         >
                             {{ $t('metricsView.addDomain') || '도메인 추가' }}
+                        </v-chip>
+                        <!-- 도메인 관리 (이름/색상/순서/삭제) -->
+                        <v-chip
+                            v-if="isAdmin && isPalMode"
+                            size="small"
+                            variant="outlined"
+                            color="grey"
+                            prepend-icon="mdi-cog-outline"
+                            clickable
+                            @click="openDomainManageDialog"
+                        >
+                            도메인 관리
+                        </v-chip>
+                        <!-- 미분류 정리 (도메인 미지정 메이저 일괄 배정) -->
+                        <v-chip
+                            v-if="isAdmin && isPalMode && unassignedMajors.length > 0"
+                            size="small"
+                            variant="outlined"
+                            color="warning"
+                            prepend-icon="mdi-folder-question-outline"
+                            clickable
+                            @click="openUncategorizedDialog"
+                        >
+                            미분류 정리 ({{ unassignedMajors.length }})
                         </v-chip>
                     </div>
                 </div>
@@ -488,6 +514,191 @@
             </v-card>
         </v-dialog>
 
+        <!-- Domain Manage Dialog (이름/색상/순서/삭제) -->
+        <v-dialog v-model="domainManageDialog.show" max-width="560">
+            <v-card class="pa-4 rounded-lg">
+                <v-card-title class="px-0 pt-0 text-h6 font-weight-bold d-flex align-center">
+                    도메인 관리
+                    <v-spacer />
+                    <v-btn size="small" variant="text" prepend-icon="mdi-plus" @click="openDomainAddDialog">
+                        {{ $t('metricsView.addDomain') || '도메인 추가' }}
+                    </v-btn>
+                </v-card-title>
+                <p class="text-caption text-grey mb-2">
+                    색상과 표시 순서는 바로 반영됩니다. 이름 변경·삭제는 소속 프로세스에 영향을 주므로 재구성 모드에서 결재를 거쳐 진행합니다.
+                </p>
+                <v-list density="compact" class="py-0 domain-manage-list">
+                    <v-list-item v-for="(domain, idx) in manageableDomains" :key="domain.id" class="px-2">
+                        <template #prepend>
+                            <span class="domain-color-dot" :style="{ backgroundColor: domain.color || '#607D8B' }" />
+                        </template>
+                        <v-list-item-title class="text-body-2">{{ domain.name }}</v-list-item-title>
+                        <template #append>
+                            <v-btn icon="mdi-arrow-up" size="x-small" variant="text" :disabled="idx === 0 || domainManageDialog.saving" @click="moveDomainOrder(idx, -1)" />
+                            <v-btn icon="mdi-arrow-down" size="x-small" variant="text" :disabled="idx === manageableDomains.length - 1 || domainManageDialog.saving" @click="moveDomainOrder(idx, 1)" />
+                            <v-btn icon="mdi-palette-outline" size="x-small" variant="text" @click="openDomainEditDialog(domain)" />
+                        </template>
+                    </v-list-item>
+                    <v-list-item v-if="manageableDomains.length === 0">
+                        <v-list-item-title class="text-body-2 text-grey">등록된 도메인이 없습니다.</v-list-item-title>
+                    </v-list-item>
+                </v-list>
+
+                <!-- 추론 도메인 검토: 명시 배정된 메이저가 하나도 없는 도메인 (이름 추론으로 생겼거나 굳어진 항목) -->
+                <div v-if="inferredDomainReview.length > 0" class="inferred-review mt-3">
+                    <div class="d-flex align-center mb-1">
+                        <v-icon size="16" color="warning" class="mr-1">mdi-auto-fix</v-icon>
+                        <span class="text-subtitle-2">추론 도메인 검토 ({{ inferredDomainReview.length }})</span>
+                    </div>
+                    <p class="text-caption text-grey mb-2">
+                        명시적으로 배정된 프로세스가 없는 도메인입니다. 이름 추론으로만 소속이 정해진 프로세스는
+                        <strong>고정</strong>으로 명시 배정하거나, 잘못 만들어진 도메인은 <strong>제거</strong>하세요.
+                        <span v-if="domainInferenceEnabled">(도메인 추론이 켜져 있어 제거 후에도 이름이 일치하면 다시 나타날 수 있습니다 — 용어·분류 설정에서 끌 수 있습니다.)</span>
+                    </p>
+                    <v-list density="compact" class="py-0">
+                        <v-list-item v-for="row in inferredDomainReview" :key="row.domain.id || row.domain.name" class="px-2">
+                            <v-list-item-title class="text-body-2">
+                                {{ row.domain.name }}
+                                <span class="text-caption text-grey ml-1">추론 {{ row.inferredCount }}건{{ row.persisted ? ' · 저장됨' : ' · 미저장' }}</span>
+                            </v-list-item-title>
+                            <template #append>
+                                <v-btn
+                                    v-if="row.inferredCount > 0"
+                                    size="x-small"
+                                    variant="text"
+                                    color="primary"
+                                    prepend-icon="mdi-pin-outline"
+                                    :disabled="domainManageDialog.saving"
+                                    @click="pinInferredDomain(row)"
+                                >
+                                    고정
+                                </v-btn>
+                                <v-btn
+                                    size="x-small"
+                                    variant="text"
+                                    color="error"
+                                    prepend-icon="mdi-delete-outline"
+                                    :disabled="domainManageDialog.saving"
+                                    @click="removeInferredDomain(row)"
+                                >
+                                    제거
+                                </v-btn>
+                            </template>
+                        </v-list-item>
+                    </v-list>
+                </div>
+
+                <v-alert type="info" variant="tonal" density="compact" class="mt-3">
+                    도메인 이름 변경·삭제는 <strong>재구성 모드</strong>에서 영향 범위를 확인하고 결재·점검 모드 적용을 거쳐 반영합니다.
+                </v-alert>
+                <v-card-actions class="px-0 pb-0 pt-3">
+                    <v-btn variant="text" color="deep-orange" prepend-icon="mdi-source-branch" @click="openRestructureForDomains">
+                        재구성 모드 열기
+                    </v-btn>
+                    <v-spacer />
+                    <v-btn variant="text" @click="domainManageDialog.show = false">닫기</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- Domain Color Dialog (표시 속성만 — 이름 변경은 재구성 모드) -->
+        <v-dialog v-model="domainEditDialog.show" max-width="400" persistent>
+            <v-card class="pa-4 rounded-lg">
+                <v-card-title class="px-0 pt-0 text-h6 font-weight-bold">
+                    도메인 색상 — {{ domainEditDialog.originalName }}
+                </v-card-title>
+                <div class="mt-2">
+                    <div class="text-subtitle-2 mb-2">{{ $t('processDefinitionMap.selectColor') || '색상 선택' }}</div>
+                    <div class="d-flex flex-wrap" style="gap: 8px">
+                        <div
+                            v-for="color in domainColors"
+                            :key="color"
+                            class="color-option"
+                            :class="{ 'color-selected': domainEditDialog.color === color }"
+                            :style="{ backgroundColor: color }"
+                            @click="domainEditDialog.color = color"
+                        />
+                    </div>
+                </div>
+                <v-card-actions class="px-0 pb-0 pt-3">
+                    <v-spacer />
+                    <v-btn variant="text" :disabled="domainEditDialog.saving" @click="domainEditDialog.show = false">{{ $t('common.cancel') || '취소' }}</v-btn>
+                    <v-btn color="primary" variant="flat" :loading="domainEditDialog.saving" @click="saveDomainEdit">
+                        {{ $t('common.save') || '저장' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- Uncategorized Assign Dialog (미분류 정리) -->
+        <v-dialog v-model="uncategorizedDialog.show" max-width="640">
+            <v-card class="pa-4 rounded-lg">
+                <v-card-title class="px-0 pt-0 text-h6 font-weight-bold">미분류 정리</v-card-title>
+                <p class="text-caption text-grey mb-3">
+                    도메인이 지정되지 않은 메이저 프로세스를 선택해 도메인에 일괄 배정합니다.
+                </p>
+                <div class="uncategorized-list mb-3">
+                    <v-table density="compact">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px">
+                                    <v-checkbox-btn
+                                        :model-value="uncategorizedDialog.selected.length > 0 && uncategorizedDialog.selected.length === unassignedMajors.length"
+                                        :indeterminate="uncategorizedDialog.selected.length > 0 && uncategorizedDialog.selected.length < unassignedMajors.length"
+                                        density="compact"
+                                        @update:model-value="toggleAllUnassigned"
+                                    />
+                                </th>
+                                <th>메이저 프로세스</th>
+                                <th>소속 메가</th>
+                                <th class="text-right">하위</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="row in unassignedMajors" :key="row.majorId">
+                                <td>
+                                    <v-checkbox-btn
+                                        :model-value="uncategorizedDialog.selected.includes(row.majorId)"
+                                        density="compact"
+                                        @update:model-value="toggleUnassignedRow(row.majorId)"
+                                    />
+                                </td>
+                                <td class="text-body-2">{{ row.majorName }}</td>
+                                <td class="text-body-2 text-grey">{{ row.megaName }}</td>
+                                <td class="text-body-2 text-right">{{ row.subCount }}</td>
+                            </tr>
+                            <tr v-if="unassignedMajors.length === 0">
+                                <td colspan="4" class="text-center text-grey text-body-2 py-4">미분류 메이저 프로세스가 없습니다.</td>
+                            </tr>
+                        </tbody>
+                    </v-table>
+                </div>
+                <v-select
+                    v-model="uncategorizedDialog.targetDomain"
+                    :items="assignableDomains"
+                    item-title="name"
+                    item-value="name"
+                    label="배정할 도메인"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                />
+                <v-card-actions class="px-0 pb-0 pt-3">
+                    <v-spacer />
+                    <v-btn variant="text" :disabled="uncategorizedDialog.saving" @click="uncategorizedDialog.show = false">{{ $t('common.cancel') || '취소' }}</v-btn>
+                    <v-btn
+                        color="primary"
+                        variant="flat"
+                        :loading="uncategorizedDialog.saving"
+                        :disabled="uncategorizedDialog.selected.length === 0 || !uncategorizedDialog.targetDomain"
+                        @click="assignUncategorizedMajors"
+                    >
+                        배정 ({{ uncategorizedDialog.selected.length }})
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
         <!-- Export notification snackbar -->
         <v-snackbar v-model="exportSnackbar.show" :color="exportSnackbar.color" :timeout="exportSnackbar.timeout" location="bottom right">
             <div class="d-flex align-center ga-2">
@@ -516,7 +727,7 @@
                         hide-details
                         class="mb-4"
                     />
-                    <!-- 메이저 프로세스: 도메인 -->
+                    <!-- 메이저 프로세스: 도메인 (해제 시 미분류로 이동) -->
                     <v-select
                         v-if="editProcessDialog.type === 'major'"
                         v-model="editProcessDialog.domain"
@@ -526,7 +737,9 @@
                         label="도메인"
                         variant="outlined"
                         density="compact"
-                        hide-details
+                        clearable
+                        persistent-hint
+                        hint="선택을 해제하면 미분류로 이동합니다"
                         class="mb-4"
                     />
                     <!-- 메이저 프로세스: 소속 메가 프로세스 -->
@@ -579,8 +792,10 @@ import {
     PROCESS_HIERARCHY_ENTRY,
     PROCESS_HIERARCHY_MODE
 } from '@/views/process-hierarchy/navigation';
-import { getMajorBusinessDomain } from './processClassification';
+import { getMajorBusinessDomain, getExplicitMajorDomain, isDomainInferenceEnabled, majorMatchesDomain } from './processClassification';
 import { applyMajorStageMove, applySubMajorMove } from './processMapMove';
+import { isUncategorizedProcess } from '@/utils/uncategorizedProcess';
+import { matchesDomainEntry, applyMajorDomain, applyDomainDeleteToProcMap, applyDomainDeleteToMetrics } from './domainMutations';
 
 const instance = getCurrentInstance()!;
 const t = (key: string) => instance.proxy!.$t(key);
@@ -600,6 +815,8 @@ const {
     processStatuses,
     allProcDefs,
     domains,
+    // 표시 전용 공개 범위 적용본 — 저장 payload 로는 절대 쓰지 않는다(원본 procMap 만 clone 해서 저장)
+    visibleProcMap,
     filteredProcMap,
     filteredMetricsMap,
     stats,
@@ -707,6 +924,8 @@ const kpiTaggedProcessIds = computed(() => {
 const showNewProcessDialog = ref(false);
 const showAdvancedFilter = ref(false);
 const showRestructureMode = ref(false);
+// 재구성 모드를 특정 작업으로 열 때 지정 (도메인 관리 → 도메인 이름 변경)
+const restructureInitialOperation = ref<'' | 'rename-domain'>('');
 const hasActiveDomainFilter = computed(() => !!selectedDomain.value || selectedDomains.value.length > 0);
 const hideDomainRootsForViews = computed(() => false);
 
@@ -789,6 +1008,10 @@ function openDomainAddDialog() {
 async function saveDomainAdd() {
     const trimmedName = domainAddDialog.value.name.trim();
     if (!trimmedName) return;
+    if (isUncategorizedProcess({ name: trimmedName })) {
+        alert("'미분류'는 시스템 예약 이름입니다.");
+        return;
+    }
     const current = metricsMap.value || { domains: [], mega_processes: [], processes: [] };
     const domainsList = Array.isArray(current.domains) ? [...current.domains] : [];
     const isDuplicate = domainsList.some((d: any) => (d.name || '').toLowerCase() === trimmedName.toLowerCase());
@@ -813,11 +1036,307 @@ async function saveDomainAdd() {
     try {
         await saveMetricsMap(updated);
         domainAddDialog.value.show = false;
+        // 도메인 생성 감사 로그 (fire-and-forget)
+        adminStore.writeAdminAuditLog({
+            action: 'process_domain_create',
+            target_type: 'process',
+            target_id: newId,
+            target_name: trimmedName
+        });
     } catch (e) {
         console.error('Failed to save domain:', e);
         alert(t('common.saveFailed') || '저장에 실패했습니다.');
     }
 }
+// ---- 도메인 관리 — PAL + 관리자 전용 ----
+// 색상·표시 순서만 여기서 즉시 반영한다. 이름 변경·삭제는 소속 프로세스에 영향을 주므로
+// 재구성 모드(ProcessArchRestructureStudio)의 영향도 분석 → 결재 → 점검 모드 cut-over 흐름을 탄다.
+const domainManageDialog = ref({ show: false, saving: false });
+const domainEditDialog = ref({
+    show: false,
+    saving: false,
+    id: '',
+    originalName: '',
+    color: null as string | null
+});
+
+// '미분류'는 도메인이 아니라 시스템 예약 항목이라 domains 단계에서 이미 제외돼 있다.
+const manageableDomains = computed(() => domains.value);
+
+function openDomainManageDialog() {
+    domainManageDialog.value = { show: true, saving: false };
+}
+
+/** 도메인 관리에서 재구성 모드로 이동 — 이름 변경·삭제 진입점 */
+function openRestructureForDomains() {
+    domainManageDialog.value.show = false;
+    restructureInitialOperation.value = 'rename-domain';
+    showRestructureMode.value = true;
+}
+
+function openDomainEditDialog(domain: any) {
+    domainEditDialog.value = {
+        show: true,
+        saving: false,
+        id: domain.id,
+        originalName: domain.name,
+        color: domain.color || null
+    };
+}
+
+/** 색상(표시 속성)만 저장한다. 이름 변경은 재구성 모드에서 처리한다. */
+async function saveDomainEdit() {
+    const d = domainEditDialog.value;
+    const target = domains.value.find((dm: any) => dm.id === d.id && dm.name === d.originalName);
+    if (!target) {
+        d.show = false;
+        return;
+    }
+
+    d.saving = true;
+    try {
+        const current = metricsMap.value || { domains: [], mega_processes: [], processes: [] };
+        const domainsList = (Array.isArray(current.domains) ? current.domains : []).map((x: any) => ({ ...x }));
+        const entry = domainsList.find((x: any) => matchesDomainEntry(x, target));
+        if (entry) {
+            entry.color = d.color;
+        } else {
+            // 추론으로만 존재하던 도메인은 이때 metrics 에 영속화된다(id 는 유지).
+            domainsList.push({ id: target.id, name: target.name, color: d.color, order: domainsList.length + 1 });
+        }
+        await saveMetricsMap({
+            ...current,
+            domains: domainsList,
+            mega_processes: current.mega_processes ?? [],
+            processes: current.processes ?? []
+        });
+
+        adminStore.writeAdminAuditLog({
+            action: 'process_domain_update',
+            target_type: 'process',
+            target_id: String(target.id),
+            target_name: target.name,
+            after_value: { color: d.color }
+        });
+        d.show = false;
+        showExportNotification('도메인 색상이 저장되었습니다.', 'success', false, 2000);
+    } catch (e) {
+        console.error('Failed to update domain color:', e);
+        showExportNotification(t('common.saveFailed') || '저장에 실패했습니다.', 'error', false, 4000);
+    } finally {
+        d.saving = false;
+    }
+}
+
+async function moveDomainOrder(index: number, delta: number) {
+    const list = manageableDomains.value;
+    const target = index + delta;
+    if (target < 0 || target >= list.length) return;
+    domainManageDialog.value.saving = true;
+    try {
+        const reordered = [...list];
+        const [item] = reordered.splice(index, 1);
+        reordered.splice(target, 0, item);
+
+        const current = metricsMap.value || { domains: [], mega_processes: [], processes: [] };
+        const existing = Array.isArray(current.domains) ? current.domains : [];
+        // 표시 목록 전체에 order 를 다시 매긴다. metrics 에 없던(추론) 도메인은 이때 영속화된다.
+        const newDomains = reordered.map((dm: any, i: number) => {
+            const entry = existing.find((x: any) => matchesDomainEntry(x, dm));
+            return { ...(entry || { id: dm.id, name: dm.name, color: dm.color }), order: i + 1 };
+        });
+        await saveMetricsMap({ ...current, domains: newDomains, mega_processes: current.mega_processes ?? [], processes: current.processes ?? [] });
+        adminStore.writeAdminAuditLog({
+            action: 'process_domain_reorder',
+            target_type: 'process',
+            target_id: String(item.id),
+            target_name: item.name,
+            after_value: { order: target + 1 }
+        });
+    } catch (e) {
+        console.error('Failed to reorder domains:', e);
+        showExportNotification('도메인 순서 저장에 실패했습니다.', 'error', false, 4000);
+    } finally {
+        domainManageDialog.value.saving = false;
+    }
+}
+
+// ---- 추론 도메인 검토 ----
+// 도메인 추론 시드(특정 고객사 6개)가 "설비관리" 같은 이름에서 도메인을 만들어 metrics 에 굳혀 둔 항목을
+// 관리자가 검토한다. 명시 배정(major.domain/domain_id)이 0건인 도메인만 대상이다.
+const domainInferenceEnabled = computed(() => isDomainInferenceEnabled());
+
+const inferredDomainReview = computed(() => {
+    const rows: Array<{ domain: any; inferredCount: number; persisted: boolean; majorIds: string[] }> = [];
+    const metricsDomains = Array.isArray(metricsMap.value?.domains) ? metricsMap.value.domains : [];
+    for (const domain of domains.value) {
+        let explicitCount = 0;
+        const inferredMajorIds: string[] = [];
+        for (const mega of procMap.value?.mega_proc_list || []) {
+            for (const major of mega.major_proc_list || []) {
+                if (!majorMatchesDomain(major, domain, domains.value)) continue;
+                if (getExplicitMajorDomain(major, domains.value)) explicitCount++;
+                else inferredMajorIds.push(major.id);
+            }
+        }
+        if (explicitCount > 0) continue;
+        rows.push({
+            domain,
+            inferredCount: inferredMajorIds.length,
+            persisted: metricsDomains.some((entry: any) => matchesDomainEntry(entry, domain)),
+            majorIds: inferredMajorIds
+        });
+    }
+    return rows;
+});
+
+/** 추론으로만 소속된 메이저를 명시 배정으로 바꾸고, 도메인을 metrics 에 영속화한다. */
+async function pinInferredDomain(row: { domain: any; majorIds: string[] }) {
+    domainManageDialog.value.saving = true;
+    try {
+        const newMap = JSON.parse(JSON.stringify(procMap.value));
+        const targetIds = new Set(row.majorIds);
+        let pinned = 0;
+        for (const mega of newMap.mega_proc_list || []) {
+            for (const major of mega.major_proc_list || []) {
+                if (!targetIds.has(major.id)) continue;
+                applyMajorDomain(major, row.domain.name, String(row.domain.id ?? row.domain.name));
+                pinned++;
+            }
+        }
+        if (pinned > 0) await saveProcMap(newMap);
+
+        const current = metricsMap.value || { domains: [], mega_processes: [], processes: [] };
+        const domainsList = (Array.isArray(current.domains) ? current.domains : []).map((x: any) => ({ ...x }));
+        if (!domainsList.some((x: any) => matchesDomainEntry(x, row.domain))) {
+            domainsList.push({ id: row.domain.id, name: row.domain.name, color: row.domain.color ?? null, order: domainsList.length + 1 });
+            await saveMetricsMap({ ...current, domains: domainsList, mega_processes: current.mega_processes ?? [], processes: current.processes ?? [] });
+        }
+        adminStore.writeAdminAuditLog({
+            action: 'process_domain_pin',
+            target_type: 'process',
+            target_id: String(row.domain.id ?? row.domain.name),
+            target_name: row.domain.name,
+            after_value: { pinned_majors: pinned }
+        });
+        showExportNotification(`'${row.domain.name}' 도메인을 ${pinned}개 프로세스에 명시 배정했습니다.`, 'success', false, 3000);
+    } catch (e) {
+        console.error('Failed to pin inferred domain:', e);
+        showExportNotification('도메인 고정에 실패했습니다.', 'error', false, 4000);
+    } finally {
+        domainManageDialog.value.saving = false;
+    }
+}
+
+/** 명시 배정이 없는 도메인을 metrics 와 proc_map 참조에서 제거한다(소속 메이저는 미분류로). */
+async function removeInferredDomain(row: { domain: any; inferredCount: number; persisted: boolean }) {
+    const message = row.inferredCount > 0
+        ? `'${row.domain.name}' 도메인을 제거할까요? 추론으로 소속된 ${row.inferredCount}개 프로세스는 미분류가 됩니다.`
+        : `'${row.domain.name}' 도메인을 제거할까요?`;
+    if (!window.confirm(message)) return;
+    domainManageDialog.value.saving = true;
+    try {
+        const newMap = JSON.parse(JSON.stringify(procMap.value));
+        const cleared = applyDomainDeleteToProcMap(newMap, row.domain, domains.value);
+        if (cleared > 0) await saveProcMap(newMap);
+        if (row.persisted) {
+            await saveMetricsMap(applyDomainDeleteToMetrics(metricsMap.value, row.domain));
+        }
+        adminStore.writeAdminAuditLog({
+            action: 'process_domain_delete',
+            target_type: 'process',
+            target_id: String(row.domain.id ?? row.domain.name),
+            target_name: row.domain.name,
+            before_value: { inferred_majors: row.inferredCount, persisted: row.persisted },
+            after_value: { removed: true }
+        });
+        showExportNotification(`'${row.domain.name}' 도메인을 제거했습니다.`, 'success', false, 3000);
+    } catch (e) {
+        console.error('Failed to remove inferred domain:', e);
+        showExportNotification('도메인 제거에 실패했습니다.', 'error', false, 4000);
+    } finally {
+        domainManageDialog.value.saving = false;
+    }
+}
+
+// ---- 미분류 정리 (도메인 미지정 major 일괄 배정) ----
+const uncategorizedDialog = ref({
+    show: false,
+    saving: false,
+    selected: [] as string[],
+    targetDomain: '' as string | null
+});
+
+const unassignedMajors = computed(() => {
+    const rows: Array<{ majorId: string; majorName: string; megaName: string; subCount: number }> = [];
+    for (const mega of procMap.value?.mega_proc_list || []) {
+        for (const major of mega.major_proc_list || []) {
+            const domainName = getMajorBusinessDomain(major, domains.value);
+            const matched = !!domainName && domains.value.some((dm: any) => dm.name === domainName || dm.id === domainName);
+            if (matched) continue;
+            rows.push({
+                majorId: major.id,
+                majorName: major.name || major.id,
+                megaName: mega.name || mega.id,
+                subCount: (major.sub_proc_list || []).length
+            });
+        }
+    }
+    return rows;
+});
+
+const assignableDomains = computed(() => domains.value.filter((dm: any) => !isUncategorizedProcess(dm)));
+
+function openUncategorizedDialog() {
+    uncategorizedDialog.value = { show: true, saving: false, selected: [], targetDomain: '' };
+}
+
+function toggleAllUnassigned(value: boolean | null) {
+    uncategorizedDialog.value.selected = value ? unassignedMajors.value.map((r) => r.majorId) : [];
+}
+
+function toggleUnassignedRow(majorId: string) {
+    const selected = uncategorizedDialog.value.selected;
+    uncategorizedDialog.value.selected = selected.includes(majorId) ? selected.filter((id) => id !== majorId) : [...selected, majorId];
+}
+
+async function assignUncategorizedMajors() {
+    const dlg = uncategorizedDialog.value;
+    const targetName = resolveDomainName(String(dlg.targetDomain || ''));
+    const target = domains.value.find((dm: any) => dm.name === targetName || dm.id === targetName);
+    if (!target || dlg.selected.length === 0) return;
+    dlg.saving = true;
+    try {
+        const newMap = JSON.parse(JSON.stringify(procMap.value));
+        const selectedSet = new Set(dlg.selected);
+        const assignedNames: string[] = [];
+        for (const mega of newMap.mega_proc_list || []) {
+            for (const major of mega.major_proc_list || []) {
+                if (!selectedSet.has(major.id)) continue;
+                applyMajorDomain(major, target.name, String(target.id));
+                assignedNames.push(major.name || major.id);
+            }
+        }
+        if (assignedNames.length === 0) return;
+        await saveProcMap(newMap);
+        adminStore.writeAdminAuditLog({
+            action: 'process_uncategorized_assign',
+            target_type: 'process',
+            target_id: String(target.id),
+            target_name: target.name,
+            after_value: { majors: assignedNames }
+        });
+        dlg.selected = [];
+        showExportNotification(`${assignedNames.length}개 프로세스를 '${target.name}' 도메인에 배정했습니다.`, 'success', false, 3000);
+        if (unassignedMajors.value.length === 0) dlg.show = false;
+    } catch (e) {
+        console.error('Failed to assign uncategorized majors:', e);
+        showExportNotification('미분류 배정에 실패했습니다.', 'error', false, 4000);
+    } finally {
+        dlg.saving = false;
+    }
+}
+
 const selectedDomainIndex = ref(undefined);
 const showSearchDropdown = ref(false);
 const searchWrapperRef = ref<HTMLElement | null>(null);
@@ -872,7 +1391,8 @@ function addOwnerIdentifier(target: Set<string>, value: unknown) {
 
 function collectOwnerIdentifiersFromProcMap(): Set<string> {
     const identifiers = new Set<string>();
-    const map = procMap.value;
+    // 공개 범위 밖 프로세스의 담당자가 필터 드롭다운에 노출되지 않도록 표시용 맵을 쓴다.
+    const map = visibleProcMap.value;
     for (const mega of map?.mega_proc_list || []) {
         addOwnerIdentifier(identifiers, mega.owner);
         for (const major of mega.major_proc_list || []) {
@@ -893,7 +1413,7 @@ function collectOwnerIdentifiersFromProcMap(): Set<string> {
     return identifiers;
 }
 
-watch([allProcDefs, procMap], async ([defs]) => {
+watch([allProcDefs, visibleProcMap], async ([defs]) => {
     const ownerIdentifiers = collectOwnerIdentifiersFromProcMap();
     for (const def of defs) {
         addOwnerIdentifier(ownerIdentifiers, def.owner);
@@ -953,7 +1473,8 @@ watch([allProcDefs, procMap], async ([defs]) => {
 // Systems/OSS from proc_map sub-processes
 const availableSystemsForFilter = computed(() => {
     const systems = new Set<string>();
-    const map = procMap.value;
+    // 공개 범위 밖 프로세스의 시스템/OSS 값이 필터 목록에 새지 않도록 표시용 맵 사용
+    const map = visibleProcMap.value;
     if (map?.mega_proc_list) {
         for (const mega of map.mega_proc_list) {
             for (const major of mega.major_proc_list || []) {
@@ -1144,12 +1665,37 @@ async function handleMoveSub(subId: string, fromMajorId: string, toMajorId: stri
     const newMap = JSON.parse(JSON.stringify(procMap.value));
     if (!applySubMajorMove(newMap, subId, fromMajorId, toMajorId)) return;
     await saveProcMap(newMap);
+    // 상위(부모) 변경 감사 로그 (fire-and-forget)
+    const movedSub = (newMap.mega_proc_list || [])
+        .flatMap((m: any) => m.major_proc_list || [])
+        .flatMap((mj: any) => mj.sub_proc_list || [])
+        .find((s: any) => s.id === subId);
+    adminStore.writeAdminAuditLog({
+        action: 'process_parent_change',
+        target_type: 'process',
+        target_id: subId,
+        target_name: movedSub?.name || subId,
+        before_value: { parent: fromMajorId },
+        after_value: { parent: toMajorId }
+    });
 }
 
 async function handleMoveMajor(majorId: string, _megaId: string, newStage: string) {
     const newMap = JSON.parse(JSON.stringify(procMap.value));
     if (!applyMajorStageMove(newMap, { majorId, sourceMegaId: _megaId, newStage, domains: domains.value })) return;
     await saveProcMap(newMap);
+    // 상위(부모) 변경 감사 로그 (fire-and-forget)
+    const movedMajor = (newMap.mega_proc_list || [])
+        .flatMap((m: any) => m.major_proc_list || [])
+        .find((mj: any) => mj.id === majorId);
+    adminStore.writeAdminAuditLog({
+        action: 'process_parent_change',
+        target_type: 'process',
+        target_id: majorId,
+        target_name: movedMajor?.name || majorId,
+        before_value: { parent: _megaId },
+        after_value: { parent: newStage }
+    });
 }
 
 // ---- 메가/메이저 프로세스 편집 ----
@@ -1227,6 +1773,23 @@ async function saveEditProcess() {
         const resolvedDomainName = resolveDomainName(d.domain);
         const resolvedDomainId = domains.value.find((dm: any) => dm.name === resolvedDomainName || dm.id === resolvedDomainName)?.id || resolvedDomainName;
 
+        // 수정 전 스냅샷 (감사 로그용) — 변경 전 상태를 미리 확보
+        let beforeValue: any = undefined;
+        if (d.mode === 'edit') {
+            if (d.type === 'mega') {
+                const orig = (newMap.mega_proc_list || []).find((m: any) => m.id === d.id);
+                if (orig) beforeValue = { name: orig.name };
+            } else if (d.type === 'major') {
+                for (const mega of newMap.mega_proc_list || []) {
+                    const orig = (mega.major_proc_list || []).find((m: any) => m.id === d.id);
+                    if (orig) {
+                        beforeValue = { name: orig.name, domain: orig.domain, mega_id: mega.id };
+                        break;
+                    }
+                }
+            }
+        }
+
         // --- ADD 모드 ---
         if (d.mode === 'add') {
             if (d.type === 'mega') {
@@ -1290,8 +1853,7 @@ async function saveEditProcess() {
                 }
                 if (movedMajor) {
                     movedMajor.name = d.name.trim();
-                    movedMajor.domain = resolvedDomainName;
-                    movedMajor.domain_id = resolvedDomainId;
+                    applyMajorDomain(movedMajor, resolvedDomainName, resolvedDomainId);
                     const targetMega = (newMap.mega_proc_list || []).find((m: any) => m.id === d.megaId);
                     if (targetMega) {
                         if (!targetMega.major_proc_list) targetMega.major_proc_list = [];
@@ -1309,8 +1871,7 @@ async function saveEditProcess() {
                     const major = (mega.major_proc_list || []).find((m: any) => m.id === d.id);
                     if (major) {
                         major.name = d.name.trim();
-                        major.domain = resolvedDomainName;
-                        major.domain_id = resolvedDomainId;
+                        applyMajorDomain(major, resolvedDomainName, resolvedDomainId);
                         edited = true;
                         break;
                     }
@@ -1328,6 +1889,17 @@ async function saveEditProcess() {
         }
 
         await saveProcMap(newMap);
+        // 프로세스 수정 감사 로그 (fire-and-forget)
+        adminStore.writeAdminAuditLog({
+            action: 'process_update',
+            target_type: 'process',
+            target_id: d.id,
+            target_name: d.name.trim(),
+            ...(beforeValue ? { before_value: beforeValue } : {}),
+            after_value: d.type === 'major'
+                ? { name: d.name.trim(), domain: resolvedDomainName, mega_id: d.megaId }
+                : { name: d.name.trim() }
+        });
         await loadData();
         d.show = false;
         showExportNotification('저장되었습니다.', 'success', false, 2000);
@@ -1378,7 +1950,8 @@ function buildCutoverJobPayload(draft: any, status: 'scheduled' | 'running' | 'c
         created_by: resolveCutoverActor(),
         maintenance_message: maintenanceMode.value?.message || '',
         approval_status: 'pending' as const,
-        draft_map: draft.map
+        draft_map: draft.map,
+        ...(draft.metricsMap ? { draft_metrics: draft.metricsMap } : {})
     };
 }
 
@@ -1456,7 +2029,8 @@ function countSubProcesses(map: any): number {
 type ExportFormat = 'excel' | 'pdf' | 'png' | 'json' | 'mermaid';
 
 function getExportProcMap() {
-    return exportScope.value === 'visible' ? filteredProcMap.value : procMap.value;
+    // 'full'(전체 계층) 도 공개 범위는 지킨다 — 원본 procMap 을 그대로 내보내면 권한 밖 프로세스가 샌다.
+    return exportScope.value === 'visible' ? filteredProcMap.value : visibleProcMap.value;
 }
 
 function getTimestamp(): string {
@@ -1632,35 +2206,14 @@ async function createExportSnapshotTarget(sourceEl: HTMLElement) {
 }
 
 async function logExport(format: ExportFormat, scope: string, recordCount?: number) {
-    /*
-     * Audit log saved to Supabase `export_log` table.
-     * If the table does not exist, create it with:
-     *
-     * CREATE TABLE IF NOT EXISTS export_log (
-     *   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-     *   user_id     text,
-     *   export_format text NOT NULL,
-     *   export_scope  text NOT NULL,
-     *   exported_at   timestamptz NOT NULL DEFAULT now(),
-     *   record_count  integer
-     * );
-     */
-    try {
-        const supabase = (window as any).$supabase;
-        if (supabase) {
-            const userId = (window as any).$user?.id || (window as any).$user?.email || 'unknown';
-            await supabase.from('export_log').insert({
-                user_id: userId,
-                export_format: format,
-                export_scope: scope,
-                exported_at: new Date().toISOString(),
-                record_count: recordCount ?? null
-            });
-        }
-    } catch (e) {
-        // Non-blocking: only log to console, do not affect user experience
-        console.error('[Export Audit] Failed to save audit log:', e);
-    }
+    // 내보내기 감사 로그 (admin_audit_log) — fire-and-forget, 실패해도 흐름에 영향 없음
+    adminStore.writeAdminAuditLog({
+        action: 'process_architecture_export',
+        target_type: 'process',
+        target_id: format,
+        target_name: '프로세스 체계도',
+        after_value: { format, scope, record_count: recordCount }
+    });
 }
 
 async function runExport(format: ExportFormat) {
@@ -1823,6 +2376,13 @@ async function runExport(format: ExportFormat) {
 }
 
 async function onProcessCreated(newProc: { id: string; name: string }) {
+    // 프로세스 생성 감사 로그 (fire-and-forget)
+    adminStore.writeAdminAuditLog({
+        action: 'process_create',
+        target_type: 'process',
+        target_id: newProc.id,
+        target_name: newProc.name
+    });
     await router.push({
         name: 'Process Hierarchy',
         query: {
@@ -1843,6 +2403,52 @@ async function onProcessCreated(newProc: { id: string; name: string }) {
 .view-toggle :deep(.v-btn) {
     text-transform: none;
     letter-spacing: 0;
+}
+
+/* 도메인 추가/편집 다이얼로그 색상 팔레트 (레거시 전역 스타일 의존 제거) */
+.color-option {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s ease;
+}
+
+.color-option:hover {
+    transform: scale(1.15);
+}
+
+.color-option.color-selected {
+    border-color: #1e1e1e;
+    transform: scale(1.15);
+}
+
+.domain-color-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    margin-right: 10px;
+    flex: none;
+}
+
+.domain-manage-list {
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.inferred-review {
+    border: 1px dashed rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.uncategorized-list {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
 }
 
 .domain-chips :deep(.v-chip) {

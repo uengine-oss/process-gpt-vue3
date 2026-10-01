@@ -562,6 +562,17 @@
                                                                         class="chat-message-bubble bg-lightprimary rounded-md px-3 py-3 mb-1"
                                                                     >
                                                                         <div>
+                                                                            <!--
+                                                                                작업 중에 보낸 수정 지시라는 표시.
+
+                                                                                방에 다시 들어오면 에이전트가 그 사이에 한 일은 최종 답변
+                                                                                하나로 접혀 보인다. 이 줄이 없으면 사용자 메시지 두 개가
+                                                                                잇따라 전송된 것처럼 읽혀, 두 번째 말이 왜 저기 있는지
+                                                                                알 길이 없다.
+                                                                            -->
+                                                                            <div v-if="message.steering" class="steer-note">
+                                                                                작업 중에 보낸 수정 지시
+                                                                            </div>
                                                                             <div
                                                                                 v-if="message.replyUserName || message.replyContent"
                                                                                 class="reply-quote reply-quote--mine"
@@ -595,7 +606,7 @@
                                                                                     class="mb-1"
                                                                                 >
                                                                                     <img
-                                                                                        :src="message.image"
+                                                                                        :src="signedSrc(message.image, 'chat-images')"
                                                                                         class="rounded-md"
                                                                                         alt="pro"
                                                                                         width="250"
@@ -615,12 +626,12 @@
                                                                                         class="ma-1"
                                                                                     >
                                                                                         <img
-                                                                                            :src="image.url || image"
+                                                                                            :src="signedSrc(image, 'chat-images')"
                                                                                             class="rounded-md"
                                                                                             alt="pro"
                                                                                             width="250"
                                                                                             style="cursor: pointer"
-                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                            @click="emitPreviewImage(image)"
                                                                                         />
                                                                                     </v-sheet>
                                                                                 </div>
@@ -637,7 +648,7 @@
                                                                                         )"
                                                                                         :key="`msg-file-${index}-${fileIdx}`"
                                                                                         rounded="lg"
-                                                                                        class="pa-2 d-inline-flex align-center"
+                                                                                        class="pa-2 d-inline-flex align-center pg-msg-file"
                                                                                         style="
                                                                                             gap: 10px;
                                                                                             cursor: pointer;
@@ -645,14 +656,7 @@
                                                                                             background: var(--cds-surface-2);
                                                                                             max-width: min(520px, 80vw);
                                                                                         "
-                                                                                        @click="
-                                                                                            emitOpenExternalUrl(
-                                                                                                attachedFile.url ||
-                                                                                                    attachedFile.fileUrl ||
-                                                                                                    attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
-                                                                                            )
-                                                                                        "
+                                                                                        @click="openMessageFile(attachedFile)"
                                                                                     >
                                                                                         <div
                                                                                             style="
@@ -710,19 +714,12 @@
                                                                                                     attachedFile.url ||
                                                                                                     attachedFile.fileUrl ||
                                                                                                     attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
+                                                                                                    attachedFile.signedUrl ||
+                                                                                                    attachedFile.file_id
                                                                                                 )
                                                                                             "
-                                                                                            @click.stop="
-                                                                                                downloadAttachment(
-                                                                                                    attachedFile.url ||
-                                                                                                        attachedFile.fileUrl ||
-                                                                                                        attachedFile.publicUrl ||
-                                                                                                        attachedFile.signedUrl,
-                                                                                                    attachedFile.name ||
-                                                                                                        attachedFile.fileName
-                                                                                                )
-                                                                                            "
+                                                                                            class="pg-msg-file__dl"
+                                                                                            @click.stop="downloadMessageFile(attachedFile)"
                                                                                         >
                                                                                             <v-icon size="14">mdi-download</v-icon>
                                                                                         </v-btn>
@@ -826,7 +823,7 @@
                                                                                     class="mb-1"
                                                                                 >
                                                                                     <img
-                                                                                        :src="message.image"
+                                                                                        :src="signedSrc(message.image, 'chat-images')"
                                                                                         class="rounded-md"
                                                                                         alt="pro"
                                                                                         width="250"
@@ -844,12 +841,12 @@
                                                                                         class="ma-1"
                                                                                     >
                                                                                         <img
-                                                                                            :src="image.url || image"
+                                                                                            :src="signedSrc(image, 'chat-images')"
                                                                                             class="rounded-md"
                                                                                             alt="pro"
                                                                                             width="250"
                                                                                             style="cursor: pointer"
-                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                            @click="emitPreviewImage(image)"
                                                                                         />
                                                                                     </v-sheet>
                                                                                 </div>
@@ -864,7 +861,7 @@
                                                                                         )"
                                                                                         :key="`msg-file-mine-${index}-${fileIdx}`"
                                                                                         rounded="lg"
-                                                                                        class="pa-2 d-inline-flex align-center"
+                                                                                        class="pa-2 d-inline-flex align-center pg-msg-file"
                                                                                         style="
                                                                                             gap: 10px;
                                                                                             cursor: pointer;
@@ -872,14 +869,7 @@
                                                                                             background: rgba(var(--v-theme-primary), 0.06);
                                                                                             max-width: min(520px, 80vw);
                                                                                         "
-                                                                                        @click="
-                                                                                            emitOpenExternalUrl(
-                                                                                                attachedFile.url ||
-                                                                                                    attachedFile.fileUrl ||
-                                                                                                    attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
-                                                                                            )
-                                                                                        "
+                                                                                        @click="openMessageFile(attachedFile)"
                                                                                     >
                                                                                         <div
                                                                                             style="
@@ -937,19 +927,12 @@
                                                                                                     attachedFile.url ||
                                                                                                     attachedFile.fileUrl ||
                                                                                                     attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
+                                                                                                    attachedFile.signedUrl ||
+                                                                                                    attachedFile.file_id
                                                                                                 )
                                                                                             "
-                                                                                            @click.stop="
-                                                                                                downloadAttachment(
-                                                                                                    attachedFile.url ||
-                                                                                                        attachedFile.fileUrl ||
-                                                                                                        attachedFile.publicUrl ||
-                                                                                                        attachedFile.signedUrl,
-                                                                                                    attachedFile.name ||
-                                                                                                        attachedFile.fileName
-                                                                                                )
-                                                                                            "
+                                                                                            class="pg-msg-file__dl"
+                                                                                            @click.stop="downloadMessageFile(attachedFile)"
                                                                                         >
                                                                                             <v-icon size="14">mdi-download</v-icon>
                                                                                         </v-btn>
@@ -1182,7 +1165,7 @@
                                                             v-if="shouldDisplayUserInfo(message, index) && !message.__humanFeedback"
                                                             class="ma-0 pa-0"
                                                         >
-                                                            <v-row class="ma-0 pa-0 d-flex align-center mb-2">
+                                                            <v-row class="ma-0 pa-0 d-flex align-center mb-2 chat-sender-row">
                                                                 <v-avatar size="28" style="margin-right: 8px">
                                                                     <img
                                                                         v-if="message.role == 'system'"
@@ -1355,6 +1338,7 @@
                                                                 <div
                                                                     v-if="shouldRenderMessageBubble(message)"
                                                                     class="message-bubble-wrap message-bubble-wrap--other"
+                                                                    :data-role="message.role"
                                                                     @mouseenter="replyIndex = index"
                                                                     @mouseleave="replyIndex = -1"
                                                                 >
@@ -1409,6 +1393,17 @@
                                                                                 </div>
                                                                             </div>
                                                                         </div>
+                                                                        <!-- 채팅에서 시작한 프로세스: 시작하는 중 표시 → 실행 카드(누르면 인스턴스 채팅) -->
+                                                                        <div
+                                                                            v-if="getProcessLaunches(message).length"
+                                                                            class="chat-process-launches mt-2"
+                                                                        >
+                                                                            <ProcessLaunchCard
+                                                                                v-for="(launch, lIdx) in getProcessLaunches(message)"
+                                                                                :key="`launch-live-${index}-${lIdx}`"
+                                                                                :launch="launch"
+                                                                            />
+                                                                        </div>
                                                                         <div
                                                                             class="d-flex align-center"
                                                                             :class="{ 'mt-2': getToolCallList(message).length }"
@@ -1421,7 +1416,8 @@
                                                                             />
                                                                             <div
                                                                                 class="ml-2 markdown-content streaming-content"
-                                                                                v-html="renderStreamingMarkdown(message)"
+                                                                                v-html="withKbCitations(renderStreamingMarkdown(message))"
+                                                                                @click="onKbCitationClick"
                                                                             ></div>
                                                                         </div>
                                                                     </div>
@@ -1477,7 +1473,7 @@
                                                                                     <v-icon size="13" class="mr-1"
                                                                                         >mdi-timeline-check-outline</v-icon
                                                                                     >
-                                                                                    실행 상세 {{ getToolCallList(message).length }}건
+                                                                                    {{ toolSummaryLabel(message) }}
                                                                                 </summary>
                                                                                 <div class="chat-tool-activity__list">
                                                                                     <div
@@ -1529,6 +1525,18 @@
                                                                                     </div>
                                                                                 </div>
                                                                             </details>
+                                                                            <!-- 채팅에서 시작한 프로세스 — 대화에 카드로 남고, 누르면 인스턴스 채팅으로 간다 -->
+                                                                            <div
+                                                                                v-if="chatRoomMode && getProcessLaunches(message).length"
+                                                                                class="chat-process-launches mb-2"
+                                                                            >
+                                                                                <ProcessLaunchCard
+                                                                                    v-for="(launch, lIdx) in getProcessLaunches(message)"
+                                                                                    :key="`launch-${index}-${lIdx}`"
+                                                                                    :launch="launch"
+                                                                                    settled
+                                                                                />
+                                                                            </div>
                                                                             <!-- 첨부(이미지/파일): content가 비어도 메시지로 렌더링 + 답장 가능 -->
                                                                             <div
                                                                                 v-if="
@@ -1544,7 +1552,7 @@
                                                                                     class="mb-1"
                                                                                 >
                                                                                     <img
-                                                                                        :src="message.image"
+                                                                                        :src="signedSrc(message.image, 'chat-images')"
                                                                                         class="rounded-md"
                                                                                         alt="pro"
                                                                                         width="250"
@@ -1564,12 +1572,12 @@
                                                                                         class="ma-1"
                                                                                     >
                                                                                         <img
-                                                                                            :src="image.url || image"
+                                                                                            :src="signedSrc(image, 'chat-images')"
                                                                                             class="rounded-md"
                                                                                             alt="pro"
                                                                                             width="250"
                                                                                             style="cursor: pointer"
-                                                                                            @click="emitPreviewImage(image.url || image)"
+                                                                                            @click="emitPreviewImage(image)"
                                                                                         />
                                                                                     </v-sheet>
                                                                                 </div>
@@ -1586,7 +1594,7 @@
                                                                                         )"
                                                                                         :key="`msg-file-other-${index}-${fileIdx}`"
                                                                                         rounded="lg"
-                                                                                        class="pa-2 d-inline-flex align-center"
+                                                                                        class="pa-2 d-inline-flex align-center pg-msg-file"
                                                                                         style="
                                                                                             gap: 10px;
                                                                                             cursor: pointer;
@@ -1594,14 +1602,7 @@
                                                                                             background: rgba(var(--v-theme-primary), 0.06);
                                                                                             max-width: min(520px, 80vw);
                                                                                         "
-                                                                                        @click="
-                                                                                            emitOpenExternalUrl(
-                                                                                                attachedFile.url ||
-                                                                                                    attachedFile.fileUrl ||
-                                                                                                    attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
-                                                                                            )
-                                                                                        "
+                                                                                        @click="openMessageFile(attachedFile)"
                                                                                     >
                                                                                         <div
                                                                                             style="
@@ -1659,19 +1660,12 @@
                                                                                                     attachedFile.url ||
                                                                                                     attachedFile.fileUrl ||
                                                                                                     attachedFile.publicUrl ||
-                                                                                                    attachedFile.signedUrl
+                                                                                                    attachedFile.signedUrl ||
+                                                                                                    attachedFile.file_id
                                                                                                 )
                                                                                             "
-                                                                                            @click.stop="
-                                                                                                downloadAttachment(
-                                                                                                    attachedFile.url ||
-                                                                                                        attachedFile.fileUrl ||
-                                                                                                        attachedFile.publicUrl ||
-                                                                                                        attachedFile.signedUrl,
-                                                                                                    attachedFile.name ||
-                                                                                                        attachedFile.fileName
-                                                                                                )
-                                                                                            "
+                                                                                            class="pg-msg-file__dl"
+                                                                                            @click.stop="downloadMessageFile(attachedFile)"
                                                                                         >
                                                                                             <v-icon size="14">mdi-download</v-icon>
                                                                                         </v-btn>
@@ -1708,10 +1702,13 @@
                                                                                 v-else
                                                                                 class="text-body-1 markdown-content"
                                                                                 v-html="
-                                                                                    setMessageForUser(
-                                                                                        getDisplayMessageContent(message, index)
+                                                                                    withKbCitations(
+                                                                                        setMessageForUser(
+                                                                                            getDisplayMessageContent(message, index)
+                                                                                        )
                                                                                     )
                                                                                 "
+                                                                                @click="onKbCitationClick"
                                                                             ></div>
                                                                             <div v-if="message.openuiLang" class="mt-2">
                                                                                 <OpenUiRenderer
@@ -2371,7 +2368,7 @@
                                                                         </div>
                                                                         <!-- get_form_fields 도구 결과 폼 렌더링 -->
                                                                         <div
-                                                                            v-if="chatRoomMode && getFormFieldsFromToolCalls(message)"
+                                                                            v-if="chatRoomMode && showStartForm(message, index)"
                                                                             class="mt-2 mb-2"
                                                                         >
                                                                             <DynamicForm
@@ -2942,8 +2939,9 @@
                                 </template>
                             </v-tooltip>
 
+                            <!-- 아래 전송/중지 단추와 같은 규칙: 쓸 말이 있으면 전송이 우선이다. -->
                             <v-btn
-                                v-if="!(showStopButton || isLoading)"
+                                v-if="!(showStopButton || isLoading) || !disableBtn"
                                 class="cp-send text-medium-emphasis"
                                 color="primary"
                                 variant="outlined"
@@ -3166,24 +3164,11 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip> -->
-                                <v-tooltip :text="$t('chat.addFile')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            icon
-                                            variant="text"
-                                            class="text-medium-emphasis"
-                                            @click="
-                                                openChatMenu();
-                                                uploadImage();
-                                            "
-                                            v-bind="props"
-                                            style="width: 30px; height: 30px; margin-left: 5px"
-                                            :disabled="disableChat || isGenerationFinished"
-                                        >
-                                            <v-icon size="20">mdi-attachment</v-icon>
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
+                                <!--
+                                    클립(파일 첨부) 단추는 없앤다. 입력창의 '+' 안에 같은 것이
+                                    들어 있어 둘이 나란히 보였다 — 같은 일을 하는 단추가 둘이면
+                                    무엇이 다른지 눈으로 판단할 수 없다. 붙이는 길은 '+' 하나로 모은다.
+                                -->
                                 <v-select
                                     v-if="selectableOrchestration && isOrchestrationSelectableRoute"
                                     v-model="orchestration"
@@ -3305,7 +3290,12 @@
                     </div>
 
                     <div>
-                        <template v-if="stopButtonOnly && inputOnly && (showStopButton || isLoading)">
+                        <!--
+                            응답 중이라도 **보낼 것이 있으면 전송**이 우선이다(아래 전송 단추의
+                            주석 참고). 그래서 중지만 남기는 단순화 모드에서도 초안이 있으면
+                            이 갈래를 타지 않는다.
+                        -->
+                        <template v-if="stopButtonOnly && inputOnly && (showStopButton || isLoading) && disableBtn">
                             <v-btn
                                 class="cp-send text-medium-emphasis"
                                 color="primary"
@@ -3320,7 +3310,15 @@
                             </v-btn>
                         </template>
                         <template v-else>
+                            <!--
+                                받아쓰기와 음성 에이전트를 마이크 하나로 모은다.
+                                둘 다 '말로 하는 일' 인데 단추가 나란히 있으면 무엇이 다른지
+                                누를 때까지 알 수 없다. 눌러서 고르게 하면 이름이 함께 나온다.
+                                단, 녹음 중에는 멈추는 것만 필요하므로 바로 멈춘다 —
+                                멈추려고 메뉴를 한 번 더 거치게 할 까닭이 없다.
+                            -->
                             <v-btn
+                                v-if="isMicRecording || isMicRecorderLoading"
                                 class="mr-1 text-medium-emphasis"
                                 density="comfortable"
                                 icon
@@ -3328,24 +3326,28 @@
                                 size="small"
                                 style="border-color: var(--cds-border) !important"
                                 :disabled="isGenerationFinished || isMicRecorderLoading"
-                                @click="isMicRecording ? stopVoiceRecording() : startVoiceRecording()"
+                                @click="stopVoiceRecording()"
                             >
                                 <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" :size="'16'" />
-                                <Icons v-else-if="isMicRecording" :icon="'stop'" :size="'16'" />
-                                <Icons v-else :icon="'sharp-mic'" :size="'16'" />
+                                <Icons v-else :icon="'stop'" :size="'16'" />
                             </v-btn>
 
-                            <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
+                            <!-- 휴대폰 간소화 화면에서는 '+' 와 같은 하단 시트로 연다(_phone-shell-chat.scss). -->
+                            <v-menu
+                                v-else
+                                location="top end"
+                                :content-class="phoneShell ? 'pg-plus-sheet' : ''"
+                                :scrim="phoneShell ? 'rgba(0, 0, 0, 0.25)' : false"
+                            >
                                 <template v-slot:activator="{ props }">
                                     <v-btn
-                                        @click="enableDesktopVoice && !isGenerationFinished && (openChatMenu(), handleVoiceButtonClick())"
+                                        v-bind="props"
                                         class="mr-1 text-medium-emphasis"
                                         density="comfortable"
                                         icon
                                         variant="outlined"
                                         size="small"
-                                        v-bind="props"
-                                        :disabled="!enableDesktopVoice || isGenerationFinished"
+                                        :disabled="isGenerationFinished"
                                         :color="desktopVoiceActive ? 'primary' : undefined"
                                         :style="
                                             desktopVoiceActive
@@ -3353,13 +3355,37 @@
                                                 : 'border-color: var(--cds-border) !important;'
                                         "
                                     >
-                                        <Icons :icon="'voice'" :size="'16'" />
+                                        <Icons :icon="'sharp-mic'" :size="'16'" />
                                     </v-btn>
                                 </template>
-                            </v-tooltip>
+                                <v-list density="compact" min-width="200">
+                                    <template v-if="phoneShell">
+                                        <div class="pg-plus-sheet__handle" aria-hidden="true"></div>
+                                        <div class="pg-plus-sheet__title">음성</div>
+                                    </template>
+                                    <v-list-item @click="startVoiceRecording()" prepend-icon="mdi-microphone" title="음성으로 입력"></v-list-item>
+                                    <v-list-item
+                                        :disabled="!enableDesktopVoice"
+                                        :subtitle="enableDesktopVoice ? '' : '에이전트와 1:1 대화에서만'"
+                                        prepend-icon="mdi-headset"
+                                        :title="$t('chat.headset')"
+                                        @click="enableDesktopVoice && (openChatMenu(), handleVoiceButtonClick())"
+                                    ></v-list-item>
+                                </v-list>
+                            </v-menu>
 
+                            <!--
+                                응답 중일 때 이 자리를 중지 단추가 독차지하면, 작업 도중에 방향을
+                                바꾸려는 사용자는 **보낼 방법이 사라진다** — 단추가 중지뿐이라
+                                Enter 를 아는 사람만 보낼 수 있다. 실제로 작업 중 수정 지시를
+                                보내려다 중지를 누르게 된다.
+
+                                그래서 기준을 입력 내용으로 둔다. 쓸 말이 있으면 전송, 입력창이
+                                비어 있을 때만 중지다. 응답을 멈추려는 사람은 입력창이 비어 있고,
+                                방향을 바꾸려는 사람은 이미 할 말을 적어 둔 상태다.
+                            -->
                             <v-btn
-                                v-if="!(showStopButton || isLoading) && !isGenerationFinished"
+                                v-if="!isGenerationFinished && (!(showStopButton || isLoading) || !disableBtn)"
                                 class="cp-send text-medium-emphasis"
                                 color="primary"
                                 variant="outlined"
@@ -3491,6 +3517,28 @@
             </v-card-actions>
         </v-card>
     </v-dialog>
+    <v-dialog v-model="kbCitation.open" max-width="960">
+        <v-card class="kb-citation-dialog">
+            <div class="d-flex align-center px-3 pt-2">
+                <span class="text-subtitle-2">출처</span>
+                <v-spacer />
+                <v-btn icon variant="text" size="small" @click="kbCitation.open = false">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </div>
+            <div class="kb-citation-dialog__body">
+                <CitationViewer
+                    v-if="kbCitation.open"
+                    :path="kbCitation.path"
+                    :start-block="kbCitation.start"
+                    :end-block="kbCitation.end"
+                    :page-hint="kbCitation.page"
+                    :section-title="kbCitation.title"
+                    :quote="kbCitation.quote"
+                />
+            </div>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
@@ -3502,6 +3550,13 @@ import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 import AgentsChat from './AgentsChat.vue';
 import HumanFeedbackPanel from './HumanFeedbackPanel.vue';
 import axios from 'axios';
+import {
+    artifactIdOf,
+    artifactIdFromUrl,
+    fileNameFromArtifactId,
+    reissueArtifactUrl,
+    usableArtifactUrl
+} from '@/utils/artifactLinks';
 import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
 import SummaryButton from '@/components/ui/SummaryButton.vue';
@@ -3514,10 +3569,17 @@ import AgentMessagePanel from '@/components/ui/AgentMessagePanel.vue';
 import { marked } from 'marked';
 import mermaid from 'mermaid';
 import OpenUiRenderer from '@/components/openui/OpenUiRenderer.vue';
+import CitationViewer from '@/components/knowledge/citation/CitationViewer.vue';
+import { withKbCitations } from '@/components/knowledge/citation/kbCitations';
+import ProcessLaunchCard from '@/components/chat/ProcessLaunchCard.vue';
+import { isExecuteProcessTool, processLaunchesOf } from '@/shared/processLaunch';
 
 import BackendFactory from '@/components/api/BackendFactory';
+import { usePhoneShell } from '@/shared/phoneShell';
 import { getTenantId } from '@/utils/tenant';
 import { normalizeOrchestration } from '@/utils/orchestration';
+// 첨부 이미지·파일 주소는 비공개 버킷의 서명 URL 이라 그릴 때 만들어야 한다.
+import { storageUrlMixin } from '@/utils/storageUrl';
 const backend = BackendFactory.createBackend();
 
 // getToolCallList()의 도구 결과 가공(JSON.parse/정규식/문자열 치환) 캐시.
@@ -3527,9 +3589,12 @@ const backend = BackendFactory.createBackend();
 // 문서를 여러 번 읽는 스킬). message 객체는 스트리밍 동안 참조가 유지되므로(ChatRoomPage.vue의
 // activeStreams) WeakMap + 가벼운 시그니처(원문 내용은 안 건드리고 길이/상태만)로 무효화한다.
 const _toolCallListCache = new WeakMap();
+// getProcessLaunches() 캐시 — 같은 이유로, 실행 도구의 상태 · 결과 길이가 바뀔 때만 다시 읽는다.
+const _processLaunchCache = new WeakMap();
 
 export default {
     components: {
+        CitationViewer,
         Icon,
         RetrievalBox,
         AgentsChat,
@@ -3540,9 +3605,10 @@ export default {
         ProcessWorkResult,
         DetailComponent,
         AgentMessagePanel,
-        OpenUiRenderer
+        OpenUiRenderer,
+        ProcessLaunchCard
     },
-    mixins: [ProgressAnimated, ScrollBottomHandle],
+    mixins: [ProgressAnimated, ScrollBottomHandle, storageUrlMixin],
     props: {
         prompt: String,
         name: String,
@@ -3562,6 +3628,17 @@ export default {
         isAgentMode: Boolean,
         chatRoomId: String,
         isMobile: Boolean,
+        /**
+         * 도구 줄을 줄여서 그린다.
+         *
+         * 클립·지식 베이스·폴더 업로드·마이크·헤드셋·보내기가 한 줄에 늘어서 있으면
+         * 입력창보다 단추가 더 눈에 띈다. 켜면 클립은 바깥의 '+' 메뉴로 옮겨 가고,
+         * 쓸 수 없는 헤드셋 단추는 아예 그리지 않는다.
+         */
+        compactTools: {
+            type: Boolean,
+            default: false
+        },
         // 데스크탑 음성 에이전트 모드 활성화 여부 (ChatRoomPage에서 제어)
         desktopVoiceActive: {
             type: Boolean,
@@ -3687,8 +3764,15 @@ export default {
         'openui-action',
         'openui-parse-result'
     ],
+    setup() {
+        // 휴대폰 간소화 화면(클로드 모바일 모양)인지. 모양은 전역 스타일이 바꾸고,
+        // 여기서는 글자가 달라지는 곳(도구 요약 한 줄 등)만 이 값을 본다.
+        const { active: phoneShell } = usePhoneShell();
+        return { phoneShell };
+    },
     data() {
         return {
+            kbCitation: { open: false, path: '', start: null, end: null, page: null, title: '', quote: '' },
             workIcons: {
                 ScheduleQuery: 'calendar-line-duotone', // 달력 아이콘
                 ScheduleRegistration: 'calendar-line-duotone', // 달력 아이콘
@@ -3851,6 +3935,10 @@ export default {
     },
     mounted() {
         var me = this;
+        // 답변 본문에 박힌 산출물 링크는 그 답변을 쓰던 순간의 주소다. 한 시간이 지나면
+        // 죽는다. 눌렀을 때 살려 내려면 여기서 가로채야 한다.
+        this._artifactLinkClickHandler = (event) => this.handleArtifactLinkClick(event);
+        document.addEventListener('click', this._artifactLinkClickHandler);
         mermaid.initialize({
             startOnLoad: false,
             theme: 'default',
@@ -3923,6 +4011,10 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('resize', this.handleResize);
+        if (this._artifactLinkClickHandler) {
+            document.removeEventListener('click', this._artifactLinkClickHandler);
+            this._artifactLinkClickHandler = null;
+        }
         if (this._autocompleteOutsideClickHandler) {
             document.removeEventListener('click', this._autocompleteOutsideClickHandler);
         }
@@ -4298,6 +4390,9 @@ export default {
         resolvedPlaceholder() {
             // definition-map 에서만 긴 예시 placeholder 사용
             try {
+                // 간소화 모드에서는 예시를 늘어놓지 않는다. 두 줄짜리 안내문이
+                // 입력창을 채우고 있으면 정작 쓸 자리가 좁아 보인다.
+                if (this.compactTools) return this.$t('chat.inputMessage');
                 const path = this.$route?.path || '';
                 const isDefinitionMap = path.includes('definition-map');
                 return this.$t(isDefinitionMap ? 'chat.definitionMapInputMessage' : 'chat.inputMessage');
@@ -4712,8 +4807,26 @@ export default {
         /**
          * 스트리밍 중(isLoading=true) 단계의 마크다운 렌더.
          * 토큰이 도착하기 전이거나 placeholder 만 있는 경우엔 회색 안내 텍스트,
-         * 실제 콘텐츠가 들어오면 marked() + linkify 로 마크다운 렌더링.
+         * 실제 콘텐츠가 들어오면 marked() 로 마크다운 렌더링.
          */
+        withKbCitations(html) {
+            return withKbCitations(html);
+        },
+        onKbCitationClick(event) {
+            const el = event.target && event.target.closest ? event.target.closest('[data-kb-path]') : null;
+            if (!el) return;
+            event.preventDefault();
+            const num = (value) => (value === undefined || value === '' ? null : Number(value));
+            this.kbCitation = {
+                open: true,
+                path: el.dataset.kbPath,
+                start: num(el.dataset.kbStart),
+                end: num(el.dataset.kbEnd),
+                page: num(el.dataset.kbPage),
+                title: el.dataset.kbTitle || '',
+                quote: el.dataset.kbQuote || ''
+            };
+        },
         renderStreamingMarkdown(message) {
             const raw = (message?.content || '').toString();
             const t = raw.trim();
@@ -4729,9 +4842,23 @@ export default {
                 return '<span style="color:rgba(0,0,0,0.55)">생각 중...</span>';
             }
             marked.setOptions({ breaks: true, gfm: true });
-            return this.withMermaidContainers(marked(this.linkify(raw)));
+            return this.withExternalLinks(this.withMermaidContainers(marked(this.escapeSingleTildes(raw))));
         },
         /** 채팅 메시지 하단 인라인 '도구 사용 내역'(Claude Desktop식) 용 정규화 목록 */
+        /**
+         * 접힌 도구 사용 내역의 한 줄.
+         *
+         * 휴대폰에서는 클로드처럼 '무엇을 했는지' 를 과거형 한 줄로 적는다(예: 도구 3개 실행함).
+         * 건수만 적힌 '실행 상세 3건' 은 무엇을 펼치는지 알려 주지 않는다.
+         * 실패한 것이 있으면 뒤에 붙인다 — 접힌 채로도 문제가 있었는지는 보여야 한다.
+         */
+        toolSummaryLabel(message) {
+            const list = this.getToolCallList(message);
+            if (!this.phoneShell) return `실행 상세 ${list.length}건`;
+            const failed = list.filter((tc) => tc && tc.status === 'error').length;
+            const head = `도구 ${list.length}개 실행함`;
+            return failed > 0 ? `${head} · ${failed}개 실패` : head;
+        },
         getToolCallList(message) {
             if (!message || typeof message !== 'object') return [];
             const tools = Array.isArray(message.toolCalls) ? message.toolCalls : [];
@@ -4770,6 +4897,21 @@ export default {
             if (!cached || cached.result !== list) return [...list].reverse();
             if (!cached.reversed) cached.reversed = [...list].reverse();
             return cached.reversed;
+        },
+        /**
+         * 이 메시지에서 시작한 프로세스(execute_process) — 대화 안의 실행 카드로 그린다.
+         * 도구 기록은 메시지와 함께 저장되므로 채팅방을 다시 열어도 같은 카드가 나온다.
+         */
+        getProcessLaunches(message) {
+            if (!message || typeof message !== 'object' || !Array.isArray(message.toolCalls)) return [];
+            const launches = message.toolCalls.filter((t) => t && isExecuteProcessTool(t.name));
+            if (!launches.length) return [];
+            const sig = launches.map((t) => `${t.status || ''}:${typeof t.output === 'string' ? t.output.length : t.output ? 1 : 0}`).join(',');
+            const cached = _processLaunchCache.get(message);
+            if (cached && cached.sig === sig) return cached.result;
+            const result = processLaunchesOf({ toolCalls: launches });
+            _processLaunchCache.set(message, { sig, result });
+            return result;
         },
         hasRunningTool(message) {
             const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
@@ -4928,10 +5070,27 @@ export default {
                 return null;
             }
         },
+        /**
+         * 프로세스 시작 폼(get_form_fields 결과)을 입력란으로 보일 때인가.
+         *
+         * 폼은 '이 값을 채워 제출해 달라' 는 물음이다. 그래서
+         * - 같은 답에서 이미 프로세스를 시작했으면(execute_process) 보이지 않는다 — 에이전트가
+         *   사용자가 준 값으로 바로 실행한 경우다. 남겨 두면 실행 카드 아래에 '제출' 이 또 붙어,
+         *   누르면 같은 프로세스가 한 번 더 시작된다.
+         * - 그 뒤로 대화가 이어졌으면(폼을 제출했거나 다른 이야기로 넘어감) 지난 물음이라 보이지 않는다.
+         */
+        showStartForm(message, index) {
+            if (this.getProcessLaunches(message).length) return false;
+            const list = this.userFilteredMessages || [];
+            if (index < list.length - 1) return false;
+            return !!this.getFormFieldsFromToolCalls(message);
+        },
         submitFormFields(message) {
             const formData = this.getFormFieldsFromToolCalls(message);
             const values = this.formFieldsFormValues[message.uuid] || {};
-            const lines = [];
+            const lines = [
+                `[프로세스 시작 폼 제출] form_key=${formData?.formId || ''} activity_id=${formData?.activityName || ''}`
+            ];
             if (formData && Array.isArray(formData.fieldsJson)) {
                 formData.fieldsJson.forEach((f) => {
                     const label = f.label || f.key || '';
@@ -4975,9 +5134,13 @@ export default {
             const message = (log.message || '').toString();
             return `[${level}/${category}] ${message}`;
         },
-        emitPreviewImage(url) {
+        async emitPreviewImage(url) {
             if (!url) return;
-            this.$emit('preview-image', url);
+            // 저장된 값은 경로이거나 옛 공개 URL 이다. 둘 다 지금은 그대로 열리지
+            // 않으므로 열기 직전에 서명 URL 로 바꾼다.
+            const signed = await this.signedUrl(url, 'chat-images');
+            if (!signed) return;
+            this.$emit('preview-image', signed);
         },
         emitPreviewBpmn(bpmn) {
             if (!bpmn) return;
@@ -5148,9 +5311,12 @@ export default {
             const id = String(agent?.id || '').trim();
             return id ? `${window.location.origin}/agent-chat/${encodeURIComponent(id)}` : '';
         },
-        emitOpenExternalUrl(url) {
+        async emitOpenExternalUrl(url) {
             if (!url) return;
-            this.$emit('open-external-url', url);
+            // 우리 저장소 주소면 서명해서, 바깥 주소면 그대로 넘긴다.
+            const resolved = await this.signedUrl(url);
+            if (!resolved) return;
+            this.$emit('open-external-url', resolved);
         },
         handleOpenUiStateUpdate(message, state) {
             try {
@@ -5278,11 +5444,84 @@ export default {
                 return '';
             }
         },
-        async downloadAttachment(url, filename) {
+        /** Memento 에 새 주소를 청한다. 산출물은 비공개 버킷에 있고 주소는 한 시간이면 죽는다. */
+        async requestArtifactUrl(fileId) {
+            const { data } = await axios.get('/memento/artifact-url', {
+                params: { tenant_id: window.$tenantName, file_id: fileId }
+            });
+            return data;
+        },
+        async reissueArtifactUrl(fileObj) {
+            return await reissueArtifactUrl(fileObj, this.requestArtifactUrl);
+        },
+        /** 지금 쓸 수 있는 주소. 만료됐으면 file_id 로 다시 발급받는다. */
+        async usableArtifactUrl(fileObj) {
+            return await usableArtifactUrl(fileObj, this.requestArtifactUrl);
+        },
+        /**
+         * 답변 본문의 산출물 링크를 누르면 주소를 새로 받아 내려준다.
+         *
+         * 본문 링크에는 레코드가 없다 — `file_id` 도 만료 시각도 들고 있지 않다. 하지만
+         * 주소의 경로가 객체 키를 그대로 말하고 있어서 거기서 되찾을 수 있다. 그래서
+         * 첨부 칩이 없는 옛 메시지에서도 이 길로 파일을 받을 수 있다.
+         *
+         * 살아 있는지 물어보지 않고 항상 새로 받는다. 본문 링크는 쓰인 순간의 눈금이라
+         * 대개 이미 지났고, 죽은 주소를 새 탭에 여는 것은 오류 화면만 보여 준다.
+         */
+        async handleArtifactLinkClick(event) {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey) return;
+            const anchorEl = event.target?.closest?.('a[href]');
+            if (!anchorEl) return;
+            const fileId = artifactIdFromUrl(anchorEl.getAttribute('href'));
+            if (!fileId) return;
+
+            event.preventDefault();
+            // 링크 글자가 파일 이름이면 그게 사용자가 본 이름이다. 주소뿐이면(마크다운이
+            // 풀려 버린 경우) 비워 두고 서버가 아는 이름을 받아 쓴다.
+            const label = (anchorEl.textContent || '').trim();
+            const holder = { file_id: fileId };
+            if (label && !/^https?:/i.test(label)) holder.name = label;
+
+            const fresh = await this.reissueArtifactUrl(holder);
+            if (!fresh) {
+                // 발급받지 못하면 원래 하던 대로 둔다 — 지어낸 주소로 보내지 않는다.
+                this.emitOpenExternalUrl(anchorEl.getAttribute('href'));
+                return;
+            }
+            // 같은 링크를 또 눌러도 되도록 주소를 갈아 끼운다.
+            anchorEl.setAttribute('href', fresh);
+            const name = holder.name || fileNameFromArtifactId(fileId);
+            const ok = await this.downloadAttachment(fresh, name, { silent: true });
+            if (!ok) this.emitOpenExternalUrl(fresh);
+        },
+        /** 산출물을 새 탭에서 연다. 만료된 주소면 먼저 다시 발급받는다. */
+        async openMessageFile(fileObj) {
+            const url = await this.usableArtifactUrl(fileObj);
+            if (url) this.emitOpenExternalUrl(url);
+        },
+        /**
+         * 메시지에 붙은 산출물을 내려받는다.
+         *
+         * 저장된 주소를 그대로 쓰되, 만료됐거나 실패하면 `file_id` 로 새로 받아 한 번 더
+         * 시도한다. 주소만 들고 있던 때는 새로고침 한 번에 파일이 사라졌다.
+         */
+        async downloadMessageFile(fileObj) {
+            const name = fileObj?.name || fileObj?.fileName || '';
+            const url = await this.usableArtifactUrl(fileObj);
             if (!url) return;
+            const ok = await this.downloadAttachment(url, name, { silent: !!artifactIdOf(fileObj) });
+            if (ok) return;
+            // 만료 시각을 안 싣고 저장된 옛 레코드도 있다. 한 번 실패하면 그때 다시 받아 본다.
+            const fresh = await this.reissueArtifactUrl(fileObj);
+            if (fresh && fresh !== url) await this.downloadAttachment(fresh, name);
+        },
+        async downloadAttachment(url, filename, options = {}) {
+            if (!url) return false;
             const name = filename || this.getFilenameFromUrl(url) || 'download';
+            // 비공개 버킷이라 저장된 주소를 그냥 fetch 하면 400 이다. 먼저 서명한다.
+            const target = (await this.signedUrl(url)) || url;
             try {
-                const res = await fetch(url);
+                const res = await fetch(target);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const blob = await res.blob();
                 const objectUrl = URL.createObjectURL(blob);
@@ -5296,8 +5535,12 @@ export default {
                 a.remove();
 
                 setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+                return true;
             } catch (e) {
-                this.emitOpenExternalUrl(url);
+                // 다시 발급받아 한 번 더 해 볼 수 있는 산출물이면 창을 띄우지 않는다.
+                // 죽은 주소를 새 탭에 여는 것은 사용자에게 오류 화면만 보여 준다.
+                if (!options.silent) this.emitOpenExternalUrl(url);
+                return false;
             }
         },
         getProgressChipColor(status) {
@@ -5365,7 +5608,37 @@ export default {
                 gfm: true
             });
 
-            return this.withMermaidContainers(marked(text));
+            return this.withExternalLinks(this.withMermaidContainers(marked(this.escapeSingleTildes(text))));
+        },
+        /**
+         * marked의 GFM 파서는 단일 물결표도 취소선으로 해석한다.
+         * 일반 문장의 물결표는 보존하되, 의도한 Markdown 취소선(~~...~~)은 유지한다.
+         */
+        escapeSingleTildes(text) {
+            if (!text) return text;
+            return text.toString().replace(/~/g, (match, index, source) => {
+                const prev = source[index - 1];
+                const next = source[index + 1];
+                if (prev === '~' || next === '~') return match;
+                return '&#126;';
+            });
+        },
+        /**
+         * marked() 가 만든 바깥 링크를 새 탭으로 연다.
+         *
+         * 예전에는 marked() 에 넣기 **전에** linkify() 로 URL 을 `<a>` 로 감쌌다. 그러면
+         * `[파일명](주소)` 의 주소 자리가 이미 태그라서 마크다운 링크 문법이 깨지고,
+         * 화면에는 대괄호가 글자 그대로 남았다 — 산출물 링크가 실제로 그렇게 보였다.
+         *
+         * marked 는 gfm 으로 맨 URL·www·이메일을 모두 스스로 링크로 만든다. 그래서 앞의
+         * linkify 는 필요 없고, 그것이 주던 것 중 남길 건 `target="_blank"` 뿐이다.
+         */
+        withExternalLinks(html) {
+            if (!html) return html;
+            return html.replace(
+                /<a href="(https?:\/\/[^"]*)"/g,
+                '<a href="$1" target="_blank" rel="noopener noreferrer"'
+            );
         },
         /**
          * marked()가 만든 ```mermaid 코드펜스(<pre><code class="language-mermaid">...)를
@@ -6176,7 +6449,7 @@ export default {
                 }
 
                 marked.setOptions({ breaks: true, gfm: true });
-                return this.withMermaidContainers(marked(this.linkify(displayContent)));
+                return this.withExternalLinks(this.withMermaidContainers(marked(this.escapeSingleTildes(displayContent))));
             }
         },
         setTableName(content) {
@@ -6755,6 +7028,11 @@ export default {
                         const imageUrl = await backend.getImageUrl(data.path);
                         me.attachedImages.push({
                             id: `${Date.now()}-${Math.random()}`,
+                            // 메시지에 함께 저장된다. url(서명 URL)은 1시간이면 만료되므로
+                            // path·bucket 을 같이 남겨 다시 볼 때 새로 서명할 수 있게 한다.
+                            // (path 가 없는 옛 메시지는 url 을 되돌려 읽어 처리한다)
+                            path: data.path,
+                            bucket: 'chat-images',
                             url: imageUrl,
                             file: imageFile
                         });
@@ -7406,6 +7684,19 @@ pre {
     color: rgba(0, 0, 0, 0.55);
 }
 
+.steer-note {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    line-height: 1.3;
+    opacity: 0.65;
+}
+.steer-note::before {
+    content: '\21BB';
+    font-size: 12px;
+}
 .reply-quote {
     display: flex;
     gap: 10px;
@@ -8146,5 +8437,72 @@ pre {
 .mermaid svg {
     max-width: 100%;
     height: auto;
+}
+</style>
+<style>
+/* 지식베이스 블록 인용 — v-html 안이라 전역 선택자로 둔다 */
+.markdown-content a.kb-cite {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    margin: 0 2px;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    vertical-align: 2px;
+    text-decoration: none;
+    color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.12);
+}
+.markdown-content a.kb-cite:hover {
+    background: rgba(var(--v-theme-primary), 0.22);
+}
+.markdown-content .kb-cite-list {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(var(--v-border-color), 0.2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+.markdown-content .kb-cite-list__label {
+    font-size: 12px;
+    color: rgba(var(--v-theme-on-surface), 0.6);
+    margin-right: 2px;
+}
+.markdown-content a.kb-cite-item {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: rgba(var(--v-theme-on-surface), 0.85);
+    border: 1px solid rgba(var(--v-border-color), 0.35);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.markdown-content a.kb-cite-item:hover {
+    border-color: rgb(var(--v-theme-primary));
+}
+.markdown-content .kb-cite-group {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 1px 4px 1px 0;
+    border-radius: 12px;
+    border: 1px solid rgba(var(--v-border-color), 0.35);
+}
+.markdown-content .kb-cite-group a.kb-cite-item {
+    border: none;
+}
+.kb-citation-dialog__body {
+    height: 82vh;
+    padding: 4px 12px 12px;
 }
 </style>

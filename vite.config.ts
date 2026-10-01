@@ -4,10 +4,17 @@ import vue from '@vitejs/plugin-vue';
 import vuetify from 'vite-plugin-vuetify';
 import dotenv from 'dotenv';
 import path from 'path';
+import { buildAgentProxies } from './src/services/agentProxyRules.js';
 dotenv.config();
 const env = loadEnv('development', process.cwd(), '');
 
 const uengineGatewayTarget = env.VITE_UENGINE_GATEWAY_URL || 'http://127.0.0.1:8088';
+
+// 에이전트 채팅(`/process-gpt-<agent>/**`)을 게이트웨이를 거쳐 보낼 때의 타깃.
+// 비워 두면 예전처럼 각 에이전트 프로세스로 직접 간다.
+// 규칙 자체는 src/services/agentProxyRules.js 에 있다 — 단위 테스트가 보게 하려고
+// 뺐다. prefix 를 벗길지, Host 를 보존할지가 거기 적혀 있다.
+const agentGatewayTarget = (env.VITE_AGENT_GATEWAY_URL || '').trim();
 
 function spaFallbackPlugin() {
     return {
@@ -176,6 +183,13 @@ export default defineConfig({
                 rewrite: (path) => path.replace(/^\/pi-system-backend/, '')
             },
             // Work Assistant Agent API
+            // 에이전트가 만든 산출물 파일. 워크스페이스 경로로 내려받는다.
+            // (운영에서는 nginx 가 같은 prefix 를 deepagents 로 보낸다.)
+            '/deepagents/': {
+                target: 'http://127.0.0.1:8888',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/deepagents/, '')
+            },
             '/agent/': {
                 // Windows에서 localhost가 IPv6(::1)로 붙으면서 WSL/Docker 리스너로 가는 경우가 있어 IPv4로 고정
                 target: 'http://127.0.0.1:8008',
@@ -221,18 +235,16 @@ export default defineConfig({
                 proxyTimeout: 0,
                 rewrite: (path) => path.replace(/^\/process-gpt-cli-agent/, '')
             },
-            '/process-gpt-deepagents/skills': {
-                target: 'http://127.0.0.1:8765',
-                changeOrigin: true,
-                timeout: 0,
-                proxyTimeout: 0,
-                rewrite: (path) => {
-                    let p = path.replace(/^\/process-gpt-deepagents/, '');
-                    p = p.replace(/^\/skills-builtin(\?|$)/, '/skills/list-builtin$1');
-                    p = p.replace(/^\/skills(\?|$)/, '/skills/list$1');
-                    return p;
-                }
-            },
+            // '/process-gpt-deepagents/skills' 는 더 이상 여기서 가로채지 않는다.
+            // 스킬 API 는 claude-skills(8765)에서 process-gpt-deepagents 의
+            // core/api/skills_router.py 로 옮겨 갔고, 그쪽 라우트는 GET /skills ·
+            // GET /skills-builtin 이다(=프론트가 부르는 경로 그대로). 배포 환경의
+            // 게이트웨이도 /process-gpt-deepagents/** 를 통째로 deepagents:8888 로
+            // 보낼 뿐 skills 만 따로 빼지 않는다(gateway application.yml prod 프로파일).
+            // 여기 남아 있던 8765 리라이트는 경로를 /skills/list 로 바꿔 보내서
+            // dev 에서만 스킬 목록이 비고, agent-feedback 이 승인된 SKILL 을
+            // 커밋해 둔 스토어(=deepagents)와도 어긋났다.
+            // 아래 buildAgentProxies() 의 '/process-gpt-deepagents/' 규칙이 처리한다.
             // checkSkills() calls /claude-skills/skills/check -> claude-skills /skills/check
             '/claude-skills/': {
                 target: 'http://127.0.0.1:8765',
@@ -241,14 +253,10 @@ export default defineConfig({
                 proxyTimeout: 0,
                 rewrite: (path) => path.replace(/^\/claude-skills/, '')
             },
-            // DeepAgents Router API
-            '/process-gpt-deepagents/': {
-                target: 'http://127.0.0.1:8888',
-                changeOrigin: true,
-                timeout: 0,
-                proxyTimeout: 0,
-                rewrite: (path) => path.replace(/^\/process-gpt-deepagents/, '')
-            },
+            // DeepAgents Router API 와 Codex Router API.
+            // codex 항목이 없어서 dev 화면에서는 codex 대화를 열어도 요청이 프록시를
+            // 타지 못했다(SPA 라우트로 떨어져 index.html 이 돌아온다).
+            ...buildAgentProxies(agentGatewayTarget),
             // 스킬 피드백 제안 조회/승인/반려 API (agent-feedback 서비스)
             '/feedback-proposals': {
                 target: 'http://127.0.0.1:6789',

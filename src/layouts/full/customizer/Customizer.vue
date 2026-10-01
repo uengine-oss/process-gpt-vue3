@@ -77,6 +77,22 @@ onMounted(() => {
                     </v-sheet>
                 </v-col>
             </v-row>
+
+            <v-divider class="my-6"></v-divider>
+
+            <h6 class="text-h6 mb-1">화면 간소화</h6>
+            <p class="text-body-2 text-medium-emphasis mb-3">
+                정의 체계도와 인스턴스 화면을 목록 · 대화 · 산출물 세 칸으로만 보여 줍니다.
+                칸반 · 간트 · 진행도 같은 화면은 숨고, 필요할 때 버튼으로 엽니다.
+            </p>
+            <v-switch
+                :model-value="customizer.simpleUi"
+                color="primary"
+                density="comfortable"
+                hide-details
+                :label="customizer.simpleUi ? '켜짐' : '꺼짐'"
+                @update:model-value="(v) => customizer.SET_SIMPLE_UI(!!v)"
+            ></v-switch>
         </div>
     </perfect-scrollbar>
 </template>

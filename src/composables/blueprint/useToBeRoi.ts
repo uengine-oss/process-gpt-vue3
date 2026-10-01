@@ -8,7 +8,10 @@
 import { computed, type Ref } from 'vue';
 import { type ToBeIssue, type ToBeRoiConfig, sumSelectedImpact, totalSavings, solutionTypeMeta } from './blueprintModel';
 
-const ANNUAL_WORKING_HOURS = 2080; // 52주 × 40시간 (ProcessHierarchyProperties와 동일)
+import { getAnnualWorkingHours, getCycleFactor } from '@/services/tenantCustomizationService';
+
+/** 연간 근무시간 — 테넌트 운영 정책(operation_policy). 미설정 = 2080 (ProcessHierarchyProperties와 동일) */
+const ANNUAL_WORKING_HOURS = () => getAnnualWorkingHours();
 
 /** ProcessHierarchyProperties.vue 의 calcFte 와 동일한 FTE 산식. */
 export function calcFteValue(fte: any): number {
@@ -19,19 +22,8 @@ export function calcFteValue(fte: any): number {
     const time = Number(fte.timePerTask) || 0;
     const count = Number(fte.freqCount) || 0;
     const head = Number(fte.headcount) || 1;
-    let annualFreq = count;
-    switch (fte.freqCycle) {
-        case 'Monthly':
-            annualFreq = count * 12;
-            break;
-        case 'Weekly':
-            annualFreq = count * 52;
-            break;
-        case 'Daily':
-            annualFreq = count * 260;
-            break;
-    }
-    const val = (time * annualFreq * head) / ANNUAL_WORKING_HOURS;
+    const annualFreq = count * getCycleFactor(fte.freqCycle);
+    const val = (time * annualFreq * head) / ANNUAL_WORKING_HOURS();
     return val > 0 ? val : 0;
 }
 
@@ -45,7 +37,7 @@ export function computeBaselineFromDefinition(definition: any, annualCostPerFte:
     let fte = calcFteValue(fteObj);
     // direct % 가 0 이지만 fteHoursPerMonth 가 있으면 그것으로 환산
     if (!fte && definition?.fteHoursPerMonth) {
-        fte = (Number(definition.fteHoursPerMonth) * 12) / ANNUAL_WORKING_HOURS;
+        fte = (Number(definition.fteHoursPerMonth) * getCycleFactor('Monthly')) / ANNUAL_WORKING_HOURS();
     }
     const cost = fte * (annualCostPerFte || 0);
     return { cost: Math.round(cost), fte: Number(fte.toFixed(3)) };

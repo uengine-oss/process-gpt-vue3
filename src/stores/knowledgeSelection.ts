@@ -9,7 +9,7 @@ import { defineStore } from 'pinia';
  *  (2) "선택 있음 = 문서 개수>0" 가정이 곳곳에 박혀 폴더-only(문서 0개) 도입에 다 깨졌다.
  * 이 스토어로 상태·직렬화·방 바인딩을 한 곳에 모아 그 재발을 없앤다.
  *
- * - docs   : 개별 선택 파일(emit shape: id/name/file_name/folderPath/sourceRef/docRole ...)
+ * - docs   : 개별 선택 파일(emit shape: id/name/file_name/folderPath/sourceRef ...)
  * - folders: 폴더째 선택 경로들(['A/B/C', ...]) — deepagents 는 folder_paths 로 스코프
  * - sourceRoomId: 이 선택이 '속한' 방. null = 아직 방에 안 묶임(메인화면에서 고른 이월분)
  */
@@ -44,8 +44,6 @@ export const useKnowledgeSelectionStore = defineStore('knowledgeSelection', {
                         file_name: d.file_name || d.name || '',
                         mime_type: d.mimeType || '',
                         folder_path: d.folderPath || '',
-                        // 역할(양식/사업개요 등) — 백엔드 초안 템플릿/자료 구분에 필수
-                        doc_role: d.docRole || d.doc_role || 'content',
                     })),
                 knowledge_folders: (this.folders || []).filter(
                     (p) => typeof p === 'string' && p.trim()

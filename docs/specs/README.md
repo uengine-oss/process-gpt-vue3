@@ -8,3 +8,4 @@ Supabase storage contracts, and companion backend services.
 - [CallActivity execution in ProcessGPT mode](./call-activity-processgpt.md)
 - [ProcessGPT mapper runtime](./processgpt-mapper-runtime.md)
 - [BPMN view auto rotation fit](./bpmn-view-auto-rotation-fit.md)
+- [Knowledge citation viewer](./knowledge-citation-viewer.md)

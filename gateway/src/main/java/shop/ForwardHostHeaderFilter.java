@@ -15,11 +15,9 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.JwtException;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -30,10 +28,11 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
 
     private static final Logger logger = LoggerFactory.getLogger(ForwardHostHeaderFilter.class);
 
-    private static final String SECRET_KEY = Optional.ofNullable(
-            System.getProperty("SECRET_KEY") != null ? System.getProperty("SECRET_KEY") : System.getenv("SECRET_KEY"))
-            .orElse("super-secret-jwt-token-with-at-least-32-characters-long");
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private final JwtVerifier jwtVerifier;
+
+    public ForwardHostHeaderFilter(JwtVerifier jwtVerifier) {
+        this.jwtVerifier = jwtVerifier;
+    }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -67,6 +66,13 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
             }
         }
 
+        // 안전한 헤더 수정 방식 사용
+        ServerHttpRequest updatedRequest = request.mutate()
+                .header("X-Forwarded-Host", originalHost)
+                .header("X-Tenant-Id", subdomain)
+                .build();
+        ServerWebExchange updatedExchange = exchange.mutate().request(updatedRequest).build();
+
         if (requiresAuth) {
             String token = null;
             List<HttpCookie> cookies = request.getCookies().getOrDefault("access_token", Collections.emptyList());
@@ -83,35 +89,26 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
                 return buildErrorResponse(exchange, "TOKEN_MISSING", "Access token is missing");
             }
 
-            TokenValidationResult validationResult = validateToken(token, subdomain, requestPath);
-            if (!validationResult.isValid()) {
-                return buildErrorResponse(exchange, validationResult.getErrorCode(), validationResult.getErrorMessage());
-            }
+            // 서명 검증은 JWKS 갱신(HTTP)이 섞일 수 있어 이벤트 루프 밖에서 돌린다.
+            final String verifiedToken = token;
+            return Mono.fromCallable(() -> validateToken(verifiedToken, subdomain))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .flatMap(result -> result.isValid()
+                            ? chain.filter(updatedExchange)
+                            : buildErrorResponse(exchange, result.getErrorCode(), result.getErrorMessage()));
         }
 
-        // 안전한 헤더 수정 방식 사용
-        ServerHttpRequest updatedRequest = request.mutate()
-                .header("X-Forwarded-Host", originalHost)
-                .header("X-Tenant-Id", subdomain)
-                .build();
-
-        return chain.filter(exchange.mutate().request(updatedRequest).build());
+        return chain.filter(updatedExchange);
     }
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
 
-    private TokenValidationResult validateToken(String token, String expectedSubdomain, String requestPath) {
-        final boolean allowPayloadFallback = requestPath != null
-                && (requestPath.startsWith("/agent/") || requestPath.startsWith("/memento/") || requestPath.startsWith("/robo/")
-                    || requestPath.startsWith("/completion/"));
-        final boolean skipTenantCheck = isLocalHost(expectedSubdomain);
+    private TokenValidationResult validateToken(String token, String expectedSubdomain) {
+        final boolean skipTenantCheck = isTenantCheckSkippedHost(expectedSubdomain);
         try {
-            Claims claims = Jwts.parser()
-                    .setSigningKey(SECRET_KEY.getBytes(StandardCharsets.UTF_8))
-                    .parseClaimsJws(token)
-                    .getBody();
+            Claims claims = jwtVerifier.verify(token);
 
             @SuppressWarnings("unchecked")
             Map<String, Object> appMetadata = claims.get("app_metadata", Map.class);
@@ -134,57 +131,14 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
             }
 
             return new TokenValidationResult(true, null, null);
-        } catch (SignatureException e) {
-            logger.error("SignatureException: Invalid token signature", e);
-            if (allowPayloadFallback) {
-                return validateTokenByPayload(token, expectedSubdomain, skipTenantCheck);
-            }
-            return new TokenValidationResult(false, "TOKEN_INVALID", "Invalid token signature");
+        } catch (JwtException e) {
+            // 서명 불일치·만료·알 수 없는 키 — 사유는 로그에만 남기고 응답에는 노출하지 않는다.
+            logger.warn("JWT rejected: {}", e.getMessage());
+            return new TokenValidationResult(false, "TOKEN_INVALID", "Invalid or expired token");
         } catch (Exception e) {
             logger.error("Exception during token validation", e);
-            if (allowPayloadFallback) {
-                return validateTokenByPayload(token, expectedSubdomain, skipTenantCheck);
-            }
-            return new TokenValidationResult(false, "TOKEN_INVALID", "Token validation failed: " + e.getMessage());
+            return new TokenValidationResult(false, "TOKEN_INVALID", "Token validation failed");
         }
-    }
-
-    private TokenValidationResult validateTokenByPayload(String token, String expectedSubdomain, boolean skipTenantCheck) {
-        try {
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) {
-                return new TokenValidationResult(false, "TOKEN_INVALID", "Malformed JWT token");
-            }
-
-            byte[] decoded = Base64.getUrlDecoder().decode(parts[1]);
-            JsonNode payload = OBJECT_MAPPER.readTree(decoded);
-
-            JsonNode appMetadata = payload.path("app_metadata");
-            if (appMetadata.isMissingNode() || appMetadata.isNull()) {
-                return new TokenValidationResult(false, "TOKEN_INVALID", "No app_metadata found in token payload");
-            }
-
-            String tenantId = appMetadata.path("tenant_id").asText(null);
-            if (tenantId == null || tenantId.isBlank()) {
-                return new TokenValidationResult(false, "TOKEN_INVALID", "No tenant_id found in token payload");
-            }
-
-            if (!skipTenantCheck && !expectedSubdomain.equals(tenantId)) {
-                return new TokenValidationResult(false, "TENANT_MISMATCH",
-                    String.format("Tenant ID mismatch: expected '%s', found '%s'", expectedSubdomain, tenantId));
-            }
-
-            return new TokenValidationResult(true, null, null);
-        } catch (Exception e) {
-            logger.error("Failed to validate token payload", e);
-            return new TokenValidationResult(false, "TOKEN_INVALID", "Token payload validation failed: " + e.getMessage());
-        }
-    }
-
-    private boolean isLocalHost(String host) {
-        if (host == null) return false;
-        String h = host.toLowerCase(Locale.ROOT);
-        return "localhost".equals(h) || h.startsWith("127.0.0.1");
     }
 
     private Mono<Void> buildErrorResponse(ServerWebExchange exchange, String errorCode, String message) {
@@ -204,11 +158,38 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
     }
 
     private String extractSubdomain(String host) {
+        // IP 리터럴(예: 34.22.71.73)은 서브도메인 개념이 없다 — 점으로 쪼개면
+        // 첫 옥텟("34")을 테넌트로 오인해 TENANT_MISMATCH 가 났다. 전체를 그대로 반환한다.
+        if (isIpAddress(host)) {
+            return host;
+        }
         String[] parts = host.split("\\.");
         if (parts.length > 2) {
             return parts[0];
         }
         return host;
+    }
+
+    /** IPv4 리터럴 또는 IPv6 리터럴(콜론 포함) 여부 */
+    private boolean isIpAddress(String host) {
+        if (host == null) {
+            return false;
+        }
+        return host.matches("^\\d{1,3}(\\.\\d{1,3}){3}$") || host.contains(":");
+    }
+
+    /**
+     * 테넌트 검증을 건너뛰는 호스트: localhost 및 IP 직접 접근.
+     * 서브도메인 기반 테넌트 라우팅이 없는 접근이므로 토큰의 tenant_id 만으로 처리한다.
+     * (기존 isLocalHost 는 extractSubdomain 이후의 "127" 값과 비교해 127.0.0.1 조차
+     *  스킵되지 않는 버그가 있었다 — IP 판정으로 함께 해소)
+     */
+    private boolean isTenantCheckSkippedHost(String host) {
+        if (host == null) {
+            return false;
+        }
+        String h = host.toLowerCase(Locale.ROOT);
+        return "localhost".equals(h) || isIpAddress(h);
     }
 
     @Override

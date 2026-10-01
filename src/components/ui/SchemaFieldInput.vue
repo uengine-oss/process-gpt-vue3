@@ -6,10 +6,11 @@
         <div v-if="showLabel" class="field-label">
             <span class="field-label-left">
                 {{ field.property_label || field.property_key }}
-                <v-chip label size="x-small" density="compact" color="grey" class="ml-1 schema-type-chip">{{ typeLabel }}</v-chip>
+                <!-- 타입/필수 칩은 입력 안내라 viewMode(조회)에선 숨긴다 -->
+                <v-chip v-if="!viewMode" label size="x-small" density="compact" color="grey" class="ml-1 schema-type-chip">{{ typeLabel }}</v-chip>
                 <v-chip v-if="field.is_deprecated_field" label size="x-small" density="compact" color="warning" class="ml-1 schema-type-chip">사용 중단</v-chip>
-                <v-chip v-else-if="field.is_readonly" label size="x-small" density="compact" color="primary" class="ml-1 schema-type-chip">읽기 전용</v-chip>
-                <v-chip v-if="field.is_required && !field.is_deprecated_field" label size="x-small" density="compact" color="red" class="ml-1 schema-type-chip">필수</v-chip>
+                <v-chip v-else-if="!viewMode && field.is_readonly" label size="x-small" density="compact" color="primary" class="ml-1 schema-type-chip">읽기 전용</v-chip>
+                <v-chip v-if="!viewMode && field.is_required && !field.is_deprecated_field" label size="x-small" density="compact" color="red" class="ml-1 schema-type-chip">필수</v-chip>
             </span>
             <v-tooltip v-if="field.description" location="top" max-width="320">
                 <template #activator="{ props: tp }">
@@ -19,9 +20,68 @@
             </v-tooltip>
         </div>
 
+        <!-- ── 읽기 전용 값 표시 (viewMode) ─────────────────
+             입력 위젯을 비활성화해 보여주는 대신 값만 조회용 UI로 렌더한다. -->
+        <template v-if="viewMode">
+            <div v-if="type === 'boolean'" class="field-view mb-3">
+                <v-icon size="14" class="mr-1" :color="value ? 'primary' : 'grey'">
+                    {{ value ? 'mdi-check-circle' : 'mdi-minus-circle-outline' }}
+                </v-icon>
+                {{ value ? '예' : '아니오' }}
+            </div>
+            <div v-else-if="type === 'multiselect'" class="field-view mb-3">
+                <template v-if="viewChips.length">
+                    <v-chip v-for="chip in viewChips" :key="chip" size="small" label class="mr-1 mb-1">{{ chip }}</v-chip>
+                </template>
+                <span v-else class="field-view-empty">-</span>
+            </div>
+            <div v-else-if="type === 'url'" class="field-view mb-3">
+                <a v-if="value" :href="value" target="_blank" rel="noopener" class="field-view-link">
+                    <v-icon size="13" class="mr-1">mdi-link-variant</v-icon>{{ value }}
+                </a>
+                <span v-else class="field-view-empty">-</span>
+            </div>
+            <!-- 파일: 다운로드는 조회 동작이므로 view 모드에서도 유지 (업로드/삭제는 없음) -->
+            <div v-else-if="type === 'file'" class="file-field mb-3">
+                <div v-for="(f, idx) in fileList" :key="f.path || idx" class="file-row">
+                    <v-icon size="15" color="indigo">mdi-paperclip</v-icon>
+                    <button type="button" class="file-name file-download-name" @click="downloadFile(f)">{{ f.fileName || f.path }}</button>
+                    <v-btn
+                        icon variant="text" size="x-small"
+                        :loading="fileDownloadingPath === (f.path || f.publicUrl)"
+                        title="파일 다운로드"
+                        @click="downloadFile(f)"
+                    >
+                        <v-icon size="14">mdi-download</v-icon>
+                    </v-btn>
+                </div>
+                <span v-if="!fileList.length" class="field-view-empty">-</span>
+                <div v-if="fileError" class="file-error">{{ fileError }}</div>
+            </div>
+            <div v-else-if="type === 'table'" class="table-field mb-3">
+                <table v-if="tableColumns.length && tableRows.length" class="table-field__grid">
+                    <thead>
+                        <tr>
+                            <th v-for="col in tableColumns" :key="col.key">{{ col.label || col.key }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(row, ri) in tableRows" :key="ri">
+                            <td v-for="col in tableColumns" :key="col.key" class="table-field__view-cell">{{ row[col.key] }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <span v-else class="field-view-empty">-</span>
+            </div>
+            <div v-else class="field-view mb-3" :class="{ 'field-view--multiline': type === 'textarea' }">
+                <span v-if="viewText !== ''">{{ viewText }}</span>
+                <span v-else class="field-view-empty">-</span>
+            </div>
+        </template>
+
         <!-- ── 타입별 입력 위젯 ───────────────────────────── -->
         <v-text-field
-            v-if="type === 'string'"
+            v-else-if="type === 'string'"
             v-model="value"
             density="compact" variant="outlined" hide-details class="mb-3"
             :placeholder="field.placeholder"
@@ -266,7 +326,10 @@
  * 값 저장 방식은 패널의 기존 구조를 그대로 따른다:
  *   - model[field.property_key] 를 직접 읽고 쓴다 (props 객체의 내부 변이).
  *   - daterange 는 model[key+'_start'] / model[key+'_end'] 두 키.
- *   - file 은 {fileName, path, publicUrl} 또는 (multiple) 그 배열.
+ *   - file 은 {fileName, path, bucket, size} 또는 (multiple) 그 배열.
+ *     절대 URL 은 저장하지 않는다 — 버킷이 비공개라 공개 URL 은 열리지 않고,
+ *     서명 URL 은 1시간이면 만료돼 저장하면 언젠가 반드시 깨진다. 주소가 필요한
+ *     순간에 경로로부터 만든다. 옛 데이터의 publicUrl 은 읽을 때만 되살려 쓴다.
  *
  * 선택지 소스:
  *   - static: field.options
@@ -277,6 +340,9 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import { PROPERTY_TYPES } from '@/stores/taskCatalog';
 import { listPolicyDocuments, policyFileAttachment, registerPolicyAttachment } from '@/services/policyDocumentService';
+import { parseStorageRef } from '@/shared/storageUrl';
+// 첨부를 가져간 사건은 다운로드 이력에 남는다 (docs/security.md 3-3).
+import { DOWNLOAD_ACTIONS, recordFileDownload } from '@/shared/downloadAudit';
 
 const backend = BackendFactory.createBackend();
 
@@ -311,6 +377,8 @@ export default {
         model: { type: Object, required: true },
         /** 읽기 전용 강제 (view mode 등). field.is_readonly 와 OR 로 동작 */
         disabled: { type: Boolean, default: false },
+        /** true 면 입력 위젯 대신 값만 조회용 UI로 렌더 (순서도 패널 읽기 모드 등) */
+        viewMode: { type: Boolean, default: false },
         /** 라벨 행 표시 여부 */
         showLabel: { type: Boolean, default: true },
         /** 미리보기 모드 — 파일 업로드 등 실제 부수효과를 막는다 */
@@ -382,6 +450,38 @@ export default {
         selectItems() {
             if (this.remoteItems) return this.normalizeSelectItems(this.remoteItems);
             return this.normalizeSelectItems(this.field?.options || []);
+        },
+        /** viewMode: multiselect 값을 선택지 라벨로 바꾼 칩 목록 */
+        viewChips() {
+            const values = Array.isArray(this.value) ? this.value : [];
+            return values.map((v) => this.selectItemLabel(v)).filter((v) => v !== '');
+        },
+        /** viewMode: 단일 값 타입의 표시 문자열 (선택지/사용자는 라벨로, 숫자는 단위 포함) */
+        viewText() {
+            switch (this.type) {
+                case 'select':
+                case 'db-select':
+                    return this.selectItemLabel(this.value);
+                case 'user': {
+                    const id = toSafeText(this.value).trim();
+                    if (!id) return '';
+                    const found = this.userItems.find((it) => toSafeText(it?.id).trim() === id);
+                    return toSafeText(found?.name || id).trim();
+                }
+                case 'number': {
+                    const num = this.numberDisplay;
+                    if (num === '') return '';
+                    return this.field?.number_unit ? `${num} ${this.field.number_unit}` : num;
+                }
+                case 'daterange': {
+                    const start = toSafeText(this.rangeStart).trim();
+                    const end = toSafeText(this.rangeEnd).trim();
+                    if (!start && !end) return '';
+                    return `${start || '…'} ~ ${end || '…'}`;
+                }
+                default:
+                    return toSafeText(this.value).trim();
+            }
         },
         numberDisplay() {
             const val = this.value;
@@ -519,6 +619,13 @@ export default {
         this.prepareUserLabel();
     },
     methods: {
+        /** viewMode: 저장된 값(value)에 해당하는 선택지 라벨. 못 찾으면 값 그대로 */
+        selectItemLabel(value) {
+            const text = toSafeText(value).trim();
+            if (!text) return '';
+            const found = this.selectItems.find((it) => toSafeText(it?.value).trim() === text);
+            return toSafeText(found?.label || text).trim();
+        },
         normalizeSelectItems(items) {
             const list = Array.isArray(items) ? items : [];
             return list
@@ -535,9 +642,19 @@ export default {
                 .filter(Boolean);
         },
 
-        // ── 원격 선택지 (api / db-select) ─────────────────
+        // ── 원격 선택지 (list / api / db-select) ─────────────────
         async prepareRemoteItems() {
             const field = this.field || {};
+            // 목록 관리(option_list) 참조 — 관리자가 주제별로 정의한 선택지 목록
+            if ((this.type === 'select' || this.type === 'multiselect') && field.select_source_type === 'list') {
+                const listKey = toSafeText(field.config?.list?.list_key).trim();
+                if (!listKey) {
+                    this.remoteItems = [];
+                    return;
+                }
+                await this.loadItems(`list::${listKey}::${window.$tenantName || ''}`, () => this.fetchOptionListItems(listKey));
+                return;
+            }
             if ((this.type === 'select' || this.type === 'multiselect') && field.select_source_type === 'api' && field.select_api_endpoint) {
                 if (this.apiSearchParam) return; // 검색 모드는 입력 시점에 조회
                 const endpoint = this.resolvedApiEndpoint;
@@ -620,6 +737,17 @@ export default {
                 }
             }
             this.$emit('dirty');
+        },
+        async fetchOptionListItems(listKey) {
+            const supabase = window.$supabase;
+            if (!supabase) return [];
+            let query = supabase.from('option_list').select('items, is_active').eq('list_key', listKey).limit(1);
+            if (window.$tenantName) query = query.eq('tenant_id', window.$tenantName);
+            const { data, error } = await query;
+            if (error) throw error;
+            const row = (data || [])[0];
+            if (!row || row.is_active === false) return [];
+            return Array.isArray(row.items) ? row.items : [];
         },
         async fetchDbItems(db) {
             const supabase = window.$supabase;
@@ -784,8 +912,8 @@ export default {
                 metadata: { original_filename: file.name }
             });
             if (error) throw error;
-            const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path);
-            const attachment = { fileName: file.name, path: data.path, bucket, publicUrl: urlData?.publicUrl || '', size: file.size };
+            // 경로와 버킷만 남긴다. 주소는 열 때 만든다(위 주석 참고).
+            const attachment = { fileName: file.name, path: data.path, bucket, size: file.size };
             if (!this.policyLibrary) return attachment;
             try {
                 return await registerPolicyAttachment(attachment);
@@ -794,6 +922,16 @@ export default {
                 throw e;
             }
         },
+        /**
+         * 첨부의 버킷·경로를 찾는다.
+         *
+         * 옛 값은 경로 없이 공개 URL 만 들고 있다. 그 주소는 이제 열리지 않지만
+         * 안에 버킷과 경로가 그대로 들어 있어 되돌려 읽을 수 있다.
+         */
+        storageRefOf(file) {
+            const fallbackBucket = toSafeText(file?.bucket).trim() || toSafeText(this.fileConfig.bucket).trim() || 'files';
+            return parseStorageRef(file, fallbackBucket);
+        },
         async downloadFile(file) {
             if (this.preview || !file) return;
             const downloadKey = file.path || file.publicUrl;
@@ -801,21 +939,31 @@ export default {
             this.fileError = '';
             this.fileDownloadingPath = downloadKey;
             try {
-                if (file.path) {
+                const ref = this.storageRefOf(file);
+                if (ref) {
                     const supabase = window.$supabase;
                     if (!supabase?.storage) throw new Error('Supabase Storage client is not available.');
-                    const bucket = toSafeText(file.bucket).trim() || toSafeText(this.fileConfig.bucket).trim() || 'files';
-                    const { data, error } = await supabase.storage.from(bucket).download(file.path);
+                    // 로그인 세션으로 직접 받는다 — 서명 URL 을 한 번 더 거칠 이유가 없다.
+                    const { data, error } = await supabase.storage.from(ref.bucket).download(ref.path);
                     if (error) throw error;
+                    const downloadName = file.fileName || ref.path.split('/').pop() || 'download';
+                    await recordFileDownload({
+                        bucket: ref.bucket,
+                        path: ref.path,
+                        fileName: downloadName,
+                        action: DOWNLOAD_ACTIONS.DOWNLOAD,
+                        metadata: { source: 'SchemaFieldInput.downloadFile' }
+                    });
                     const objectUrl = URL.createObjectURL(data);
                     const anchor = document.createElement('a');
                     anchor.href = objectUrl;
-                    anchor.download = file.fileName || file.path.split('/').pop() || 'download';
+                    anchor.download = downloadName;
                     document.body.appendChild(anchor);
                     anchor.click();
                     anchor.remove();
                     URL.revokeObjectURL(objectUrl);
                 } else if (file.publicUrl) {
+                    // 우리 저장소가 아닌 바깥 주소. 그대로 연다.
                     const anchor = document.createElement('a');
                     anchor.href = file.publicUrl;
                     anchor.download = file.fileName || 'download';
@@ -879,6 +1027,40 @@ export default {
 
 .schema-type-chip {
     font-size: 9px !important;
+}
+
+/* viewMode 값 표시 */
+.field-view {
+    font-size: 13px;
+    line-height: 1.5;
+    color: rgb(var(--v-theme-textPrimary));
+    word-break: break-all;
+}
+
+.field-view--multiline {
+    white-space: pre-line;
+}
+
+.field-view-empty {
+    color: rgb(var(--v-theme-textSecondary));
+}
+
+.field-view-link {
+    display: inline-flex;
+    align-items: center;
+    color: rgb(var(--v-theme-primary));
+    text-decoration: none;
+    word-break: break-all;
+    pointer-events: auto;
+}
+
+.field-view-link:hover {
+    text-decoration: underline;
+}
+
+.table-field__view-cell {
+    font-size: 12px;
+    color: rgb(var(--v-theme-textPrimary));
 }
 
 .daterange-row {

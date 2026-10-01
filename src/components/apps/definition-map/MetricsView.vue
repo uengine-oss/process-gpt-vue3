@@ -54,10 +54,10 @@
                         <td class="domain-cell text-center" :style="getDomainCellStyle(domain)">
                             <div class="d-flex align-center justify-center">
                                 <span class="domain-cell-text">{{ domain.name }}</span>
-                                <v-btn v-if="enableEdit" icon variant="text" size="x-small" class="ml-1" @click="editDomain(domain)">
+                                <v-btn v-if="enableEdit && !isUncategorizedDomain(domain)" icon variant="text" size="x-small" class="ml-1" @click="editDomain(domain)">
                                     <v-icon size="14">mdi-pencil</v-icon>
                                 </v-btn>
-                                <v-btn v-if="enableEdit" icon variant="text" size="x-small" color="error" @click="deleteDomain(domain)">
+                                <v-btn v-if="enableEdit && !isUncategorizedDomain(domain)" icon variant="text" size="x-small" color="error" @click="deleteDomain(domain)">
                                     <v-icon size="14">mdi-delete</v-icon>
                                 </v-btn>
                             </div>
@@ -303,6 +303,7 @@
 <script>
 import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue';
 import ProcessDefinitionIdGenerator from '@/components/ai/ProcessDefinitionIdGenerator';
+import { isUncategorizedProcess } from '@/utils/uncategorizedProcess';
 
 export default {
     name: 'MetricsView',
@@ -533,7 +534,12 @@ export default {
                 megaProcessId: null
             };
         },
+        // '미분류'(uncategorized)는 시스템 예약 항목 — 이름 변경/삭제를 차단한다.
+        isUncategorizedDomain(domain) {
+            return isUncategorizedProcess(domain, this.$t('processDefinitionMap.uncategorized'));
+        },
         editDomain(domain) {
+            if (this.isUncategorizedDomain(domain)) return;
             this.dialog = {
                 show: true,
                 type: 'domain',
@@ -548,6 +554,7 @@ export default {
             };
         },
         deleteDomain(domain) {
+            if (this.isUncategorizedDomain(domain)) return;
             if (confirm(this.$t('metricsView.confirmDeleteDomain'))) {
                 const newValue = { ...this.value };
                 newValue.domains = newValue.domains.filter((d) => d.id !== domain.id);

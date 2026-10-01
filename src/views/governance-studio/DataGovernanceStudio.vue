@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { formatKST } from '@/utils/datetime';
+import { writeActivityLog } from '@/services/activityAuditLog';
 
 type TermItem = { label: string; count: number };
 type Cluster = { id: string; suggested: string; confidence: number; terms: TermItem[]; status: 'pending' | 'approved' | 'rejected' };
@@ -126,10 +127,24 @@ function addBlacklist() {
     if (!value || blacklist.value.includes(value)) return;
     blacklist.value.unshift(value);
     blacklistInput.value = '';
+    // 활동 로그: 추가 성공 후에만 기록 (실패해도 본 흐름을 깨지 않는다)
+    writeActivityLog({
+        action: 'governance_blacklist_add',
+        target_type: 'governance',
+        target_id: value,
+        target_name: value
+    });
 }
 
 function removeBlacklist(term: string) {
     blacklist.value = blacklist.value.filter((item) => item !== term);
+    // 활동 로그: 제거 후 기록
+    writeActivityLog({
+        action: 'governance_blacklist_remove',
+        target_type: 'governance',
+        target_id: term,
+        target_name: term
+    });
 }
 
 function bulkMergeAndRegister() {

@@ -439,12 +439,6 @@ const allRoutes: RouteRecordRaw[] = [
         path: '/api/test',
         component: () => import('@/components/TestPage.vue')
     },
-    {
-        name: 'TaskCatalogAdmin',
-        path: '/admin/task-catalog',
-        component: () => import('@/components/admin/TaskCatalogAdmin.vue')
-    },
-
     // ============== Analytics Routes ==============
     {
         name: 'Process Architecture',
@@ -467,6 +461,12 @@ const allRoutes: RouteRecordRaw[] = [
                   name: 'Analysis Dashboard',
                   path: '/analysis-dashboard',
                   component: () => import('@/views/analytics/AnalysisDashboard.vue')
+              },
+              {
+                  // 통합 용어 사전 — 프로세스별 용어 정의(속성패널 용어 정의 섹션)를 용어 단위로 모아 본다
+                  name: 'Glossary Dictionary',
+                  path: '/glossary',
+                  component: () => import('@/views/glossary/GlossaryDictionary.vue')
               },
               {
                   name: 'Ontology Explorer',
@@ -523,6 +523,16 @@ const allRoutes: RouteRecordRaw[] = [
                           }
                       },
                       {
+                          // 목록 관리 — 주제별 선택지 목록. 속성 스키마 select 소스 'list' 가 참조
+                          name: 'Admin Option Lists',
+                          path: 'option-lists',
+                          component: () => import('@/views/admin/tabs/OptionListManagement.vue'),
+                          meta: {
+                              adminTitle: '목록 관리',
+                              adminDescription: '주제별 선택지 목록 관리 · 속성 스키마에서 참조'
+                          }
+                      },
+                      {
                           name: 'Admin Data Freeze',
                           path: 'data-freeze',
                           component: () => import('@/views/admin/tabs/DataFreezeManager.vue'),
@@ -547,6 +557,15 @@ const allRoutes: RouteRecordRaw[] = [
                           meta: {
                               adminTitle: 'adminConsole.tabSysOps',
                               adminDescription: 'adminConsole.description'
+                          }
+                      },
+                      {
+                          name: 'Admin Security Settings',
+                          path: 'security-settings',
+                          component: () => import('@/views/admin/tabs/SecuritySettings.vue'),
+                          meta: {
+                              adminTitle: 'adminConsole.security.title',
+                              adminDescription: 'adminConsole.security.pageDescription'
                           }
                       },
                       {
@@ -610,6 +629,46 @@ const allRoutes: RouteRecordRaw[] = [
                           meta: {
                               adminTitle: 'taskCatalog.taskTypes',
                               adminDescription: 'taskCatalog.taskTypesDescription'
+                          }
+                      },
+                      {
+                          // 카탈로그 — 계정설정 탭에서 분리한 별도 메뉴 (순서도의 카탈로그 저장/불러오기와 같은 데이터 사용)
+                          name: 'Admin Task Catalog',
+                          path: 'task-catalog',
+                          component: () => import('@/views/admin/tabs/TaskCatalogPage.vue'),
+                          meta: {
+                              adminTitle: 'taskCatalog.catalog',
+                              adminDescription: 'taskCatalog.catalogDescription'
+                          }
+                      },
+                      {
+                          // 메뉴 관리 — 테넌트별 메뉴 표시(숨김/이름/순서) + 메뉴별 필요 역할 조정 + 사용자 정의 메뉴
+                          name: 'Admin Menu Settings',
+                          path: 'menu-settings',
+                          component: () => import('@/views/admin/tabs/MenuSettingsManager.vue'),
+                          meta: {
+                              adminTitle: '메뉴 관리',
+                              adminDescription: '테넌트별 메뉴 표시 설정 · 메뉴별 필요 역할 조정 · 사용자 정의 메뉴'
+                          }
+                      },
+                      {
+                          // 용어·분류 설정 — 계층 레벨명 / 진행 단계 / 카드 보기 분류축 / 도메인 추론 / 역할 라벨
+                          name: 'Admin Terminology Settings',
+                          path: 'terminology',
+                          component: () => import('@/views/admin/tabs/TerminologySettings.vue'),
+                          meta: {
+                              adminTitle: '용어·분류 설정',
+                              adminDescription: '계층 레벨명 · 진행 단계명/색상 · 카드 보기 분류축 · 역할 표시 라벨'
+                          }
+                      },
+                      {
+                          // 운영 정책 — 공람/경보/정체 일수, 휴지통 보존, FTE·원가 기준
+                          name: 'Admin Operation Policy',
+                          path: 'operation-policy',
+                          component: () => import('@/views/admin/tabs/OperationPolicySettings.vue'),
+                          meta: {
+                              adminTitle: '운영 정책',
+                              adminDescription: '공람 기간 · 경보/정체 기준 · 휴지통 보존 일수 · FTE/원가 기준'
                           }
                       }
                   ]
@@ -689,8 +748,26 @@ const allRoutes: RouteRecordRaw[] = [
         name: 'Merge Request Board',
         path: '/merge-requests',
         component: () => import('@/views/review-board/MergeRequestBoard.vue')
+    },
+    {
+        name: 'Notifications',
+        path: '/notifications',
+        component: () => import('@/views/notifications/NotificationsPage.vue')
+    },
+    {
+        name: 'My Feedback',
+        path: '/my-feedback',
+        component: () => import('@/views/feedback/MyFeedback.vue')
     }
 ];
+
+// 로컬 확인용 화면: src/views/_lab/ 은 gitignore 되어 있고, 개발 서버에서 거기 둔 파일만 /lab/<이름> 으로 붙는다.
+const labPages = import.meta.env.DEV ? import.meta.glob('../views/_lab/*.vue') : {};
+for (const [file, component] of Object.entries(labPages)) {
+    const name = file.split('/').pop()!.replace(/\.vue$/, '');
+    const slug = name.replace(/Page$/, '').replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+    allRoutes.push({ name: `Lab ${name}`, path: `/lab/${slug}`, component } as RouteRecordRaw);
+}
 
 const MainRoutes = {
     path: '/main',

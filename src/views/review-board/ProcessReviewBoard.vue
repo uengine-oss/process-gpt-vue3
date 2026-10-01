@@ -21,6 +21,7 @@ import {
     isSelfReviewSubmission
 } from '@/utils/reviewPermissions';
 import { ROLES } from '@/utils/roles';
+import { getFeedbackAlertDays, getStalledDays } from '@/services/tenantCustomizationService';
 import {
     buildProcessHierarchyQuery,
     PROCESS_HIERARCHY_ENTRY,
@@ -314,7 +315,7 @@ const publicFeedbackUrgentCount = computed(() => {
     return pipelineSourceData.value.filter((item) => {
         if (item.state !== 'public_feedback' || !item.public_feedback_ends_at) return false;
         const daysLeft = differenceInDays(new Date(item.public_feedback_ends_at), now);
-        return daysLeft <= 7 && daysLeft >= 0;
+        return daysLeft <= getFeedbackAlertDays() && daysLeft >= 0;
     }).length;
 });
 
@@ -323,7 +324,7 @@ const stalledCount = computed(() => {
     return pipelineSourceData.value.filter((item) => {
         if (['published', 'confirmed', 'cancelled', 'archived'].includes(item.state)) return false;
         if (!item.updated_at) return false;
-        return differenceInDays(now, new Date(item.updated_at)) >= 7;
+        return differenceInDays(now, new Date(item.updated_at)) >= getStalledDays();
     }).length;
 });
 
@@ -334,11 +335,11 @@ const urgentItems = computed(() => {
         if (['published', 'confirmed', 'cancelled', 'archived'].includes(item.state)) return false;
         if (item.state === 'public_feedback' && item.public_feedback_ends_at) {
             const daysLeft = differenceInDays(new Date(item.public_feedback_ends_at), now);
-            if (daysLeft <= 7 && daysLeft >= 0) return true;
+            if (daysLeft <= getFeedbackAlertDays() && daysLeft >= 0) return true;
         }
         if (item.updated_at) {
             const daysSinceUpdate = differenceInDays(now, new Date(item.updated_at));
-            if (daysSinceUpdate >= 7) return true;
+            if (daysSinceUpdate >= getStalledDays()) return true;
         }
         return false;
     });
@@ -432,7 +433,7 @@ function openInEditor(item: any) {
             name: toSafeText(item?.process_name).trim() || procDefId,
             entry: PROCESS_HIERARCHY_ENTRY.REVIEW_BOARD,
             mode,
-            left: PROCESS_HIERARCHY_PANEL_STATE.COLLAPSED,
+            left: PROCESS_HIERARCHY_PANEL_STATE.EXPANDED,
             right: PROCESS_HIERARCHY_PANEL_STATE.OPEN,
             rightTab: PROCESS_HIERARCHY_RIGHT_TAB.GOVERNANCE,
             reviewId: toSafeText(item?.review_id || item?.id).trim()
@@ -552,6 +553,7 @@ async function handleBulkApprove() {
 
     let successCount = 0;
     let errorCount = 0;
+    const successIds: string[] = [];
 
     for (const item of items) {
         try {
@@ -567,6 +569,7 @@ async function handleBulkApprove() {
             }
             if (handled) {
                 successCount++;
+                successIds.push(String(item.proc_def_id || reviewId));
             }
         } catch (e) {
             console.error(`[ReviewBoard] Bulk approve failed for ${item.review_id || item.id || item.proc_def_id}:`, e);
@@ -581,6 +584,16 @@ async function handleBulkApprove() {
         showGlobalToast(`${successCount}건 일괄 승인이 완료되었습니다.`, 'success');
     } else {
         showGlobalToast(`${successCount}건 승인 완료, ${errorCount}건 실패.`, 'error');
+    }
+
+    // 활동 로그 — 성공 건이 있을 때만, 실패해도 본 흐름을 막지 않는다 (fire-and-forget)
+    if (successCount > 0) {
+        void adminStore.writeAdminAuditLog({
+            action: 'review_bulk_approve',
+            target_type: 'review',
+            target_name: '일괄 승인',
+            after_value: { count: successCount, ids: successIds.slice(0, 50) }
+        });
     }
 
     await loadData();
@@ -602,12 +615,14 @@ async function handleBulkReject() {
 
     let successCount = 0;
     let errorCount = 0;
+    const successIds: string[] = [];
 
     for (const item of items) {
         try {
             const reviewId = item.review_id || item.id || item.proc_def_id;
             await backend.rejectDefinition(reviewId, reason.trim());
             successCount++;
+            successIds.push(String(item.proc_def_id || reviewId));
         } catch (e) {
             console.error(`[ReviewBoard] Bulk reject failed for ${item.review_id || item.id || item.proc_def_id}:`, e);
             errorCount++;
@@ -621,6 +636,17 @@ async function handleBulkReject() {
         showGlobalToast(`${successCount}건 일괄 반려가 완료되었습니다.`, 'error');
     } else {
         showGlobalToast(`${successCount}건 반려 완료, ${errorCount}건 실패.`, 'error');
+    }
+
+    // 활동 로그 — 성공 건이 있을 때만, 실패해도 본 흐름을 막지 않는다 (fire-and-forget)
+    if (successCount > 0) {
+        void adminStore.writeAdminAuditLog({
+            action: 'review_bulk_reject',
+            target_type: 'review',
+            target_name: '일괄 반려',
+            after_value: { count: successCount, ids: successIds.slice(0, 50) },
+            comment: reason.trim()
+        });
     }
 
     await loadData();
@@ -638,12 +664,14 @@ async function handleBulkPublish() {
 
     let successCount = 0;
     let errorCount = 0;
+    const successIds: string[] = [];
 
     for (const item of items) {
         try {
             const reviewId = item.review_id || item.id || item.proc_def_id;
             await backend.publishDefinition(reviewId, '일괄 배포');
             successCount++;
+            successIds.push(String(item.proc_def_id || reviewId));
         } catch (e) {
             console.error(`[ReviewBoard] Bulk publish failed for ${item.review_id || item.id || item.proc_def_id}:`, e);
             errorCount++;
@@ -657,6 +685,16 @@ async function handleBulkPublish() {
         showGlobalToast(`${successCount}건 배포완료되었습니다.`, 'success');
     } else {
         showGlobalToast(`${successCount}건 배포완료, ${errorCount}건 실패.`, 'error');
+    }
+
+    // 활동 로그 — 성공 건이 있을 때만, 실패해도 본 흐름을 막지 않는다 (fire-and-forget)
+    if (successCount > 0) {
+        void adminStore.writeAdminAuditLog({
+            action: 'review_bulk_publish',
+            target_type: 'review',
+            target_name: '일괄 게시',
+            after_value: { count: successCount, ids: successIds.slice(0, 50) }
+        });
     }
 
     await loadData();

@@ -106,7 +106,8 @@ export default {
             this.isLoading = true;
             try {
                 // options를 넘기면 defaultAgents가 합쳐지지 않음
-                const list = await backend.getUserList({});
+                // 표시 전용 목록 — 대화 열기는 user.id 로만 하므로 마스킹해도 안전하다.
+                const list = await backend.getMaskedUserList({});
                 const onlyUsers = Array.isArray(list) ? list : [];
 
                 // 에이전트는 제외 (유저 목록은 별도)

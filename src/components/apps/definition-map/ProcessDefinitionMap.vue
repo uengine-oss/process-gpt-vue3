@@ -7,13 +7,56 @@
             class="is-work-height definition-map-card"
             style="overflow: auto; flex-shrink: 0"
         >
-            <div v-if="mode !== 'uEngine' && !gs && componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
-                <MainChatInput :agentInfo="mainChatAgentInfo" :userId="userInfo.uid || userInfo.id" @submit="handleMainChatSubmit" />
+            <div
+                v-if="mode !== 'uEngine' && !gs && componentName == 'DefinitionMapList' && !openConsultingDialog"
+                class="pa-4"
+                :class="{ 'pg-simple-start': simpleUi, 'pg-simple-start--compact': simpleUi && showMapInSimple }"
+            >
+                <!--
+                    간소화 모드의 시작 화면.
+
+                    한 줄 입력창 하나만 두고 나머지는 접는다. 지금까지는 처음 들어오자마자
+                    제목·마켓플레이스·필터·도메인 칩·프로세스 목록이 한꺼번에 나와서,
+                    무엇부터 해야 할지 고르는 데 시간이 든다는 이야기가 있었다.
+                    목록은 '프로세스 목록' 버튼으로 필요할 때만 연다.
+                -->
+                <!--
+                    휴대폰에서는 이 화면이 앞으로 첫 탭이다. 지난 대화로 갈 길이
+                    없어지므로 오른쪽 위에 히스토리 단추를 둔다 — 채팅 첫 화면이
+                    쓰던 것과 같은 자리·같은 아이콘이라 어디로 가는지 다시 배우지 않아도 된다.
+                    넓은 화면에서는 왼쪽 사이드바가 그 일을 하므로 두지 않는다.
+                -->
+                <div v-if="simpleUi && globalIsMobile.value" class="pg-simple-start__bar">
+                    <v-spacer></v-spacer>
+                    <v-btn icon variant="text" size="small" aria-label="지난 대화" @click="goHistory">
+                        <v-icon>mdi-history</v-icon>
+                    </v-btn>
+                </div>
+
+                <div v-if="simpleUi" class="pg-simple-start__hello">
+                    <img class="pg-simple-start__logo" src="/process-gpt-favicon.png" alt="" />
+                    <div class="pg-simple-start__ask">무엇을 도와드릴까요?</div>
+                    <p class="pg-simple-start__sub">프로세스 생성 · 실행 · 조회를 말로 요청하세요.</p>
+                </div>
+
+                <MainChatInput
+                    :agentInfo="mainChatAgentInfo"
+                    :userId="userInfo.uid || userInfo.id"
+                    :compactTools="simpleUi"
+                    @submit="handleMainChatSubmit"
+                />
+
+                <div v-if="simpleUi" class="pg-simple-start__more">
+                    <v-btn variant="text" size="small" :loading="mapLoading" @click="toggleProcessList">
+                        <v-icon size="18" class="mr-1">{{ showMapInSimple ? 'mdi-chevron-up' : 'mdi-format-list-bulleted' }}</v-icon>
+                        프로세스 목록
+                    </v-btn>
+                </div>
             </div>
 
             <!-- 헤더 영역 -->
             <div
-                v-if="componentName != 'SubProcessDetail'"
+                v-if="componentName != 'SubProcessDetail' && (!simpleUi || showMapInSimple)"
                 class="header-section"
                 style="position: sticky; top: 0; z-index: 2; background-color: var(--cds-surface-2); border-bottom: 1px solid rgba(0, 0, 0, 0.08)"
             >
@@ -244,7 +287,7 @@
                 </span>
             </div>
             <!-- route path 별 컴포넌트 호출 -->
-            <div id="processMap">
+            <div id="processMap" v-show="!simpleUi || showMapInSimple || componentName != 'DefinitionMapList'">
                 <div v-if="componentName == 'ViewProcessDetails'">
                     <ViewProcessDetails class="pa-5" :value="value" :enableEdit="enableEdit" />
                 </div>
@@ -346,8 +389,8 @@
                                             >{{ getDomainProcessCount(domain.id) }}
                                         </v-chip>
 
-                                        <!-- 편집 모드일 때 수정/삭제 버튼 -->
-                                        <template v-if="enableEdit && selectedDomain === domain.name">
+                                        <!-- 편집 모드일 때 수정/삭제 버튼 (미분류는 시스템 예약 — 편집 불가) -->
+                                        <template v-if="enableEdit && selectedDomain === domain.name && !isUncategorizedDomain(domain)">
                                             <v-btn
                                                 icon
                                                 variant="text"
@@ -788,9 +831,16 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { PROC_DEF_LIST_COLUMNS } from '@/components/api/ProcessGPTBackend';
 const backend = BackendFactory.createBackend();
 import { processGptAgent } from '@/constants/processGptAgent';
+import { startMainChat } from '@/composables/useMainChatStart';
 import { getTenantId } from '@/utils/tenant';
+import { isUncategorizedProcess } from '@/utils/uncategorizedProcess';
+import { useCustomizerStore } from '@/stores/customizer';
 
 export default {
+    setup() {
+        // 설정 화면의 '화면 간소화' 스위치를 읽기 위한 것.
+        return { customizer: useCustomizerStore() };
+    },
     mixins: [ChatModule],
     components: {
         ViewProcessDetails,
@@ -939,9 +989,28 @@ export default {
             newMajorName: ''
         },
         showNewMegaInput: false,
-        showNewMajorInput: false
+        showNewMajorInput: false,
+
+        /**
+         * 간소화 모드에서 프로세스 목록을 펼쳐 둘지.
+         * 기본은 접어 둔다 — 시작 화면에 입력창 하나만 남기는 것이 목적이다.
+         * 화면을 떠나면 초기화된다(설정이 아니라 그때그때의 선택이므로).
+         */
+        showMapInSimple: false,
+
+        /**
+         * 간소화 모드에서 프로세스 목록을 실제로 받아 왔는지.
+         * 시작 화면에는 입력창만 있으므로 체계도·지표를 미리 받을 이유가 없다.
+         * 목록을 처음 펼칠 때 한 번만 받는다.
+         */
+        mapLoaded: false,
+        mapLoading: false
     }),
     computed: {
+        /** 설정 > 화면 간소화. 켜져 있으면 시작 화면을 입력창 하나로 줄인다. */
+        simpleUi() {
+            return !!this.customizer.simpleUi;
+        },
         isPalMode() {
             return !!(window.$pal && window.$mode === 'uEngine');
         },
@@ -1170,9 +1239,14 @@ export default {
                     me.isAdmin = true;
                 }
 
+                // 간소화 시작 화면에는 목록이 없다. 체계도와 지표는 목록을 펼칠 때 받는다.
+                // (상세·서브프로세스 화면은 체계도가 있어야 그려지므로 그대로 받는다.)
+                const deferMap = me.simpleUi && me.componentName === 'DefinitionMapList';
+                me.mapLoaded = !deferMap;
+
                 const [, , userInfo] = await Promise.all([
-                    me.getProcessMap(),
-                    me.getMetricsMap().then(() => me.ensureUncategorizedDomainTab()),
+                    deferMap ? Promise.resolve() : me.getProcessMap(),
+                    deferMap ? Promise.resolve() : me.getMetricsMap().then(() => me.ensureUncategorizedDomainTab()),
                     backend.getUserInfo(),
                     me.loadOrganizationOptions(),
                     me.useLock ? me.checkedLock() : Promise.resolve()
@@ -1226,6 +1300,33 @@ export default {
         }
     },
     methods: {
+        /** 간소화 시작 화면에서 프로세스 목록을 펼치고 접는다. 펼칠 때 한 번만 받아 온다. */
+        /**
+         * 지난 대화로. 목록을 여기에 다시 만들지 않고 이미 있는 채팅 화면으로 보낸다 —
+         * 거기가 휴대폰에서 지난 대화를 보여 주는 자리다. 하단 탭은 그곳도
+         * 같은 탭으로 친다(match 에 /chats 가 들어 있다).
+         */
+        goHistory() {
+            this.$router.push({ path: '/chats', query: { history: '1' } });
+        },
+
+        async toggleProcessList() {
+            if (this.showMapInSimple) {
+                this.showMapInSimple = false;
+                return;
+            }
+            if (!this.mapLoaded && !this.mapLoading) {
+                this.mapLoading = true;
+                try {
+                    await Promise.all([this.getProcessMap(), this.getMetricsMap().then(() => this.ensureUncategorizedDomainTab())]);
+                    this.mapLoaded = true;
+                } finally {
+                    this.mapLoading = false;
+                }
+            }
+            this.showMapInSimple = true;
+        },
+
         subscribeLockChanges() {
             const supabase = window.$supabase;
             if (!supabase || !this.useLock) return;
@@ -1346,29 +1447,18 @@ export default {
             }
         },
         async ensureUncategorizedDomainTab() {
-            // '미분류' 도메인 탭이 없으면 추가 (데이터는 수정하지 않음, UI 탭만 추가)
-            if (!this.metricsValue || !this.metricsValue.domains) {
+            // '미분류'는 도메인이 아니라 "도메인 미지정"을 가리키는 시스템 예약 항목이다.
+            // 과거에는 이 탭을 metrics 에 저장했는데, 그러면 도메인 목록에 실제 행으로 남아
+            // 이름 변경·삭제가 가능해지고 체계도에도 도메인처럼 노출된다.
+            // 이제는 저장하지 않고, 이미 저장돼 있던 행이 있으면 화면 목록에서 걷어낸다.
+            if (!this.metricsValue || !Array.isArray(this.metricsValue.domains)) {
                 return;
             }
 
             const uncategorizedName = this.$t('processDefinitionMap.uncategorized');
-
-            let uncategorizedDomain = this.metricsValue.domains.find(
-                (d) => d.name === uncategorizedName || d.name === '미분류' || d.name === 'Uncategorized'
-            );
-
-            if (!uncategorizedDomain) {
-                uncategorizedDomain = {
-                    id: 'uncategorized',
-                    name: uncategorizedName,
-                    order: 0 // 첫 번째로 표시
-                };
-                this.metricsValue.domains.unshift(uncategorizedDomain);
-                try {
-                    await backend.putMetricsMap(this.metricsValue);
-                } catch (e) {
-                    console.warn('Failed to save uncategorized domain tab:', e);
-                }
+            const remaining = this.metricsValue.domains.filter((d) => !isUncategorizedProcess(d, uncategorizedName));
+            if (remaining.length !== this.metricsValue.domains.length) {
+                this.metricsValue.domains = remaining;
             }
         },
         uuid() {
@@ -1394,168 +1484,6 @@ export default {
             if (a.email && b.email && a.email === b.email) return true;
             if (a.id && b.id && a.id === b.id) return true;
             return false;
-        },
-        async createRoomAndNavigateFromMainChat(message) {
-            const userInfo = this.userInfo || (await backend.getUserInfo());
-            const me = this.normalizeParticipant(userInfo);
-
-            const text = (message?.text || '').toString().trim();
-            const hasImages = Array.isArray(message?.images) && message.images.length > 0;
-            const messageFiles = Array.isArray(message?.files) ? message.files.filter(Boolean) : message?.file ? [message.file] : [];
-            const hasFile = messageFiles.length > 0;
-            const primaryFile = messageFiles[0] || null;
-            const orchestration = (message?.orchestration || '').toString().trim() || 'langchain-react';
-
-            const roomId = this.uuid();
-            const nowIso = new Date().toISOString();
-            const roomName = '새 대화';
-            // 채팅방 생성/이동을 지연시키지 않고, 첫 요청을 요약한 이름은 백그라운드에서 생성한다.
-            const generatedNamePromise = text ? backend.generateSemanticName('chat', text) : null;
-
-            // raw File 객체가 있으면 ChatRoomPage에서 memento 업로드하도록 임시 전달
-            // (File 객체는 sessionStorage에 직렬화 불가 → window 임시 변수 사용)
-            const rawFiles = Array.isArray(message?.rawFiles) ? message.rawFiles.filter(Boolean) : [];
-            if (rawFiles.length > 0) {
-                window.__pendingMementoFiles = { roomId, files: rawFiles };
-            }
-
-            const participants = [
-                me,
-                // 가상 에이전트는 DB에 저장되지 않으며 방 참가자에만 포함
-                this.normalizeParticipant(processGptAgent) || processGptAgent
-            ].filter(Boolean);
-
-            const room = {
-                id: roomId,
-                name: roomName,
-                // primary_agent_id는 DB에 실제로 존재하는 에이전트가 아닐 수 있어 저장하지 않음
-                participants,
-                message: { msg: 'NEW', type: 'text', createdAt: nowIso },
-                // chat_rooms.context에 orchestration 저장 (tools/skills/todos와 충돌 방지: 최상위 키로 둔다)
-                context: {
-                    orchestration,
-                    auto_name_pending: !!generatedNamePromise,
-                    updatedAt: nowIso
-                }
-            };
-
-            await backend.putObject('db://chat_rooms', room);
-
-            const msgUuid = this.uuid();
-            const msg = {
-                uuid: msgUuid,
-                role: 'user',
-                // 첨부만 있을 때 자동 문구를 넣지 않음 (메시지는 첨부 UI로만 표시)
-                content: text || '',
-                timeStamp: nowIso,
-                email: userInfo?.email || null,
-                name: userInfo?.username || userInfo?.name || userInfo?.email || '',
-                userName: userInfo?.username || userInfo?.name || userInfo?.email || '',
-                images: message?.images || [],
-                pdfFile: primaryFile,
-                pdfFiles: messageFiles
-            };
-
-            await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
-
-            // 첨부 파일은 chat_attachments 테이블에 저장 (ChatRoomPage로 넘어가기 전에 선저장)
-            // Raw files are uploaded and saved by ChatRoomPage. Saving placeholder
-            // metadata here creates a second attachment row after the upload finishes.
-            if (hasFile && rawFiles.length === 0) {
-                try {
-                    const tenantId = getTenantId();
-                    const userName = userInfo?.name || userInfo?.username || userInfo?.email || '';
-                    for (const f of messageFiles) {
-                        const fileName = (f?.fileName || f?.name || '').toString().trim();
-                        const filePath = (f?.fileUrl || f?.url || f?.publicUrl || f?.fullPath || f?.path || '').toString() || '';
-                        if (!fileName && !filePath) continue;
-                        // eslint-disable-next-line no-await-in-loop
-                        await backend.putObject('db://chat_attachments', {
-                            id: this.uuid(),
-                            file_name: fileName || (filePath ? String(filePath).split('/').pop() : '') || 'attachment',
-                            file_path: filePath,
-                            chat_room_id: roomId,
-                            user_name: userName,
-                            tenant_id: tenantId
-                        });
-                    }
-                } catch (e) {
-                    // ignore
-                }
-            }
-            // last message preview는 첨부 요약을 사용 (content는 비워둠)
-            const fileName = (primaryFile?.name || primaryFile?.fileName || '').toString();
-            const preview =
-                (text || '').substring(0, 50) ||
-                (hasFile ? (messageFiles.length > 1 ? `${fileName} 외 ${messageFiles.length - 1}개` : fileName).substring(0, 50) : '') ||
-                (hasImages ? `이미지 ${(message?.images || []).length || 0}장` : '');
-            room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
-            await backend.putObject('db://chat_rooms', room);
-
-            if (generatedNamePromise) {
-                generatedNamePromise
-                    .then(async (generatedName) => {
-                        if (!generatedName) return;
-
-                        // 응답 스트리밍 중 변경된 방 데이터를 덮어쓰지 않도록 최신 context를 합쳐 필요한 필드만 갱신한다.
-                        const supabase = window.$supabase;
-                        if (supabase) {
-                            const { data: latestRoom } = await supabase.from('chat_rooms').select('context').eq('id', roomId).maybeSingle();
-                            const { error } = await supabase
-                                .from('chat_rooms')
-                                .update({
-                                    name: generatedName,
-                                    context: {
-                                        ...(latestRoom?.context || room.context || {}),
-                                        auto_name_pending: false
-                                    }
-                                })
-                                .eq('id', roomId);
-                            if (error) throw error;
-                        } else {
-                            const latestRoom = await backend.getObject(`db://chat_rooms/${roomId}`, { key: 'id' });
-                            await backend.putObject('db://chat_rooms', {
-                                ...(latestRoom || room),
-                                name: generatedName,
-                                context: {
-                                    ...(latestRoom?.context || room.context || {}),
-                                    auto_name_pending: false
-                                }
-                            });
-                        }
-                        this.EventBus.emit('chat-rooms-updated');
-                    })
-                    .catch(() => {});
-            }
-
-            // ChatRoomPage에서 첫 메시지에 대한 에이전트 응답만 kick-off 하도록 sessionStorage에 전달
-            try {
-                sessionStorage.setItem(
-                    `chatKickoff:${roomId}`,
-                    JSON.stringify({
-                        roomId,
-                        msgUuid,
-                        // 서버 dedupe용: 클라이언트에서 생성한 user 메시지 UUID
-                        message_uuid: msgUuid,
-                        text,
-                        images: message?.images || [],
-                        file: primaryFile,
-                        files: messageFiles,
-                        orchestration,
-                        // 지식 선택은 전역 스토어(useKnowledgeSelectionStore)가 단일 소스라 kickoff 로 안 넘긴다.
-                        // 스토어는 앱 전역이라 메인→채팅 이동에도 살아있고, 새 방이 bindRoom 으로 이월받는다.
-                        createdAt: nowIso
-                    })
-                );
-            } catch (e) {
-                // ignore
-            }
-
-            // definition-map 패널은 열지 않고 /chat으로 이동
-            this.showFullScreenChat = false;
-            this.pendingChatMessage = null;
-            this.pendingHistoryRoom = null;
-            await this.$router.push({ path: '/chat', query: { roomId } });
         },
         getActiveChatPanel() {
             return this.chatPanelMode === 'user' ? this.$refs.userChatRooms : this.$refs.workAssistantChatPanel;
@@ -1621,20 +1549,13 @@ export default {
             // 미분류 Mega 이름 목록 (동기화에서 제외)
             const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
 
-            // 1. Ensure "미분류" (Uncategorized) domain exists as default
+            // '미분류'는 시스템 예약 항목이라 도메인 목록에 저장하지 않는다.
+            // 도메인 미지정 프로세스에는 표식용 id 만 붙이고, 이미 저장돼 있던 행은 걷어낸다.
             const uncategorizedName = this.$t('processDefinitionMap.uncategorized');
-            let uncategorizedDomain = this.metricsValue.domains.find(
-                (d) => d.name === uncategorizedName || d.name === '미분류' || d.name === 'Uncategorized'
+            this.metricsValue.domains = (this.metricsValue.domains || []).filter(
+                (d) => !isUncategorizedProcess(d, uncategorizedName)
             );
-            if (!uncategorizedDomain) {
-                const newId = 'uncategorized';
-                uncategorizedDomain = {
-                    id: newId,
-                    name: uncategorizedName,
-                    order: this.metricsValue.domains.length + 1
-                };
-                this.metricsValue.domains.push(uncategorizedDomain);
-            }
+            const uncategorizedDomain = { id: 'uncategorized', name: uncategorizedName };
 
             // Rebuild mega_processes and processes to handle deletions
             const newMegaProcesses = [];
@@ -1784,8 +1705,12 @@ export default {
             const hasImages = Array.isArray(message?.images) && message.images.length > 0;
             if (!message || (!message.text && !hasFiles && !hasImages)) return;
 
-            // 메인 채팅 전송 시: process-gpt-agent(가상) + 나 로 방 생성 후 /chat으로 이동
-            await this.createRoomAndNavigateFromMainChat(message);
+            // 메인 채팅 전송 시: process-gpt-agent(가상) + 나 로 방 생성 후 /chat으로 이동.
+            // 이 흐름은 휴대폰 첫 화면도 그대로 쓰므로 공용으로 뺐다.
+            this.showFullScreenChat = false;
+            this.pendingChatMessage = null;
+            this.pendingHistoryRoom = null;
+            await startMainChat(message, { currentUser: this.userInfo, router: this.$router, eventBus: this.EventBus });
         },
 
         // 히스토리 항목 열기
@@ -2374,10 +2299,16 @@ export default {
                 editItem: domain
             };
         },
+        // '미분류'(uncategorized)는 로드 시 임시 생성되는 시스템 예약 항목 — 이름 변경/삭제를 차단한다.
+        isUncategorizedDomain(domain) {
+            return isUncategorizedProcess(domain, this.$t('processDefinitionMap.uncategorized'));
+        },
         editDomain(domain) {
+            if (this.isUncategorizedDomain(domain)) return;
             this.openDomainDialog('edit', domain);
         },
         async deleteDomain(domain) {
+            if (this.isUncategorizedDomain(domain)) return;
             if (!confirm(this.$t('metricsView.confirmDeleteDomain') || '이 도메인을 삭제하시겠습니까?')) {
                 return;
             }
@@ -2391,6 +2322,14 @@ export default {
         async saveDomain() {
             const trimmedName = this.domainDialog.name.trim();
             if (!trimmedName) return;
+            // 예약어 '미분류'로의 생성/변경 및 미분류 항목 자체의 수정 차단
+            if (this.isUncategorizedDomain({ name: trimmedName })) {
+                alert(this.$t('processDefinitionMap.reservedName') || "'미분류'는 시스템 예약 이름입니다.");
+                return;
+            }
+            if (this.domainDialog.mode === 'edit' && this.domainDialog.editItem && this.isUncategorizedDomain(this.domainDialog.editItem)) {
+                return;
+            }
 
             if (this.domainDialog.mode === 'add') {
                 // Duplicate check
@@ -3130,5 +3069,84 @@ export default {
 
 .orphan-process-item:last-child {
     border-bottom: none;
+}
+
+/*
+ * 간소화 시작 화면.
+ *
+ * 세로 가운데에 로고 · 인사말 · 입력창만 둔다. 폭은 좁게 묶는다 —
+ * 넓은 화면에서 입력창이 끝까지 늘어나면 글이 눈을 가로질러야 해서
+ * 오히려 읽기 힘들다. 흔히 쓰는 도구들이 720px 안팎으로 묶는 이유다.
+ */
+.pg-simple-start {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: min(520px, 58vh);
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* 목록을 펼치면 인사말을 접고 위로 붙인다 — 목록이 화면 밖으로 밀리지 않도록. */
+.pg-simple-start--compact {
+    min-height: 0;
+}
+
+.pg-simple-start--compact .pg-simple-start__hello {
+    display: none;
+}
+
+.pg-simple-start > * {
+    width: 100%;
+}
+
+/* 휴대폰의 히스토리 단추 줄. 채팅 첫 화면처럼 오른쪽 위에 붙인다. */
+.pg-simple-start__bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.pg-simple-start__hello {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.pg-simple-start__logo {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 14px;
+}
+
+.pg-simple-start__ask {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: rgb(var(--v-theme-on-surface));
+}
+
+.pg-simple-start__sub {
+    margin: 6px 0 0;
+    font-size: 0.875rem;
+    color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.pg-simple-start__more {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+@media (max-width: 768px) {
+    .pg-simple-start {
+        min-height: 52vh;
+    }
+
+    .pg-simple-start__ask {
+        font-size: 1.25rem;
+    }
 }
 </style>

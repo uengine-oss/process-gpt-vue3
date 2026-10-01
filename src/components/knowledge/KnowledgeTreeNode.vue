@@ -55,9 +55,6 @@
                 />
                 <v-icon size="16" :color="iconOf(f.name).color">{{ iconOf(f.name).icon }}</v-icon>
                 <span class="ktn-file-name">{{ f.name }}</span>
-                <span v-if="f.docRole && f.docRole !== 'content'" class="ktn-role-badge" :class="`is-${f.docRole}`">
-                    {{ roleShort(f.docRole) }}
-                </span>
                 <span v-if="f.indexStatus && f.indexStatus !== 'indexed'" class="ktn-status-badge" :class="`is-${f.indexStatus}`">
                     {{ statusLabel(f.indexStatus) }}
                 </span>
@@ -164,9 +161,6 @@ export default {
                     excluded: '제외'
                 }[s] || ''
             );
-        },
-        roleShort(r) {
-            return { glossary: '사전', template: '양식', reference: '참조', legal_review: '검토' }[r] || '';
         }
     }
 };
@@ -274,31 +268,6 @@ export default {
     color: var(--cds-text-secondary);
 }
 
-/* doc_role badge — 트리 모드 파일 행에서 역할 시각화 */
-.ktn-role-badge {
-    flex: 0 0 auto;
-    font-size: 10px;
-    padding: 1px 7px;
-    border-radius: 8px;
-    font-weight: 500;
-}
-
-.ktn-role-badge.is-glossary {
-    background: rgba(123, 31, 162, 0.12);
-    color: #7b1fa2;
-}
-.ktn-role-badge.is-template {
-    background: rgba(239, 108, 0, 0.12);
-    color: var(--cds-text-warning);
-}
-.ktn-role-badge.is-reference {
-    background: rgba(56, 142, 60, 0.12);
-    color: var(--cds-text-success);
-}
-.ktn-role-badge.is-dataset {
-    background: rgba(0, 137, 123, 0.12);
-    color: #00897b;
-}
 
 .ktn-file-action {
     flex: 0 0 auto;

@@ -231,17 +231,13 @@ import { ref, computed, getCurrentInstance } from 'vue';
 import { VueDraggableNext as draggable } from 'vue-draggable-next';
 import ProgressBadge from '@/components/ui/ProgressBadge.vue';
 import { formatDateKST } from '@/utils/datetime';
-import {
-    getMajorBusinessDomain,
-    getMajorStageColumn,
-    PROCESS_STAGE_LABELS,
-    type ProcessStageColumn
-} from './processClassification';
+import { getMajorBusinessDomain, getMajorStageColumn, getProcessStageColumns } from './processClassification';
+import { saveClassification, tenantCustomization } from '@/services/tenantCustomizationService';
+import { useAdminConsoleStore } from '@/stores/adminConsole';
 
 const instance = getCurrentInstance()!;
 const t = (key: string) => instance.proxy!.$t(key);
-
-const COLUMN_NAMES_STORAGE_KEY = 'process_arch_column_names';
+const adminStore = useAdminConsoleStore();
 
 const props = defineProps<{
     procMap: any;
@@ -266,82 +262,49 @@ const emit = defineEmits<{
     (e: 'addProcess', row: { type: string; megaId?: string }): void;
 }>();
 
-// 5 fixed columns definition
-const COLUMN_DEFS = [
-    {
-        key: 'design',
-        labelKey: 'processArchitecture.board.columns.design',
-        color: '#1976D2',
-        icon: 'mdi-pencil-ruler',
-        keywords: ['설계', 'design', '계획', 'plan', 'planning']
-    },
-    {
-        key: 'build',
-        labelKey: 'processArchitecture.board.columns.build',
-        color: '#388E3C',
-        icon: 'mdi-hammer-wrench',
-        keywords: ['구축', 'build', '개발', 'develop', 'implement', 'implementation']
-    },
-    {
-        key: 'monitor',
-        labelKey: 'processArchitecture.board.columns.monitor',
-        color: '#F57C00',
-        icon: 'mdi-monitor-eye',
-        keywords: ['감시', 'monitor', '모니터', '관제', 'surveillance']
-    },
-    {
-        key: 'control',
-        labelKey: 'processArchitecture.board.columns.control',
-        color: '#7B1FA2',
-        icon: 'mdi-tune',
-        keywords: ['제어', 'control', '통제', '관리', 'manage', 'management']
-    },
-    {
-        key: 'shared',
-        labelKey: 'processArchitecture.board.columns.shared',
-        color: '#607D8B',
-        icon: 'mdi-share-variant',
-        keywords: ['공통', 'shared', 'common']
-    }
-];
+// 열 정의는 테넌트 분류 설정(process_classification)에서 온다. 설정이 없으면 기본 5열.
+// 예전에는 여기 COLUMN_DEFS 가 processClassification.ts 와 중복돼 있었고, 열 이름은
+// 브라우저 localStorage 에만 저장돼 다른 사용자에게 보이지 않았다.
+const columns = computed(() => getProcessStageColumns().map((col) => ({ ...col })));
 
-// Load custom column names from localStorage
-function loadCustomColumnNames(): Record<string, string> {
-    try {
-        const raw = localStorage.getItem(COLUMN_NAMES_STORAGE_KEY);
-        return raw ? JSON.parse(raw) : {};
-    } catch {
-        return {};
-    }
-}
-
-function saveCustomColumnNames(names: Record<string, string>) {
-    try {
-        localStorage.setItem(COLUMN_NAMES_STORAGE_KEY, JSON.stringify(names));
-    } catch {
-        // localStorage can be unavailable in restricted browser contexts.
-    }
-}
-
-const customColumnNames = ref<Record<string, string>>(loadCustomColumnNames());
-
-// Column name editing state
+// Column name editing state (관리자 — 테넌트 분류 설정에 저장)
 const editingColumnKey = ref<string | null>(null);
 const editingColumnName = ref('');
+const savingColumnName = ref(false);
 
 function startEditColumn(col: { key: string; label: string }) {
     editingColumnKey.value = col.key;
-    editingColumnName.value = customColumnNames.value[col.key] || col.label;
+    editingColumnName.value = col.label;
 }
 
-function saveColumnName(colKey: string) {
+async function saveColumnName(colKey: string) {
     const name = editingColumnName.value.trim();
-    if (name) {
-        customColumnNames.value = { ...customColumnNames.value, [colKey]: name };
-        saveCustomColumnNames(customColumnNames.value);
-    }
+    const current = getProcessStageColumns().find((c) => c.key === colKey);
     editingColumnKey.value = null;
     editingColumnName.value = '';
+    if (!name || !current || name === current.label || savingColumnName.value) return;
+    if (!(window as any).$pal) return;
+
+    savingColumnName.value = true;
+    try {
+        const config = tenantCustomization.classification;
+        await saveClassification({
+            ...config,
+            columns: config.columns.map((c) => (c.key === colKey ? { ...c, label: name } : { ...c }))
+        });
+        adminStore.writeAdminAuditLog({
+            action: 'process_classification_update',
+            target_type: 'system',
+            target_id: colKey,
+            target_name: name,
+            before_value: { label: current.label },
+            after_value: { label: name }
+        });
+    } catch (e) {
+        console.error('[ProcessArchCardView] 열 이름 저장 실패:', e);
+    } finally {
+        savingColumnName.value = false;
+    }
 }
 
 function cancelEditColumn() {
@@ -349,26 +312,13 @@ function cancelEditColumn() {
     editingColumnName.value = '';
 }
 
-const columns = computed(() =>
-    COLUMN_DEFS.map((col) => ({
-        ...col,
-        label: customColumnNames.value[col.key] || t(col.labelKey)
-    }))
-);
-
 const visibleColumns = computed(() => {
     if (!props.hideEmptyColumns) return columns.value;
     return columns.value.filter((col) => getMajorCountForColumn(col.key) > 0);
 });
 
-// Display count per column for infinite scroll (initial: 20)
-const displayCounts = ref<Record<string, number>>({
-    design: 20,
-    build: 20,
-    monitor: 20,
-    control: 20,
-    shared: 20
-});
+// Display count per column for infinite scroll (initial: 20) — 열 key 는 설정에 따라 달라지므로 기본값으로 처리
+const displayCounts = ref<Record<string, number>>({});
 
 // Column scroll container refs
 const columnRefs = ref<Record<string, HTMLElement | null>>({});
@@ -406,7 +356,7 @@ const allMajors = computed(() => {
 
 const majorsByColumn = computed<Record<string, any[]>>(() => {
     const grouped: Record<string, any[]> = {};
-    for (const col of COLUMN_DEFS) {
+    for (const col of columns.value) {
         grouped[col.key] = [];
     }
 
@@ -554,7 +504,8 @@ function emitMoveMajor(majorId: string, fromColumnKey: string, toColumnKey: stri
     if (!major) return false;
     if (getColumnKey(major) === toColumnKey) return false;
 
-    emit('moveMajor', majorId, major._megaId, PROCESS_STAGE_LABELS[toColumnKey as ProcessStageColumn] || toColumnKey);
+    // 열 key 를 넘긴다 — processMapMove 가 proc_map 에 key 로 기록한다.
+    emit('moveMajor', majorId, major._megaId, toColumnKey);
     return true;
 }
 
