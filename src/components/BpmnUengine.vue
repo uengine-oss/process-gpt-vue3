@@ -99,6 +99,7 @@ import '@/components/autoLayout/edge-router-orthogonal.js';
 import '@/components/autoLayout/bpmn-waypoints-refresh.js';
 import customSequenceFlowFinalModule from '@/components/autoLayout/custom-sequence-flow-final-module.js';
 import sequenceFlowManualCropSkipModule from '@/components/autoLayout/sequence-flow-manual-crop-skip-module.js';
+import { applyColumnRowLayout } from '@/components/autoLayout/column-row-layout.js';
 import customDrilldownModule from './customDrilldown';
 import { resolveLinkedProcessXml } from './customDrilldown/resolveLinkedProcessXml';
 import { openLinkedProcessInNewTab, PROCESS_HIERARCHY_MODE } from '@/views/process-hierarchy/navigation';
@@ -939,6 +940,10 @@ export default {
             const horizontal = getLayoutOrientation(this.bpmnViewer);
             window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal });
         },
+        applyColumnRowLayout() {
+            // 신규 로직(열·행 결정형, src/lib/bpmnAutoLayout) — 기존 applyAutoLayout 과 비교용
+            return applyColumnRowLayout(this.bpmnViewer);
+        },
         revertAutoLayout() {
             if (!window.BpmnAutoLayout || !window.BpmnAutoLayout.hasLayoutSnapshot()) {
                 console.warn('No layout snapshot available to restore');
@@ -1219,8 +1224,10 @@ export default {
             if (!self.bpmnXML) return;
             const validation = await backend.validate(self.bpmnXML);
             const store = useBpmnStore();
+            const storeModeler = store.getModeler || self.bpmnViewer;
+            if (!storeModeler) return; // 스토어에 모델러가 없는 임베드(E2E 등)에서는 마커 표시 생략
 
-            var canvas = store.getModeler.get('canvas');
+            var canvas = storeModeler.get('canvas');
 
             if (validation) {
                 Object.keys(validation).forEach((task) => {

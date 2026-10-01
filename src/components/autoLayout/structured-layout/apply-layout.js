@@ -202,3 +202,16 @@ export function applyComputedLayout(modeler,plan,{input,nodeOffsets=[]}={}) {
     nodes:captureRotationBaseline(registry.getAll(),input,plan.placement.horizontal,nodeOffsets)}) : undefined;
   executeEntries(modeler,before,after,undefined,plan.placement.horizontal,baseline);
 }
+
+// Apply externally computed geometry (bounds / waypoints) through the same
+// undoable command as the structured layout. Entries: {element, bounds} |
+// {element, waypoints}, optionally {orientation:{value}} for pools/lanes.
+// Used by column-row-layout.js (src/lib/bpmnAutoLayout bridge).
+export function applyGeometryEntries(modeler,after,{horizontal}={}) {
+  const registry=modeler.get('elementRegistry'),root=modeler.get('canvas').getRootElement();
+  const targetHorizontal=horizontal ?? getLayoutOrientation(modeler);
+  const before=after.map(entry=>currentEntry(entry.element));
+  const baseline=()=>({horizontal:targetHorizontal,edited:false,
+    nodes:captureUnlaidRotationBaseline(registry.getAll(),targetHorizontal,root.id)});
+  executeEntries(modeler,before,after,undefined,targetHorizontal,baseline);
+}

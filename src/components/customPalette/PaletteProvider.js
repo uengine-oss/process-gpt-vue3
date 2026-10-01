@@ -5,6 +5,7 @@ import '@/components/autoLayout/enhancedSugiyamaLayout.js';
 import '@/components/autoLayout/bpmn-auto-layout.js';
 import '@/components/autoLayout/edge-router-orthogonal.js';
 import '@/components/autoLayout/bpmn-waypoints-refresh.js';
+import { applyColumnRowLayout } from '@/components/autoLayout/column-row-layout.js';
 import {
   computeFinalSequenceFlowWaypoints,
   collectSequenceFlowObstacleElements,
@@ -1069,6 +1070,25 @@ PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onL
   }
 }
 
+/**
+ * 신규 자동 정렬(열·행 결정형) — src/lib/bpmnAutoLayout 로직을 살아있는 모델러에 적용.
+ * 기존 applyAutoLayout(window.BpmnAutoLayout) 과 결과를 비교하기 위한 두 번째 버튼.
+ */
+PaletteProvider.prototype.applyColumnRowLayout = function(onLoadStart = () => {}, onLoadEnd = () => {}) {
+  if (typeof window !== 'undefined' && window.$pal) return;
+  const bpmnJS = this._injector;
+  const canvas = this._elementFactory && this._elementFactory._canvas;
+  setTimeout(() => {
+      clearSelectionVisualState(bpmnJS);
+      applyColumnRowLayout(bpmnJS, { onLoadStart, onLoadEnd })
+          .then(() => {
+              clearSelectionVisualState(bpmnJS);
+              if (canvas && canvas.zoom) canvas.zoom('fit-viewport');
+          })
+          .catch((error) => console.error('신규 자동 정렬(열·행) 적용에 실패했습니다.', error));
+  }, 50);
+};
+
 PaletteProvider.prototype._rotateRelativePosition = function(relativeX, relativeY, scaleX, scaleY) {
   return {
     x: relativeY * scaleY,
@@ -2120,6 +2140,16 @@ PaletteProvider.prototype.getPaletteEntries = function (element) {
             action: {
                 click: function (event) {
                     me.applyAutoLayout();
+                }
+            }
+        },
+        'auto-layout-column-row': {
+            group: 'collaboration',
+            className: 'mdi mdi-view-column-outline',
+            title: i18n.global.t('PaletteProvider.autoLayoutColumnRow') || 'Auto Layout (new: column/row)',
+            action: {
+                click: function (event) {
+                    me.applyColumnRowLayout();
                 }
             }
         },
