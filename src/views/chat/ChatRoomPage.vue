@@ -825,7 +825,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { agentStableId, isUuid as isUuidStable, slugToUuid } from '@/utils/agentId.js';
 import axios from 'axios';
 import { isArtifactUrlFresh, usableArtifactUrl } from '@/utils/artifactLinks.js';
-import { isDocumentFile } from '@/shared/workspaceFiles/index.js';
+import { isDocumentFile, isTurnArtifactRecord } from '@/shared/workspaceFiles/index.js';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import Chat from '@/components/ui/Chat.vue';
 import VoiceAgentDesktopMode from '@/components/ui/VoiceAgentDesktopMode.vue';
@@ -6773,6 +6773,29 @@ export default {
         },
 
         /**
+         * 턴이 끝난 뒤 도착한 산출물을 얹을 메시지.
+         *
+         * 서버는 최종 답변을 chats row 에 쓰고, 그 realtime 알림을 받은 화면은 스트리밍
+         * 메시지를 확정하며 activeStreams 에서 지운다. 문서 산출물은 그 직전에 나가므로
+         * 둘은 같은 순간을 다툰다 — 진 경우 영속할 자리를 잃는다. 확정된 마지막 답변이
+         * 그 자리다.
+         */
+        _lastPersistableAssistantMessage(agentId) {
+            const list = Array.isArray(this.messages) ? this.messages : [];
+            const wanted = (agentId || '').toString();
+            for (let i = list.length - 1; i >= 0; i--) {
+                const m = list[i];
+                if (!m || !['assistant', 'agent'].includes((m.role || '').toString())) continue;
+                if (!(m.rowUuid || m.uuid)) continue;
+                const mAgentId = (m.agentId || '').toString();
+                // 에이전트를 알 수 있으면 같은 에이전트의 답변에만 얹는다.
+                if (wanted && mAgentId && mAgentId !== wanted) continue;
+                return m;
+            }
+            return null;
+        },
+
+        /**
          * 문서 산출물의 받을 수 있는 주소를 보장한다.
          *
          * 서명 주소는 한 시간이면 죽는다. 어제 대화를 다시 연 사람에게는 목록에 파일이
@@ -7829,6 +7852,41 @@ export default {
                     }
                 }
             }
+            // 안전망 — 산출물 레코드로는 남았는데 작업 폴더 항목이 없는 문서를 되살린다.
+            //
+            // 실시간 file_artifact 는 보내는 스트림으로 오고, 턴을 끝내는 done 은 붙은
+            // 스트림으로 온다. 문서 산출물은 턴 끝에 나가서 그 둘이 같은 순간을 다투고,
+            // 지면 화면에서 통째로 사라졌다 — 말풍선에 링크는 있는데 작업 폴더만 빈 방이
+            // 그렇게 생겼다. 받을 수 있는 파일이 레코드에 있는 한, 방을 다시 열면 보여야 한다.
+            const knownNames = new Set(Object.values(mergedByPath).map((f) => this._workspaceFileBaseName(f)));
+            const roomKeyForPath = (this.currentChatRoom?.id || this.roomId || '').toString();
+            for (const m of this.messages || []) {
+                if (!m || !['assistant', 'agent'].includes((m.role || '').toString())) continue;
+                for (const f of Array.isArray(m.pdfFiles) ? m.pdfFiles : []) {
+                    if (!isTurnArtifactRecord(f)) continue;
+                    const name = (f.name || f.fileName || '').toString();
+                    if (!name || knownNames.has(name.toLowerCase())) continue;
+                    knownNames.add(name.toLowerCase());
+                    // 레코드에는 작업 폴더 경로가 없다. 방 폴더 아래로 둔다 — 같은 이름이
+                    // 이미 있으면 위에서 걸렀으므로 실제 항목을 밀어내지 않는다.
+                    mergedByPath[`/workspace/.bpmn/${roomKeyForPath}/${name}`] = {
+                        path: `/workspace/.bpmn/${roomKeyForPath}/${name}`,
+                        name,
+                        ext: '',
+                        content: '',
+                        op: 'create',
+                        truncated: false,
+                        status: 'done',
+                        document: true,
+                        url: (f.url || f.fileUrl || '').toString(),
+                        file_id: (f.file_id || f.fileId || '').toString(),
+                        url_expires_at: (f.url_expires_at || f.urlExpiresAt || '').toString(),
+                        contentType: (f.contentType || f.content_type || '').toString(),
+                        size_bytes: Number(f.size_bytes) || 0
+                    };
+                }
+            }
+
             const mergedFiles = Object.values(mergedByPath);
             if (mergedFiles.length > 0) {
                 this.roomWorkspaceFilesByGroup = {};
@@ -8890,8 +8948,6 @@ export default {
                         // deepagent 가 샌드박스 workspace 에 만든/수정한 산출물 파일을 Claude Desktop식
                         // '작업 폴더 + 미리보기' UI(type:'files')로 실시간 표시한다.
                         try {
-                            const msg = this.activeStreams[agentId];
-                            if (!msg) return;
                             const path = ((evt && evt.path) || '').toString();
                             if (!path) return;
                             const entry = {
@@ -8915,14 +8971,20 @@ export default {
                                 entry.contentType = (evt.content_type || evt.contentType || '').toString();
                                 entry.size_bytes = Number(evt.size_bytes) || 0;
                             }
-                            // 메시지에 영속(by path) — 새로고침 복원용
+                            // 패널은 방 단위다. 진행 중인 답변을 찾지 못해도 띄운다 —
+                            // 문서 산출물(docx·pdf)은 턴 끝에 와서, 서버가 최종 답변을 쓰는 순간
+                            // 지워지는 activeStreams 와 경쟁한다. 거기서 지면 패널이 아예 안 생겨
+                            // "링크는 있는데 작업 폴더는 비어 있는" 방이 됐다.
+                            this.upsertWorkspaceFilesPanel(entry);
+                            // 메시지에 영속(by path) — 새로고침 복원용.
+                            // 턴이 막 끝났으면 확정된 마지막 답변에 얹는다.
+                            const msg = this.activeStreams[agentId] || this._lastPersistableAssistantMessage(agentId);
+                            if (!msg) return;
                             const files = Array.isArray(msg.workspaceFiles) ? msg.workspaceFiles : [];
                             const mi = files.findIndex((f) => f.path === path);
                             if (mi === -1) files.push(entry);
                             else files[mi] = { ...files[mi], ...entry };
                             msg.workspaceFiles = files;
-                            // 방 단위 단일 패널로 통합(메시지가 여러 개여도 탭은 하나) — 같은 방 uuid 디렉터리의 파일을 한 곳에.
-                            this.upsertWorkspaceFilesPanel(entry);
                             // file_artifact는 서버의 기본 chat INSERT에 포함되지 않으므로 별도 병합 저장한다.
                             this.scheduleMessageFrontendStatePersist(msg);
                         } catch (e) {}

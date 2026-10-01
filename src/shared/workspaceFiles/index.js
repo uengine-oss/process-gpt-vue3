@@ -109,3 +109,18 @@ export function downloadUrlFor(url, fileName) {
     if (/[?&]download=/.test(text)) return text;
     return `${text}${text.includes('?') ? '&' : '?'}download=${encodeURIComponent(name)}`;
 }
+
+/**
+ * 이 레코드가 이번 대화에서 **에이전트가 만든** 문서인가.
+ *
+ * 메시지의 산출물 목록(`pdfFiles`)에는 사용자가 올린 첨부도 함께 담긴다. 그것까지 작업
+ * 폴더에 띄우면 입력이 산출물로 둔갑한다. 서버가 거둔 산출물만 비공개 버킷(`artifacts/`)에
+ * 들어가고 해시를 달고 나오므로, 그 둘을 함께 본다.
+ */
+export function isTurnArtifactRecord(file) {
+    if (!file || typeof file !== 'object') return false;
+    const fileId = String(file.file_id || file.fileId || '');
+    if (!fileId.startsWith('artifacts/')) return false;
+    if (!String(file.sha256 || '')) return false;
+    return Boolean(file.url || file.fileUrl);
+}

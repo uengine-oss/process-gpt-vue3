@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { documentPreviewKind, downloadUrlFor, fileExtensionOf, fileIconOf, isDocumentFile } from './index.js';
+import { documentPreviewKind, downloadUrlFor, fileExtensionOf, fileIconOf, isDocumentFile, isTurnArtifactRecord } from './index.js';
 
 test('확장자는 ext 를 먼저 믿고, 없으면 이름에서 뽑는다', () => {
     assert.equal(fileExtensionOf({ ext: 'docx' }), '.docx');
@@ -45,4 +45,15 @@ test('받은 파일이 사용자가 본 이름으로 떨어진다', () => {
     // 서명 주소가 아니면 손대지 않는다 — 다른 저장소의 주소를 망가뜨리지 않는다.
     assert.equal(downloadUrlFor('https://u/a.docx', 'a.docx'), 'https://u/a.docx');
     assert.equal(downloadUrlFor('', 'a.docx'), '');
+});
+
+test('에이전트가 만든 문서만 되살린다 — 사용자가 올린 첨부는 아니다', () => {
+    const made = { name: 'a.docx', file_id: 'artifacts/9cc5011e.docx', sha256: 'abc', url: 'https://u/a' };
+    assert.equal(isTurnArtifactRecord(made), true);
+    // 사용자가 올린 첨부는 공개 버킷에 있고 해시가 없다 — 입력이 산출물로 둔갑하면 안 된다.
+    assert.equal(isTurnArtifactRecord({ name: 'a.docx', file_id: 'files/9cc5011e.docx', url: 'https://u/a' }), false);
+    assert.equal(isTurnArtifactRecord({ ...made, sha256: '' }), false);
+    // 받을 주소가 없으면 띄워 봐야 누를 수 없다.
+    assert.equal(isTurnArtifactRecord({ ...made, url: '' }), false);
+    assert.equal(isTurnArtifactRecord(null), false);
 });
