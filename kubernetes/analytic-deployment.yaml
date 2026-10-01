@@ -13,9 +13,22 @@ spec:
       labels:
         app: analytic
     spec:
+      # 보안 기본값 (Trivy KSV-0118): seccomp 기본 프로파일
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: analytic
         image: ghcr.io/uengine-oss/process-gpt-analytic:latest
+        # 보안 기본값 (Trivy KSV-0014/0118): 읽기 전용 루트 FS, 권한 상승·커널 권한 제거
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         ports:
         - containerPort: 8000
         resources:
@@ -75,6 +88,9 @@ spec:
             port: 8000
           initialDelaySeconds: 10
           periodSeconds: 10
+      volumes:
+      - name: tmp
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

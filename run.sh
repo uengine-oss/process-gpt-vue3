@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# 이미지에 담긴 빌드 산출물을 쓰기 가능한 서빙 디렉터리로 복사한다 (Dockerfile 참고).
+# 예전 이미지처럼 /opt/www 에 바로 들어 있는 경우에는 건너뛴다.
+if [ -d /opt/www-dist ]; then
+  cp -R /opt/www-dist/. /opt/www/
+fi
+
 # .env 파일의 내용을 환경 변수로 설정
 if [ -f /opt/www/.env ]; then
   echo "Loading environment variables from .env file..."
