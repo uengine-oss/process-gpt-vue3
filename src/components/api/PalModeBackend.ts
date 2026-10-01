@@ -5,6 +5,7 @@ import ProcessGPTBackend, { listProcDefWithFallback } from './ProcessGPTBackend'
 import axios from 'axios';
 import { streamSse } from '@/services/sseClient';
 import { assertAiEnabled } from '@/utils/aiFeatureGate';
+import { recycleBinRemainingDays } from '@/services/tenantCustomizationService';
 const axiosInstance = axios.create();
 
 class PalModeBackend extends ProcessGPTBackend {
@@ -318,7 +319,7 @@ class PalModeBackend extends ProcessGPTBackend {
             ...item,
             deleted_by: item.deleted_by || item.created_by || item.owner || 'Unknown',
             deleted_from: item.deleted_from || null,
-            remaining_days: Math.max(0, 30 - Math.floor((Date.now() - new Date(item.deleted_at).getTime()) / 86400000))
+            remaining_days: recycleBinRemainingDays(item.deleted_at)
         }));
     }
 
@@ -839,6 +840,117 @@ class PalModeBackend extends ProcessGPTBackend {
         return { data: data || [], total: count || 0 };
     }
 
+    /**
+     * 로그인/로그아웃/로그인 실패 이력 조회 (public.auth_login_audit)
+     * 마이그레이션: supabase/migrations/20260911000001_auth_audit_log.sql
+     *
+     *  · 기록은 record_auth_audit() RPC 전용이고, 조회는 RLS 가 관리자만 통과시킨다.
+     *    테넌트 스코프도 RLS 에서 처리하므로(현재 테넌트 행 + 테넌트 미상 행)
+     *    admin_audit_log 와 달리 여기서 tenant_id 를 다시 걸지 않는다.
+     *    — 미가입 이메일의 로그인 실패처럼 tenant_id 가 NULL 인 행을 놓치면 안 된다.
+     *  · 현재 클라이언트는 실패도 action='login' + success=false 로 남기므로
+     *    "액션(action)"과 "성공 여부(success)"는 별개 필터다.
+     */
+    async getAuthLoginAudit(filters: any = {}): Promise<{ data: any[]; total: number }> {
+        const page = filters.page || 1;
+        const pageSize = filters.pageSize || 50;
+        let query = this.supabase
+            .from('auth_login_audit')
+            .select('*', { count: 'exact' })
+            .order('created_at', { ascending: false });
+        if (filters.action) query = query.eq('action', filters.action);
+        if (filters.success === true || filters.success === false) query = query.eq('success', filters.success);
+        if (filters.email) query = query.ilike('email', `%${String(filters.email).trim()}%`);
+        if (filters.userId) query = query.eq('user_id', filters.userId);
+        if (filters.startDate) query = query.gte('created_at', filters.startDate);
+        if (filters.endDate) query = query.lte('created_at', `${filters.endDate}T23:59:59`);
+        if (pageSize > 0) query = query.range((page - 1) * pageSize, page * pageSize - 1);
+        const { data, error, count } = await query;
+        if (error) throw error;
+        return { data: data || [], total: count || 0 };
+    }
+
+    /**
+     * 파일 다운로드 이력 (docs/security.md 3-3, 항목 8·18)
+     * 마이그레이션: supabase/migrations/20260911_file_download_log.sql
+     *
+     *  · 기록은 record_file_download RPC 로만 들어오고, 이 조회는 관리자 RLS 를
+     *    통과한 행만 돌려준다(같은 테넌트). 여기서 테넌트를 다시 걸지 않는 이유다.
+     *  · 반환 행: { created_at, email, bucket, path, file_name, action, ip_address,
+     *              user_agent, tenant_id, user_id, metadata }
+     */
+    async getFileDownloadLog(filters: any = {}): Promise<{ data: any[]; total: number }> {
+        const page = filters.page || 1;
+        const pageSize = filters.pageSize || 50;
+        let query = this.supabase
+            .from('file_download_log')
+            .select('*', { count: 'exact' })
+            .order('created_at', { ascending: false });
+        if (filters.action) query = query.eq('action', filters.action);
+        if (filters.bucket) query = query.eq('bucket', String(filters.bucket).trim());
+        if (filters.email) query = query.ilike('email', `%${String(filters.email).trim()}%`);
+        if (filters.userId) query = query.eq('user_id', filters.userId);
+        if (filters.startDate) query = query.gte('created_at', filters.startDate);
+        if (filters.endDate) query = query.lte('created_at', `${filters.endDate}T23:59:59`);
+        if (pageSize > 0) query = query.range((page - 1) * pageSize, page * pageSize - 1);
+        const { data, error, count } = await query;
+        if (error) throw error;
+        return { data: data || [], total: count || 0 };
+    }
+
+    /**
+     * 다운로드 이력에 실제로 등장한 버킷 목록. 필터 드롭다운을 채운다.
+     * 별도 집계 RPC 를 두지 않고 최근 행에서 distinct 를 뽑는다 — 버킷은 두세 개뿐이다.
+     */
+    async getFileDownloadBuckets(): Promise<string[]> {
+        const { data, error } = await this.supabase
+            .from('file_download_log')
+            .select('bucket')
+            .order('created_at', { ascending: false })
+            .limit(1000);
+        if (error) throw error;
+        const buckets = new Set<string>();
+        for (const row of data || []) {
+            const bucket = String((row as any)?.bucket || '').trim();
+            if (bucket) buckets.add(bucket);
+        }
+        return [...buckets].sort();
+    }
+
+    /**
+     * 반복 실패로 잠긴 계정 목록 (docs/security.md 2-4, 항목 18)
+     * 마이그레이션: supabase/migrations/20260911_password_lockout_hook.sql
+     *
+     *  · 원천 테이블 public.auth_failed_attempts 는 GoTrue 훅 전용이라 클라이언트에
+     *    권한이 없다(RLS 정책 없음 + GRANT 없음). 조회는 SECURITY DEFINER RPC 로만 한다.
+     *  · RPC 가 관리자 판정과 테넌트 스코프를 모두 처리하므로 여기서 다시 걸지 않는다.
+     *  · 반환 행: { user_id, email, username, failed_count,
+     *              first_failed_at, last_failed_at, locked_at, locked_until }
+     */
+    async getLockedAccounts(): Promise<any[]> {
+        const { data, error } = await this.supabase.rpc('admin_list_locked_accounts');
+        if (error) throw error;
+        return data || [];
+    }
+
+    /**
+     * 계정 잠금 해제 (실패 카운터 삭제). 관리자·같은 테넌트만 통과한다.
+     * admin_audit_log 에 action='account_unlock' 으로 남는다.
+     *
+     * email / userId 중 하나만 있으면 된다. 둘 다 주면 userId 가 우선한다.
+     */
+    async unlockAccount(target: { email?: string | null; userId?: string | null }): Promise<any> {
+        const email = target?.email ? String(target.email).trim() : null;
+        const userId = target?.userId ? String(target.userId) : null;
+        if (!email && !userId) throw new Error('잠금 해제 대상이 지정되지 않았습니다.');
+        const { data, error } = await this.supabase.rpc('admin_unlock_account', {
+            p_email: userId ? null : email,
+            p_user_id: userId
+        });
+        if (error) throw error;
+        return data;
+    }
+
     async qdrantChat(payload: any, opts: { onDelta?: (text: string) => void; signal?: AbortSignal } = {}) {
         assertAiEnabled();
         let accumulated = '';
@@ -1121,6 +1233,51 @@ class PalModeBackend extends ProcessGPTBackend {
                 .single();
             if (error) throw error;
             return data;
+        }
+    }
+
+    // 알림 페이지(/notifications) 전용. fetchNotifications 는 종 드롭다운용으로
+    // 미확인 알림만 url 로 묶어 돌려주므로, 읽은 알림까지 포함한 원본 목록이 따로 필요하다.
+    private notificationRecipientIds(): string[] {
+        const email = localStorage.getItem('email');
+        const uuid = (() => {
+            try {
+                return JSON.parse(localStorage.getItem('sb-127-auth-token') || '{}')?.user?.id;
+            } catch {
+                return null;
+            }
+        })();
+        return [email, ...(uuid && uuid !== email ? [uuid] : [])].filter(Boolean) as string[];
+    }
+
+    async fetchAllNotifications(options?: { size?: number; unreadOnly?: boolean }): Promise<any[]> {
+        try {
+            const userIds = this.notificationRecipientIds();
+            if (userIds.length === 0) return [];
+            const listOptions: any = {
+                size: options?.size ?? 200,
+                orderBy: 'time_stamp',
+                sort: 'desc',
+                inArray: { column: 'user_id', values: userIds }
+            };
+            if (options?.unreadOnly) {
+                listOptions.match = { is_checked: false };
+            }
+            return (await storage.list('notifications', listOptions)) || [];
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async markAllNotificationsRead(): Promise<number> {
+        try {
+            const unread = await this.fetchAllNotifications({ unreadOnly: true, size: 500 });
+            await Promise.all(unread.map((item: any) => storage.putObject('notifications', { id: item.id, is_checked: true })));
+            return unread.length;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 }

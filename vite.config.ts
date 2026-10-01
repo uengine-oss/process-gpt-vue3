@@ -235,18 +235,16 @@ export default defineConfig({
                 proxyTimeout: 0,
                 rewrite: (path) => path.replace(/^\/process-gpt-cli-agent/, '')
             },
-            '/process-gpt-deepagents/skills': {
-                target: 'http://127.0.0.1:8765',
-                changeOrigin: true,
-                timeout: 0,
-                proxyTimeout: 0,
-                rewrite: (path) => {
-                    let p = path.replace(/^\/process-gpt-deepagents/, '');
-                    p = p.replace(/^\/skills-builtin(\?|$)/, '/skills/list-builtin$1');
-                    p = p.replace(/^\/skills(\?|$)/, '/skills/list$1');
-                    return p;
-                }
-            },
+            // '/process-gpt-deepagents/skills' 는 더 이상 여기서 가로채지 않는다.
+            // 스킬 API 는 claude-skills(8765)에서 process-gpt-deepagents 의
+            // core/api/skills_router.py 로 옮겨 갔고, 그쪽 라우트는 GET /skills ·
+            // GET /skills-builtin 이다(=프론트가 부르는 경로 그대로). 배포 환경의
+            // 게이트웨이도 /process-gpt-deepagents/** 를 통째로 deepagents:8888 로
+            // 보낼 뿐 skills 만 따로 빼지 않는다(gateway application.yml prod 프로파일).
+            // 여기 남아 있던 8765 리라이트는 경로를 /skills/list 로 바꿔 보내서
+            // dev 에서만 스킬 목록이 비고, agent-feedback 이 승인된 SKILL 을
+            // 커밋해 둔 스토어(=deepagents)와도 어긋났다.
+            // 아래 buildAgentProxies() 의 '/process-gpt-deepagents/' 규칙이 처리한다.
             // checkSkills() calls /claude-skills/skills/check -> claude-skills /skills/check
             '/claude-skills/': {
                 target: 'http://127.0.0.1:8765',

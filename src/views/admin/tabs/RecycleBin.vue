@@ -5,6 +5,9 @@
             <div class="page-header-left">
                 <div class="d-flex align-center ga-2">
                     <h1 class="page-title">휴지통</h1>
+                    <v-chip size="x-small" variant="tonal" color="grey" title="운영 정책 → 휴지통 보존 일수. 만료 항목은 DB 예약 작업이 매일 자동 정리합니다.">
+                        보존 {{ retentionDays }}일 · 자동 정리
+                    </v-chip>
                 </div>
             </div>
             <div class="page-header-right">
@@ -179,6 +182,7 @@
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useAdminConsoleStore } from '@/stores/adminConsole';
+import { getRecycleBinRetentionDays, recycleBinRemainingDays } from '@/services/tenantCustomizationService';
 import {
     loadDeletedPiFlagTypes,
     restorePiFlagType,
@@ -218,14 +222,11 @@ interface DeleteDialogState {
     targetType: 'process' | 'instance' | 'schema' | 'piFlagType' | 'auditPolicy' | 'kpiTarget' | 'laneRoleGroup' | 'supplier' | 'system';
 }
 
-const PI_FLAG_TYPE_RETENTION_DAYS = 30;
-
+// 보존 일수는 테넌트 운영 정책(operation_policy.recycle_bin_retention_days, 기본 30일).
+// 만료 항목의 영구 삭제는 DB 스케줄(purge_expired_recycle_bin, 매일 03:30)이 맡는다 —
+// 예전처럼 이 화면을 열 때 클라이언트가 지우지 않으므로, 관리자가 화면을 열지 않아도 정리된다.
 function piFlagTypeRemainingDays(deletedAt: string): number {
-    if (!deletedAt) return PI_FLAG_TYPE_RETENTION_DAYS;
-    const ts = new Date(deletedAt).getTime();
-    if (Number.isNaN(ts)) return PI_FLAG_TYPE_RETENTION_DAYS;
-    const elapsedDays = (Date.now() - ts) / (1000 * 60 * 60 * 24);
-    return Math.max(0, Math.ceil(PI_FLAG_TYPE_RETENTION_DAYS - elapsedDays));
+    return recycleBinRemainingDays(deletedAt);
 }
 
 export default defineComponent({
@@ -459,9 +460,7 @@ export default defineComponent({
                 type: 'laneRoleGroup' as const,
                 deleted_by: g.deleted_by || '',
                 deleted_at: g.deleted_at,
-                remaining_days: g.deleted_at
-                    ? Math.max(0, 30 - Math.floor((Date.now() - new Date(g.deleted_at).getTime()) / 86400000))
-                    : 30,
+                remaining_days: recycleBinRemainingDays(g.deleted_at),
                 raw_id: g.id
             }));
 
@@ -676,23 +675,6 @@ export default defineComponent({
             deleteConfirmText.value = '';
         }
 
-        async function purgeExpiredItems() {
-            const expiredItems = allItems.value.filter((item) => item.remaining_days <= 0);
-            if (expiredItems.length === 0) return;
-
-            for (const item of expiredItems) {
-                try {
-                    await hardDeleteItem(item);
-                } catch (e) {
-                    console.error('Expired item cleanup failed for', item.raw_id, e);
-                }
-            }
-
-            await refreshDeletedPiFlagTypes();
-            const expiredIds = new Set(expiredItems.map((item) => item.uid));
-            selectedIds.value = selectedIds.value.filter((id) => !expiredIds.has(id));
-        }
-
         async function submitDelete() {
             if (deleteConfirmText.value !== 'DELETE') return;
 
@@ -727,6 +709,7 @@ export default defineComponent({
         }
 
         const piFlagTypesChangeHandler = () => refreshDeletedPiFlagTypes();
+        const retentionDays = computed(() => getRecycleBinRetentionDays());
 
         onMounted(async () => {
             await refreshDeletedPiFlagTypes();
@@ -742,7 +725,6 @@ export default defineComponent({
                 (store as any).fetchDeletedSuppliers(),
                 (store as any).fetchDeletedSystems()
             ]);
-            await purgeExpiredItems();
         });
 
         onBeforeUnmount(() => {
@@ -751,6 +733,7 @@ export default defineComponent({
 
         return {
             store,
+            retentionDays,
             searchQuery,
             activeFilter,
             filterOptions,

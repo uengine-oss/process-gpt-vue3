@@ -33,7 +33,9 @@ class FixedBaseWorkAssistantAgentService {
             onProcessResult,
             onOpenUi,
             onFileArtifact,
-            onDraft
+            onDraft,
+            onSteerAccepted,
+            onSteerApplied
         } = callbacks;
 
         try {
@@ -99,6 +101,16 @@ class FixedBaseWorkAssistantAgentService {
                         switch (parsed.type) {
                             case 'token':
                                 if (onToken) onToken(parsed.content);
+                                break;
+                            // 작업 중에 보낸 수정 지시를 받았다. 아직 반영은 아니다 —
+                            // 이 이벤트로 완료를 표시하면 사용자는 반영되지 않은 결과를
+                            // 반영된 것으로 읽는다.
+                            case 'steer_accepted':
+                                if (onSteerAccepted) onSteerAccepted(parsed);
+                                break;
+                            // 수정 지시가 실제로 다음 판단에 들어갔다.
+                            case 'steer_applied':
+                                if (onSteerApplied) onSteerApplied(parsed);
                                 break;
                             case 'plan_tools':
                                 if (onPlanTools) onPlanTools(Array.isArray(parsed.tools) ? parsed.tools : [], parsed);

@@ -6,9 +6,26 @@ import HorizontalHeader from './horizontal-header/HorizontalHeader.vue';
 import HorizontalSidebar from './horizontal-sidebar/HorizontalSidebar.vue';
 import GlobalNoticeBanner from './GlobalNoticeBanner.vue';
 import MobileTabBar from './MobileTabBar.vue';
+import MobileAppBar from './MobileAppBar.vue';
 import { useCustomizerStore } from '../../stores/customizer';
-import { ref, computed, getCurrentInstance, onMounted, onBeforeUnmount } from 'vue';
+import { usePhoneShell, refreshPhoneShell } from '@/shared/phoneShell';
+import { ref, computed, watch, getCurrentInstance, onMounted, onBeforeUnmount } from 'vue';
 const customizer = useCustomizerStore();
+
+/**
+ * 휴대폰 간소화 화면의 앱 틀(클로드·ChatGPT 모바일 모양).
+ * 아래 탭 대신 위에 앱바를 두고 목록은 전체 화면 사이드바로 연다.
+ * body 에 pg-m 을 달아 두면 전역 스타일(_phone-shell.scss)이 그 안에서만 켜진다 —
+ * 데스크톱과 간소화를 끈 화면은 손대지 않는다.
+ */
+const { active: phoneShell } = usePhoneShell();
+watch(
+    phoneShell,
+    (on) => {
+        document.body.classList.toggle('pg-m', !!on);
+    },
+    { immediate: true }
+);
 
 // globalIsMobile ref로 직접 관리
 const globalIsMobile = ref(window.innerWidth <= 768);
@@ -34,6 +51,16 @@ const canvasReSize = computed(() => {
 });
 
 const route = useRoute();
+// 로그인·로그아웃은 같은 탭에서 일어나 알릴 이벤트가 없다. 화면을 옮길 때마다 다시 본다.
+watch(
+    () => route.fullPath,
+    () => {
+        refreshPhoneShell();
+        // 휴대폰에서는 사이드바가 화면을 다 덮는다. 목록에서 무엇을 골랐든 화면이
+        // 바뀌었으면 닫아야 그 화면이 보인다 — 목록마다 닫는 코드를 넣지 않고 여기서 한 번에.
+        if (phoneShell.value && customizer.Sidebar_drawer) customizer.SET_SIDEBAR_DRAWER();
+    }
+);
 const isModelingTab = computed(() => {
     return route.query && route.query.modeling ? true : false;
 });
@@ -81,6 +108,7 @@ const openSidebar = () => {
             ]"
         >
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
+            <MobileAppBar v-if="phoneShell && !isModelingTab" />
             <!--
                 간소화 화면에는 상단바가 없다. 거기 있던 단추들은 사이드바로 옮겼다
                 (SimpleSidebarTools) — 갈 곳이 한 군데면 찾으러 다닐 일이 없다.
@@ -150,6 +178,7 @@ const openSidebar = () => {
             ]"
         >
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
+            <MobileAppBar v-if="phoneShell && !isModelingTab" />
             <!--
                 간소화 화면에는 상단바가 없다. 거기 있던 단추들은 사이드바로 옮겼다
                 (SimpleSidebarTools) — 갈 곳이 한 군데면 찾으러 다닐 일이 없다.
@@ -209,8 +238,11 @@ const openSidebar = () => {
                     <Footer />
                 </footer> -->
             </v-main>
-            <!-- 작은 화면의 아래 탭. 스스로 폭과 로그인 여부를 보고 필요할 때만 나온다. -->
-            <MobileTabBar />
+            <!--
+                작은 화면의 아래 탭. 간소화 화면에서는 앱바 + 사이드바가 그 일을 맡으므로
+                간소화를 끈 사람에게만 남긴다.
+            -->
+            <MobileTabBar v-if="!phoneShell" />
         </v-app>
     </v-locale-provider>
 </template>

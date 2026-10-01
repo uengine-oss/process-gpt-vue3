@@ -1280,13 +1280,17 @@ export default {
             }
         },
         async handleUploadedFile(response) {
-            if (response && response.publicUrl) {
+            // 버킷이 비공개가 되면서 업로드 결과에 publicUrl 이 더는 오지 않는다.
+            // 에이전트가 파일을 읽으려면 지금 열리는 주소(서명 URL)가 있어야 하므로
+            // signedUrl 을 본다. 그것도 없으면 경로만이라도 있어야 의미가 있다.
+            const url = response?.signedUrl || response?.publicUrl || '';
+            if (response && (url || response.path)) {
                 var me = this;
                 const taskId = this.validateTaskId();
                 if (!taskId) return;
 
                 const query = me.todoStatus.query;
-                const responseStr = JSON.stringify(response);
+                const responseStr = JSON.stringify({ ...response, publicUrl: url, fileUrl: url });
                 const newQuery = query ? `${query}\n\n[InputData]\n${responseStr}` : `[InputData]\n${responseStr}`;
 
                 await this.backend.putWorkItem(taskId, {

@@ -1,11 +1,13 @@
 <template>
-    <v-card-text class="pa-0">
+    <!-- embedded: 관리자 콘솔 페이지(TaskCatalogPage)에 내장 — 설명·추가 버튼은 페이지 헤더가 담당하고,
+         목록 영역만 남은 높이를 채우며 자체 스크롤한다 -->
+    <v-card-text class="pa-0" :class="{ 'catalog-list--embedded': embedded }">
         <!-- [BLOCK:alert.info.v1] -->
-        <v-alert dense outlined type="info" color="gray" class="mb-4 pa-4 pt-2 pb-2">
+        <v-alert v-if="!embedded" dense outlined type="info" color="gray" class="mb-4 pa-4 pt-2 pb-2">
             <span class="text-body-1">{{ $t('taskCatalog.catalogDescription') }}</span>
         </v-alert>
 
-        <div class="d-flex align-center flex-wrap ga-3 mb-4">
+        <div class="d-flex align-center flex-wrap ga-3 mb-4 catalog-toolbar">
             <!-- [BLOCK:field.search.v1] -->
             <div
                 class="d-flex align-center border border-borderColor header-search rounded-pill px-5"
@@ -36,31 +38,23 @@
                 class="flex-grow-0"
                 style="min-width: 180px"
             />
-            <!-- [BLOCK:field.select.v1] -->
-            <v-select
-                v-model="filterSystem"
-                :items="systems"
-                :label="$t('taskCatalog.filterBySystem')"
-                item-title="name"
-                item-value="name"
-                clearable
-                variant="outlined"
-                density="compact"
-                hide-details
-                class="flex-grow-0"
-                style="min-width: 180px"
-            />
             <v-spacer />
-            <!-- [BLOCK:button.primary.v1] -->
-            <v-btn color="primary" rounded variant="flat" @click="openDialog()">
+            <!-- [BLOCK:button.primary.v1] — embedded 모드에선 페이지 헤더의 추가 버튼을 사용 -->
+            <v-btn v-if="!embedded" color="primary" rounded variant="flat" @click="openDialog()">
                 <v-icon start>mdi-plus</v-icon>
                 {{ $t('taskCatalog.addTask') }}
             </v-btn>
         </div>
 
-        <v-row class="ma-0 pa-0">
-            <v-col class="pa-0" v-for="item in filteredItems" :key="item.id" cols="12" md="4" lg="3">
-                <div class="task-card" draggable="true" @dragstart="onDragStart($event, item)">
+        <div class="catalog-grid-area">
+            <div class="catalog-grid">
+                <div
+                    class="task-card"
+                    v-for="item in filteredItems"
+                    :key="item.id"
+                    draggable="true"
+                    @dragstart="onDragStart($event, item)"
+                >
                     <div class="task-card-header">
                         <div class="task-icon" :style="{ backgroundColor: getTaskTypeColor(item.task_type) }">
                             <v-icon size="18" color="white">
@@ -71,7 +65,7 @@
                     </div>
 
                     <div class="d-flex flex-wrap ga-1 mb-2">
-                        <v-chip size="small" variant="tonal">{{ item.system_name }}</v-chip>
+                        <v-chip v-if="item.system_name" size="small" variant="tonal">{{ item.system_name }}</v-chip>
                         <v-chip size="small" variant="tonal" color="primary">{{ getTaskTypeLabel(item.task_type) }}</v-chip>
                     </div>
 
@@ -89,11 +83,13 @@
                         </v-btn>
                     </div>
                 </div>
-            </v-col>
-        </v-row>
+            </div>
 
-        <!-- [BLOCK:alert.info.v1] -->
-        <div v-if="filteredItems.length === 0" class="text-center pa-8 text-medium-emphasis">{{ $t('taskCatalog.noCatalogItems') }}</div>
+            <!-- [BLOCK:alert.info.v1] -->
+            <div v-if="filteredItems.length === 0" class="text-center pa-8 text-medium-emphasis">
+                {{ $t('taskCatalog.noCatalogItems') }}
+            </div>
+        </div>
 
         <!-- Add/Edit Dialog -->
         <TaskCatalogDialog v-model="dialogOpen" :item="editingItem" @saved="onItemSaved" />
@@ -137,6 +133,10 @@ export default defineComponent({
     components: {
         TaskCatalogDialog
     },
+    props: {
+        // 관리자 콘솔 표준 페이지(TaskCatalogPage)에 내장 — 설명 알림·추가 버튼을 숨기고 목록만 스크롤
+        embedded: { type: Boolean, default: false }
+    },
     setup() {
         const { proxy } = getCurrentInstance();
         const locale = computed(() => proxy.$i18n?.locale || 'en');
@@ -148,14 +148,12 @@ export default defineComponent({
 
         // Load data when component mounts
         onMounted(async () => {
-            console.log('TaskCatalogList mounted, loading data...');
             try {
                 if (!store.systemsLoaded) {
                     await store.loadSystems();
                 }
                 // Always reload catalog to get fresh data
                 await store.loadCatalog();
-                console.log('TaskCatalogList - catalogItems:', store.catalogItems);
             } catch (error) {
                 console.error('TaskCatalogList - Failed to load data:', error);
             }
@@ -163,7 +161,6 @@ export default defineComponent({
 
         const searchQuery = ref('');
         const filterTaskType = ref(null);
-        const filterSystem = ref(null);
         const dialogOpen = ref(false);
         const deleteDialogOpen = ref(false);
         const editingItem = ref(null);
@@ -191,10 +188,6 @@ export default defineComponent({
 
             if (filterTaskType.value) {
                 items = items.filter((item) => item.task_type === filterTaskType.value);
-            }
-
-            if (filterSystem.value) {
-                items = items.filter((item) => item.system_name === filterSystem.value);
             }
 
             return items;
@@ -276,7 +269,6 @@ export default defineComponent({
             systems,
             searchQuery,
             filterTaskType,
-            filterSystem,
             availableTaskTypes,
             filteredItems,
             dialogOpen,
@@ -297,6 +289,33 @@ export default defineComponent({
 </script>
 
 <style scoped>
+/* ── embedded 모드: sk-page-card-text(column flex, overflow hidden) 안에서
+   툴바는 고정, 카드 그리드만 남은 높이를 채우며 자체 스크롤 ── */
+.catalog-list--embedded {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.catalog-list--embedded .catalog-toolbar {
+    flex-shrink: 0;
+}
+
+.catalog-list--embedded .catalog-grid-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* 카드 간격은 grid gap으로, 같은 줄 카드 높이는 grid stretch로 통일한다 */
+.catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
 /* Task Card - Flat Design */
 .task-card {
     background: var(--cds-surface-2);

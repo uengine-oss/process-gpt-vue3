@@ -127,6 +127,52 @@ class DeepAgentRouterService {
     }
 
     /**
+     * 진행 중인 턴의 **방향을 바꾼다**(스티어링).
+     *
+     * 중지와 다르다. 중지는 실행을 죽이고 새 메시지는 그 턴을 대체하므로, 어느 쪽이든
+     * 지금까지 한 작업이 사라진다. 스티어링은 맥락을 유지한 채 지시만 바꿔 얹는다.
+     *
+     * 받았다(`accepted`)는 반영됐다는 뜻이 아니다 — 그 시점의 에이전트는 아직 원래
+     * 지시대로 도구를 돌리고 있다. 실제 반영은 SSE 로 오는 `steer_applied` 가 알린다.
+     * 두 가지를 한 번에 표시하면 사용자는 반영되지 않은 결과를 반영된 것으로 읽는다.
+     *
+     * 실패는 예외가 아니라 `{ accepted: false, reason }` 이다. 대표적인 사유:
+     *   - `unsupported`           : 이 에이전트가 스티어링을 구현하지 않았다(501)
+     *   - `no_active_turn`        : 돌고 있는 턴이 없다(이미 끝났다)
+     *   - `awaiting_human_input`  : 에이전트가 질문에 대한 답을 기다리는 중이다
+     * 호출한 쪽은 사유를 보고 평범한 새 메시지로 되돌릴 수 있다.
+     */
+    async steerStream(conversationId, message, options = {}) {
+        const text = (message ?? '').toString().trim();
+        if (!conversationId) return { accepted: false, reason: 'no_conversation' };
+        if (!text) return { accepted: false, reason: 'empty_message' };
+        try {
+            const response = await fetch(`${this.baseUrl}/chat/steer`, {
+                method: 'POST',
+                headers: buildAgentHeaders({ user_jwt: options.userJwt || '', tenant_id: options.tenantId || '' }),
+                body: JSON.stringify({
+                    // 동작 유형을 본문에도 싣는다 — 같은 payload 를 /chat/stream 으로 보내도
+                    // 동일하게 처리된다(엔드포인트를 하나만 아는 클라이언트를 위해).
+                    action: 'steer',
+                    conversation_id: conversationId,
+                    message: text,
+                    tenant_id: options.tenantId || '',
+                    user_uid: options.userUid || '',
+                    user_jwt: options.userJwt || '',
+                    metadata: options.metadata || {}
+                })
+            });
+            const body = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                return { accepted: false, reason: body?.reason || `http_${response.status}`, detail: body?.detail || '' };
+            }
+            return body;
+        } catch (error) {
+            return { accepted: false, reason: 'network_error', detail: error?.message || '' };
+        }
+    }
+
+    /**
      * 진행 중인 채팅 스트림에 재접속한다(재진입/새로고침 대응).
      * 활성 스트림이 없으면(백엔드가 실패 상태코드 또는 204/빈 응답으로 표현) 어떤 콜백도
      * 오류로 호출하지 않고 조용히 종료한다 — 이 메서드는 항상 베스트 에포트다.
@@ -189,7 +235,9 @@ class DeepAgentRouterService {
             onOpenUi,
             onProcessResult,
             onFileArtifact,
-            onDraft
+            onDraft,
+            onSteerAccepted,
+            onSteerApplied
         } = callbacks;
 
         const reader = response.body.getReader();
@@ -219,6 +267,11 @@ class DeepAgentRouterService {
                             case 'snapshot':
                                 // catch-up 스냅샷: 지금까지 누적된 전체 텍스트를 한 번에 전달
                                 if (onToken) onToken(parsed.content);
+                                // 접수만 되고 아직 반영되지 않은 수정 지시. 이게 없으면 재접속한
+                                // 화면에는 지시를 보낸 흔적이 사라져 사용자가 또 보낸다.
+                                if (onSteerAccepted && Array.isArray(parsed.pending_steers)) {
+                                    parsed.pending_steers.forEach((s) => onSteerAccepted(s));
+                                }
                                 break;
                             case 'token':
                                 if (onToken) onToken(parsed.content);
@@ -261,6 +314,15 @@ class DeepAgentRouterService {
                                 // parsed 를 통째로 넘긴다 — done.files(산출물 다운로드 링크)가
                                 // content 만 넘기던 시절에 조용히 버려지고 있었다.
                                 if (onDone) onDone(parsed.content, parsed);
+                                break;
+                            // 수정 지시를 받았다. 아직 반영은 아니다 — 이 이벤트로 완료를
+                            // 표시하면 사용자는 반영되지 않은 결과를 반영된 것으로 읽는다.
+                            case 'steer_accepted':
+                                if (onSteerAccepted) onSteerAccepted(parsed);
+                                break;
+                            // 수정 지시가 실제로 다음 판단에 들어갔다.
+                            case 'steer_applied':
+                                if (onSteerApplied) onSteerApplied(parsed);
                                 break;
                             case 'error':
                                 if (onError) onError(new Error(parsed.content || parsed.error || parsed.message || 'Agent error'));

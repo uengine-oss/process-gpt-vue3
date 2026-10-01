@@ -3,6 +3,7 @@ import { computed, getCurrentInstance, onMounted, onUnmounted, reactive, ref, wa
 import type { Component } from 'vue';
 import type { DashboardTab, NativeDashboardView } from '@/services/dashboardSettingsService';
 import { defaultViewRole, loadTabs } from '@/services/dashboardSettingsService';
+import { writeActivityLog } from '@/services/activityAuditLog';
 import { hasRoleAtLeast, resolveRole } from '@/utils/roles';
 import type { AnalysisDashboardFilters, DateRangePreset } from '@/stores/analytics/analysisDashboardStore';
 import { useAnalysisDashboardStore } from '@/stores/analytics/analysisDashboardStore';
@@ -189,6 +190,16 @@ function onSettingsSaved(updated: DashboardTab[]) {
     if (visibleTabs.value.length > 0 && !visibleTabs.value.find((tab) => tab.key === activeTabKey.value)) {
         activeTabKey.value = visibleTabs.value[0].key;
     }
+    // 활동 로그 (PAL 전용, 실패 무시) — 저장 성공 후에만 emit 되므로 여기서 1회 기록
+    writeActivityLog({
+        action: 'dashboard_settings_update',
+        target_type: 'dashboard',
+        target_name: '분석 대시보드',
+        after_value: {
+            tab_count: updated.length,
+            tabs: updated.map((tab) => tab.label || tab.key)
+        }
+    });
 }
 
 function openCurrentGrafana() {

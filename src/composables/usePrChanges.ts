@@ -485,7 +485,19 @@ async function loadDefinitionSnapshots(
     const derivedParent = headVersion.includes('-') ? headVersion.split('-')[0] : '';
     const base =
         byVersion.get(String(head.parent_version || '')) || byVersion.get(derivedParent) || byVersion.get(stripVersionPrefix(baseBranch));
-    return { headXml: head.snapshot || '', baseXml: base?.snapshot || '' };
+    if (base?.snapshot) return { headXml: head.snapshot || '', baseXml: base.snapshot };
+
+    // 버전을 한 번도 저장하지 않은 정의에 초안이 올라온 경우(피드백 기반 개선 요청이 대표적이다)
+    // 갈라져 나온 버전 행이 없다. 그 초안은 지금 운영 중인 정의에서 갈라졌으므로 운영 XML
+    // (proc_def.bpmn) 과 비교한다. type 'dmn' 은 버전 이력을 거치지 않고 이 컬럼을 그대로 읽는다 —
+    // 'bpmn' 은 최신 버전 스냅샷을 먼저 보므로 방금 올라온 초안 자신을 돌려줄 수 있다.
+    let liveXml = '';
+    try {
+        liveXml = (await backend.getRawDefinition(resourceId, { type: 'dmn' })) || '';
+    } catch {
+        liveXml = '';
+    }
+    return { headXml: head.snapshot || '', baseXml: typeof liveXml === 'string' ? liveXml : '' };
 }
 
 /**

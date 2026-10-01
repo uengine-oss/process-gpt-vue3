@@ -22,7 +22,7 @@
                 {{ saveState.validatePassed ? '검증 통과' : `검증 보정 ${saveState.validateReport.iterations || 0}회` }}
             </v-chip>
             <v-btn
-                v-if="files.length"
+                v-if="savableFiles.length"
                 size="x-small"
                 color="primary"
                 variant="flat"
@@ -41,7 +41,7 @@
                 :key="f.path"
                 class="ws-files__item"
                 :class="{ 'is-active': f.path === selectedPath }"
-                @click="selectedPath = f.path"
+                @click="select(f)"
             >
                 <v-icon size="15" class="ws-files__item-icon">{{ fileIcon(fileExtension(f)) }}</v-icon>
                 <span class="ws-files__item-name">{{ displayName(f) }}</span>
@@ -56,9 +56,54 @@
         <div v-if="selected" class="ws-files__preview">
             <div class="ws-files__preview-bar">
                 <span class="ws-files__preview-path">{{ selected.path }}</span>
+                <v-btn
+                    v-if="selectedIsDocument"
+                    size="x-small"
+                    variant="text"
+                    prepend-icon="mdi-download"
+                    :loading="downloading"
+                    @click="downloadSelected"
+                    >다운로드</v-btn
+                >
             </div>
 
-            <div class="ws-files__preview-body">
+            <!-- 문서 산출물(docx·pdf 등): 내용이 아니라 비공개 버킷의 서명 주소로 온다.
+                 브라우저가 그릴 수 있는 형식은 그려 주고, 그렇지 않으면 받게 한다. -->
+            <div v-if="selectedIsDocument" class="ws-files__preview-body">
+                <iframe
+                    v-if="selectedPreviewKind === 'pdf' && selectedUrlReady"
+                    :key="selected.url"
+                    :src="selected.url"
+                    class="ws-files__iframe"
+                    title="문서 미리보기"
+                ></iframe>
+                <img
+                    v-else-if="selectedPreviewKind === 'image' && selectedUrlReady"
+                    :src="selected.url"
+                    :alt="displayName(selected)"
+                    class="ws-files__image"
+                />
+                <div v-else-if="selectedPreviewKind !== 'none'" class="ws-files__doc">
+                    <v-progress-circular indeterminate color="primary" :size="20" />
+                    <span class="ws-files__doc-note">미리보기 주소를 받는 중…</span>
+                </div>
+                <div v-else class="ws-files__doc">
+                    <v-icon size="34" class="ws-files__doc-icon">{{ fileIcon(fileExtension(selected)) }}</v-icon>
+                    <div class="ws-files__doc-name">{{ displayName(selected) }}</div>
+                    <div class="ws-files__doc-note">미리보기를 지원하지 않는 형식입니다. 받아서 확인하세요.</div>
+                    <v-btn
+                        size="small"
+                        color="primary"
+                        variant="flat"
+                        prepend-icon="mdi-download"
+                        :loading="downloading"
+                        @click="downloadSelected"
+                        >다운로드</v-btn
+                    >
+                </div>
+            </div>
+
+            <div v-else class="ws-files__preview-body">
                 <HwpxViewer
                     :key="selected.path"
                     ref="viewer"
@@ -87,30 +132,20 @@
 <script>
 import HwpxViewer from '@/components/HwpxViewer.vue';
 import { agentStableId } from '@/utils/agentId.js';
+import { isArtifactUrlFresh } from '@/utils/artifactLinks.js';
+import {
+    TEXT_PREVIEW_EXTENSIONS,
+    documentPreviewKind,
+    downloadUrlFor,
+    fileExtensionOf,
+    fileIconOf,
+    isDocumentFile
+} from '@/shared/workspaceFiles/index.js';
 
-const FILE_ICONS = {
-    '.json': 'mdi-code-json',
-    '.md': 'mdi-language-markdown-outline',
-    '.html': 'mdi-language-html5',
-    '.htm': 'mdi-language-html5',
-    '.form': 'mdi-form-select',
-    '.xml': 'mdi-xml',
-    '.bpmn': 'mdi-sitemap-outline',
-    '.dmn': 'mdi-table-large',
-    '.yaml': 'mdi-cog-outline',
-    '.yml': 'mdi-cog-outline',
-    '.txt': 'mdi-text-box-outline',
-    '.csv': 'mdi-table'
-};
-
-const PREVIEWABLE_EXTENSIONS = new Set(Object.keys(FILE_ICONS));
+const PREVIEWABLE_EXTENSIONS = TEXT_PREVIEW_EXTENSIONS;
 
 function normalizedFileExtension(file) {
-    const explicit = (file?.ext || '').toString().trim().toLowerCase();
-    if (explicit) return explicit.startsWith('.') ? explicit : `.${explicit}`;
-    const name = (file?.name || file?.path || '').toString().split('/').pop() || '';
-    const dot = name.lastIndexOf('.');
-    return dot > 0 ? name.slice(dot).toLowerCase() : '';
+    return fileExtensionOf(file);
 }
 
 export default {
@@ -122,10 +157,11 @@ export default {
         // { saving, saved, error } — 부모(ChatRoomPage)가 DB 저장 상태를 전달
         saveState: { type: Object, default: () => ({ saving: false, saved: false, error: '' }) }
     },
-    emits: ['save', 'edit-file', 'ai-edit-file', 'navigate-process'],
+    emits: ['save', 'edit-file', 'ai-edit-file', 'navigate-process', 'resolve-url'],
     data() {
         return {
-            selectedPath: null
+            selectedPath: null,
+            downloading: false
         };
     },
     computed: {
@@ -141,6 +177,10 @@ export default {
                 const base = (f.name || p.split('/').pop() || '').toString();
                 const normalizedBase = base.toLowerCase().replace(/^\.+/, '');
                 if (base.startsWith('.')) return false; // 숨김 파일
+                // 문서 산출물(docx·pdf 등)은 바이너리라 내용이 없다. 미리보기 가능한
+                // 확장자 목록으로 걸러 버리면 만들어진 문서가 목록에서 통째로 빠진다 —
+                // 받을 수 있는 주소를 들고 있으면 산출물이다.
+                if (isDocumentFile(f)) return true;
                 // DeepAgent may emit internal files with or without a leading dot.
                 if (normalizedBase === 'process-definition.json' || normalizedBase === 'manifest.json') return false;
                 const ext = normalizedFileExtension(f);
@@ -153,6 +193,28 @@ export default {
         },
         selected() {
             return this.displayFiles.find((f) => f.path === this.selectedPath) || null;
+        },
+        /** 저장(정식 등록) 대상 — 문서 산출물은 등록할 정의가 아니라 받아 갈 결과물이다. */
+        savableFiles() {
+            return (this.files || []).filter((f) => f && !isDocumentFile(f));
+        },
+        selectedIsDocument() {
+            return isDocumentFile(this.selected);
+        },
+        /** 선택한 문서를 화면에서 그릴 수 있는가 — 'pdf' | 'image' | 'none'. */
+        selectedPreviewKind() {
+            return documentPreviewKind(this.selected);
+        },
+        /**
+         * 지금 이 주소로 그려도 되는가.
+         *
+         * 만료된 주소를 그대로 iframe 에 걸면 브라우저가 저장소의 오류 XML 을 문서인 양
+         * 그린다 — 어제 대화를 다시 연 사람은 깨진 화면을 먼저 본다. 새 주소를 받을
+         * 때까지는 그리지 않고 기다린다고 말한다.
+         */
+        selectedUrlReady() {
+            const file = this.selected;
+            return !!(file && file.url && isArtifactUrlFresh(file));
         },
         /**
          * 선택 산출물의 '편집' 시 이동할 내부 편집기 타깃.
@@ -220,17 +282,66 @@ export default {
                 const stillThere = list.some((f) => f.path === this.selectedPath);
                 if (!this.selectedPath || !stillThere) {
                     this.selectedPath = list[list.length - 1].path;
+                    // 주소 확보는 selectedPath watcher 에 맡기지 않는다 — 같은 flush 안에서
+                    // 이미 지나간 watcher 는 다시 뛰지 않아, 방에 들어와 자동 선택된 파일만
+                    // 영영 "주소를 받는 중" 에 멈춰 있었다.
+                    this.$nextTick(() => this.ensureDocumentUrl());
                 }
             }
         }
     },
     methods: {
+        /** 목록에서 파일을 고른다. 고르는 즉시 받을 수 있는 주소를 확보한다. */
+        select(file) {
+            this.selectedPath = file?.path || null;
+            this.ensureDocumentUrl();
+        },
         fileExtension(file) {
             return normalizedFileExtension(file);
         },
         fileIcon(ext) {
-            const normalized = (ext || '').toString().toLowerCase();
-            return FILE_ICONS[normalized.startsWith('.') ? normalized : `.${normalized}`] || 'mdi-file-outline';
+            return fileIconOf(ext);
+        },
+        /**
+         * 선택한 문서의 주소가 아직 살아 있게 한다.
+         *
+         * 서명 주소는 한 시간이면 죽는다. 어제 대화를 다시 연 사람에게는 목록에 파일이
+         * 보이는데 눌러도 아무것도 안 나오는 상태가 된다 — 주소를 받아 오는 일은 부모가
+         * 하고(열쇠는 `file_id`), 여기서는 필요할 때 부탁만 한다.
+         */
+        ensureDocumentUrl() {
+            const file = this.selected;
+            if (!isDocumentFile(file)) return null;
+            if (file.url && isArtifactUrlFresh(file)) return null;
+            return new Promise((resolve) => {
+                this.$emit('resolve-url', { path: file.path, done: resolve });
+            });
+        },
+        /** 선택한 문서를 받는다. 주소가 죽어 있으면 먼저 새로 받아 온다. */
+        async downloadSelected() {
+            const file = this.selected;
+            if (!file || this.downloading) return;
+            this.downloading = true;
+            try {
+                const pending = this.ensureDocumentUrl();
+                if (pending) await pending;
+                const url = file.url || '';
+                // 주소를 못 받았으면 아무것도 하지 않는다 — 죽은 주소로 빈 창을 띄우면
+                // 사용자는 파일이 깨진 줄로 안다.
+                if (!url) return;
+                const name = file.name || this.displayName(file) || 'download';
+                const a = document.createElement('a');
+                a.href = downloadUrlFor(url, name);
+                a.download = name;
+                // 크로스 오리진이면 download 속성이 무시될 수 있어 새 탭 fallback 도 허용.
+                a.target = '_blank';
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } finally {
+                this.downloading = false;
+            }
         },
         /** 미리보기 뷰어에서 파일 내용을 편집하면 부모(ChatRoomPage)로 전달 → 패널 데이터 갱신·저장에 반영. */
         onContentEdit(newContent) {
@@ -426,6 +537,32 @@ export default {
     background: rgba(var(--v-theme-on-surface), 0.04);
     padding: 12px;
     border-radius: 6px;
+}
+.ws-files__image {
+    max-width: 100%;
+    border: 1px solid rgba(var(--v-theme-borderColor), 0.6);
+    border-radius: 6px;
+}
+.ws-files__doc {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 100%;
+    min-height: 200px;
+    text-align: center;
+}
+.ws-files__doc-icon {
+    opacity: 0.6;
+}
+.ws-files__doc-name {
+    font-weight: 600;
+    word-break: break-all;
+}
+.ws-files__doc-note {
+    font-size: 12px;
+    color: rgba(var(--v-theme-on-surface), 0.55);
 }
 .ws-files__truncated {
     display: flex;

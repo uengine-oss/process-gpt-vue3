@@ -16,6 +16,9 @@
         >
             <v-icon size="24">{{ isOn(tab) ? tab.iconOn : tab.icon }}</v-icon>
         </RouterLink>
+        <div class="pg-tabbar__item pg-tabbar__notifications" aria-label="알림" data-testid="mobile-notifications-tab">
+            <NotificationDD menu-location="top end" />
+        </div>
     </nav>
 </template>
 
@@ -36,6 +39,7 @@
  */
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import NotificationDD from './vertical-header/NotificationDD.vue';
 
 const PHONE = 768;
 
@@ -158,5 +162,9 @@ function isOn(tab: { match: string[] }) {
 
 .pg-tabbar__item--on {
     color: rgb(var(--v-theme-primary));
+}
+
+.pg-tabbar__notifications :deep(.v-btn) {
+    color: inherit;
 }
 </style>

@@ -13,6 +13,7 @@
             </div>
         </div>
         <iframe v-if="fileUrl" :src="fileUrl" class="pdf-viewer__frame" title="PDF 미리보기"></iframe>
+        <div v-else-if="loading" class="pdf-viewer__status">미리보기 주소를 새로 받는 중…</div>
         <div v-else class="pdf-viewer__status">PDF를 불러올 수 없습니다.</div>
     </div>
 </template>
@@ -27,7 +28,10 @@ export default {
         // 작성 중인 문서: 보기만 하고 내려받지 않는다. 검수를 통과하지 않았다.
         draft: { type: Boolean, default: false },
         downloadFileName: { type: String, default: '' },
-        downloadTitle: { type: String, default: '다운로드(PDF)' }
+        downloadTitle: { type: String, default: '다운로드(PDF)' },
+        // 주소를 다시 받아 오는 중. 만료된 주소를 그대로 iframe 에 걸면 브라우저가 저장소의
+        // 오류 JSON 을 문서인 양 그려 버린다 — 빈 주소로 두고 이 표시를 내보낸다.
+        loading: { type: Boolean, default: false }
     },
     emits: ['close'],
     methods: {

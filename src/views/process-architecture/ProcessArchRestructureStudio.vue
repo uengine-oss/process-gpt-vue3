@@ -142,6 +142,46 @@
                         class="mt-3"
                     />
                 </template>
+                <template v-else-if="selectedOperation === 'rename-domain'">
+                    <v-select
+                        v-model="selectedDomainKey"
+                        :items="domainOptions"
+                        item-title="label"
+                        item-value="value"
+                        label="이름을 바꿀 도메인"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="mt-3"
+                    />
+                    <v-text-field
+                        v-model="newDomainName"
+                        label="새 도메인 이름"
+                        placeholder="예: 영업관리"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="mt-3"
+                    />
+                </template>
+
+                <template v-else-if="selectedOperation === 'delete-domain'">
+                    <v-select
+                        v-model="selectedDomainKey"
+                        :items="domainOptions"
+                        item-title="label"
+                        item-value="value"
+                        label="삭제할 도메인"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="mt-3"
+                    />
+                    <v-alert type="info" variant="tonal" density="compact" class="mt-3">
+                        소속 프로세스는 삭제되지 않고 미분류로 이동합니다.
+                    </v-alert>
+                </template>
+
                 <template v-else-if="selectedOperation === 'delete-mega'">
                     <v-select
                         v-model="selectedMegaId"
@@ -281,10 +321,25 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { generateProcessId, getNextSequenceFromIds } from '@/utils/processIdGenerator';
 import { formatKST, formatDateKST, todayKST } from '@/utils/datetime';
+import {
+    measureDomainImpact,
+    applyDomainRenameToProcMap,
+    applyDomainDeleteToProcMap,
+    applyDomainRenameToMetrics,
+    applyDomainDeleteToMetrics
+} from './domainMutations';
+import { isUncategorizedProcess } from '@/utils/uncategorizedProcess';
 
 const LOCAL_DRAFT_KEY = 'process_architecture_restructure_drafts';
 
-type RestructureOperation = 'rename-mega' | 'move-major' | 'add-major' | 'delete-major' | 'delete-mega';
+type RestructureOperation =
+    | 'rename-mega'
+    | 'move-major'
+    | 'add-major'
+    | 'delete-major'
+    | 'delete-mega'
+    | 'rename-domain'
+    | 'delete-domain';
 
 interface RestructureDraftPayload {
     id: string;
@@ -295,6 +350,8 @@ interface RestructureDraftPayload {
     approvalTitle: string;
     versionLabel: string;
     map: any;
+    /** 도메인 작업일 때만 채워진다 — cut-over 시 proc_map 과 함께 반영할 metrics 스냅샷 */
+    metricsMap?: any;
     changeSummary: string[];
     beforeSnapshot: {
         megaCount: number;
@@ -334,8 +391,11 @@ interface MaintenanceMode {
 const props = defineProps<{
     procMap: any;
     domains?: any[];
+    metricsMap?: any;
     maintenanceMode?: MaintenanceMode | null;
     cutoverJobs?: any[];
+    /** 외부(도메인 관리 등)에서 특정 작업으로 바로 열 때 지정 */
+    initialOperation?: RestructureOperation | '';
 }>();
 const maintenanceEnabled = computed<boolean>(() => props.maintenanceMode?.enabled === true);
 
@@ -346,7 +406,7 @@ const emit = defineEmits<{
     (e: 'openReviewBoard', jobId?: string): void;
 }>();
 
-const selectedOperation = ref<RestructureOperation>('rename-mega');
+const selectedOperation = ref<RestructureOperation>(props.initialOperation || 'rename-mega');
 const selectedMegaId = ref('');
 const selectedMajorId = ref('');
 const targetMegaId = ref('');
@@ -354,10 +414,14 @@ const transferTargetMajorId = ref('');
 const newMegaName = ref('');
 const newMajorName = ref('');
 const newMajorDomain = ref('');
+const selectedDomainKey = ref('');
+const newDomainName = ref('');
 const draftPayload = ref<RestructureDraftPayload | null>(null);
 const canAutoRestoreDraft = ref(true);
 
 const operationOptions = [
+    { value: 'rename-domain', label: 'Domain Rename' },
+    { value: 'delete-domain', label: 'Domain Delete + 미분류 이관' },
     { value: 'rename-mega', label: 'Mega Rename' },
     { value: 'move-major', label: 'Major Move' },
     { value: 'add-major', label: 'Major Add' },
@@ -402,6 +466,17 @@ const domainOptions = computed(() =>
     }))
 );
 
+/** 도메인 작업 대상 — domainOptions 의 value(이름 우선)로 원본 도메인 객체를 찾는다 */
+const selectedDomain = computed(
+    () => (props.domains || []).find((domain: any) => (domain.name || domain.id) === selectedDomainKey.value) || null
+);
+
+/** 선택한 도메인에 걸린 major/sub 수 — Blast Radius 와 검증에서 함께 쓴다 */
+const selectedDomainImpact = computed(() => {
+    if (!selectedDomain.value) return { majorCount: 0, subCount: 0, majorNames: [] as string[] };
+    return measureDomainImpact(props.procMap, selectedDomain.value, props.domains || []);
+});
+
 const targetMegaOptions = computed(() => {
     if (!selectedMajor.value) return megaOptions.value;
     return megaOptions.value.filter((mega) => mega.value !== selectedMajor.value?.megaId);
@@ -437,6 +512,45 @@ const orphanRiskMessage = computed(() =>
 );
 
 const blastRadius = computed(() => {
+    if (selectedOperation.value === 'rename-domain') {
+        const domain = selectedDomain.value;
+        const impact = selectedDomainImpact.value;
+        const nextName = newDomainName.value.trim();
+        return {
+            impactedMegaCount: 0,
+            impactedMajorCount: impact.majorCount,
+            impactedSubCount: impact.subCount,
+            orphanRisk: false,
+            summaryLines: domain
+                ? [
+                      `도메인 ${domain.name || domain.id} → ${nextName || '새 이름'}으로 변경됩니다.`,
+                      `소속 Major ${impact.majorCount}개와 Sub-process ${impact.subCount}개의 도메인 표기가 함께 갱신됩니다.`,
+                      '도메인 ID는 유지되어 KPI 목표·정책문서의 참조는 끊기지 않습니다.'
+                  ]
+                : ['이름을 바꿀 도메인을 선택하면 영향 범위를 계산합니다.']
+        };
+    }
+
+    if (selectedOperation.value === 'delete-domain') {
+        const domain = selectedDomain.value;
+        const impact = selectedDomainImpact.value;
+        return {
+            impactedMegaCount: 0,
+            impactedMajorCount: impact.majorCount,
+            impactedSubCount: impact.subCount,
+            orphanRisk: false,
+            summaryLines: domain
+                ? [
+                      `도메인 ${domain.name || domain.id}이(가) 삭제됩니다.`,
+                      impact.majorCount > 0
+                          ? `소속 Major ${impact.majorCount}개와 Sub-process ${impact.subCount}개는 미분류로 이동합니다(삭제되지 않음).`
+                          : '소속 프로세스가 없어 바로 삭제할 수 있습니다.',
+                      'KPI 목표·정책문서가 이 도메인을 참조 중이면 참조는 남고 이름만 표시되지 않습니다.'
+                  ]
+                : ['삭제할 도메인을 선택하면 영향 범위를 계산합니다.']
+        };
+    }
+
     if (selectedOperation.value === 'rename-mega') {
         const mega = selectedMega.value;
         const impactedMajors = (mega?.major_proc_list || []).length;
@@ -540,6 +654,27 @@ const blastRadius = computed(() => {
 });
 
 const validationMessage = computed(() => {
+    if (selectedOperation.value === 'rename-domain') {
+        if (!selectedDomainKey.value) return '이름을 바꿀 도메인을 선택하세요.';
+        const nextName = newDomainName.value.trim();
+        if (!nextName) return '새 도메인 이름을 입력하세요.';
+        if (isUncategorizedProcess({ name: nextName })) return "'미분류'는 시스템 예약 이름이라 사용할 수 없습니다.";
+        const current = selectedDomain.value;
+        if (current && nextName === (current.name || current.id)) return '기존 이름과 다른 도메인 이름을 입력하세요.';
+        const duplicated = (props.domains || []).some(
+            (domain: any) =>
+                domain !== current && String(domain?.name ?? '').trim().toLowerCase() === nextName.toLowerCase()
+        );
+        if (duplicated) return '같은 이름의 도메인이 이미 있습니다.';
+        return '';
+    }
+
+    if (selectedOperation.value === 'delete-domain') {
+        if (!selectedDomainKey.value) return '삭제할 도메인을 선택하세요.';
+        if (!selectedDomain.value) return '삭제할 도메인을 선택하세요.';
+        return '';
+    }
+
     if (selectedOperation.value === 'rename-mega') {
         if (!selectedMegaId.value) return '이름을 바꿀 Mega를 선택하세요.';
         if (!newMegaName.value.trim()) return '새 Mega 이름을 입력하세요.';
@@ -585,7 +720,11 @@ const validationMessage = computed(() => {
 const approvalPackage = computed(() => ({
     type: 'structure_restructure',
     title:
-        selectedOperation.value === 'rename-mega'
+        selectedOperation.value === 'rename-domain'
+            ? `Domain rename: ${selectedDomain.value?.name || '미선택'} → ${newDomainName.value.trim() || '새 이름'}`
+            : selectedOperation.value === 'delete-domain'
+            ? `Domain delete: ${selectedDomain.value?.name || '미선택'}`
+            : selectedOperation.value === 'rename-mega'
             ? `Mega rename: ${selectedMega.value?.name || '미선택'} → ${newMegaName.value.trim() || '새 이름'}`
             : selectedOperation.value === 'move-major'
             ? `Major move: ${selectedMajor.value?.label || '미선택'}`
@@ -644,6 +783,9 @@ watch(
         if (!newMajorDomain.value && options.length > 0) {
             newMajorDomain.value = options[0].value;
         }
+        if (!options.some((option) => option.value === selectedDomainKey.value)) {
+            selectedDomainKey.value = options[0]?.value || '';
+        }
     },
     { immediate: true }
 );
@@ -659,7 +801,18 @@ watch(
 );
 
 watch(
-    [selectedOperation, selectedMegaId, selectedMajorId, targetMegaId, transferTargetMajorId, newMegaName, newMajorName, newMajorDomain],
+    [
+        selectedOperation,
+        selectedMegaId,
+        selectedMajorId,
+        targetMegaId,
+        transferTargetMajorId,
+        newMegaName,
+        newMajorName,
+        newMajorDomain,
+        selectedDomainKey,
+        newDomainName
+    ],
     () => {
         if (draftPayload.value) {
             canAutoRestoreDraft.value = false;
@@ -669,6 +822,10 @@ watch(
 );
 
 watch(selectedOperation, (operation) => {
+    if (operation === 'rename-domain') {
+        // 기존 이름을 미리 채워 두면 오타 수정 같은 소폭 변경이 편하다
+        newDomainName.value = selectedDomain.value?.name || '';
+    }
     if (operation === 'move-major') {
         targetMegaId.value = '';
     } else if (operation === 'add-major' && !targetMegaId.value && megaOptions.value.length > 0) {
@@ -709,6 +866,31 @@ function collectMajorIds(map: any): string[] {
 
 function createNextMajorId(map: any): string {
     return generateProcessId('major', getNextSequenceFromIds(collectMajorIds(map), 'major'));
+}
+
+/**
+ * 도메인 작업의 draft 결과 — proc_map 과 metrics 를 함께 변환한다.
+ * 도메인 작업이 아니면 null 을 돌려 기존 경로(proc_map 만 변경)를 그대로 쓴다.
+ */
+function buildDomainDraft(): { map: any; metricsMap: any } | null {
+    const domain = selectedDomain.value;
+    if (!domain) return null;
+    const domainList = props.domains || [];
+
+    if (selectedOperation.value === 'rename-domain') {
+        const nextName = newDomainName.value.trim();
+        const map = cloneProcMap();
+        applyDomainRenameToProcMap(map, domain, nextName, domainList);
+        return { map, metricsMap: applyDomainRenameToMetrics(props.metricsMap, domain, nextName, domain.color ?? null) };
+    }
+
+    if (selectedOperation.value === 'delete-domain') {
+        const map = cloneProcMap();
+        applyDomainDeleteToProcMap(map, domain, domainList);
+        return { map, metricsMap: applyDomainDeleteToMetrics(props.metricsMap, domain) };
+    }
+
+    return null;
 }
 
 function buildDraftMap() {
@@ -895,7 +1077,8 @@ function generateDraft() {
     if (validationMessage.value) return;
 
     const beforeMap = cloneProcMap();
-    const map = buildDraftMap();
+    const domainDraft = buildDomainDraft();
+    const map = domainDraft ? domainDraft.map : buildDraftMap();
     const now = new Date().toISOString();
     const payload: RestructureDraftPayload = {
         id: `RSTR-${Date.now().toString().slice(-6)}`,
@@ -906,6 +1089,7 @@ function generateDraft() {
         approvalTitle: approvalPackage.value.title,
         versionLabel: `target-${formatDateKST(now)}`,
         map,
+        ...(domainDraft ? { metricsMap: domainDraft.metricsMap } : {}),
         changeSummary: [...blastRadius.value.summaryLines],
         beforeSnapshot: buildSnapshot(beforeMap, ['As-Is baseline']),
         afterSnapshot: buildSnapshot(map, blastRadius.value.summaryLines.slice(0, 3)),

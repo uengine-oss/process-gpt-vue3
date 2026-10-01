@@ -4,6 +4,7 @@ import { getSsoToken, getSsoUser } from '@/utils/ssoAuth';
 import { resolveRole, hasRoleAtLeast, isAdminRole, ROLES, type RoleType } from '@/utils/roles';
 import { refreshCustomPermissions } from '@/utils/customPermissions';
 import { loadMenuRoleOverrides } from '@/utils/menuRoleOverrides';
+import { loadTenantCustomization } from '@/services/tenantCustomizationService';
 
 const state = reactive({
     isAdmin: false,
@@ -284,6 +285,8 @@ async function reloadClaimsAndPermissions(session?: any) {
     const userId = await resolveCurrentUserId(session);
     await refreshCustomPermissions(userId);
     await loadMenuRoleOverrides();
+    // PAL 전용 — 테넌트 용어·분류축·운영 정책·역할 라벨을 런타임에 반영 (비 PAL 이면 no-op, 실패해도 기본값)
+    await loadTenantCustomization(true);
 }
 
 export function initAuthClaimsListener() {

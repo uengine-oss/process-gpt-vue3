@@ -14,10 +14,23 @@ spec:
       labels:
         app: gateway-prod
     spec:
+      # 보안 기본값 (Trivy KSV-0118): seccomp 기본 프로파일
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: gateway
           # image: ghcr.io/uengine-oss/process-gpt-gateway:v0.0.7
           image: asia-northeast3-docker.pkg.dev/process-gpt-419207/process-gpt-prod/process-gpt-gateway-prod:v0.0.1
+          # 보안 기본값 (Trivy KSV-0014/0118): 읽기 전용 루트 FS, 권한 상승·커널 권한 제거
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+          - name: tmp
+            mountPath: /tmp
           ports:
             - containerPort: 8080
           env:
@@ -26,3 +39,13 @@ spec:
                 secretKeyRef:
                   name: my-secrets
                   key: JWT_SECRET
+            # 로그인 사용자 토큰(ES256) 검증용 JWKS: ${SUPABASE_URL}/auth/v1/.well-known/jwks.json
+            # 클러스터 내부 주소를 따로 쓰려면 SUPABASE_JWKS_URL 로 직접 지정한다.
+            - name: SUPABASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: my-config
+                  key: SUPABASE_URL
+      volumes:
+      - name: tmp
+        emptyDir: {}

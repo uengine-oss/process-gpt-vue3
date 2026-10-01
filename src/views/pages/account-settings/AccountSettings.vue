@@ -11,7 +11,8 @@
                             <v-tab value="LayoutSettings">
                                 <v-icon class="mr-2" size="20">mdi-view-dashboard-outline</v-icon>{{ $t('headerMenu.layoutSetting') }}
                             </v-tab>
-                            <template v-if="admin">
+                            <!-- PAL 모드는 관리 기능이 별도 메뉴(관리자 콘솔 등)로 분리돼 계정/레이아웃 설정만 남긴다 -->
+                            <template v-if="admin && !isPalMode">
                                 <!-- 계정 설정 -->
                                 <v-tab value="ManageAccess">
                                     <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }}
@@ -69,7 +70,7 @@
                             <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
                         </v-tabs>
                         <div
-                            v-if="!gs"
+                            v-if="!gs && !isPalMode"
                             @click="goToTenantManage"
                             class="settings-tenant-manage-btn v-tab-style text-none"
                             style="letter-spacing: 0"
@@ -130,7 +131,7 @@
                             길은 남겨 두고, 평소에는 접어 둔다.
                         -->
                         <v-btn
-                            v-if="admin"
+                            v-if="admin && !isPalMode"
                             variant="text"
                             color="default"
                             size="small"
@@ -246,7 +247,7 @@
 
                         <!-- 조직 만들기·전환은 PC 에서 하는 일이다. '관리' 안으로 넣는다. -->
                         <v-btn
-                            v-if="!gs && showAdminTools"
+                            v-if="!gs && showAdminTools && !isPalMode"
                             variant="text"
                             color="default"
                             size="small"
@@ -472,6 +473,10 @@ export default {
         isUEngineMode() {
             return window.$mode === 'uEngine';
         },
+        // PAL 모드는 관리 기능을 별도 메뉴(관리자 콘솔·조직도 등)로 분리 — 설정 페이지엔 계정/레이아웃만 남긴다
+        isPalMode() {
+            return !!window.$pal;
+        },
         gs() {
             return window.$gs;
         },
@@ -510,11 +515,27 @@ export default {
                 'TaskCatalog',
                 'OrgChartGroup'
             ]);
+            // PAL 모드에서 숨긴 관리 탭 전체 — ?tab= 쿼리로 직접 진입해도 Account 로 보정한다
+            const hiddenInPal = new Set([
+                'ManageAccess',
+                'Drive',
+                'KnowledgeFiles',
+                'MCP-Servers',
+                'MCP-Environments',
+                'CodeEdit',
+                'ConnectionInfo',
+                'Github',
+                'GlossaryManage',
+                'TaskCatalog',
+                'OrgChartGroup'
+            ]);
             if (!this.tab) {
                 this.tab = 'Account';
                 return;
             }
-            if (this.gs && hiddenInGs.has(this.tab)) {
+            if (this.isPalMode && hiddenInPal.has(this.tab)) {
+                this.tab = 'Account';
+            } else if (this.gs && hiddenInGs.has(this.tab)) {
                 this.tab = 'Account';
             } else if (this.isUEngineMode && hiddenInUEngine.has(this.tab)) {
                 this.tab = 'Account';

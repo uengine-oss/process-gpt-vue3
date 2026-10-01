@@ -1,3 +1,4 @@
+import { homePath } from '@/utils/homePath';
 /**
  * 도메인 관련 유틸리티 함수들
  */
@@ -31,12 +32,23 @@ export function getBaseDomain() {
 }
 
 /**
+ * 호스트명이 원시 IPv4 주소인지 확인합니다.
+ * IP 직접 접속(예: 데모 서버 http://34.22.71.73:8088)은 서브도메인이 없어
+ * 첫 옥텟('34')을 테넌트명으로 오인하면 안 되므로 별도 판별이 필요하다.
+ * @param {string} [hostname] - 검사할 호스트명 (기본값: 현재 호스트명)
+ * @returns {boolean}
+ */
+export function isIpAddressHost(hostname = window.location.hostname) {
+    return /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
+}
+
+/**
  * 테넌트 도메인 URL을 생성합니다.
  * @param {string} tenantId - 테넌트 ID
- * @param {string} path - 경로 (기본값: '/process-architecture')
+ * @param {string} path - 경로 (기본값: 첫 화면 — 모바일은 정의 체계도, utils/homePath)
  * @returns {string} 완전한 테넌트 URL
  */
-export function getTenantUrl(tenantId, path = '/process-architecture') {
+export function getTenantUrl(tenantId, path = homePath()) {
     const baseDomain = getBaseDomain();
     const protocol = window.location.protocol;
     const port = window.location.port;

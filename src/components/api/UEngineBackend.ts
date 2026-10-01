@@ -183,6 +183,14 @@ class UEngineBackend implements Backend {
         return '';
     }
 
+    /**
+     * uEngine 백엔드에는 마스킹 뷰가 없다(마스킹은 Supabase 쪽 뷰로 구현된다).
+     * 기존 동작을 그대로 둔다 — 이 레포의 변경은 PAL(Supabase) 전용이다.
+     */
+    async getMaskedUserList(options: any) {
+        return await this.getUserList(options);
+    }
+
     async getUserList(options: any) {
         const users = await getAllUsers(options);
         return users.map((user) => {

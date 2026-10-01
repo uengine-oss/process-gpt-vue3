@@ -1,5 +1,5 @@
 <template>
-    <v-card v-if="instance" elevation="10" style="overflow: auto" class="is-work-height">
+    <v-card v-if="instance" elevation="10" style="overflow: auto" class="is-work-height pg-instance-card">
         <div>
             <div>
                 <v-row class="ma-0 pa-4 pb-0 align-center instance-card-title">
@@ -126,7 +126,11 @@
                 좁은 화면에서는 두 칸이 나란히 들어가지 않으므로 위의 단추로 하나씩 바꿔 본다.
             -->
             <div v-else-if="simpleUi" class="pg-three">
-                <div v-if="isMobile" class="pg-three__switch">
+                <!--
+                    휴대폰 간소화 화면(클로드 모바일 모양)에서는 이 분할 단추 대신 앱바 오른쪽의
+                    패널 단추로 '진행 상황 · 산출물' 을 연다 — 클로드 Cowork 의 오른쪽 패널과 같다.
+                -->
+                <div v-if="isMobile && !phoneShell" class="pg-three__switch">
                     <v-btn
                         v-for="p in simplePanes"
                         :key="p.key"
@@ -160,12 +164,14 @@
                     -->
                     <div v-if="!isMobile" class="pg-three__resizer" @mousedown="startPaneResize" @dblclick="resetPaneRatio"></div>
 
-                    <section class="pg-three__col" v-show="!isMobile || simplePane === 'output'">
+                    <section v-if="!phoneShell" class="pg-three__col" v-show="!isMobile || simplePane === 'output'">
                         <div class="pg-three__body">
                             <InstanceOutput :instance="instance" :compact="true" />
                         </div>
                     </section>
                 </div>
+
+                <!-- 휴대폰에서는 산출물을 진행 상황과 함께 앱바의 패널 단추로 연다(InstanceTimeline). -->
             </div>
 
             <div v-else style="height: 100%">
@@ -325,6 +331,7 @@ import InstanceOutput from './InstanceOutput.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 import { useCustomizerStore } from '@/stores/customizer';
+import { setPhoneShellTitle, usePhoneShell } from '@/shared/phoneShell';
 const backend = BackendFactory.createBackend();
 
 /** 대화 : 산출물 비율을 기억해 두는 자리. */
@@ -333,7 +340,8 @@ const CHAT_RATIO_KEY = 'pg.instanceChatRatio';
 export default {
     setup() {
         // 설정 > 화면 간소화 스위치를 읽기 위한 것.
-        return { customizer: useCustomizerStore() };
+        const { active: phoneShell } = usePhoneShell();
+        return { customizer: useCustomizerStore(), phoneShell };
     },
     mixins: [KanbanColumnConfig],
     components: {
@@ -394,6 +402,13 @@ export default {
         callActivityIds: new Set()
     }),
     watch: {
+        /** 휴대폰 간소화 화면에서는 인스턴스 이름이 앱바 제목이 된다(본문의 큰 제목은 접는다). */
+        instanceName: {
+            immediate: true,
+            handler(name) {
+                setPhoneShellTitle(name || '', this.$route.path);
+            }
+        },
         $route: {
             deep: true,
             async handler(newVal, oldVal) {

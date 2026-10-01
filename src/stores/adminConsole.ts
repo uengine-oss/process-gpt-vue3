@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia';
 import BackendFactory from '@/components/api/BackendFactory';
 import { invalidateMaintenanceCache } from '@/utils/maintenanceGate';
+import { invalidateMfaPolicyCache } from '@/utils/mfaGate';
 import { getCurrentUserForSoftDelete } from '@/utils/softDeleteUser';
 import { collectHierarchyProcIds } from '@/utils/processStages';
+import { recycleBinRemainingDays } from '@/services/tenantCustomizationService';
 
 export interface DataFreezeItem {
     id?: string;
@@ -52,6 +54,9 @@ export interface DeletedAuditPolicy {
     name: string;
     kind: 'file' | 'link';
     file_path: string | null;
+    // 어느 버킷에 있는지. 정책문서는 파일 선택 스키마에서 버킷을 지정할 수 있어
+    // 'files' 라고 단정하면 다른 버킷에 올린 문서가 삭제되지 않고 남는다.
+    file_bucket: string | null;
     link_url: string | null;
     deleted_by: string;
     deleted_at: string;
@@ -129,6 +134,109 @@ export interface MaintenanceModeConfig {
     activated_at?: string;
 }
 
+/**
+ * 감사 로그 보관 정책 (docs/security.md 4-3, 항목 17)
+ *
+ * configuration 테이블의 key = 'audit_log_retention' 한 행으로 저장한다.
+ * 실제로 로그를 옮기는 주체는 DB 쪽 pg_cron 작업
+ * (supabase/migrations/20260911_audit_log_retention.sql) 이고, 화면은 그 작업이
+ * 읽는 일수만 노출한다.
+ */
+export interface AuditLogRetentionConfig {
+    retention_days: number;
+}
+
+/** 보관 일수 기본값·허용 범위. DB 함수의 clamp 와 같은 값이어야 한다. */
+export const AUDIT_RETENTION_DEFAULT_DAYS = 365;
+export const AUDIT_RETENTION_MIN_DAYS = 30;
+export const AUDIT_RETENTION_MAX_DAYS = 3650;
+export const AUDIT_RETENTION_CONFIG_KEY = 'audit_log_retention';
+
+// ============================================
+// 보안 정책 (docs/security.md 2-1 / 2-3 / 2-4 / 3-3)
+//
+// 네 정책 모두 감사 로그 보관 정책과 같은 자리(public.configuration,
+// tenant_id + key 유일)에 한 행씩 저장한다. 값을 읽는 주체는 화면이 아니라
+// 프론트 composable(session_timeout, mfa_policy) 과 DB(login_lockout 훅,
+// download_anomaly 함수) 라, 여기서는 "그들이 읽는 스키마" 를 그대로 쓴다.
+// 스키마를 바꾸면 소비처도 같이 고쳐야 한다.
+// ============================================
+
+/** 유휴 세션 타임아웃 — src/composables/useIdleTimeout.ts 가 읽는다. */
+export interface SessionTimeoutConfig {
+    /** 유휴 허용 시간(분). 0 이하면 타이머 비활성. */
+    idle_timeout_minutes: number;
+    /** 경고 모달이 뜬 뒤 로그아웃까지의 유예(초). */
+    warning_seconds: number;
+}
+
+/** 반복 로그인 실패 잠금 — DB 훅 hook_password_verification_attempt 가 읽는다. */
+export interface LoginLockoutConfig {
+    /** 잠금까지 허용하는 실패 횟수. 0 이하면 잠금 비활성. */
+    max_attempts: number;
+    /** 실패를 세는 기간(분). */
+    window_minutes: number;
+    /** 잠금 유지 시간(분). */
+    lockout_minutes: number;
+}
+
+/** MFA 필수 여부 — src/utils/mfaGate.ts 가 읽는다(60초 캐시). */
+export interface MfaPolicyConfig {
+    require_mfa: boolean;
+}
+
+/** 다운로드 이상 탐지 임계치 — DB 함수 detect_download_anomalies 가 읽는다. */
+export interface DownloadAnomalyConfig {
+    /** 하루 다운로드 건수 임계치. 넘으면 관리자에게 알림. */
+    daily_threshold: number;
+}
+
+export const SESSION_TIMEOUT_CONFIG_KEY = 'session_timeout';
+export const LOGIN_LOCKOUT_CONFIG_KEY = 'login_lockout';
+export const MFA_POLICY_CONFIG_KEY = 'mfa_policy';
+export const DOWNLOAD_ANOMALY_CONFIG_KEY = 'download_anomaly';
+
+/**
+ * 기본값·허용 범위.
+ *
+ * 기본값은 소비처(composable / DB 함수)가 설정 행이 없을 때 쓰는 값과 같아야
+ * 한다 — 화면이 "기본값 사용 중" 으로 보여주는 숫자가 실제 동작과 달라지면
+ * 안 되기 때문이다. 범위는 화면 검증용이며, 저장 직전 한 번 더 clamp 한다.
+ */
+export const SESSION_TIMEOUT_DEFAULTS: SessionTimeoutConfig = {
+    idle_timeout_minutes: 30,
+    warning_seconds: 60
+};
+export const IDLE_MINUTES_MIN = 0; // 0 = 비활성
+export const IDLE_MINUTES_MAX = 1440; // 24시간
+export const WARNING_SECONDS_MIN = 5;
+export const WARNING_SECONDS_MAX = 600;
+
+export const LOGIN_LOCKOUT_DEFAULTS: LoginLockoutConfig = {
+    max_attempts: 5,
+    window_minutes: 15,
+    lockout_minutes: 15
+};
+export const LOCKOUT_ATTEMPTS_MIN = 0; // 0 = 비활성
+export const LOCKOUT_ATTEMPTS_MAX = 100;
+export const LOCKOUT_WINDOW_MIN = 1;
+export const LOCKOUT_WINDOW_MAX = 1440;
+export const LOCKOUT_DURATION_MIN = 1;
+export const LOCKOUT_DURATION_MAX = 1440;
+
+export const MFA_POLICY_DEFAULTS: MfaPolicyConfig = { require_mfa: false };
+
+export const DOWNLOAD_ANOMALY_DEFAULTS: DownloadAnomalyConfig = { daily_threshold: 100 };
+export const DOWNLOAD_THRESHOLD_MIN = 1;
+export const DOWNLOAD_THRESHOLD_MAX = 1000000;
+
+/** 화면이 "기본값 사용 중" 배지를 붙일 때 쓰는 키 집합 */
+export type SecurityConfigKey =
+    | typeof SESSION_TIMEOUT_CONFIG_KEY
+    | typeof LOGIN_LOCKOUT_CONFIG_KEY
+    | typeof MFA_POLICY_CONFIG_KEY
+    | typeof DOWNLOAD_ANOMALY_CONFIG_KEY;
+
 export type CutoverJobStatus = 'scheduled' | 'running' | 'completed' | 'failed';
 export type CutoverApprovalStatus = 'pending' | 'approved' | 'rejected';
 
@@ -171,6 +279,8 @@ export interface CutoverJob {
     rejected_by?: string;
     rejected_at?: string;
     draft_map?: any;
+    /** 도메인 구조개편일 때만 채워진다 — proc_map 과 함께 반영할 metrics(도메인 마스터) 스냅샷 */
+    draft_metrics?: any;
 }
 
 export interface AuditLogEntry {
@@ -222,6 +332,36 @@ export interface AdminAuditFilter {
     pageSize?: number;
 }
 
+/** public.auth_login_audit 1행 (로그인/로그아웃/로그인 실패 이력) */
+export interface AuthLoginAuditEntry {
+    id: string;
+    created_at: string;
+    tenant_id?: string | null;
+    /** login | login_failed | logout | login_oauth */
+    action: string;
+    email?: string | null;
+    success: boolean;
+    error_message?: string | null;
+    user_id?: string | null;
+    /** 서버측(RPC)에서 요청 헤더로 캡처 — 클라이언트 입력 아님 */
+    ip_address?: string | null;
+    user_agent?: string | null;
+    /** { method, provider, reason, origin, referer, host } */
+    metadata?: Record<string, any> | null;
+}
+
+export interface AuthLoginAuditFilter {
+    startDate?: string;
+    endDate?: string;
+    email?: string;
+    action?: string;
+    /** 액션과 별개 축 — 현재 클라이언트는 실패도 action='login' 으로 남긴다 */
+    success?: boolean;
+    userId?: string;
+    page?: number;
+    pageSize?: number;
+}
+
 export interface SignupRequest {
     id: string;
     user_id: string;
@@ -251,6 +391,86 @@ export interface AdminRequest {
     reviewed_at?: string | null;
     created_at: string;
     updated_at?: string | null;
+}
+
+/**
+ * 보관 일수를 화면·DB 양쪽이 받아들이는 형태로 정리한다.
+ * 숫자가 아니거나 비어 있으면 기본값, 범위를 벗어나면 경계값으로 잘라낸다.
+ * DB 함수 archive_expired_audit_logs() 도 같은 범위로 clamp 하므로,
+ * 설정 행이 어떤 경로로 오염되든 "어제 로그까지 삭제" 같은 일은 생기지 않는다.
+ */
+export function normalizeRetentionDays(value: unknown): number {
+    const n = typeof value === 'string' ? Number(value) : typeof value === 'number' ? value : NaN;
+    if (!Number.isFinite(n)) return AUDIT_RETENTION_DEFAULT_DAYS;
+    return Math.min(AUDIT_RETENTION_MAX_DAYS, Math.max(AUDIT_RETENTION_MIN_DAYS, Math.trunc(n)));
+}
+
+/**
+ * 보안 정책 값 정규화.
+ *
+ * 설정 행의 value 는 사람이 SQL 로 넣었을 수도 있어 문자열·null·범위 밖 값이
+ * 그대로 들어올 수 있다. 화면에 올리기 전과 저장 직전 양쪽에서 같은 함수로
+ * 정수 + 범위 안 값으로 만든다.
+ */
+export function clampInt(value: unknown, min: number, max: number, fallback: number): number {
+    const n = typeof value === 'string' ? Number(value) : typeof value === 'number' ? value : NaN;
+    if (!Number.isFinite(n)) return fallback;
+    return Math.min(max, Math.max(min, Math.trunc(n)));
+}
+
+export function normalizeSessionTimeout(raw: any): SessionTimeoutConfig {
+    return {
+        idle_timeout_minutes: clampInt(
+            raw?.idle_timeout_minutes,
+            IDLE_MINUTES_MIN,
+            IDLE_MINUTES_MAX,
+            SESSION_TIMEOUT_DEFAULTS.idle_timeout_minutes
+        ),
+        warning_seconds: clampInt(
+            raw?.warning_seconds,
+            WARNING_SECONDS_MIN,
+            WARNING_SECONDS_MAX,
+            SESSION_TIMEOUT_DEFAULTS.warning_seconds
+        )
+    };
+}
+
+export function normalizeLoginLockout(raw: any): LoginLockoutConfig {
+    return {
+        max_attempts: clampInt(
+            raw?.max_attempts,
+            LOCKOUT_ATTEMPTS_MIN,
+            LOCKOUT_ATTEMPTS_MAX,
+            LOGIN_LOCKOUT_DEFAULTS.max_attempts
+        ),
+        window_minutes: clampInt(
+            raw?.window_minutes,
+            LOCKOUT_WINDOW_MIN,
+            LOCKOUT_WINDOW_MAX,
+            LOGIN_LOCKOUT_DEFAULTS.window_minutes
+        ),
+        lockout_minutes: clampInt(
+            raw?.lockout_minutes,
+            LOCKOUT_DURATION_MIN,
+            LOCKOUT_DURATION_MAX,
+            LOGIN_LOCKOUT_DEFAULTS.lockout_minutes
+        )
+    };
+}
+
+export function normalizeMfaPolicy(raw: any): MfaPolicyConfig {
+    return { require_mfa: raw?.require_mfa === true || raw?.require_mfa === 'true' };
+}
+
+export function normalizeDownloadAnomaly(raw: any): DownloadAnomalyConfig {
+    return {
+        daily_threshold: clampInt(
+            raw?.daily_threshold,
+            DOWNLOAD_THRESHOLD_MIN,
+            DOWNLOAD_THRESHOLD_MAX,
+            DOWNLOAD_ANOMALY_DEFAULTS.daily_threshold
+        )
+    };
 }
 
 const CUTOVER_JOBS_KEY = 'admin_console_cutover_jobs';
@@ -358,6 +578,26 @@ export const useAdminConsoleStore = defineStore({
             activated_by: '',
             activated_at: ''
         } as MaintenanceModeConfig,
+        auditLogRetention: {
+            retention_days: AUDIT_RETENTION_DEFAULT_DAYS
+        } as AuditLogRetentionConfig,
+        sessionTimeoutPolicy: { ...SESSION_TIMEOUT_DEFAULTS } as SessionTimeoutConfig,
+        loginLockoutPolicy: { ...LOGIN_LOCKOUT_DEFAULTS } as LoginLockoutConfig,
+        mfaPolicy: { ...MFA_POLICY_DEFAULTS } as MfaPolicyConfig,
+        downloadAnomalyPolicy: { ...DOWNLOAD_ANOMALY_DEFAULTS } as DownloadAnomalyConfig,
+        /**
+         * 설정 행이 아직 없는(= 기본값으로 동작 중인) 보안 정책 키.
+         *
+         * getConfigurationValue 는 행이 없으면 fallback 을 돌려주므로 값만 봐선
+         * "기본값과 같은 값을 저장한 것" 과 구분되지 않는다. fallback 을 null 로
+         * 두고 null 이 오는지로 판별해 화면에 "기본값 사용 중" 을 표시한다.
+         */
+        securityPolicyUsingDefault: {
+            session_timeout: true,
+            login_lockout: true,
+            mfa_policy: true,
+            download_anomaly: true
+        } as Record<SecurityConfigKey, boolean>,
         cutoverJobs: sortCutoverJobs(readCutoverJobs()) as CutoverJob[],
         adminRequests: [] as AdminRequest[],
         myAdminRequests: [] as AdminRequest[],
@@ -366,6 +606,8 @@ export const useAdminConsoleStore = defineStore({
         auditTotal: 0,
         adminAuditLogs: [] as AdminAuditLogEntry[],
         adminAuditTotal: 0,
+        authLoginAudit: [] as AuthLoginAuditEntry[],
+        authLoginAuditTotal: 0,
         loading: false,
         error: null as string | null
     }),
@@ -459,9 +701,7 @@ export const useAdminConsoleStore = defineStore({
                 const list = await backend.getDeletedInstances();
                 this.deletedInstances = (list || []).map((inst: any) => ({
                     ...inst,
-                    remaining_days: inst.deleted_at
-                        ? Math.max(0, 30 - Math.floor((Date.now() - new Date(inst.deleted_at).getTime()) / 86400000))
-                        : 30
+                    remaining_days: recycleBinRemainingDays(inst.deleted_at)
                 }));
             } catch (e: any) {
                 console.error('Failed to fetch deleted instances:', e);
@@ -697,9 +937,7 @@ export const useAdminConsoleStore = defineStore({
                     registration_type: s.registration_type || null,
                     deleted_by: s.deleted_by || '',
                     deleted_at: s.deleted_at,
-                    remaining_days: s.deleted_at
-                        ? Math.max(0, 30 - Math.floor((Date.now() - new Date(s.deleted_at).getTime()) / 86400000))
-                        : 30
+                    remaining_days: recycleBinRemainingDays(s.deleted_at)
                 }));
             } catch (e: any) {
                 console.error('Failed to fetch deleted suppliers:', e);
@@ -793,9 +1031,7 @@ export const useAdminConsoleStore = defineStore({
                     registration_status: system.registration_status || null,
                     deleted_by: system.deleted_by || '',
                     deleted_at: system.deleted_at,
-                    remaining_days: system.deleted_at
-                        ? Math.max(0, 30 - Math.floor((Date.now() - new Date(system.deleted_at).getTime()) / 86400000))
-                        : 30
+                    remaining_days: recycleBinRemainingDays(system.deleted_at)
                 }));
             } catch (e: any) {
                 console.error('Failed to fetch deleted systems:', e);
@@ -865,9 +1101,7 @@ export const useAdminConsoleStore = defineStore({
                     property_type: s.property_type,
                     deleted_at: s.deleted_at,
                     deleted_by: s.deleted_by || null,
-                    remaining_days: s.deleted_at
-                        ? Math.max(0, 30 - Math.floor((Date.now() - new Date(s.deleted_at).getTime()) / 86400000))
-                        : 30
+                    remaining_days: recycleBinRemainingDays(s.deleted_at)
                 }));
             } catch (e: any) {
                 console.error('Failed to fetch deleted schemas:', e);
@@ -945,12 +1179,11 @@ export const useAdminConsoleStore = defineStore({
                         name: row.name,
                         kind: row.kind,
                         file_path: row.file_path || null,
+                        file_bucket: row.file_bucket || null,
                         link_url: row.link_url || null,
                         deleted_by: row.deleted_by || '',
                         deleted_at: row.deleted_at,
-                        remaining_days: row.deleted_at
-                            ? Math.max(0, 30 - Math.floor((Date.now() - new Date(row.deleted_at).getTime()) / 86400000))
-                            : 30
+                        remaining_days: recycleBinRemainingDays(row.deleted_at)
                     } as DeletedAuditPolicy;
                 });
             } catch (e: any) {
@@ -1000,8 +1233,10 @@ export const useAdminConsoleStore = defineStore({
             try {
                 const matched = this.deletedAuditPolicies.find(p => p.id === policyId);
                 if (matched?.kind === 'file' && matched.file_path) {
+                    // 비공개 버킷이어도 삭제는 로그인 세션으로 그대로 된다(RLS 적용).
+                    // 주소를 만들 일이 없으므로 서명 URL 은 필요 없다.
                     await supabase.storage
-                        .from('files')
+                        .from(matched.file_bucket || 'files')
                         .remove([matched.file_path])
                         .catch(() => undefined);
                 }
@@ -1115,10 +1350,7 @@ export const useAdminConsoleStore = defineStore({
                         process_ids: processIds,
                         deleted_at: t.deleted_at,
                         deleted_by: t.deleted_by || '',
-                        remaining_days: Math.max(
-                            0,
-                            30 - Math.floor((Date.now() - new Date(t.deleted_at).getTime()) / 86400000)
-                        )
+                        remaining_days: recycleBinRemainingDays(t.deleted_at)
                     };
                     if ('parent' in t) {
                         row.parent = t.parent
@@ -1262,7 +1494,7 @@ export const useAdminConsoleStore = defineStore({
                         process_ids: Array.isArray(moved.process_ids) ? [...moved.process_ids] : [],
                         deleted_at: nowIso,
                         deleted_by: deletedBy,
-                        remaining_days: 30
+                        remaining_days: recycleBinRemainingDays(null)
                     };
                     if ('parent' in moved) entry.parent = moved.parent ?? null;
                     this.deletedKpiTargets = [entry, ...this.deletedKpiTargets];
@@ -1442,6 +1674,226 @@ export const useAdminConsoleStore = defineStore({
             }
         },
 
+        // ============================================
+        // Audit Log Retention (docs/security.md 4-3, 항목 17)
+        //
+        // 저장 위치는 다른 테넌트 설정과 같은 public.configuration
+        // (tenant_id + key 유일, 쓰기는 admin 이상). PalModeBackend 의
+        // get/setConfigurationValue 헬퍼를 그대로 쓴다 — notice_banner /
+        // maintenance_mode 와 동일한 경로라 RLS·테넌트 스코프가 자동으로 맞는다.
+        //
+        // 여기서 일수를 바꿔도 즉시 로그가 옮겨지지는 않는다. DB 의
+        // archive_expired_audit_logs() 를 pg_cron 이 매일 03:00 에 돌리면서
+        // 이 값을 읽는다.
+        // ============================================
+        async fetchAuditLogRetention() {
+            try {
+                const backend = BackendFactory.createBackend() as any;
+                const config = await backend.getConfigurationValue(AUDIT_RETENTION_CONFIG_KEY, {
+                    retention_days: AUDIT_RETENTION_DEFAULT_DAYS
+                });
+                this.auditLogRetention = {
+                    retention_days: normalizeRetentionDays(config?.retention_days)
+                };
+            } catch (e: any) {
+                // 조회 실패는 화면을 막지 않는다 — 기본값(365)을 그대로 보여준다.
+                console.error('Failed to fetch audit log retention:', e);
+            }
+        },
+
+        async saveAuditLogRetention(days: number) {
+            const next = normalizeRetentionDays(days);
+            if (next !== Math.trunc(Number(days))) {
+                // 화면에서 이미 막지만, 스토어를 직접 부르는 경로가 생겨도
+                // 범위 밖 값이 DB 로 새어나가지 않게 한다.
+                throw new Error(
+                    `보관 일수는 ${AUDIT_RETENTION_MIN_DAYS}~${AUDIT_RETENTION_MAX_DAYS}일 사이의 정수여야 합니다.`
+                );
+            }
+
+            this.loading = true;
+            try {
+                const backend = BackendFactory.createBackend() as any;
+                const beforeValue = { ...this.auditLogRetention };
+                const config: AuditLogRetentionConfig = { retention_days: next };
+
+                await backend.setConfigurationValue(AUDIT_RETENTION_CONFIG_KEY, config);
+                this.auditLogRetention = config;
+
+                // 보관 정책 변경은 "기록을 언제 지울지" 를 바꾸는 일이라
+                // 그 자체가 감사 대상이다.
+                await this.writeAdminAuditLog({
+                    action: 'audit_retention_update',
+                    target_type: 'system',
+                    target_id: AUDIT_RETENTION_CONFIG_KEY,
+                    target_name: '감사 로그 보관 일수',
+                    before_value: beforeValue,
+                    after_value: { ...config }
+                });
+                return config;
+            } catch (e: any) {
+                console.error('Failed to save audit log retention:', e);
+                this.error = e.message;
+                throw e;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // ============================================
+        // 보안 정책 (docs/security.md 2-1 / 2-3 / 2-4 / 3-3)
+        //
+        // 저장 경로는 감사 로그 보관 정책과 같다 — PalModeBackend 의
+        // get/setConfigurationValue 헬퍼(configuration 테이블, tenant_id + key).
+        //
+        // 네 정책 모두 "여기서 바꾸면 다른 곳이 읽는" 구조다.
+        //   session_timeout  → useIdleTimeout (앱 시작 시 1회 조회, 새로고침 후 반영)
+        //   login_lockout    → DB 훅 (다음 로그인 시도부터 반영)
+        //   mfa_policy       → mfaGate (60초 캐시, 저장 후 즉시 무효화한다)
+        //   download_anomaly → DB 함수 (매시 예약 실행 시 반영)
+        // 즉시 반영되지 않는 지연은 화면 안내 문구로 알린다.
+        // ============================================
+
+        /** 보안 정책 저장 공통 경로 — 정규화·감사 기록·기본값 플래그 해제를 한 곳에 모은다. */
+        async saveSecurityPolicy(params: {
+            key: SecurityConfigKey;
+            targetName: string;
+            before: Record<string, any>;
+            value: Record<string, any>;
+        }) {
+            this.loading = true;
+            try {
+                const backend = BackendFactory.createBackend() as any;
+                await backend.setConfigurationValue(params.key, params.value);
+                this.securityPolicyUsingDefault[params.key] = false;
+
+                // 보안 정책 변경은 그 자체가 감사 대상이다. 어떤 키를 어떻게
+                // 바꿨는지 before/after 로 남긴다.
+                await this.writeAdminAuditLog({
+                    action: 'security_settings_update',
+                    target_type: 'system',
+                    target_id: params.key,
+                    target_name: params.targetName,
+                    before_value: { ...params.before },
+                    after_value: { ...params.value }
+                });
+                return params.value;
+            } catch (e: any) {
+                console.error(`Failed to save security policy (${params.key}):`, e);
+                this.error = e.message;
+                throw e;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async fetchSessionTimeoutPolicy() {
+            try {
+                const backend = BackendFactory.createBackend() as any;
+                const raw = await backend.getConfigurationValue(SESSION_TIMEOUT_CONFIG_KEY, null);
+                this.securityPolicyUsingDefault[SESSION_TIMEOUT_CONFIG_KEY] = raw == null;
+                this.sessionTimeoutPolicy = normalizeSessionTimeout(raw ?? SESSION_TIMEOUT_DEFAULTS);
+            } catch (e: any) {
+                // 조회 실패는 화면을 막지 않는다 — 기본값을 그대로 보여준다.
+                console.error('Failed to fetch session timeout policy:', e);
+            }
+        },
+
+        async saveSessionTimeoutPolicy(config: SessionTimeoutConfig): Promise<SessionTimeoutConfig> {
+            const value = normalizeSessionTimeout(config);
+            await this.saveSecurityPolicy({
+                key: SESSION_TIMEOUT_CONFIG_KEY,
+                targetName: '세션 타임아웃 정책',
+                before: { ...this.sessionTimeoutPolicy },
+                value
+            });
+            this.sessionTimeoutPolicy = value;
+            return value;
+        },
+
+        async fetchLoginLockoutPolicy() {
+            try {
+                const backend = BackendFactory.createBackend() as any;
+                const raw = await backend.getConfigurationValue(LOGIN_LOCKOUT_CONFIG_KEY, null);
+                this.securityPolicyUsingDefault[LOGIN_LOCKOUT_CONFIG_KEY] = raw == null;
+                this.loginLockoutPolicy = normalizeLoginLockout(raw ?? LOGIN_LOCKOUT_DEFAULTS);
+            } catch (e: any) {
+                console.error('Failed to fetch login lockout policy:', e);
+            }
+        },
+
+        async saveLoginLockoutPolicy(config: LoginLockoutConfig): Promise<LoginLockoutConfig> {
+            const value = normalizeLoginLockout(config);
+            await this.saveSecurityPolicy({
+                key: LOGIN_LOCKOUT_CONFIG_KEY,
+                targetName: '로그인 잠금 정책',
+                before: { ...this.loginLockoutPolicy },
+                value
+            });
+            this.loginLockoutPolicy = value;
+            return value;
+        },
+
+        async fetchMfaPolicy() {
+            try {
+                const backend = BackendFactory.createBackend() as any;
+                const raw = await backend.getConfigurationValue(MFA_POLICY_CONFIG_KEY, null);
+                this.securityPolicyUsingDefault[MFA_POLICY_CONFIG_KEY] = raw == null;
+                this.mfaPolicy = normalizeMfaPolicy(raw ?? MFA_POLICY_DEFAULTS);
+            } catch (e: any) {
+                console.error('Failed to fetch MFA policy:', e);
+            }
+        },
+
+        async saveMfaPolicy(config: MfaPolicyConfig): Promise<MfaPolicyConfig> {
+            const value = normalizeMfaPolicy(config);
+            await this.saveSecurityPolicy({
+                key: MFA_POLICY_CONFIG_KEY,
+                targetName: 'MFA 필수 정책',
+                before: { ...this.mfaPolicy },
+                value
+            });
+            this.mfaPolicy = value;
+            // 라우터 게이트는 정책을 60초 캐시한다. 방금 바꾼 관리자가 이전
+            // 정책으로 판정되는 일이 없게 즉시 무효화한다.
+            invalidateMfaPolicyCache();
+            return value;
+        },
+
+        async fetchDownloadAnomalyPolicy() {
+            try {
+                const backend = BackendFactory.createBackend() as any;
+                const raw = await backend.getConfigurationValue(DOWNLOAD_ANOMALY_CONFIG_KEY, null);
+                this.securityPolicyUsingDefault[DOWNLOAD_ANOMALY_CONFIG_KEY] = raw == null;
+                this.downloadAnomalyPolicy = normalizeDownloadAnomaly(raw ?? DOWNLOAD_ANOMALY_DEFAULTS);
+            } catch (e: any) {
+                console.error('Failed to fetch download anomaly policy:', e);
+            }
+        },
+
+        async saveDownloadAnomalyPolicy(config: DownloadAnomalyConfig): Promise<DownloadAnomalyConfig> {
+            const value = normalizeDownloadAnomaly(config);
+            await this.saveSecurityPolicy({
+                key: DOWNLOAD_ANOMALY_CONFIG_KEY,
+                targetName: '다운로드 이상 탐지 임계치',
+                before: { ...this.downloadAnomalyPolicy },
+                value
+            });
+            this.downloadAnomalyPolicy = value;
+            return value;
+        },
+
+        /** 보안 설정 화면 진입 시 한 번에 불러오기 */
+        async fetchSecuritySettings() {
+            await Promise.all([
+                this.fetchSessionTimeoutPolicy(),
+                this.fetchLoginLockoutPolicy(),
+                this.fetchMfaPolicy(),
+                this.fetchDownloadAnomalyPolicy(),
+                this.fetchAuditLogRetention()
+            ]);
+        },
+
         async persistCutoverJobs(nextJobs: CutoverJob[]) {
             const normalized = sortCutoverJobs(nextJobs);
             this.cutoverJobs = normalized;
@@ -1566,6 +2018,11 @@ export const useAdminConsoleStore = defineStore({
             });
 
             try {
+                // 도메인 개편은 도메인 마스터(metrics)를 먼저 반영한다.
+                // proc_map 이 먼저 들어가면 그 사이 화면이 "없는 도메인"을 추론해 되살릴 수 있다.
+                if (job.draft_metrics) {
+                    await backend.putMetricsMap(job.draft_metrics);
+                }
                 await backend.putProcessDefinitionMap(job.draft_map);
                 const executedAt = new Date().toISOString();
                 const updated = await this.updateCutoverJob(jobId, {
@@ -1653,6 +2110,33 @@ export const useAdminConsoleStore = defineStore({
             } catch (e: any) {
                 console.error('Failed to fetch admin audit logs:', e);
                 this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // ============================================
+        // Auth Login Audit (로그인/로그아웃/로그인 실패 이력)
+        //  - 테이블 public.auth_login_audit, 조회는 RLS 로 관리자만 통과한다.
+        //  - 조회 메서드는 PalModeBackend 에만 있으므로 비 PAL 백엔드에서는 빈 결과로 둔다.
+        // ============================================
+        async fetchAuthLoginAudit(filters?: AuthLoginAuditFilter) {
+            this.loading = true;
+            try {
+                const backend = BackendFactory.createBackend() as any;
+                if (typeof backend.getAuthLoginAudit !== 'function') {
+                    this.authLoginAudit = [];
+                    this.authLoginAuditTotal = 0;
+                    return;
+                }
+                const result = await backend.getAuthLoginAudit(filters);
+                this.authLoginAudit = result.data || [];
+                this.authLoginAuditTotal = result.total || 0;
+            } catch (e: any) {
+                console.error('Failed to fetch auth login audit:', e);
+                this.error = e.message;
+                this.authLoginAudit = [];
+                this.authLoginAuditTotal = 0;
             } finally {
                 this.loading = false;
             }

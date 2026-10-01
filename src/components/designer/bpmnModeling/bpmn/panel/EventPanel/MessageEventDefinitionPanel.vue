@@ -195,7 +195,8 @@ export default {
         this.bpmnModeler = store.getModeler;
         if (this.element.$type === 'bpmn:IntermediateThrowEvent') {
             this.copyUengineProperties.headers = [
-                { name: 'Authorization', value: 'Bearer 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' },
+                // 토큰은 사용자가 직접 입력한다 — 소스에 자격 증명을 두지 않는다.
+                { name: 'Authorization', value: '' },
                 { name: 'Accept', value: 'application/vnd.github+json' },
                 { name: 'X-GitHub-Api-Version', value: '2022-11-28' }
             ];

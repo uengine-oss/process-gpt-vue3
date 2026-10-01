@@ -42,3 +42,7 @@
 @import './pages/authentication';
 @import './pages/apps';
 
+
+/* 휴대폰 간소화 화면(클로드·ChatGPT 모바일 모양). body.pg-m 안에서만 걸린다. */
+@import './phone-shell';
+@import './phone-shell-chat';

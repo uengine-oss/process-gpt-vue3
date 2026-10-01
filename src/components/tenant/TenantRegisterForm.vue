@@ -21,6 +21,8 @@
             variant="outlined"
             type="password"
             color="primary"
+            :hint="passwordPolicyHint"
+            persistent-hint
         ></VTextField>
         <!-- #endregion -->
 
@@ -32,6 +34,7 @@
 import { Form } from 'vee-validate';
 import { useAuthStore } from '@/stores/auth';
 import { getCurrentInstance } from 'vue';
+import { createPasswordRules, getPasswordPolicyHint, isPasswordValid } from '@/utils/passwordPolicy';
 
 export default {
     name: 'TenantRegisterForm',
@@ -48,14 +51,32 @@ export default {
         accountInfoRules: {
             username: [(v) => !!v || 'Name is required', (v) => (v && v.length <= 10) || 'Name must be less than 10 characters'],
             email: [(v) => !!v || 'E-mail is required', (v) => /.+@.+\..+/.test(v) || 'E-mail must be valid'],
-            password: [(v) => !!v || 'Password is required']
+            password: []
         }
     }),
 
+    computed: {
+        passwordPolicyHint() {
+            return getPasswordPolicyHint(this.translate);
+        }
+    },
+
     methods: {
+        translate(key, named) {
+            return this.$t(key, named);
+        },
         async processTenantSignup() {
             const { proxy } = getCurrentInstance();
             let me = this;
+            // 서버(GoTrue)와 동일한 비밀번호 정책을 클라이언트에서도 먼저 막는다.
+            if (!isPasswordValid(me.accountInfo.password)) {
+                me.$try({
+                    context: me,
+                    action: () => Promise.reject(new Error()),
+                    errorMsg: getPasswordPolicyHint(me.translate)
+                });
+                return;
+            }
             me.$try({
                 context: me,
                 action: async () => {
@@ -67,6 +88,8 @@ export default {
 
     created() {
         this.authStore = useAuthStore();
+        // i18n이 준비된 이후에 정책 문구를 포함한 검증 규칙을 구성한다.
+        this.accountInfoRules.password = createPasswordRules(this.translate);
     }
 };
 </script>

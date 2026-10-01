@@ -1,0 +1,1265 @@
+/* ==========================================================================
+   휴대폰 간소화 화면 — 대화 (채팅방 · 인스턴스 대화 · 새 대화)
+   수치의 출처와 적용 범위는 _phone-shell.scss 머리말 참고.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. 채팅방 — 머리 줄은 앱바가 맡고, 본문은 말풍선 없는 산문으로.
+   -------------------------------------------------------------------------- */
+body.pg-m {
+    /* 화면 높이 = 기기 높이 − 앱바. 카드가 제 높이(100vh)를 고집하면 입력창이 화면 밖으로 밀린다. */
+    .chat-room-page-card.is-work-height {
+        height: calc(100dvh - var(--pg-m-appbar-h) - env(safe-area-inset-top, 0px)) !important;
+        min-height: 0 !important;
+    }
+
+    .chat-room-page .header-bar,
+    .chat-room-page .header-divider {
+        display: none !important;
+    }
+
+    .chat-room-page .messages-area {
+        background: var(--pg-m-page);
+    }
+
+    /* 줄 여백. 클로드는 화면 끝에서 24px 들어온 곳에 메시지 칸을 두고,
+       글은 그 안에서 8px 더 들어간 곳(32px)에서 시작해 오른쪽 60px 앞에서 끝난다. */
+    .chat-message-row {
+        padding: 0 24px !important;
+    }
+
+    /* 보낸 사람 줄. 여러 사람·에이전트가 함께 쓰는 방이라 이름은 남기되(Process GPT 의 방식),
+       얼굴은 빼고 작게 — 클로드처럼 본문이 먼저 눈에 들어오게. */
+    .chat-sender-row {
+        margin: 16px 0 2px 8px !important;
+    }
+
+    .chat-sender-row .v-avatar {
+        display: none !important;
+    }
+
+    .chat-sender-row .user-name {
+        font-family: var(--pg-m-font-sans);
+        font-size: 12px !important;
+        line-height: 17px;
+        font-weight: 500 !important;
+        color: var(--pg-m-muted) !important;
+    }
+
+    .chat-sender-row .chat-room-timestamp-text {
+        font-size: 11px !important;
+        color: var(--pg-m-muted) !important;
+    }
+
+    /* 남(에이전트 포함)의 말: 말풍선 없이 폭 전체. */
+    .message-bubble-wrap--other {
+        max-width: 100% !important;
+        width: 100%;
+    }
+
+    .message-bubble-wrap--other > .other-message,
+    .message-bubble-wrap--other .chat-message-bubble {
+        width: 100%;
+        background: transparent !important;
+        box-shadow: none !important;
+        border: 0 !important;
+        max-width: 100% !important;
+    }
+
+    /* 다른 사람의 말. 클로드에는 없는 경우지만(혼자 쓰는 대화) Process GPT 방에는 사람이 여럿이다.
+       에이전트의 산문과 섞이지 않도록 사람 말은 말풍선으로 — 내 말은 오른쪽, 남의 말은 왼쪽. */
+    .message-bubble-wrap--other[data-role='user'] {
+        width: auto;
+        max-width: 82% !important;
+    }
+
+    .message-bubble-wrap--other[data-role='user'] > .other-message {
+        width: auto;
+        padding: 12px 16px !important;
+        border-radius: 12px !important;
+        background: var(--pg-m-bubble) !important;
+    }
+
+    .messages-area .message-bubble-wrap--other[data-role='user'] .markdown-content {
+        font-family: var(--pg-m-font-sans) !important;
+        font-size: 15px !important;
+        line-height: 20px !important;
+        padding: 0 !important;
+    }
+
+    /* 본문을 세로 flex 로 돌려, 산출물 카드(pg-msg-file)를 글 아래로 내린다.
+       클로드는 '무엇을 만들었는지' 를 먼저 말하고 그 아래 파일을 붙인다. */
+    .message-bubble-wrap--other .other-message > .pa-2 {
+        display: flex;
+        flex-direction: column;
+        padding: 0 !important;
+    }
+
+    .message-bubble-wrap--other .other-message > .pa-2 > .mb-2:has(.pg-msg-file) {
+        order: 10;
+        margin: 12px 0 0 !important;
+    }
+
+    /* 산문. 클로드 본문 수치 그대로. */
+    .messages-area .markdown-content,
+    .messages-area .text-body-1.markdown-content {
+        font-family: var(--pg-m-font-prose) !important;
+        font-size: 16px !important;
+        line-height: 24px !important;
+        letter-spacing: normal !important;
+        color: var(--pg-m-text) !important;
+        padding: 0 36px 0 8px;
+        word-break: keep-all;
+        overflow-wrap: anywhere;
+    }
+
+    .messages-area .markdown-content {
+        p,
+        ul,
+        ol,
+        pre,
+        blockquote,
+        table {
+            margin: 12px 0 0 !important;
+        }
+
+        > :first-child {
+            margin-top: 0 !important;
+        }
+
+        ul,
+        ol {
+            padding-left: 28px !important;
+        }
+
+        li {
+            margin: 0 !important;
+            padding-left: 4px;
+        }
+
+        li + li {
+            margin-top: 4px !important;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: var(--pg-m-font-prose);
+            font-weight: 600;
+            color: var(--pg-m-text);
+            margin: 24px 0 0 !important;
+        }
+
+        h1 {
+            font-size: 22px;
+            line-height: 28px;
+        }
+
+        h2 {
+            font-size: 19px;
+            line-height: 26px;
+        }
+
+        h3,
+        h4 {
+            font-size: 16px;
+            line-height: 24px;
+        }
+
+        strong,
+        b {
+            font-weight: 600;
+        }
+
+        code:not(pre code) {
+            font-family: var(--cds-font-mono, ui-monospace, monospace);
+            font-size: 14px;
+            padding: 1px 4px;
+            border-radius: 4px;
+            background: var(--pg-m-hover);
+            color: var(--cds-text-danger, #8e2626);
+        }
+
+        pre {
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--pg-m-hover);
+            font-size: 13px;
+            line-height: 19px;
+            overflow-x: auto;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+    }
+
+    /* 내 말: 오른쪽 말풍선. 클로드 사용자 말풍선 수치. */
+    .message-bubble-wrap--mine {
+        display: flex !important;
+        flex-direction: column;
+        align-items: flex-end;
+        max-width: 82% !important;
+    }
+
+    .message-bubble-wrap--mine .chat-message-bubble {
+        order: 1;
+        margin: 16px 0 0 !important;
+        padding: 12px 16px !important;
+        border-radius: 12px !important;
+        background: var(--pg-m-bubble) !important;
+        box-shadow: none !important;
+    }
+
+    .message-bubble-wrap--mine .chat-message-bubble,
+    .message-bubble-wrap--mine .chat-message-bubble .markdown-content,
+    .message-bubble-wrap--mine .chat-message-bubble .text-body-1 {
+        font-family: var(--pg-m-font-sans) !important;
+        font-size: 15px !important;
+        line-height: 20px !important;
+        color: var(--pg-m-text) !important;
+        padding: 0;
+    }
+
+    /* 말풍선 아래 시각 · 동작 줄 — 클로드처럼 늘 보이게, 작고 흐리게. */
+    .message-bubble-wrap--mine .chat-room-timestamp-action {
+        order: 2;
+        display: flex !important;
+        align-items: center;
+        gap: 2px;
+        margin-top: 4px;
+        opacity: 1 !important;
+    }
+
+    .chat-room-timestamp-action .chat-room-timestamp-text {
+        font-size: 11px !important;
+        color: var(--pg-m-muted) !important;
+    }
+
+    .chat-room-timestamp-action .chat-room-actions-overlay {
+        position: static !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: flex !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .chat-room-action-btn {
+        color: var(--pg-m-muted) !important;
+    }
+
+    .chat-room-action-btn .v-icon {
+        font-size: 16px !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   2. 도구 사용 내역 — 접으면 흐린 한 줄, 펴면 테두리 상자 안의 줄 목록.
+   -------------------------------------------------------------------------- */
+body.pg-m {
+    .chat-tool-activity {
+        margin: 4px 0 8px;
+    }
+
+    .chat-tool-activity__summary {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 4px;
+        min-height: 32px;
+        padding: 6px !important;
+        margin-left: 2px;
+        border-radius: 8px;
+        list-style: none;
+        font-family: var(--pg-m-font-sans);
+        font-size: 14px !important;
+        line-height: 20px;
+        color: var(--pg-m-muted) !important;
+        cursor: pointer;
+        background: transparent !important;
+        border: 0 !important;
+    }
+
+    .chat-tool-activity__summary::-webkit-details-marker {
+        display: none;
+    }
+
+    /* 앞 아이콘 대신 뒤에 꺾쇠(›) — 펼치면 아래(⌄)로. */
+    .chat-tool-activity__summary > .v-icon {
+        display: none !important;
+    }
+
+    .chat-tool-activity__summary::after {
+        content: '';
+        width: 6px;
+        height: 6px;
+        margin-left: 4px;
+        border-right: 1.5px solid currentColor;
+        border-bottom: 1.5px solid currentColor;
+        transform: rotate(-45deg);
+        transition: transform 0.15s ease;
+    }
+
+    .chat-tool-activity[open] > .chat-tool-activity__summary::after {
+        transform: rotate(45deg) translate(-2px, -2px);
+    }
+
+    .chat-tool-activity__list {
+        margin: 4px 0 4px 4px !important;
+        padding: 0 !important;
+        border: 1px solid var(--pg-m-border) !important;
+        border-radius: 12px !important;
+        background: transparent !important;
+        overflow: hidden;
+    }
+
+    .chat-tool-activity__item-wrap + .chat-tool-activity__item-wrap {
+        border-top: 1px solid var(--pg-m-border);
+    }
+
+    .chat-tool-activity__item {
+        display: flex !important;
+        align-items: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 8px 12px !important;
+        font-family: var(--pg-m-font-sans);
+        font-size: 14px !important;
+        line-height: 20px;
+        color: var(--pg-m-muted);
+        background: transparent !important;
+    }
+
+    /* 실행 중인 줄의 돌아가는 동그라미는 남기고, 끝난 줄의 체크 아이콘은 뗀다. */
+    .chat-tool-activity__list:not(.chat-tool-activity__list--live) .chat-tool-activity__item > .v-icon {
+        display: none !important;
+    }
+
+    .chat-tool-activity__name {
+        color: var(--pg-m-text-2);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .chat-tool-activity__cmd {
+        font-size: 13px;
+        color: var(--pg-m-muted);
+    }
+
+    /* 'done' 딱지는 떼고, 실패만 남긴다. */
+    .chat-tool-activity__status {
+        display: none !important;
+    }
+
+    .chat-tool-activity__status.is-error {
+        display: inline !important;
+        font-size: 12px;
+        color: var(--cds-text-danger, #8e2626) !important;
+        background: transparent !important;
+    }
+
+    /* '내용' 글자 대신 꺾쇠. 눌러서 결과를 펼치는 자리다. */
+    .chat-tool-activity__result-toggle {
+        font-size: 0 !important;
+        width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--pg-m-muted);
+        background: transparent !important;
+    }
+
+    .chat-tool-activity__result-toggle::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-right: 1.5px solid currentColor;
+        border-bottom: 1.5px solid currentColor;
+        transform: rotate(-45deg);
+    }
+
+    .chat-tool-activity__output {
+        margin: 0 !important;
+        padding: 8px 12px 12px !important;
+        border-top: 1px solid var(--pg-m-border);
+        font-size: 12px !important;
+        line-height: 17px;
+        background: var(--pg-m-hover) !important;
+        max-height: 240px;
+        overflow: auto;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   3. 산출물 카드 — 클로드 파일 카드 수치. 인라인 스타일을 덮어야 해서 !important.
+   -------------------------------------------------------------------------- */
+body.pg-m .pg-msg-file {
+    display: flex !important;
+    align-items: center;
+    gap: 14px !important;
+    width: calc(100% - 4px) !important;
+    max-width: 520px !important;
+    margin-left: 4px;
+    min-height: 64px;
+    padding: 8px 12px !important;
+    border: 1px solid var(--pg-m-border-strong) !important;
+    border-radius: 12px !important;
+    background: var(--pg-m-surface) !important;
+    box-shadow: none !important;
+
+    /* 왼쪽 문서 모양 칸 */
+    > div:first-child {
+        width: 40px !important;
+        height: 48px !important;
+        border-radius: 6px !important;
+        background: var(--pg-m-hover) !important;
+        border: 1px solid var(--pg-m-border);
+    }
+
+    > div:first-child .v-icon {
+        color: var(--pg-m-text-2) !important;
+        font-size: 18px !important;
+    }
+
+    /* 제목 · 설명 */
+    > div:nth-child(2) > div:first-child {
+        font-family: var(--pg-m-font-sans);
+        font-size: 15px !important;
+        line-height: 20px !important;
+        font-weight: 400 !important;
+        color: var(--pg-m-text) !important;
+    }
+
+    > div:nth-child(2) > div:nth-child(2) {
+        font-family: var(--pg-m-font-sans);
+        font-size: 13px !important;
+        line-height: 17px !important;
+        color: var(--pg-m-muted) !important;
+    }
+
+    .pg-msg-file__dl {
+        width: 36px !important;
+        height: 32px !important;
+        border-radius: 8px !important;
+        border: 1px solid var(--pg-m-border-strong);
+        background: var(--pg-m-surface) !important;
+        color: var(--pg-m-text) !important;
+    }
+
+    .pg-msg-file__dl .v-btn__overlay {
+        opacity: 0 !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   4. 입력창 — 아래에 붙은 흰 상자. 클로드 컴포저 수치.
+   -------------------------------------------------------------------------- */
+body.pg-m {
+    .chat-room-page .input-area {
+        background: var(--pg-m-page) !important;
+        border-top: 0 !important;
+        padding: 4px 16px calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    .main-chat-input-container .input-wrapper {
+        padding: 8px 8px 6px;
+        border-radius: 14px;
+        background: var(--pg-m-surface);
+        box-shadow: var(--cds-shadow-composer, 0 4px 20px rgb(0 0 0 / 3.8%), 0 0 0 0.5px rgb(30 30 29 / 16.5%));
+    }
+
+    .main-chat-input-container .input-wrapper .v-card {
+        background: transparent !important;
+        box-shadow: none !important;
+        border: 0 !important;
+    }
+
+    /* 첫 화면 입력창의 바깥 판(엷은 파란 바탕). 클로드는 흰 상자 하나뿐이다. */
+    .main-chat-input-container--panel {
+        background: transparent !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* 에이전트 고르기 — 클로드의 모델 이름처럼 테두리 없는 작은 글자 + ⌄. */
+    .definition-map-chat-menu-background {
+        background: transparent !important;
+    }
+
+    .definition-map-chat-menu-background .v-field {
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        --v-field-padding-start: 6px;
+        --v-field-padding-end: 0px;
+    }
+
+    .definition-map-chat-menu-background .v-field__outline {
+        display: none !important;
+    }
+
+    .definition-map-chat-menu-background .v-field__input {
+        min-height: 28px !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    .definition-map-chat-menu-background .v-select__selection-text {
+        font-family: var(--pg-m-font-sans);
+        font-size: 13px !important;
+        line-height: 17px;
+        color: var(--pg-m-text-2) !important;
+    }
+
+    .definition-map-chat-menu-background .v-field__append-inner .v-icon {
+        font-size: 16px !important;
+        color: var(--pg-m-text-2) !important;
+    }
+
+    .main-chat-input-container .input-wrapper textarea,
+    .main-chat-input-container .input-wrapper .v-field__input {
+        font-family: var(--pg-m-font-sans);
+        font-size: 16px !important;
+        line-height: 22px !important;
+        color: var(--pg-m-text);
+        padding: 6px 8px !important;
+    }
+
+    .main-chat-input-container .input-wrapper .v-field {
+        background: transparent !important;
+        box-shadow: none !important;
+        /* 글은 상자 안쪽 8px 에서 시작한다(클로드: 화면 끝 16 + 상자 16 = 32px). */
+        --v-field-padding-start: 8px;
+        --v-field-padding-end: 8px;
+    }
+
+    .main-chat-input-container .input-wrapper textarea {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    /* 마이크 · 보내기 — 테두리 없는 아이콘. 보낼 수 있을 때만 보내기가 진한 칸이 된다. */
+    .main-chat-input-container .input-wrapper .v-btn--variant-outlined {
+        border: 0 !important;
+        color: var(--pg-m-text-2) !important;
+    }
+
+    .main-chat-input-container .input-wrapper .cp-send:not(.v-btn--disabled) {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 8px !important;
+        background: var(--pg-m-text) !important;
+        color: var(--pg-m-page) !important;
+    }
+
+    .main-chat-input-container .input-wrapper textarea::placeholder {
+        color: var(--pg-m-muted) !important;
+        opacity: 1;
+    }
+
+    .pg-composer-note {
+        margin-top: 6px;
+        padding: 0 4px;
+        font-family: var(--pg-m-font-sans);
+        font-size: 11px;
+        line-height: 17px;
+        color: var(--pg-m-muted);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   5. 새 대화 첫 화면 — 인사말은 가운데, 입력창은 아래에 붙인다(클로드 /new).
+   -------------------------------------------------------------------------- */
+body.pg-m {
+    .definition-map-card:has(.pg-simple-start:not(.pg-simple-start--compact)) {
+        height: calc(100dvh - var(--pg-m-appbar-h) - env(safe-area-inset-top, 0px)) !important;
+        overflow: hidden !important;
+    }
+
+    .pg-simple-start:not(.pg-simple-start--compact) {
+        min-height: 100% !important;
+        height: 100%;
+        padding: 0 16px calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+        justify-content: flex-start !important;
+    }
+
+    /* 지난 대화는 사이드바에 있다. */
+    .pg-simple-start__bar {
+        display: none !important;
+    }
+
+    .pg-simple-start:not(.pg-simple-start--compact) .pg-simple-start__hello {
+        margin: auto 0 0 !important;
+        padding: 0 12px;
+    }
+
+    .pg-simple-start__logo {
+        width: 36px !important;
+        height: 36px !important;
+        margin-bottom: 12px !important;
+    }
+
+    .pg-simple-start__ask {
+        font-family: var(--pg-m-font-prose);
+        font-size: 30px !important;
+        line-height: 37.5px;
+        font-weight: 330 !important;
+        letter-spacing: normal !important;
+        color: var(--pg-m-text) !important;
+    }
+
+    .pg-simple-start__sub {
+        margin-top: 8px !important;
+        font-family: var(--pg-m-font-sans);
+        font-size: 14px !important;
+        line-height: 20px;
+        color: var(--pg-m-muted) !important;
+    }
+
+    /* Process GPT 에만 있는 입구 — 인사말 바로 아래, 흐린 글자 단추로 남긴다. */
+    .pg-simple-start:not(.pg-simple-start--compact) .pg-simple-start__more {
+        order: 2;
+        margin: 8px 0 auto !important;
+    }
+
+    .pg-simple-start__more .v-btn {
+        font-family: var(--pg-m-font-sans);
+        font-size: 13px !important;
+        color: var(--pg-m-text-2) !important;
+        letter-spacing: normal;
+    }
+
+    .pg-simple-start:not(.pg-simple-start--compact) > .main-chat-input-container,
+    .pg-simple-start:not(.pg-simple-start--compact) > :not(.pg-simple-start__hello):not(.pg-simple-start__more):not(.pg-simple-start__bar) {
+        order: 3;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   6. 인스턴스 대화 — 채팅방과 같은 모양. 진행 흐름 띠(InstanceFlow)는 그대로 둔다.
+   -------------------------------------------------------------------------- */
+body.pg-m {
+    .pg-instance-card {
+        background: var(--pg-m-page) !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        height: calc(100dvh - var(--pg-m-appbar-h) - env(safe-area-inset-top, 0px)) !important;
+    }
+
+    /* 큰 제목은 앱바로 올라갔다. 남은 줄은 상태 · 프로세스 보기 · 삭제를 작게. */
+    .pg-instance-card .instance-card-title {
+        padding: 0 16px 4px 20px !important;
+        min-height: 36px;
+        flex-wrap: nowrap !important;
+    }
+
+    .pg-instance-card .instance-card-title > .text-h5 {
+        display: none !important;
+    }
+
+    .pg-instance-card .instance-card-title .v-chip {
+        height: auto !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        font-size: 12px !important;
+        color: var(--pg-m-muted) !important;
+    }
+
+    .pg-instance-card .instance-card-title .v-btn {
+        font-family: var(--pg-m-font-sans);
+        font-size: 13px !important;
+        letter-spacing: normal !important;
+        text-transform: none !important;
+        color: var(--pg-m-text-2) !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        min-width: 0 !important;
+        padding: 0 8px !important;
+        height: 28px !important;
+    }
+
+    .pg-instance-card .instance-card-title .v-btn.bg-error {
+        color: var(--cds-text-danger, #8e2626) !important;
+    }
+
+    .pg-instance-card > .v-divider,
+    .pg-instance-card > div > .v-divider {
+        display: none !important;
+    }
+
+    /* 칸 높이 = 화면 − (앱바 48 + 상태 줄 36). 산출물은 앱바 문서 아이콘으로 열리므로 분할 단추 줄이 없다.
+       칸이 모자라면 입력창 아래가 비고, 넘치면 잘린다. */
+    .pg-instance-card .pg-three {
+        --pg-three-chrome: calc(84px + env(safe-area-inset-top, 0px));
+        padding: 0 !important;
+    }
+
+    .pg-instance-card .pg-three__col {
+        border-radius: 0 !important;
+        background: var(--pg-m-page) !important;
+    }
+
+    /* 대화 | 산출물 — 클로드 입력창의 '채팅 | Cowork' 처럼 작은 분할 단추. */
+    .pg-three__switch {
+        display: flex !important;
+        width: max-content;
+        gap: 0 !important;
+        margin: 4px auto 6px !important;
+        padding: 2px !important;
+        border-radius: 8px;
+        background: var(--pg-m-hover);
+    }
+
+    .pg-three__switch .v-btn {
+        height: 28px !important;
+        min-width: 56px !important;
+        padding: 0 12px !important;
+        border-radius: 6px !important;
+        font-family: var(--pg-m-font-sans);
+        font-size: 13px !important;
+        letter-spacing: normal !important;
+        color: var(--pg-m-text-2) !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .pg-three__switch .v-btn.v-btn--variant-flat,
+    .pg-three__switch .v-btn.bg-primary {
+        background: var(--pg-m-surface) !important;
+        color: var(--pg-m-text) !important;
+        box-shadow: 0 1px 2px rgb(0 0 0 / 8%) !important;
+    }
+
+    /* Vuetify 가 칠한 버튼 안쪽 글자색(흰색)까지 덮는다. */
+    .pg-three__switch .v-btn .v-btn__content {
+        color: inherit !important;
+    }
+
+    /* ChatThread — 인스턴스 대화의 말들 */
+    .chat-thread .chat-messages {
+        padding: 8px 24px !important;
+        background: var(--pg-m-page) !important;
+    }
+
+    .chat-thread .message-item {
+        margin: 0 !important;
+        padding: 0 !important;
+        gap: 0 !important;
+    }
+
+    .chat-thread .message-avatar {
+        display: none !important;
+    }
+
+    .chat-thread .message-header {
+        margin: 16px 0 2px 8px !important;
+    }
+
+    .chat-thread .message-sender {
+        font-family: var(--pg-m-font-sans);
+        font-size: 12px !important;
+        line-height: 17px;
+        font-weight: 500 !important;
+        color: var(--pg-m-muted) !important;
+    }
+
+    .chat-thread .message-content {
+        max-width: 100% !important;
+        width: 100%;
+    }
+
+    /* 에이전트·안내의 말 — 말풍선 없는 산문 */
+    .chat-thread .message-item.assistant-message .bubble {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .chat-thread .message-item.assistant-message .message-text {
+        font-family: var(--pg-m-font-prose) !important;
+        font-size: 16px !important;
+        line-height: 24px !important;
+        color: var(--pg-m-text) !important;
+        padding: 0 36px 0 8px;
+        word-break: keep-all;
+        overflow-wrap: anywhere;
+    }
+
+    .chat-thread .message-item.assistant-message .message-text p + p {
+        margin-top: 12px;
+    }
+
+    /* 사람의 말 — 말풍선. 내 말은 오른쪽. */
+    .chat-thread .message-item.user-message .bubble,
+    .chat-thread .message-item.my-message .bubble {
+        padding: 12px 16px !important;
+        border-radius: 12px !important;
+        background: var(--pg-m-bubble) !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        max-width: 82% !important;
+    }
+
+    .chat-thread .message-item.user-message .message-text,
+    .chat-thread .message-item.my-message .message-text {
+        font-family: var(--pg-m-font-sans) !important;
+        font-size: 15px !important;
+        line-height: 20px !important;
+        color: var(--pg-m-text) !important;
+    }
+
+    .chat-thread .message-item.my-message .message-content {
+        align-items: flex-end;
+        margin-top: 16px;
+    }
+
+    .chat-thread .bubble-time {
+        margin-top: 4px;
+        padding: 0 8px;
+        font-size: 11px !important;
+        color: var(--pg-m-muted) !important;
+    }
+
+    /* 도구 사용 내역 — 채팅방과 같은 한 줄 + 상자 */
+    .chat-thread .tool-calls {
+        margin: 4px 0 8px 2px !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+    }
+
+    .chat-thread .tool-calls__summary {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 4px;
+        min-height: 32px;
+        padding: 6px !important;
+        list-style: none;
+        font-family: var(--pg-m-font-sans);
+        font-size: 14px !important;
+        line-height: 20px;
+        color: var(--pg-m-muted) !important;
+    }
+
+    .chat-thread .tool-calls__summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .chat-thread .tool-calls__summary > .v-icon,
+    .chat-thread .tool-call-item > .v-icon {
+        display: none !important;
+    }
+
+    .chat-thread .tool-calls__summary::after {
+        content: '';
+        width: 6px;
+        height: 6px;
+        margin-left: 4px;
+        border-right: 1.5px solid currentColor;
+        border-bottom: 1.5px solid currentColor;
+        transform: rotate(-45deg);
+    }
+
+    .chat-thread .tool-calls[open] > .tool-calls__summary::after {
+        transform: rotate(45deg) translate(-2px, -2px);
+    }
+
+    .chat-thread .tool-calls[open] > :not(summary) {
+        margin-left: 2px;
+        border-left: 1px solid var(--pg-m-border);
+        border-right: 1px solid var(--pg-m-border);
+    }
+
+    .chat-thread .tool-calls[open] > :nth-child(2) {
+        border-top: 1px solid var(--pg-m-border);
+        border-radius: 12px 12px 0 0;
+    }
+
+    .chat-thread .tool-calls[open] > :last-child {
+        border-bottom: 1px solid var(--pg-m-border);
+        border-radius: 0 0 12px 12px;
+    }
+
+    .chat-thread .tool-calls[open] > :nth-child(2):last-child {
+        border-radius: 12px;
+    }
+
+    .chat-thread .tool-call-item {
+        display: flex !important;
+        align-items: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 8px 12px !important;
+        font-family: var(--pg-m-font-sans);
+        font-size: 14px !important;
+        color: var(--pg-m-text-2) !important;
+        background: transparent !important;
+    }
+
+    .chat-thread .tool-calls > * + * {
+        border-top: 1px solid var(--pg-m-border);
+    }
+
+    .chat-thread .tool-call-status {
+        display: none !important;
+    }
+
+    .chat-thread .tool-call-output {
+        margin: 0 !important;
+        padding: 8px 12px 12px !important;
+        font-size: 12px !important;
+        line-height: 17px;
+        background: var(--pg-m-hover) !important;
+        max-height: 240px;
+        overflow: auto;
+    }
+
+    /* 첨부 파일 카드 — 채팅방의 산출물 카드와 같은 치수 */
+    .chat-thread .attached-file-card {
+        display: flex !important;
+        align-items: center;
+        gap: 14px !important;
+        min-height: 64px;
+        padding: 8px 12px !important;
+        border: 1px solid var(--pg-m-border-strong) !important;
+        border-radius: 12px !important;
+        background: var(--pg-m-surface) !important;
+    }
+
+    .chat-thread .attached-file-card__icon {
+        width: 40px !important;
+        height: 48px !important;
+        border-radius: 6px !important;
+        background: var(--pg-m-hover) !important;
+        border: 1px solid var(--pg-m-border);
+    }
+
+    .chat-thread .attached-file-card__name {
+        font-size: 15px !important;
+        line-height: 20px !important;
+        font-weight: 400 !important;
+        color: var(--pg-m-text) !important;
+    }
+
+    .chat-thread .attached-file-card__sub {
+        font-size: 13px !important;
+        line-height: 17px !important;
+        color: var(--pg-m-muted) !important;
+    }
+
+    /* 말과 함께 남은 산출물 카드(OutputCard) — 클로드 파일 카드 수치. */
+    .chat-thread .pg-out-card {
+        padding: 12px 16px !important;
+        border: 1px solid var(--pg-m-border-strong) !important;
+        border-radius: 12px !important;
+        background: var(--pg-m-surface) !important;
+        box-shadow: none !important;
+    }
+
+    .chat-thread .pg-out-card__name {
+        font-size: 15px !important;
+        line-height: 20px !important;
+        font-weight: 400 !important;
+        color: var(--pg-m-text) !important;
+    }
+
+    .chat-thread .pg-out-card__line {
+        font-size: 13px !important;
+        line-height: 19px;
+    }
+
+    .chat-thread .pg-out-card__k {
+        color: var(--pg-m-muted) !important;
+    }
+
+    .chat-thread .pg-out-card__v {
+        color: var(--pg-m-text-2) !important;
+    }
+
+    /* 내 차례 폼 · 진행 상태 줄 — 흰 상자 하나로 차분하게. 폼 자체는 그대로 둔다. */
+    .pg-tl__hitl {
+        margin: 8px 16px !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--pg-m-border) !important;
+        background: var(--pg-m-surface) !important;
+        box-shadow: none !important;
+    }
+
+    /* 작업 중 표시 — 글이 시작하는 자리(32px)에 맞춘다. */
+    .pg-working {
+        padding: 4px 24px 8px 30px !important;
+        font-family: var(--pg-m-font-sans);
+    }
+
+    .pg-tl__composer {
+        padding: 4px 16px calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+        background: var(--pg-m-page) !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   7. 산출물 미리보기 — 클로드 모바일처럼 화면 전체. 머리는 44px 한 줄.
+      여는 것은 사람이 눌렀을 때만이다(ChatRoomPage watch.artifactSidebarVisible).
+   -------------------------------------------------------------------------- */
+body.pg-m {
+    /* 앱바 바로 아래부터 끝까지. 패널은 본문 안쪽에 있어 앱바 위로 올라설 수 없다 —
+       덮으려 하면 탭 · 닫기 줄이 앱바 밑에 깔린다. 앱바의 산출물 단추로도 닫힌다. */
+    .chat-room-page .right-sidebar.is-open {
+        position: fixed !important;
+        top: calc(var(--pg-m-appbar-h) + env(safe-area-inset-top, 0px)) !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        z-index: 1010 !important;
+        background: var(--pg-m-surface) !important;
+        border: 0 !important;
+    }
+
+    .chat-room-page .right-sidebar__resizer {
+        display: none !important;
+    }
+
+    .artifact-panel__tab-bar {
+        height: 44px;
+        min-height: 44px;
+        padding: 0 4px 0 8px !important;
+        background: var(--pg-m-surface) !important;
+        border-bottom: 1px solid var(--pg-m-border) !important;
+    }
+
+    .artifact-panel__tab {
+        height: 32px;
+        padding: 0 10px !important;
+        border-radius: 8px !important;
+        font-family: var(--pg-m-font-sans);
+        font-size: 14px !important;
+        color: var(--pg-m-text-2) !important;
+        background: transparent !important;
+        border: 0 !important;
+    }
+
+    .artifact-panel__tab.is-active {
+        color: var(--pg-m-text) !important;
+        background: var(--pg-m-hover) !important;
+    }
+
+    .artifact-panel__close-btn {
+        width: 32px !important;
+        height: 32px !important;
+        color: var(--pg-m-text) !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   8. 인스턴스 진행 상황 · 산출물 — 클로드 Cowork 의 오른쪽 패널 모양.
+      앱바 오른쪽 패널 단추 또는 입력창 위 진행 알약을 누르면 열린다.
+      화면 오른쪽에 붙은 흰 카드(왼쪽 56px · 위 8px 띄움, 모서리 14px),
+      안에 접이식 칸 '진행 상황 ⌄' '산출물 ⌄'. 바깥을 누르면 닫힌다.
+   -------------------------------------------------------------------------- */
+
+/* 입력창 위 한 줄 알약 자리 */
+body.pg-m .pg-tl__pill {
+    padding: 4px 16px 0;
+    background: var(--pg-m-page);
+}
+
+body.pg-m .pg-flow-pill {
+    border-color: var(--pg-m-border) !important;
+    background: var(--pg-m-surface) !important;
+    font-family: var(--pg-m-font-sans);
+    color: var(--pg-m-text-2) !important;
+}
+
+/* 앱바로 옮겨 간 패널 단추 — 앱바의 다른 단추와 같은 32px 칸 */
+.pg-tl__panel-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: var(--pg-m-text);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pg-tl__panel-btn:active,
+.pg-tl__panel-btn--on {
+    background: var(--pg-m-hover);
+}
+
+body.pg-m .pg-m-side-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 1011;
+    background: rgb(0 0 0 / 12%);
+}
+
+body.pg-m .pg-m-side {
+    position: fixed;
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    right: 8px;
+    left: 56px;
+    z-index: 1012;
+    max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    border: 1px solid var(--pg-m-border);
+    border-radius: 14px;
+    background: var(--pg-m-surface);
+    box-shadow: var(--cds-shadow-popover, 0 8px 24px rgb(0 0 0 / 12%), 0 2px 6px rgb(0 0 0 / 8%));
+    font-family: var(--pg-m-font-sans);
+    animation: pg-m-side-in 0.18s var(--cds-ease-out, ease-out);
+
+    .pg-m-side__sec + .pg-m-side__sec {
+        border-top: 1px solid var(--pg-m-border);
+    }
+
+    .pg-m-side__head {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        width: 100%;
+        min-height: 44px;
+        padding: 0 14px;
+        font-size: 14px;
+        line-height: 20px;
+        color: var(--pg-m-text);
+        text-align: left;
+    }
+
+    .pg-m-side__head .v-icon {
+        color: var(--pg-m-muted);
+    }
+
+    .pg-m-side__body {
+        padding: 0 14px 14px;
+    }
+
+    /* 산출물 칸 — 원래 칸 높이를 채우던 자리라 높이를 풀고, 카드는 클로드 파일 카드 수치로. */
+    .instance-card-tab-height {
+        height: auto !important;
+        max-height: none !important;
+    }
+
+    .instance-card-tab-height > .v-row {
+        gap: 8px;
+    }
+
+    .instance-card-tab-height .v-col-12 {
+        padding: 0 !important;
+    }
+
+    .pg-out-card {
+        padding: 12px 14px !important;
+        border: 1px solid var(--pg-m-border-strong) !important;
+        border-radius: 12px !important;
+        background: var(--pg-m-surface) !important;
+        box-shadow: none !important;
+    }
+
+    .pg-out-card__name {
+        font-size: 15px !important;
+        line-height: 20px !important;
+        font-weight: 400 !important;
+        color: var(--pg-m-text) !important;
+        margin-bottom: 4px;
+    }
+
+    .pg-out-card__line {
+        font-size: 13px !important;
+        line-height: 19px;
+    }
+
+    .pg-out-card__k {
+        color: var(--pg-m-muted) !important;
+    }
+
+    .pg-out-card__v {
+        color: var(--pg-m-text-2) !important;
+    }
+}
+
+@keyframes pg-m-side-in {
+    from {
+        transform: translateX(12px);
+        opacity: 0;
+    }
+    to {
+        transform: none;
+        opacity: 1;
+    }
+}
+
+/* '+' 시트 — 아래에서 올라오는 판. v-menu 의 위치 계산을 덮어 화면 아래에 붙인다. */
+body.pg-m .pg-plus-sheet {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    transform: none !important;
+
+    > .v-list {
+        padding: 12px 4px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+        border-radius: 16px 16px 0 0 !important;
+        background: var(--pg-m-surface) !important;
+        box-shadow: 0 -8px 24px rgb(0 0 0 / 10%) !important;
+    }
+
+    .pg-plus-sheet__handle {
+        width: 36px;
+        height: 4px;
+        margin: 0 auto 12px;
+        border-radius: 999px;
+        background: var(--pg-m-border);
+    }
+
+    .pg-plus-sheet__title {
+        padding: 0 14px 8px;
+        font-family: var(--pg-m-font-sans);
+        font-size: 15px;
+        line-height: 20px;
+        font-weight: 580;
+        color: var(--pg-m-text);
+    }
+
+    .v-list-item {
+        min-height: 42px !important;
+        padding: 9px 10px !important;
+        margin: 0 0 2px;
+        border-radius: 10px !important;
+    }
+
+    .v-list-item-title {
+        font-family: var(--pg-m-font-sans);
+        font-size: 15px !important;
+        line-height: 22px !important;
+        color: var(--pg-m-text);
+    }
+
+    .v-list-item__prepend > .v-icon {
+        margin-inline-end: 0 !important;
+        opacity: 1 !important;
+        color: var(--pg-m-text-2);
+        font-size: 20px;
+    }
+
+    /* 아이콘과 글자 사이 12px (Vuetify 기본은 32px 칸을 비운다). */
+    .v-list-item__prepend > .v-list-item__spacer {
+        width: 12px !important;
+    }
+}

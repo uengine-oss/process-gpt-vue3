@@ -594,18 +594,20 @@ function toggleChurn(row: typeof churnData.value[0]) {
 }
 .stage-count { font-size: 20px; font-weight: 700; }
 .stage-label { font-size: 11px; color: #64748b; margin-top: 2px; }
-.stage-slate { background: #f1f5f9; }
-.stage-slate .stage-count { color: #475569; }
-.stage-blue { background: rgba(59, 130, 246, 0.1); }
-.stage-blue .stage-count { color: #2563eb; }
-.stage-violet { background: rgba(139, 92, 246, 0.1); }
-.stage-violet .stage-count { color: #7c3aed; }
-.stage-amber { background: rgba(245, 158, 11, 0.1); }
-.stage-amber .stage-count { color: #d97706; }
+/* 단계 색은 :root --pal-stage-*(-rgb) (STAGE_DEFS → applyStageCssVariables) 를 읽는다.
+   테넌트 용어 설정에서 색을 바꾸면 TS hex 와 이 CSS 가 함께 바뀐다. */
+.stage-slate { background: rgba(var(--pal-stage-draft-rgb, 148, 163, 184), 0.15); }
+.stage-slate .stage-count { color: var(--pal-stage-draft, #475569); }
+.stage-blue { background: rgba(var(--pal-stage-in-review-rgb, 59, 130, 246), 0.1); }
+.stage-blue .stage-count { color: var(--pal-stage-in-review, #2563eb); }
+.stage-violet { background: rgba(var(--pal-stage-public-feedback-rgb, 139, 92, 246), 0.1); }
+.stage-violet .stage-count { color: var(--pal-stage-public-feedback, #7c3aed); }
+.stage-amber { background: rgba(var(--pal-stage-final-edit-rgb, 245, 158, 11), 0.1); }
+.stage-amber .stage-count { color: var(--pal-stage-final-edit, #d97706); }
 .stage-cyan { background: rgba(6, 182, 212, 0.1); }
 .stage-cyan .stage-count { color: #0891b2; }
-.stage-emerald { background: rgba(16, 185, 129, 0.1); }
-.stage-emerald .stage-count { color: #059669; }
+.stage-emerald { background: rgba(var(--pal-stage-published-rgb, 16, 185, 129), 0.1); }
+.stage-emerald .stage-count { color: var(--pal-stage-published, #059669); }
 
 /* ─── KPI ──────────────────────────────────────────────────────────── */
 .kpi-legend { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }

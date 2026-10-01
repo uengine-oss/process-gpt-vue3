@@ -1,0 +1,25 @@
+# gitleaks 설정 — 기본 룰 + 검증된 오탐 허용목록
+# 허용목록에 추가할 때는 "실제 자격 증명이 아님"을 확인한 근거를 주석으로 남긴다.
+title = "process-gpt-vue3 gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "검증된 오탐"
+paths = [
+    # Supabase 셀프호스팅 공식 예시 값(데모 JWT·플레이스홀더) — 배포 시 반드시 교체하는 템플릿
+    '''docker-compose/\.env\.example$''',
+    # 빌드 산출물·로컬 런타임 파일 (git 미추적)
+    '''(^|/)dist/''',
+    '''(^|/)node_modules/''',
+    '''supabase/\.temp/''',
+]
+regexes = [
+    # LLM 모델 식별자 목록 ({ key: 'gpt-4o-mini', name: ... }) — generic-api-key 오탐
+    '''key: '(gpt|claude|gemini|o\d)[-\w.]*''',
+    # 외부 API 연결 화면의 예시 헤더 값
+    '''sk_live_12345abcdef''',
+    # config.toml 의 env() 치환 표기
+    '''env\([A-Z0-9_]+\)''',
+]

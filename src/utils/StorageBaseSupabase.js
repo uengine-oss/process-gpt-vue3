@@ -4,6 +4,11 @@ import { isAdminRole } from './roles';
 // 웹과 앱이 같은 규칙으로 기기를 구분해야 한다. 다르면 같은 사람의 기기가
 // 서로 다른 방식으로 등록돼 알림이 엉뚱한 곳으로 간다.
 import { deviceId, deviceType } from '@/shared/deviceIdentity/index.js';
+// files · chat-images 버킷은 비공개다(20260911_storage_private_buckets.sql).
+// 공개 URL 은 더 이상 열리지 않으므로 주소는 전부 서명해서 만든다.
+import { parseStorageRef, resolveStorageUrl } from '@/shared/storageUrl/index.js';
+// 파일을 가져간 사건은 남긴다 (docs/security.md 3-3, 20260911_file_download_log.sql).
+import { DOWNLOAD_ACTIONS, recordFileDownload } from '@/shared/downloadAudit/index.js';
 
 class StorageBaseError extends Error {
     constructor(message, cause, args) {
@@ -40,18 +45,38 @@ class StorageBaseError extends Error {
 export default class StorageBaseSupabase {
     //extends StorageBase{
 
+    /**
+     * 로그인/로그아웃/로그인 실패 감사 기록 (supabase/migrations/20260911000001_auth_audit_log.sql)
+     *
+     * IP / User-Agent 는 여기서 보내지 않는다. 클라이언트 값은 위조 가능하므로
+     * SECURITY DEFINER RPC 가 서버측 요청 헤더에서 직접 캡처한다.
+     *
+     * 이 함수는 어떤 경우에도 예외를 던지지 않는다 — 감사 기록 실패가
+     * 로그인/로그아웃 흐름을 깨서는 안 된다.
+     *
+     * @param {{action:'login'|'login_failed'|'logout'|'login_oauth', email?:string|null,
+     *          success:boolean, errorMessage?:string|null, tenantId?:string|null,
+     *          metadata?:object}} params
+     */
     async recordAuthAudit({ action, email, success, errorMessage, tenantId, metadata }) {
         try {
-            // const supabase = window.$supabase;
-            // if (!supabase || typeof supabase.rpc !== 'function') return;
-            // await supabase.rpc('record_auth_audit', {
-            //     p_action: action,
-            //     p_email: email ?? null,
-            //     p_success: Boolean(success),
-            //     p_error_message: errorMessage ?? null,
-            //     p_tenant_id: tenantId ?? null,
-            //     p_metadata: metadata ?? {}
-            // });
+            const supabase = window.$supabase;
+            if (!supabase || typeof supabase.rpc !== 'function') return;
+
+            const { error } = await supabase.rpc('record_auth_audit', {
+                p_action: action,
+                p_email: email ?? null,
+                p_success: Boolean(success),
+                p_error_message: errorMessage ?? null,
+                p_tenant_id: tenantId ?? null,
+                p_metadata: metadata ?? {}
+            });
+
+            // supabase-js 는 RPC 오류를 throw 하지 않고 error 로 돌려준다.
+            // (테이블/함수 미배포 환경에서도 로그인은 정상 진행돼야 한다)
+            if (error) {
+                console.warn('[auth_login_audit] 기록 실패:', error.message || error);
+            }
         } catch (e) {
             // 감사 로그 기록 실패는 UX를 깨지 않도록 조용히 무시 (콘솔만)
             console.warn('[auth_login_audit] 기록 실패:', e);
@@ -232,21 +257,71 @@ export default class StorageBaseSupabase {
         }
     }
 
+    /**
+     * 로그인 직전 "이 이메일이 이 테넌트에 등록돼 있는가" 만 확인한다.
+     *
+     * 인증(auth.users)은 테넌트 구분이 없으므로 이 확인이 없으면 A 테넌트 계정으로
+     * B 테넌트 서브도메인에 로그인할 수 있다. 없앨 수 없는 인가 관문이다.
+     *
+     * 예전에는 anon 으로 public.users 를 직접 select 해서 행 전체를 받아왔다.
+     * 20260911000011_users_rls_tenant_scope.sql 이 anon 의 users 조회를 막았으므로
+     * SECURITY DEFINER RPC 로 옮긴다. 돌려받는 값은 boolean 하나뿐이다 —
+     * 호출부가 쓰던 값이 "행이 있느냐" 뿐이었고(users 에는 is_delete 류 컬럼이 없다),
+     * 이메일 목록을 내려주면 그 자체가 계정 열거 수단이 된다.
+     *
+     * @param {string} email
+     * @returns {Promise<boolean>}
+     */
+    async loginPrecheck(email) {
+        const tenantId = window.$tenantName || null;
+        const { data, error } = await window.$supabase.rpc('login_precheck', {
+            p_email: email,
+            p_tenant_id: tenantId
+        });
+
+        if (!error) {
+            return data === true;
+        }
+
+        // RPC 가 아직 배포되지 않은 DB(마이그레이션 이전)에서 전원 로그인 불가가
+        // 되는 것을 막는다. "함수 없음" 일 때만 예전 직접 조회로 되돌아간다.
+        // (RLS 가 이미 좁혀진 DB 라면 이 조회는 어차피 빈 결과를 준다)
+        const code = error.code || '';
+        const missingFunction = code === 'PGRST202' || code === '42883' || /Could not find the function/i.test(error.message || '');
+        if (!missingFunction) {
+            throw new StorageBaseError('error in loginPrecheck', error, arguments);
+        }
+
+        const filter = { match: { email } };
+        if (tenantId) {
+            filter.match.tenant_id = tenantId;
+        }
+        const existUser = await this.getObject('users', filter);
+        return !!(existUser && existUser.id);
+    }
+
     async signIn(userInfo) {
         try {
-            const filter = { match: { email: userInfo.email } };
-            if (window.$tenantName) {
-                filter.match.tenant_id = window.$tenantName;
-            }
-            const existUser = await this.getObject('users', filter);
-            if ((window.$isTenantServer && !window.$tenantName) || (existUser && existUser.id)) {
+            // 메인(테넌트 미지정) 서버에서는 테넌트 소속을 따질 대상이 없으므로
+            // 사전 확인 자체를 건너뛴다 — 기존 동작 그대로다.
+            const skipPrecheck = !!(window.$isTenantServer && !window.$tenantName);
+            const userExists = skipPrecheck ? false : await this.loginPrecheck(userInfo.email);
+            if (skipPrecheck || userExists) {
                 const result = await window.$supabase.auth.signInWithPassword({
                     email: userInfo.email,
                     password: userInfo.password
                 });
 
                 if (!result.error) {
-                    // 로그인 성공
+                    // 로그인 성공 — 실패만 남기면 "언제 로그인했는지"를 알 수 없으므로 성공도 기록한다.
+                    await this.recordAuthAudit({
+                        action: 'login',
+                        email: userInfo.email,
+                        success: true,
+                        errorMessage: null,
+                        tenantId: window.$tenantName || null,
+                        metadata: { method: 'password' }
+                    });
                     return result.data;
                 } else if (result.error && result.error.message.includes('Email not confirmed')) {
                     await this.recordAuthAudit({
@@ -274,28 +349,15 @@ export default class StorageBaseSupabase {
                         tenantId: window.$tenantName || null,
                         metadata: { method: 'password' }
                     });
-                    const users = await this.list('users');
-                    if (users && users.length > 0) {
-                        const checkedId = users.some((user) => user.email == userInfo.email);
-                        if (checkedId) {
-                            // 비밀번호가 틀렸습니다 메시지 출력 부분
-                            await window.$app_.try({
-                                action: () => Promise.reject(new Error()),
-                                errorMsg: window.$i18n.global.t('StorageBaseSupabase.wrongPassword')
-                            });
-                        } else {
-                            // 아이디가 틀렸습니다 메시지 출력 부분
-                            await window.$app_.try({
-                                action: () => Promise.reject(new Error()),
-                                errorMsg: window.$i18n.global.t('StorageBaseSupabase.wrongId')
-                            });
-                        }
-                        return {
-                            error: true
-                        };
-                    } else {
-                        throw new StorageBaseError(result.error);
-                    }
+                    // 계정 없음/비밀번호 오류를 구분하지 않고 하나의 문구로 응답한다.
+                    // (구분해서 안내하면 응답만 보고 계정 존재 여부를 알아낼 수 있다)
+                    await window.$app_.try({
+                        action: () => Promise.reject(new Error()),
+                        errorMsg: window.$i18n.global.t('StorageBaseSupabase.invalidCredentials')
+                    });
+                    return {
+                        error: true
+                    };
                 }
             } else {
                 await this.recordAuthAudit({
@@ -306,10 +368,10 @@ export default class StorageBaseSupabase {
                     tenantId: window.$tenantName || null,
                     metadata: { method: 'password', reason: 'not_registered_email' }
                 });
-                // 가입된 이메일이 아닐때 메시지 출력부분
+                // 가입되지 않은 이메일이어도 비밀번호 오류와 동일한 문구로 응답한다.
                 await window.$app_.try({
                     action: () => Promise.reject(new Error()),
-                    errorMsg: window.$i18n.global.t('StorageBaseSupabase.notRegisteredEmail')
+                    errorMsg: window.$i18n.global.t('StorageBaseSupabase.invalidCredentials')
                 });
                 return {
                     error: true
@@ -1481,15 +1543,15 @@ export default class StorageBaseSupabase {
         }
     }
 
+    /**
+     * 채팅 이미지 주소. 만료 1시간짜리 서명 URL 이다.
+     *
+     * 옛 메시지에는 `path` 대신 공개 URL 이 통째로 저장돼 있다. 그 값을 그대로
+     * 넣어도 버킷·경로를 되찾아 다시 서명하므로 지난 대화의 사진도 보인다.
+     */
     async getImageUrl(path) {
         try {
-            const { data, error } = await window.$supabase.storage.from('chat-images').getPublicUrl(path);
-
-            if (error) {
-                return error;
-            }
-
-            return data.publicUrl;
+            return await resolveStorageUrl(path, { bucket: 'chat-images' });
         } catch (error) {
             throw new StorageBaseError('error in getImageUrl', error, arguments);
         }
@@ -1512,58 +1574,99 @@ export default class StorageBaseSupabase {
                 return error;
             }
 
-            // Get public URL for the uploaded file
-            const publicUrl = await this.getFileUrl(data.path);
+            // 저장해도 되는 값은 **경로뿐**이다.
+            // 서명 URL 은 1시간이면 만료되므로 폼 데이터나 DB 에 남기면 나중에 깨진다.
+            // 지금 당장 열어야 하는 쪽(업로드 직후 새 창 등)만 signedUrl 을 쓴다.
+            const signedUrl = await this.getFileUrl(data.path);
 
             return {
                 ...data,
                 originalFileName: fileName,
-                publicUrl: publicUrl,
-                fullPath: publicUrl
+                bucket: 'files',
+                signedUrl: signedUrl,
+                // 옛 이름들. 절대 URL 을 저장하던 호출부가 빈 값을 받아
+                // 자연스럽게 "경로만 저장" 으로 넘어가게 둔다.
+                publicUrl: '',
+                fullPath: data.path
             };
         } catch (error) {
             throw new StorageBaseError('error in uploadFile', error, arguments);
         }
     }
 
+    /**
+     * 파일 주소. 만료 1시간짜리 서명 URL 이다.
+     *
+     * 경로(`uploads/...`)든, 예전에 저장해 둔 공개 URL 이든 받는다.
+     * 공개 URL 은 버킷·경로를 되찾아 다시 서명하므로 옛 데이터도 열린다.
+     *
+     * 이 주소를 받은 사람은 1시간 동안 파일을 내려받을 수 있다. 그래서 발급 자체를
+     * 다운로드 이력에 남긴다(action='signed_url'). 채팅 이미지 표시용
+     * `getImageUrl` 은 목록 한 번에 수십 건이 쌓여 이력이 소음으로 덮이므로 제외한다.
+     */
     async getFileUrl(path) {
         try {
-            const { data, error } = await window.$supabase.storage.from('files').getPublicUrl(path);
-
-            if (error) {
-                return error;
+            const url = await resolveStorageUrl(path, { bucket: 'files' });
+            // 실제로 서명한 경우에만 남긴다 — 바깥 주소·data:·앱 정적 경로는 대상이 아니다.
+            const ref = parseStorageRef(path, 'files');
+            if (ref && url) {
+                // 기록 실패가 파일 열기를 막지 않는다 (헬퍼가 삼킨다).
+                await recordFileDownload({
+                    bucket: ref.bucket,
+                    path: ref.path,
+                    action: DOWNLOAD_ACTIONS.SIGNED_URL,
+                    metadata: { source: 'StorageBaseSupabase.getFileUrl' }
+                });
             }
-
-            return data.publicUrl;
+            return url;
         } catch (error) {
             throw new StorageBaseError('error in getFileUrl', error, arguments);
         }
     }
 
+    /**
+     * 파일을 내려받는다.
+     *
+     * 예전에는 공개 URL 을 fetch 했지만 버킷이 비공개가 되면서 그 길이 막혔다.
+     * 이제는 로그인 세션을 쓰는 `download()` 로 받는다 — 서명 URL 을 한 번 더
+     * 거칠 필요가 없고, RLS 가 그대로 적용된다.
+     */
     async downloadFile(path) {
         try {
-            const { data: urlData, error: urlError } = await window.$supabase.storage.from('files').getPublicUrl(path);
-
-            if (urlError) {
-                console.log(urlError);
-                return urlError;
+            const ref = parseStorageRef(path, 'files');
+            if (!ref) {
+                return { message: `다운로드할 수 없는 경로입니다: ${path}` };
             }
 
-            const response = await fetch(urlData.publicUrl);
-            const blob = await response.blob();
+            const { data: blob, error } = await window.$supabase.storage.from(ref.bucket).download(ref.path);
 
-            const originalFileName = path.split('/').pop().split('_').slice(1).join('_');
+            if (error) {
+                console.log(error);
+                return error;
+            }
+            if (!blob) return null;
+
+            // 업로드 때 `<타임스탬프>_<uuid8>.<확장자>` 로 이름을 바꾼다. 앞머리를 떼면
+            // 원래 이름이 남는 형식이라 그 규칙을 유지한다(떼고 나서 비면 그대로 쓴다).
+            const lastSegment = ref.path.split('/').pop() || '';
+            const originalFileName = lastSegment.split('_').slice(1).join('_') || lastSegment;
             const file = new File([blob], originalFileName, { type: blob.type });
 
-            if (file) {
-                return {
-                    file: file,
-                    file_path: path,
-                    originalFileName: originalFileName
-                };
-            } else {
-                return null;
-            }
+            // 다운로드 이력 (docs/security.md 3-3). 기록 실패는 헬퍼가 삼키므로
+            // 여기서 다운로드 흐름이 끊기는 일은 없다.
+            await recordFileDownload({
+                bucket: ref.bucket,
+                path: ref.path,
+                fileName: originalFileName,
+                action: DOWNLOAD_ACTIONS.DOWNLOAD,
+                metadata: { source: 'StorageBaseSupabase.downloadFile', size: blob.size ?? null }
+            });
+
+            return {
+                file: file,
+                file_path: ref.path,
+                originalFileName: originalFileName
+            };
         } catch (error) {
             throw new StorageBaseError('error in downloadFile', error, arguments);
         }

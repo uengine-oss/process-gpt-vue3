@@ -354,7 +354,10 @@ export default {
             });
         },
         async getUserList() {
-            this.users = await backend.getUserList({
+            // 표시 전용 목록이다. 역할 변경·위임은 전부 user.id 로 하고,
+            // isMe() 비교도 본인 행(마스킹 뷰가 원본을 주는 행)이라 그대로 맞는다.
+            // 이메일은 마스킹된 값이 올 수 있다(admin 은 원본).
+            this.users = await backend.getMaskedUserList({
                 orderBy: 'username',
                 sort: 'asc',
                 match: {
