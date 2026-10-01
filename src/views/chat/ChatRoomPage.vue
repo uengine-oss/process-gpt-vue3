@@ -825,6 +825,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { agentStableId, isUuid as isUuidStable, slugToUuid } from '@/utils/agentId.js';
 import axios from 'axios';
 import { isArtifactUrlFresh, usableArtifactUrl } from '@/utils/artifactLinks.js';
+import { isDocumentFile } from '@/shared/workspaceFiles/index.js';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import Chat from '@/components/ui/Chat.vue';
 import VoiceAgentDesktopMode from '@/components/ui/VoiceAgentDesktopMode.vue';
@@ -6181,7 +6182,9 @@ export default {
          * 아니라 매번 새로 만들어지므로 판정에서 제외한다 — 원본 json 이 검사되므로 충분하다.
          */
         _isWorkspaceGroupSaved(files) {
-            const list = (files || []).filter((f) => f && !f.derived);
+            // 문서 산출물(docx·pdf)은 저장 대상이 아니다 — 내용이 없어 해시를 남길 수 없고,
+            // 판정에 넣으면 문서 하나 때문에 이미 저장한 스킬이 영원히 '저장 안 됨' 이 된다.
+            const list = (files || []).filter((f) => f && !f.derived && !isDocumentFile(f));
             if (!list.length) return false;
             return list.every((f) => !!f.savedHash && f.savedHash === this._workspaceContentHash(f.content));
         },
@@ -6193,7 +6196,7 @@ export default {
         _markWorkspaceFilesSaved(list) {
             const stamps = {};
             for (const f of list || []) {
-                if (!f || !f.path || f.derived) continue;
+                if (!f || !f.path || f.derived || isDocumentFile(f)) continue;
                 const hash = this._workspaceContentHash(f.content);
                 stamps[f.path] = hash;
                 f.savedHash = hash;
@@ -6753,6 +6756,8 @@ export default {
                     this.handleWorkspaceFileEdit(panelId, payload);
                 } else if (action === 'ai-edit-file') {
                     this.aiEditWorkspaceFile(panelId, payload);
+                } else if (action === 'resolve-url') {
+                    this._resolveWorkspaceFileUrl(payload);
                 } else if (action === 'navigate-process') {
                     // 산출물 '편집' → 내부 편집기로 이동(임시저장 draft 를 수정). kind 별 라우팅.
                     const kind = (payload && payload.kind ? payload.kind : 'process').toString();
@@ -6764,6 +6769,35 @@ export default {
                     else path = `/definitions/${id}`;
                     this.$router.push({ path }).catch(() => {});
                 }
+            }
+        },
+
+        /**
+         * 문서 산출물의 받을 수 있는 주소를 보장한다.
+         *
+         * 서명 주소는 한 시간이면 죽는다. 어제 대화를 다시 연 사람에게는 목록에 파일이
+         * 보이는데 눌러도 아무것도 안 나오는 상태가 된다 — 파일은 비공개 버킷에 그대로
+         * 있으므로 `file_id` 로 새 주소를 받아 항목에 반영한다. 항목 객체는 패널 배열과
+         * 같은 것이라, 주소를 채워 넣으면 뷰어가 그대로 다시 그린다.
+         */
+        async _resolveWorkspaceFileUrl(payload) {
+            // 기다리는 쪽(다운로드 버튼)이 영원히 멈추지 않게, 어떤 경로로 끝나도 알린다.
+            const done = typeof payload?.done === 'function' ? payload.done : () => {};
+            try {
+                const path = (payload?.path || '').toString();
+                if (!path) return;
+                for (const arr of Object.values(this.roomWorkspaceFilesByGroup || {})) {
+                    const file = (arr || []).find((f) => f && f.path === path && isDocumentFile(f));
+                    if (!file) continue;
+                    try {
+                        await usableArtifactUrl(file, this.requestArtifactUrl);
+                    } catch (e) {
+                        /* 주소를 못 받으면 들고 있던 주소가 전부다 — 지어낸 주소를 넣지 않는다. */
+                    }
+                    return;
+                }
+            } finally {
+                done();
             }
         },
 
@@ -8871,6 +8905,18 @@ export default {
                                 truncated: !!evt.truncated,
                                 status: 'done'
                             };
+                            // 문서 산출물(docx·pdf 등)은 바이너리라 내용이 아니라 주소로 온다.
+                            // 주소는 한 시간이면 죽지만 파일은 비공개 버킷에 남아 있어서,
+                            // file_id 로 새 주소를 받아 간다(_resolveWorkspaceFileUrl).
+                            const artifactUrl = (evt.url || evt.file_url || '').toString();
+                            if (artifactUrl) {
+                                entry.document = true;
+                                entry.url = artifactUrl;
+                                entry.file_id = (evt.file_id || '').toString();
+                                entry.url_expires_at = (evt.url_expires_at || '').toString();
+                                entry.contentType = (evt.content_type || evt.contentType || '').toString();
+                                entry.size_bytes = Number(evt.size_bytes) || 0;
+                            }
                             // 메시지에 영속(by path) — 새로고침 복원용
                             const files = Array.isArray(msg.workspaceFiles) ? msg.workspaceFiles : [];
                             const mi = files.findIndex((f) => f.path === path);
