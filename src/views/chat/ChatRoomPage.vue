@@ -842,6 +842,7 @@ import { formatToolName as sharedFormatToolName } from '@/shared/toolNames/index
 import { parseMcpToolOutput } from '@/shared/toolOutput';
 import { askUserFeedbackOf } from '@/shared/askUser';
 import { chatFailureMessage, createPersistCircuit } from '@/shared/chatFailure/index.js';
+import { forgetChatRoomDeleted, isChatRoomDeleted, markChatRoomDeleted, removeChatRoomFromLocalIndex } from '@/utils/deletedChatRooms';
 import { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
@@ -1941,6 +1942,9 @@ export default {
         async putChatRoomMerged(room) {
             const r = room !== undefined && room !== null ? room : this.currentChatRoom;
             if (!r || !r.id) return;
+            // 지운 방은 되살리지 않는다. putObject 는 upsert 라서, 삭제 뒤에 뒤늦게
+            // 돌아온 쓰기(이름 자동생성 응답 등)가 행을 그대로 다시 만들어 넣는다.
+            if (isChatRoomDeleted(r.id)) return;
             try {
                 const { data: existing, error } = await window.$supabase
                     .from('chat_rooms')
@@ -2778,11 +2782,13 @@ export default {
             } catch (e) {}
         },
         async loadRoom(roomId) {
-            // 우선 로컬 인덱스 사용
+            // 우선 로컬 인덱스 사용.
+            // 단, 지운 방은 캐시로 되살리지 않는다 — 그 스냅샷이 currentChatRoom 에 들어오면
+            // 이후의 방 저장이 DB 에 행을 다시 만들어 넣는다(유령 방).
             let cachedRoom = null;
             try {
                 const raw = localStorage.getItem('chatRoomIndex');
-                if (raw) {
+                if (raw && !isChatRoomDeleted(roomId)) {
                     const idx = JSON.parse(raw);
                     const cached = idx?.[roomId] || null;
                     if (cached) {
@@ -2806,7 +2812,7 @@ export default {
 
             // 최신 context 등을 위해 로컬 인덱스 갱신(가능하면)
             try {
-                if (this.currentChatRoom && this.currentChatRoom.id) {
+                if (this.currentChatRoom && this.currentChatRoom.id && !isChatRoomDeleted(this.currentChatRoom.id)) {
                     const raw = localStorage.getItem('chatRoomIndex');
                     const idx = raw ? JSON.parse(raw) : {};
                     idx[this.currentChatRoom.id] = this.currentChatRoom;
@@ -3794,17 +3800,68 @@ export default {
             this.settingsMenu = false;
             this.deleteDialog = true;
         },
+        /**
+         * 방을 지운다.
+         *
+         * 지우는 것만으로는 부족했다. chat_rooms 쓰기는 전부 upsert 라서, 삭제 뒤에
+         * 뒤늦게 돌아온 비동기 작업(방 이름 자동생성 응답, 저장 보류 타이머,
+         * 스트림 뒷정리)이 행을 그대로 되살렸다 — 답변이 오류로 끝난 턴에서
+         * "메시지는 지워졌는데 방만 남는" 유령 방이 그렇게 생겼다.
+         *
+         * 그래서 순서를 지킨다: 먼저 이 방으로 가는 작업을 멈추고(스트림·타이머),
+         * 지운 id 를 차단 목록에 올려 이후의 모든 쓰기를 막고, 로컬 캐시에서도
+         * 지운다(남으면 loadRoom 이 그 스냅샷으로 방을 되살린다).
+         */
         async confirmDelete() {
             const id = this.currentChatRoom?.id || this.roomId;
             this.deleteDialog = false;
             if (!id) return;
+
+            // 1) 이 방으로 가는 작업을 먼저 멈춘다 — 삭제 뒤에 깨어나 행을 되살리지 못하게.
+            this.stopAgentsInRoom(id);
+            this.cancelRoomPersistTimers(id);
+
+            // 2) 쓰기 차단 + 로컬 캐시 정리. 삭제가 실패하면 되돌린다(아래 catch).
+            markChatRoomDeleted(id);
+            removeChatRoomFromLocalIndex(id);
+
             try {
                 await backend.delete(`db://chats/${id}`, { key: 'id' });
                 await backend.delete(`db://chat_rooms/${id}`, { key: 'id' });
-            } catch (e) {}
+            } catch (e) {
+                // 삭제 실패를 삼키면 안 된다. 예전에는 조용히 넘겨서, 방이 그대로
+                // 남아 있는데도 사용자에게는 지워진 것처럼 보였다.
+                console.error('[ChatRoomPage] 채팅방 삭제 실패:', e);
+                // 방이 DB 에 그대로 남아 있으니 차단도 되돌린다 — 이후의 정상 저장을 막지 않게.
+                forgetChatRoomDeleted(id);
+                if (this.$toast?.error) {
+                    this.$toast.error(`채팅방을 삭제하지 못했습니다: ${(e && (e.message || e.toString())) || '알 수 없는 오류'}`);
+                }
+                this.EventBus.emit('chat-rooms-updated');
+                return;
+            }
+
             this.EventBus.emit('chat-rooms-updated');
             this.EventBus.emit('chat-room-unselected');
             await this.$router.replace({ path: '/chat' });
+        },
+
+        /** 이 방에 예약돼 있는 저장 타이머를 거둔다(방 삭제 시). */
+        cancelRoomPersistTimers(roomId) {
+            const rid = (roomId || '').toString();
+            if (!rid) return;
+            for (const map of [this._frontendStatePersistTimers, this._serverRowPersistFallbackTimers]) {
+                try {
+                    const timers = map || {};
+                    for (const key of Object.keys(timers)) {
+                        if (!key.startsWith(`${rid}:`)) continue;
+                        clearTimeout(timers[key]);
+                        delete timers[key];
+                    }
+                } catch (e) {
+                    // 타이머 정리 실패가 삭제를 막아서는 안 된다.
+                }
+            }
         },
 
         // 설정 메뉴의 [도구 설정] 클릭 핸들러.
@@ -9754,6 +9811,7 @@ export default {
         async saveMessageToRoom(msg, roomId) {
             const targetRoomId = roomId || this.currentChatRoom?.id;
             if (!targetRoomId || !msg?.uuid) return;
+            if (isChatRoomDeleted(targetRoomId)) return;
             try {
                 await backend.putObject(`db://chats/${msg.uuid}`, {
                     uuid: msg.uuid,
@@ -11646,6 +11704,9 @@ export default {
                     return;
                 }
                 const targetRoomId = (roomId || this.currentChatRoom?.id || this.roomId || '').toString();
+                // 지운 방에는 메시지도 되살리지 않는다. 이 저장은 타이머로 늦게 오기 때문에
+                // (아래 fallback) 삭제 뒤에 깨어나 chats row 를 다시 만들어 넣을 수 있다.
+                if (isChatRoomDeleted(targetRoomId)) return;
                 // 서버가 chats row 를 INSERT 하는 assistant 스트리밍 메시지는, realtime INSERT 로
                 // rowUuid 가 도착하기 전에 client uuid 로 upsert 하면 "같은 turn = 두 row" 가 되어
                 // HITL 패널이 중복 렌더된다. rowUuid 가 생길 때까지 보류하고,

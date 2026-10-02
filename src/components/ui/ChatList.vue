@@ -195,6 +195,7 @@
 </template>
 
 <script>
+import { isChatRoomDeleted } from '@/utils/deletedChatRooms';
 import BackendFactory from '@/components/api/BackendFactory';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
@@ -567,6 +568,8 @@ export default {
         async markRoomRead(room) {
             try {
                 if (!room || !room.id) return;
+                // 지운 방은 되살리지 않는다 — putObject 는 upsert 다.
+                if (isChatRoomDeleted(room.id)) return;
                 const me = this.getMyParticipant(room);
                 if (me && me.isExistUnReadMessage) {
                     me.isExistUnReadMessage = false;
