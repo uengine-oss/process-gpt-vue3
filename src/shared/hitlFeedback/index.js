@@ -105,3 +105,40 @@ export function mergeFeedback(output, payload, at = new Date().toISOString()) {
 export function isPaused(output) {
     return parseOutput(output).hitl_paused === true;
 }
+
+/**
+ * 질문 카드에 보일 문구.
+ *
+ * SDK 에이전트(deepagents 등)는 질문을 `question` 에 담고, 다른 도구는 `text` 에
+ * 담는다. 한쪽만 읽으면 질문 없는 빈 카드가 된다.
+ */
+export function humanQuestionText(data) {
+    return String(data?.text || data?.question || '');
+}
+
+/**
+ * 질문 카드에 답했을 때 작업을 다시 진행시키는 갱신. 그럴 필요가 없으면 null.
+ *
+ * 에이전트 실행이 질문을 남기고 끝난 작업은 `draft_status = 'HUMAN_ASKED'` 로
+ * 멈춰 있다. 응답 이벤트만 남기면 아무도 다시 집지 않으므로, 답을 feedback 에
+ * 붙이고 `FB_REQUESTED` 로 돌려야 워커가 이어서 실행한다. 실행 안에서 응답
+ * 이벤트를 폴링하며 기다리는 도구는 `STARTED` 라 여기에 해당하지 않는다.
+ */
+export function resumePatchForAnswer(todo, answer, { userId = null, at = new Date().toISOString() } = {}) {
+    if (todo?.draft_status !== 'HUMAN_ASKED') return null;
+
+    let feedback = todo.feedback;
+    if (typeof feedback === 'string') {
+        try {
+            feedback = JSON.parse(feedback);
+        } catch (_e) {
+            feedback = [];
+        }
+    }
+    const existing = Array.isArray(feedback) ? feedback : [];
+
+    return {
+        feedback: [...existing, { time: at, content: String(answer), user_id: userId }],
+        draft_status: 'FB_REQUESTED'
+    };
+}

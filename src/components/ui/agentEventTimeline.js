@@ -1,3 +1,5 @@
+import { humanQuestionText } from '@/shared/hitlFeedback/index.js';
+
 /**
  * 에이전트 이벤트를 화면이 읽을 수 있는 모양으로 바꾼다.
  *
@@ -105,8 +107,7 @@ export default {
                         humanQueryData: {
                             type: data?.type || 'text',
                             options: Array.isArray(data?.options) ? data.options : [],
-                            // SDK 에이전트(deepagents 등)는 질문을 question 에 담는다.
-                            text: data?.text || data?.question || ''
+                            text: humanQuestionText(data)
                         },
                         humanResponse: response,
                         eventRow: e

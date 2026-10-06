@@ -59,3 +59,41 @@ test('멈춰 있는지 알아본다', () => {
     assert.equal(isPaused(OUTPUT), true);
     assert.equal(isPaused({}), false);
 });
+
+// ---------------------------------------------------------------------------
+// 에이전트 실행이 질문을 남기고 멈춘 작업(HUMAN_ASKED) — 질문 카드 답변으로 재개
+// ---------------------------------------------------------------------------
+
+import { humanQuestionText, resumePatchForAnswer } from './index.js';
+
+test('질문 카드는 deepagents 의 question 도 보인다', () => {
+    assert.equal(humanQuestionText({ question: '이번 주 납기 지연 허용 기준이 며칠입니까?' }), '이번 주 납기 지연 허용 기준이 며칠입니까?');
+    assert.equal(humanQuestionText({ text: '승인할까요?', question: '무시' }), '승인할까요?');
+    assert.equal(humanQuestionText(null), '');
+});
+
+test('HUMAN_ASKED 작업에 답하면 feedback 에 붙이고 FB_REQUESTED 로 돌린다', () => {
+    const patch = resumePatchForAnswer(
+        { draft_status: 'HUMAN_ASKED', feedback: [{ content: '이전 피드백' }] },
+        '5일까지 허용합니다',
+        { userId: 'u1', at: '2026-10-06T03:16:00.000Z' }
+    );
+    assert.deepEqual(patch, {
+        feedback: [{ content: '이전 피드백' }, { time: '2026-10-06T03:16:00.000Z', content: '5일까지 허용합니다', user_id: 'u1' }],
+        draft_status: 'FB_REQUESTED'
+    });
+});
+
+test('문자열로 저장된 feedback 도 이어 붙인다', () => {
+    const patch = resumePatchForAnswer({ draft_status: 'HUMAN_ASKED', feedback: '[{"content":"a"}]' }, 'b', { at: 't' });
+    assert.deepEqual(patch.feedback.map((f) => f.content), ['a', 'b']);
+    assert.deepEqual(resumePatchForAnswer({ draft_status: 'HUMAN_ASKED', feedback: 'not json' }, 'b', { at: 't' }).feedback.length, 1);
+});
+
+test('실행 중(STARTED)이거나 끝난 작업은 건드리지 않는다', () => {
+    // 실행 안에서 응답 이벤트를 폴링하며 기다리는 도구는 STARTED 그대로다.
+    for (const draft_status of ['STARTED', 'COMPLETED', 'FB_REQUESTED', 'CANCELLED', null]) {
+        assert.equal(resumePatchForAnswer({ draft_status }, '답'), null, String(draft_status));
+    }
+    assert.equal(resumePatchForAnswer(null, '답'), null);
+});

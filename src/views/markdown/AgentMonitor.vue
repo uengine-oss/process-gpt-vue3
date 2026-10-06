@@ -133,6 +133,7 @@ import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 import agentEventTimeline from '@/components/ui/agentEventTimeline.js';
+import { resumePatchForAnswer } from '@/shared/hitlFeedback/index.js';
 
 export default {
     mixins: [ChatModule, agentEventTimeline],
@@ -1029,21 +1030,14 @@ export default {
                 this.handleError(error, '응답 저장 중 오류가 발생했습니다');
             }
         },
-        // 에이전트 실행이 질문을 남기고 끝난 경우(draft_status=HUMAN_ASKED) 응답 이벤트만
-        // 남기면 아무도 다시 집지 않는다. 답을 피드백으로 붙이고 FB_REQUESTED 로 돌려야
-        // 워커가 이어서 실행한다. 실행 안에서 응답 이벤트를 폴링하며 기다리는 도구는
-        // STARTED 상태라 여기에 해당하지 않는다.
+        // 에이전트 실행이 질문을 남기고 끝난 작업(HUMAN_ASKED)이면 답으로 다시 진행시킨다.
         async resumeIfWaitingHuman(answer) {
             const taskId = this.validateTaskId();
             if (!taskId) return;
             const latest = await this.backend.getTodoStatus(taskId);
-            if (latest?.draft_status !== 'HUMAN_ASKED') return;
+            const putItem = resumePatchForAnswer(latest, answer, { userId: localStorage.getItem('uid') });
+            if (!putItem) return;
 
-            const feedback = [
-                ...this.safeArrayParse(latest.feedback),
-                { time: new Date().toISOString(), content: String(answer), user_id: localStorage.getItem('uid') }
-            ];
-            const putItem = { feedback, draft_status: 'FB_REQUESTED' };
             await this.backend.putWorkItem(taskId, putItem);
             this.todoStatus = { ...this.todoStatus, ...latest, ...putItem };
             this.isLoading = true;
