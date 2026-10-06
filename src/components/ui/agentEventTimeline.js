@@ -105,7 +105,8 @@ export default {
                         humanQueryData: {
                             type: data?.type || 'text',
                             options: Array.isArray(data?.options) ? data.options : [],
-                            text: data?.text || ''
+                            // SDK 에이전트(deepagents 등)는 질문을 question 에 담는다.
+                            text: data?.text || data?.question || ''
                         },
                         humanResponse: response,
                         eventRow: e

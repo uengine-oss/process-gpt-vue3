@@ -926,6 +926,12 @@ export default {
                             this.browserIframeUrl = '';
                         }
                     }
+                    // 에이전트가 물어 놓고 멈췄다. 끝난 게 아니라 crew_completed 가 오지
+                    // 않으므로, 여기서 진행 표시를 내려야 사용자가 답할 수 있다.
+                    if (row.draft_status === 'HUMAN_ASKED') {
+                        this.todoStatus = { ...this.todoStatus, ...row };
+                        this.isLoading = false;
+                    }
                 });
             } catch (error) {
                 this.handleError(error, '실시간 구독 중 오류가 발생했습니다');
@@ -984,6 +990,7 @@ export default {
                 this.events = [...this.events, { ...eventPayload, timestamp: new Date().toISOString() }];
                 // REST upsert에는 PK(id)가 필요하므로 id를 명시적으로 생성
                 await this.backend.putEvent(eventPayload);
+                await this.resumeIfWaitingHuman(answer);
 
                 // 응답 후 입력값 초기화 (Vue3에서는 $delete 없음)
                 delete this.humanQueryAnswers[task.id];
@@ -1014,12 +1021,32 @@ export default {
                 this.events = [...this.events, { ...eventPayload, timestamp: new Date().toISOString() }];
                 // REST upsert에는 PK(id)가 필요하므로 id를 명시적으로 생성
                 await this.backend.putEvent(eventPayload);
+                await this.resumeIfWaitingHuman(answer);
 
                 // 응답 후 입력값 초기화 (Vue3에서는 $delete 없음)
                 delete this.humanQueryAnswers[task.id];
             } catch (error) {
                 this.handleError(error, '응답 저장 중 오류가 발생했습니다');
             }
+        },
+        // 에이전트 실행이 질문을 남기고 끝난 경우(draft_status=HUMAN_ASKED) 응답 이벤트만
+        // 남기면 아무도 다시 집지 않는다. 답을 피드백으로 붙이고 FB_REQUESTED 로 돌려야
+        // 워커가 이어서 실행한다. 실행 안에서 응답 이벤트를 폴링하며 기다리는 도구는
+        // STARTED 상태라 여기에 해당하지 않는다.
+        async resumeIfWaitingHuman(answer) {
+            const taskId = this.validateTaskId();
+            if (!taskId) return;
+            const latest = await this.backend.getTodoStatus(taskId);
+            if (latest?.draft_status !== 'HUMAN_ASKED') return;
+
+            const feedback = [
+                ...this.safeArrayParse(latest.feedback),
+                { time: new Date().toISOString(), content: String(answer), user_id: localStorage.getItem('uid') }
+            ];
+            const putItem = { feedback, draft_status: 'FB_REQUESTED' };
+            await this.backend.putWorkItem(taskId, putItem);
+            this.todoStatus = { ...this.todoStatus, ...latest, ...putItem };
+            this.isLoading = true;
         },
         // status가 ASKED일 때만 모달 표시
         isHumanQueryAsked(row) {
