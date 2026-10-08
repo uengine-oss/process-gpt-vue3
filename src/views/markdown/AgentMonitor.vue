@@ -133,7 +133,7 @@ import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 import agentEventTimeline from '@/components/ui/agentEventTimeline.js';
-import { resumePatchForAnswer } from '@/shared/hitlFeedback/index.js';
+import { resumePatchForAnswer, revisionFeedbackEntry } from '@/shared/hitlFeedback/index.js';
 
 export default {
     mixins: [ChatModule, agentEventTimeline],
@@ -1265,7 +1265,7 @@ export default {
                 const now = new Date().toISOString();
                 const text = this.extractContent(content);
 
-                const updatedFeedback = [...existingFeedback, { time: now, content: text, user_id: localStorage.getItem('uid') }];
+                const updatedFeedback = [...existingFeedback, revisionFeedbackEntry(text, { userId: localStorage.getItem('uid'), at: now })];
                 const agentOrch = this.selectedOrchestrationMethod || this.todoStatus.agent_orch;
 
                 let putItem = {

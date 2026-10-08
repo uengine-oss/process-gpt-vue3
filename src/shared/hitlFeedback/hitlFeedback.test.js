@@ -79,7 +79,10 @@ test('HUMAN_ASKED 작업에 답하면 feedback 에 붙이고 FB_REQUESTED 로 �
         { userId: 'u1', at: '2026-10-06T03:16:00.000Z' }
     );
     assert.deepEqual(patch, {
-        feedback: [{ content: '이전 피드백' }, { time: '2026-10-06T03:16:00.000Z', content: '5일까지 허용합니다', user_id: 'u1' }],
+        feedback: [
+            { content: '이전 피드백' },
+            { time: '2026-10-06T03:16:00.000Z', content: '5일까지 허용합니다', user_id: 'u1', kind: 'human_answer' }
+        ],
         draft_status: 'FB_REQUESTED'
     });
 });
@@ -96,4 +99,35 @@ test('실행 중(STARTED)이거나 끝난 작업은 건드리지 않는다', () 
         assert.equal(resumePatchForAnswer({ draft_status }, '답'), null, String(draft_status));
     }
     assert.equal(resumePatchForAnswer(null, '답'), null);
+});
+
+// ---------------------------------------------------------------------------
+// 재개 사유 구분 표시(kind) — 스펙 workitem-resume-signal RS-6
+//
+// 사람 답변 재개와 반려 재작업은 워커가 집는 순간 행 모양이 같다(STARTED,
+// claim_count=1, feedback 1건). 화면이 feedback 항목에 kind 를 남기지 않으면
+// SDK 가 둘을 구분하지 못하고, CLI 에이전트는 멈춘 세션 대신 처음부터 다시 한다.
+// ---------------------------------------------------------------------------
+
+import { FEEDBACK_KIND_HUMAN_ANSWER, FEEDBACK_KIND_REVISION, revisionFeedbackEntry } from './index.js';
+
+test('RS-6.1 질문 카드 답은 human_answer 로 표시해 원문 그대로 붙인다', () => {
+    const answer = '승인합니다. 단 C사는 제외하세요';
+    const patch = resumePatchForAnswer({ draft_status: 'HUMAN_ASKED', feedback: [] }, answer, { at: 't' });
+    const last = patch.feedback.at(-1);
+    assert.equal(last.kind, FEEDBACK_KIND_HUMAN_ANSWER);
+    assert.equal(FEEDBACK_KIND_HUMAN_ANSWER, 'human_answer');
+    assert.equal(last.content, answer);
+    assert.equal(patch.draft_status, 'FB_REQUESTED');
+});
+
+test('RS-6.2 결과 화면 피드백은 revision 으로 표시하고 기존 필드는 그대로 둔다', () => {
+    assert.deepEqual(revisionFeedbackEntry('표 형식으로 다시', { userId: 'u1', at: '2026-10-07T00:00:00.000Z' }), {
+        time: '2026-10-07T00:00:00.000Z',
+        content: '표 형식으로 다시',
+        user_id: 'u1',
+        kind: 'revision'
+    });
+    assert.equal(FEEDBACK_KIND_REVISION, 'revision');
+    assert.equal(revisionFeedbackEntry('x').user_id, null);
 });
