@@ -767,6 +767,8 @@ export default {
             ];
         },
         isSubmittableTask(task) {
+            // 오류 카드의 문구는 결과가 아니다 — 채택해 폼에 넣을 것이 없다.
+            if (task.isError) return false;
             return (
                 (task.crewType === 'report' && task.jobId.includes('final_report_merge')) ||
                 task.crewType === 'slide' ||

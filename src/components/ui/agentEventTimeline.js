@@ -1,4 +1,5 @@
 import { humanQuestionText } from '@/shared/hitlFeedback/index.js';
+import { failedJobIds, isEmptyCompletion, toolUsageByJob } from '@/shared/agentTimeline/index.js';
 
 /**
  * 에이전트 이벤트를 화면이 읽을 수 있는 모양으로 바꾼다.
@@ -60,8 +61,10 @@ export default {
                 } else if (event_type === 'task_completed' && taskMap.has(jobId)) {
                     const task = taskMap.get(jobId);
                     task.isCompleted = true;
-                    task.outputRaw = data || null;
-                    task.content = this.resolvePrimaryValue(data || null, task.crewType);
+                    // 빈 완료(사람에게 묻고 멈춘 구간을 닫는 것)는 결과가 아니다 — 결과 상자·채택 버튼 없이 완료로만.
+                    const empty = isEmptyCompletion(data);
+                    task.outputRaw = empty ? null : data || null;
+                    task.content = empty ? null : this.resolvePrimaryValue(data || null, task.crewType);
                     if (task.crewType === 'browser-use') {
                         task.completedEventId = e.id;
                     }
@@ -134,6 +137,15 @@ export default {
                 }
             });
 
+            // 오류로 끝난 작업의 카드는 진행중으로 두지 않는다 — 실패로 닫는다. 원인 문구는 오류 카드에 있다.
+            failedJobIds(this.events).forEach((jobId) => {
+                const task = taskMap.get(jobId);
+                if (task && !task.isCompleted && !task.isError) {
+                    task.isCompleted = true;
+                    task.isError = true;
+                }
+            });
+
             // crew_completed 마킹 - job_id 기준으로 처리
             crewCompletedJobIds.forEach((jobId) => {
                 if (taskMap.has(jobId)) {
@@ -154,80 +166,7 @@ export default {
             return allTasks.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
         },
         toolUsageStatusByTask() {
-            const usageMap = {};
-            const finishedEventsByJob = {};
-            // 이벤트를 시간 순으로 정렬해 시작 항목을 생성하고, 완료 이벤트는 job_id별로 별도 수집
-            this.events
-                .slice()
-                .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-                .forEach((e) => {
-                    const { event_type, data, job_id, id, crew_type } = e;
-                    const jobId = job_id || data?.job_id || id;
-                    if (!usageMap[jobId]) usageMap[jobId] = [];
-
-                    if (event_type === 'tool_usage_started') {
-                        const toolName = data.tool_name || crew_type;
-                        const entry = {
-                            tool_name: toolName,
-                            query: data.query || null,
-                            info: null,
-                            status: 'searching'
-                        };
-                        if (toolName === 'write_todos' && Array.isArray(data.args?.todos)) {
-                            entry.todos = data.args.todos;
-                        }
-                        usageMap[jobId].push(entry);
-                    } else if (event_type === 'tool_usage_finished') {
-                        if (!finishedEventsByJob[jobId]) finishedEventsByJob[jobId] = [];
-                        finishedEventsByJob[jobId].push({
-                            tool_name: data.tool_name || crew_type,
-                            info: data.info || data.message || data.result || null,
-                            consumed: false
-                        });
-                    } else if (event_type === 'task_working') {
-                        usageMap[jobId].push({
-                            tool_name: crew_type,
-                            query: data.query || null,
-                            info: data.info || data.message || null,
-                            status: 'done'
-                        });
-                    }
-                });
-
-            // 1차 매칭: job_id 내에서 도구명이 같은 시작 항목을 LIFO로 찾아 완료 처리 + 결과 반영
-            Object.keys(finishedEventsByJob).forEach((jobId) => {
-                const list = usageMap[jobId] || [];
-                finishedEventsByJob[jobId].forEach((fin) => {
-                    for (let i = list.length - 1; i >= 0; i--) {
-                        if (list[i].tool_name === fin.tool_name && list[i].status === 'searching') {
-                            list[i].status = 'done';
-                            list[i].info = fin.info;
-                            fin.consumed = true;
-                            break;
-                        }
-                    }
-                });
-            });
-
-            // 폴백 처리: tool_usage_started 이벤트가 tool_usage_finished 이벤트보다 늦게 기록되는 등
-            // 기록 순서 문제로 1차 매칭에 실패해 'searching' 상태로 남는 경우가 있다.
-            // 같은 job_id에 tool_usage_finished 이벤트가 존재한다면, 도구명이 완전히 일치하지 않더라도
-            // 결과(info)와 함께 무조건 완료로 표기한다 (finished 이벤트가 있다는 것은 결과도 있다는 뜻이므로).
-            Object.keys(usageMap).forEach((jobId) => {
-                const unconsumed = (finishedEventsByJob[jobId] || []).filter((f) => !f.consumed);
-                if (unconsumed.length === 0) return;
-                usageMap[jobId].forEach((tool) => {
-                    if (tool.status !== 'searching') return;
-                    if (unconsumed.length === 0) return;
-                    let idx = unconsumed.findIndex((f) => f.tool_name === tool.tool_name);
-                    if (idx === -1) idx = 0;
-                    tool.status = 'done';
-                    tool.info = unconsumed[idx].info;
-                    unconsumed.splice(idx, 1);
-                });
-            });
-
-            return usageMap;
+            return toolUsageByJob(this.events);
         },
     },
     methods: {
