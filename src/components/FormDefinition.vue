@@ -3,7 +3,10 @@
         <v-row class="ma-0 pa-0 form-definition-chat-box">
             <v-col v-if="type === 'edit'" class="pa-0 overflow-y-auto" style="height: calc(100vh - 260px)">
                 <div v-if="isShowMashup">
+                    <!-- 새 편집기. 예전 KEditor로 되돌리려면 localStorage.formEditor = 'legacy' -->
+                    <FormDesigner v-if="useNewEditor" ref="designer" :source="designerSource" @update:modelValue="changedDesignerContent" />
                     <mashup
+                        v-else
                         ref="mashup"
                         v-model="kEditorInput"
                         :key="mashupKey"
@@ -72,9 +75,15 @@ import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/FormDesignGenerator';
 import Chat from './ui/Chat.vue';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
+import FormDesigner from '@/components/designer/form/FormDesigner.vue';
 import FormDefinitionModule from './FormDefinitionModule.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { expandRowLayoutInPlace } from '@/utils/formLayout';
+import { pickPreviewSource } from '@/utils/formPreviewSource';
+import { describeFormStream, formatFormProgress, summarizeFormChange, formatFormChange } from '@/utils/formStreamProgress';
+import { applyFormModifications } from '@/utils/formModifications';
+import { buildStreamingFormHtml } from '@/utils/formStreamPreview';
+import { parseForm, canonicalForm } from '@/utils/formModel';
 
 const backend = BackendFactory.createBackend();
 
@@ -103,7 +112,8 @@ export default {
         Mashup,
         ChatGenerator,
         FormDesignSavePanel,
-        DynamicForm
+        DynamicForm,
+        FormDesigner
     },
     data: () => ({
         chatInfo: {
@@ -130,6 +140,10 @@ export default {
             isDevMode: window.localStorage.getItem('isDevMode') === 'true',
             previewFormValues: ''
         },
+
+        // 새 편집기(FormDesigner)가 처음 읽을 폼 HTML(저장 형식)
+        designerSource: '',
+        useNewEditor: window.localStorage.getItem('formEditor') !== 'legacy',
 
         isAIUpdated: false,
         isRoutedWithUnsaved: false,
@@ -172,7 +186,9 @@ export default {
 
         this.generator = new ChatGenerator(this, {
             isStream: true,
-            preferredLanguage: 'Korean'
+            preferredLanguage: 'Korean',
+            // 받은 토큰을 0.15초마다 넘겨 진행 말풍선을 실시간으로 갱신한다
+            streamThrottleMs: 150
         });
         await this.init();
     },
@@ -189,6 +205,10 @@ export default {
                 this.applyToPreviewTab();
             }
         },
+        // 미리보기 탭은 한 번 열리면 계속 떠 있다. 편집 탭에서 고친 폼이 넘어오면 다시 그린다.
+        modelValue(newVal, oldVal) {
+            if (this.type === 'preview' && newVal !== oldVal) this.applyToPreviewTab();
+        },
         previewHTML: {
             handler(newVal) {
                 this.EventBus.emit('updatePreviewHTML', newVal);
@@ -198,12 +218,29 @@ export default {
     },
     methods: {
         getFormHTML() {
+            // 새 편집기는 저장 형식 그대로 돌려준다. 안 고친 폼은 읽은 문자열 그대로다
+            if (this.$refs.designer) return this.$refs.designer.getFormHtml();
             if (this.$refs.mashup) {
                 const kEditorContent = this.$refs.mashup.getKEditorContentHtml();
                 return this.keditorContentHTMLToDynamicFormHTML(kEditorContent);
             } else {
                 return this.formHTML;
             }
+        },
+        /** 기본 폼(defaultform)의 정규 형식 — 태스크 폼이 기본 폼을 복사한 것인지 내용으로 판단한다 */
+        async loadDefaultForm() {
+            if (this.defaultFormCanon !== undefined) return;
+            this.defaultFormCanon = null;
+            try {
+                const html = await this.backend.getRawDefinition('defaultform', { type: 'form' });
+                if (html) this.defaultFormCanon = canonicalForm(parseForm(html));
+            } catch (error) {
+                console.warn('[FormDefinition] 기본 폼을 읽지 못했습니다(기존 폼은 수정으로 보냅니다):', error);
+            }
+        },
+        changedDesignerContent(html) {
+            this.formHTML = html;
+            this.$emit('update:modelValue', html);
         },
         changedKEditorContent(value) {
             this.formHTML = this.keditorContentHTMLToDynamicFormHTML(value.html);
@@ -276,7 +313,8 @@ export default {
             // const DynamicFormHTML = this.keditorContentHTMLToDynamicFormHTML(this.modelValue);
             const latestHtml = this.getFormHTML();
             if (latestHtml) {
-                this.previewHTML = this.keditorContentHTMLToDynamicFormHTML(latestHtml);
+                // 새 편집기는 이미 저장 형식이다. 한 번 더 변환하면 row-layout이 겹쳐 HTML이 바뀐다
+                this.previewHTML = this.$refs.designer ? latestHtml : this.keditorContentHTMLToDynamicFormHTML(latestHtml);
             }
 
             if (this.formId !== '' && this.formId !== null) {
@@ -315,6 +353,15 @@ export default {
             this.isShowMashup = false;
             this.formHTML = await this.backend.getRawDefinition(this.formId, { type: 'form' });
 
+            if (this.useNewEditor && this.type === 'edit') {
+                // 저장 형식을 그대로 넘긴다 — KEditor용 변환(dynamicFormHTMLToKeditorContentHTML 등)을 거치지 않는다
+                this.designerSource = this.modelValue || this.formHTML || '';
+                this.isShowMashup = true;
+                this.loadDefaultForm();
+                this.$nextTick(() => this.applyToPreviewTab());
+                return;
+            }
+
             let tempHTML = '';
             if (this.modelValue) {
                 tempHTML = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);
@@ -335,18 +382,86 @@ export default {
         beforeSendMessage(newMessage) {
             if (this.type == 'simulation') {
                 this.prevFormOutput = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);
+            } else if (this.$refs.designer) {
+                // 프롬프트가 설명하는 형식(row-layout + 바인딩) 그대로 준다.
+                // 기본 폼("자유입력")을 그대로 둔 채 요청하면 "새로 만들기"로 보낸다 — 기존 폼이 비면
+                // FormDesignGenerator가 Create로 보낸다. 수정으로 보내면 자유입력 행이 남은 채 새 행이 붙었다.
+                const current = this.$refs.designer.getAIInput();
+                this.prevFormOutput = this.defaultFormCanon && current === this.defaultFormCanon ? '' : current;
             } else {
                 this.prevFormOutput = this.$refs.mashup.getKEditorContentHtml();
             }
             newMessage.mentionedUsers = null;
+            const beforeHtml = this.$refs.designer ? this.$refs.designer.getFormHtml() : this.modelValue || this.formHTML || '';
+            this.aiStopped = false;
+            this.aiSkippedEdits = 0;
             this.generator.sendMessageWithPrevFormOutput(newMessage);
+            this.startAIProgress(beforeHtml);
+        },
+
+        // ---- 진행 말풍선 ---------------------------------------------------
+        // 폼 디자이너 AI는 JSON만 답하고, 추론 모델은 첫 토큰까지 수십 초가 걸린다.
+        // 그동안 경과 시간을, 토큰이 오면 지금까지 작성된 필드를 말풍선에 실시간으로 보여준다.
+        startAIProgress(beforeHtml) {
+            this.stopAIProgress();
+            this.$nextTick(() => {
+                const msg = this.messages[this.messages.length - 1];
+                if (!msg || msg.role !== 'system' || !msg.isLoading) return;
+                this.aiProgress = {
+                    msg,
+                    beforeHtml,
+                    startedAt: Date.now(),
+                    received: '',
+                    timer: setInterval(() => this.renderAIProgress(), 1000)
+                };
+                this.renderAIProgress();
+            });
+        },
+        renderAIProgress() {
+            const progress = this.aiProgress;
+            if (!progress) return;
+            // 오류는 ChatModule.onError가 말풍선에 쓴다. 덮어쓰지 않는다
+            if (this.generator.state === 'error') {
+                if (this.$refs.designer) this.$refs.designer.cancelPreview();
+                return this.stopAIProgress();
+            }
+            const seconds = Math.round((Date.now() - progress.startedAt) / 1000);
+            progress.msg.content = formatFormProgress(describeFormStream(progress.received), seconds);
+        },
+        /** 받은 데까지의 응답으로 폼을 그린다(0.3초 간격). 확정은 다 받은 뒤 processResponse가 한다 */
+        previewAIStream() {
+            const progress = this.aiProgress;
+            const designer = this.$refs.designer;
+            if (!progress || !designer) return;
+            const now = Date.now();
+            if (progress.lastPreviewAt && now - progress.lastPreviewAt < 300) return;
+            progress.lastPreviewAt = now;
+            const html = buildStreamingFormHtml(progress.received, this.prevFormOutput);
+            if (html && html !== progress.lastPreviewHtml) {
+                progress.lastPreviewHtml = html;
+                designer.previewAIResult(html);
+            }
+        },
+        stopAIProgress() {
+            const progress = this.aiProgress;
+            if (!progress) return null;
+            clearInterval(progress.timer);
+            this.aiProgress = null;
+            return { ...progress, seconds: Math.round((Date.now() - progress.startedAt) / 1000) };
         },
 
         /**
-         * AI 메시지에서 실시간으로 JSON을 추출하기 위해서
+         * 받는 중인 AI 메시지 — 진행 말풍선만 갱신한다. 폼은 다 받은 뒤 한 번만 바꾼다
          * @param {*} response
          */
         async afterModelCreated(response) {
+            if (this.aiStopped) return this.restoreStoppedMessage();
+            if (this.aiProgress) {
+                this.aiProgress.received = typeof response === 'string' ? response : this.generator.modelJson || '';
+                this.renderAIProgress();
+                this.previewAIStream();
+                return;
+            }
             this.processResponse(response);
         },
 
@@ -355,9 +470,35 @@ export default {
          * @param {*} response
          */
         afterGenerationFinished(response) {
-            this.processResponse(response);
+            if (this.aiStopped) return this.restoreStoppedMessage();
+            const progress = this.stopAIProgress();
+            if (progress) {
+                // ChatModule은 JSON을 미리 파싱해 객체로 넘기기도 한다. 받은 원문으로 처리한다
+                this.processResponse(this.generator.modelJson || (typeof response === 'string' ? response : ''));
+                // JSON이 아니었거나 적용하지 못했으면 미리보기를 버리고 원래 폼으로
+                if (this.$refs.designer) this.$refs.designer.cancelPreview();
+                this.writeAIResult(progress);
+            } else {
+                this.processResponse(response);
+            }
             if (this.type == 'simulation') {
                 this.saveFormDefinition('afterGenerationFinished');
+            }
+        },
+
+        /** 다 받은 뒤 말풍선: 무엇이 바뀌었는지 */
+        writeAIResult(progress) {
+            const msg = this.messages[this.messages.length - 1];
+            if (!msg || !msg.jsonContent) return; // JSON이 아니면(되묻기 등) 받은 말을 그대로 둔다
+            try {
+                const afterHtml = this.$refs.designer ? this.$refs.designer.getFormHtml() : this.getFormHTML();
+                msg.content = formatFormChange(summarizeFormChange(progress.beforeHtml, afterHtml), progress.seconds);
+                if (this.aiSkippedEdits) {
+                    msg.content += `\n\n⚠️ 수정 명령 ${this.aiSkippedEdits}건은 대상을 찾지 못해 적용하지 않았습니다. 다시 요청해 주세요.`;
+                }
+            } catch (error) {
+                console.warn('[FormDefinition] 변경 요약 실패:', error);
+                msg.content = `✅ 폼을 수정했습니다 · ${progress.seconds}초`;
             }
         },
 
@@ -375,7 +516,28 @@ export default {
                 if (messageWriting.content.length == 0) messageWriting.content = ' ';
 
                 // 생성된 HTML을 보여주기 위해서
-                if (messageWriting.jsonContent) {
+                if (messageWriting.jsonContent && this.$refs.designer) {
+                    // 새 편집기: AI 결과를 모델에 다시 읽는다. 실제로 바뀐 행만 새로 쓰인다
+                    const designer = this.$refs.designer;
+                    if (messageWriting.jsonContent.htmlOutput) {
+                        designer.applyAIResult(messageWriting.jsonContent.htmlOutput);
+                    } else if (messageWriting.jsonContent.modifications) {
+                        // 명령 하나에 요소가 여럿이어도 모두 넣는다(applyFormModifications)
+                        const { html, skipped, added } = applyFormModifications(
+                            this.prevFormOutput,
+                            messageWriting.jsonContent.modifications
+                        );
+                        if (skipped.length) console.warn('[FormDefinition] 대상을 찾지 못한 수정 명령:', skipped);
+                        this.aiSkippedEdits = skipped.length;
+                        designer.applyAIResult(html);
+                        if (added) this.$emit('addedNewForm');
+                        messageWriting.content = '요청하신 폼 수정이 완료되었습니다.';
+                    } else console.error('알 수 없는 JSON 결과: ', JSON.stringify(messageWriting.jsonContent));
+                    const html = designer.getFormHtml();
+                    this.previewHTML = html;
+                    this.$emit('update:modelValue', html);
+                    this.isAIUpdated = true;
+                } else if (messageWriting.jsonContent) {
                     if (messageWriting.jsonContent.htmlOutput) {
                         this.$emit('update:modelValue', messageWriting.jsonContent.htmlOutput);
                         this.applyNewSrcToMashup(this.loadHTMLToKEditorContent(messageWriting.jsonContent.htmlOutput));
@@ -384,6 +546,8 @@ export default {
                         const modifiedPrevFormOutput = this.getModifiedPrevFormOutput(messageWriting.jsonContent.modifications);
                         this.applyNewSrcToMashup(this.loadHTMLToKEditorContent(modifiedPrevFormOutput));
                         this.previewHTML = this.keditorContentHTMLToDynamicFormHTML(modifiedPrevFormOutput);
+                        // 전체 생성(htmlOutput)과 같이 부모의 편집본도 갱신해야 미리보기·저장에 반영된다
+                        this.$emit('update:modelValue', this.previewHTML);
                         messageWriting.content = '요청하신 폼 수정이 완료되었습니다.';
                     } else console.error('알 수 없는 JSON 결과: ', JSON.stringify(messageWriting.jsonContent));
                     this.isAIUpdated = true;
@@ -399,8 +563,21 @@ export default {
          * 모델 생성을 도중에 멈춰도 결과를 처리가 가능한 경우에는 최대한 처리시키기 위해서
          */
         afterModelStopped(response) {
-            // AI 생성을 멈춘 경우, 아무것도 반영시키기 않기 위해서
+            // AI 생성을 멈춘 경우, 아무것도 반영시키기 않기 위해서.
+            // 멈춘 뒤에도 남은 응답이 onloadend로 들어오므로 그것도 반영하지 않는다
+            const progress = this.stopAIProgress();
+            if (this.$refs.designer) this.$refs.designer.cancelPreview();
+            const msg = this.messages[this.messages.length - 1];
+            const content =
+                progress && msg && msg.role === 'system' ? `⏹ 생성을 멈췄습니다 · ${progress.seconds}초 — 폼은 바뀌지 않았습니다.` : null;
+            if (content) msg.content = content;
+            // ChatModule이 남은 조각으로 말풍선을 다시 쓰므로 멈춤 문구를 기억해 두고 되돌린다
+            this.aiStopped = { msg, content };
             console.log(response);
+        },
+        restoreStoppedMessage() {
+            const { msg, content } = this.aiStopped || {};
+            if (msg && content) msg.content = content;
         },
 
         /**
@@ -644,7 +821,12 @@ export default {
         /**
          * 수정 지시사항에 따라서 수정된 HTML 결과물을 반환시킴
          */
-        getModifiedPrevFormOutput(modifications) {
+        /**
+         * @param {boolean} raw true면 DOM 결과를 그대로 돌려준다(새 편집기).
+         *   KEditor 경로의 문자열 치환(&quot; → ', 첫 <br> → 줄바꿈)은 손대지 않은 행의
+         *   스크립트·items 값까지 바꾸므로 새 편집기에서는 쓰지 않는다.
+         */
+        getModifiedPrevFormOutput(modifications, raw = false) {
             const dom = new DOMParser().parseFromString(this.prevFormOutput, 'text/html');
 
             modifications.forEach((modification) => {
@@ -670,6 +852,7 @@ export default {
                 }
             });
 
+            if (raw) return dom.body.innerHTML;
             const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`).replace('<br>', '\n');
             console.log('### 수정된 이전 폼 출력 ###');
             console.log(modifiedPrevFormOutput);
@@ -685,8 +868,16 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    const latestHtml = me.getFormHTML();
-                    const sourceHtml = latestHtml || me.modelValue || me.formHTML;
+                    // 편집기가 없는 미리보기에서 getFormHTML()은 DB 저장본을 돌려주므로 쓰지 않는다
+                    if (me.$refs.designer) {
+                        me.previewHTML = me.$refs.designer.getFormHtml();
+                        return;
+                    }
+                    const sourceHtml = pickPreviewSource({
+                        editorHtml: me.$refs.mashup ? me.getFormHTML() : '',
+                        draftHtml: me.modelValue,
+                        savedHtml: me.formHTML
+                    });
                     me.previewHTML = sourceHtml ? me.keditorContentHTMLToDynamicFormHTML(sourceHtml) : '';
                     console.log('### 프리뷰 HTML ###');
                     console.log(me.previewHTML);
@@ -704,7 +895,15 @@ export default {
         }
     },
 
+    beforeUnmount() {
+        this.stopAIProgress();
+    },
+
     async beforeRouteLeave(to, from, next) {
+        if (this.$refs.designer) {
+            if ((this.isAIUpdated || this.$refs.designer.isDirty()) && !window.confirm(this.$t('changePath'))) return next(false);
+            return next();
+        }
         // 에러로 인해서 로드가 되지 않을 경우, 별도의 검사를 수행하지 않음
         if (!this.$refs.mashup) return next();
 
