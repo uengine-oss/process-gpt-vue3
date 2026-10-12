@@ -784,6 +784,8 @@ export default {
         isMarkdownType(crewType) {
             return (
                 crewType === 'report' ||
+                // cli-agent 의 작업 카드(서브에이전트 위임 결과 등)는 마크다운 보고서다
+                crewType === 'cliagents' ||
                 crewType === 'action' ||
                 crewType === 'planning' ||
                 crewType === 'react' ||

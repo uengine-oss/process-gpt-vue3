@@ -87,7 +87,9 @@ export default {
                         isCrewCompleted: false,
                         agentProfile: data?.agent_profile || null,
                         isHumanAsked: false,
-                        isError: true
+                        isError: true,
+                        // 카드 설명 — 오류 이벤트는 task_description 대신 goal 을 싣는다(SDK·cli-agent)
+                        taskDescription: data?.task_description || data?.goal || null
                     });
                 } else if (event_type === 'human_asked') {
                     // human_asked 이벤트를 별도 작업으로 추가 (블루톤 카드용 텍스트 구성)
