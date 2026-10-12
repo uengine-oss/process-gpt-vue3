@@ -199,6 +199,7 @@
         "hammerjs": "^2.0.8",
         "html-to-image": "^1.11.13",
         "jspdf": "^4.2.1",
+        "linkedom": "^0.18.13",
         "marked": "^9.1.6",
         "monaco-editor": "0.52.0",
         "postcss-html": "^1.5.0",
