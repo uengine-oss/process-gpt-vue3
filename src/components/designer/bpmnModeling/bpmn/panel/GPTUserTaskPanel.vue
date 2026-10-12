@@ -4,7 +4,8 @@
             <v-tab value="setting">{{ $t('BpmnPropertyPanel.setting') }}</v-tab>
             <v-tab value="agent">{{ $t('BpmnPropertyPanel.agentTab') }}</v-tab>
             <v-tab value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
-            <v-tab value="edit">{{ $t('BpmnPropertyPanel.edit') }}</v-tab>
+            <!-- 읽기 전용으로 열면 폼은 미리보기만 보여준다 -->
+            <v-tab v-if="!isViewMode" value="edit">{{ $t('BpmnPropertyPanel.edit') }}</v-tab>
             <v-tab value="preview">{{ $t('BpmnPropertyPanel.preview') }}</v-tab>
             <v-tab value="unitTest">{{ $t('ProcessUnitTest.unitTest') }}</v-tab>
             <v-tab value="piFlag">{{ $t('piFlagPanel.tab') || 'PI Flag' }}</v-tab>
@@ -117,7 +118,7 @@
                 />
             </v-window-item>
 
-            <v-window-item value="edit">
+            <v-window-item v-if="!isViewMode" value="edit">
                 <FormDefinition ref="formDefinitionEdit" type="edit" :formId="formId" v-model="tempFormHtml" />
             </v-window-item>
             <v-window-item value="preview">
@@ -353,9 +354,20 @@ export default {
         piFlagFocusSignal() {
             this.applyPiFlagFocus();
         },
+        // 읽기 전용에서는 폼 편집 탭이 없다 — 그 탭이 선택돼 있으면 미리보기로 옮긴다
+        isViewMode: {
+            immediate: true,
+            handler(viewMode) {
+                if (viewMode && this.activeTab === 'edit') this.activeTab = 'preview';
+            }
+        },
         activeTab: {
             deep: true,
             async handler(newVal, oldVal) {
+                if (this.isViewMode && newVal === 'edit') {
+                    this.activeTab = 'preview';
+                    return;
+                }
                 if (newVal !== oldVal) {
                     // 폼 편집 탭에서 나갈 때 HTML 저장
                     if (oldVal === 'edit' && this.$refs.formDefinitionEdit) {
@@ -669,6 +681,13 @@ export default {
                     me.formId === 'defaultform'
                         ? await me.backend.getRawDefinition(me.formId, { type: 'form' })
                         : await me.backend.getRawDefinition(me.formId, options);
+
+                // 프로세스 ID가 바뀐 경우 등으로 form_def.proc_def_id가 지금 프로세스 ID와 다르게 남아 있으면
+                // 위 조회가 비어 기본 폼이 열렸다. 저장은 폼 ID로 찾아 갱신하므로 저장한 폼이 다시 열 때 안 보였다
+                // (그 상태로 또 저장하면 기본 폼이 덮어썼다). 이 태스크가 참조하는 폼 ID로 한 번 더 찾는다.
+                if (!me.tempFormHtml && me.formId !== 'defaultform') {
+                    me.tempFormHtml = await me.backend.getRawDefinition(me.formId, { type: 'form' });
+                }
             }
 
             if (!me.tempFormHtml) {
