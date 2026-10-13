@@ -1,4 +1,5 @@
 <template>
+  <div class="fd-host">
     <div class="form-designer">
         <!-- 팔레트: 폼 왼쪽의 좁은 세로 줄. 폼의 세로 공간을 쓰지 않는다(이름은 툴팁) -->
         <aside class="fd-rail" :class="{ 'is-disabled': previewing }">
@@ -84,6 +85,7 @@
             />
         </v-dialog>
     </div>
+  </div>
 </template>
 
 <script>
@@ -347,6 +349,10 @@ export default {
 </script>
 
 <style scoped>
+/* 폭 기준 반응형: 뷰포트가 아니라 편집기가 놓인 칸의 폭을 본다(태블릿에서 패널이 좁아도 대응) */
+.fd-host {
+    container: fd / inline-size;
+}
 .form-designer {
     display: grid;
     grid-template-columns: 36px minmax(0, 1fr); /* 팔레트 줄 · 폼 — 서로 겹치지 않는다 */
@@ -457,5 +463,34 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+@container fd (max-width: 420px) {
+    .form-designer {
+        grid-template-columns: minmax(0, 1fr);
+        padding-left: 8px;
+    }
+    /* 팔레트는 폼 위의 가로줄로. 넘치면 옆으로 밀어 본다 */
+    .fd-rail {
+        flex-direction: row;
+        max-height: none;
+        overflow: auto hidden;
+        padding: 2px 0 4px;
+        border-right: none;
+        border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    }
+    .fd-palette {
+        flex-direction: row;
+    }
+    .fd-rail-divider {
+        width: 0;
+        height: 20px;
+        margin: 0 4px;
+        border-top: none;
+        border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    }
+    .fd-rail-item {
+        flex: none;
+    }
 }
 </style>

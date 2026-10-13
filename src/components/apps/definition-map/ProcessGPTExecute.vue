@@ -1,11 +1,28 @@
 <template>
     <div :key="renderKey">
         <v-card flat class="w-100">
-            <v-row :class="isMobile ? 'ma-0 pa-4 pb-0 flex-column align-start' : 'ma-0 pa-4 pb-0 align-center'">
-                <div v-if="isSimulate == 'true'" class="text-h4 font-weight-semibold">{{ $t('ProcessGPTExecute.processSimulate') }}</div>
-                <div v-else class="text-h4 font-weight-semibold">{{ processDefinition.processDefinitionName }}</div>
+            <!-- 휴대폰: 제목과 닫기를 한 줄에 둬 상단 고정 영역을 줄인다(시뮬레이션 탭은 다음 줄) -->
+            <v-row :class="isMobile ? 'ma-0 pa-4 pb-0 align-center flex-nowrap execute-header-mobile' : 'ma-0 pa-4 pb-0 align-center'">
+                <div
+                    :class="isMobile ? 'text-h5 font-weight-semibold execute-title-mobile' : 'text-h4 font-weight-semibold'"
+                    v-if="isSimulate == 'true'"
+                >
+                    {{ $t('ProcessGPTExecute.processSimulate') }}
+                </div>
+                <div
+                    v-else
+                    :class="isMobile ? 'text-h5 font-weight-semibold execute-title-mobile' : 'text-h4 font-weight-semibold'"
+                >
+                    {{ processDefinition.processDefinitionName }}
+                </div>
                 <!-- 시뮬레이션 모드일 때만 단위 테스트 탭 노출 -->
-                <v-tabs v-if="isSimulate == 'true'" v-model="topTab" color="primary" density="compact" class="ml-4">
+                <v-tabs
+                    v-if="isSimulate == 'true' && !isMobile"
+                    v-model="topTab"
+                    color="primary"
+                    density="compact"
+                    class="ml-4"
+                >
                     <v-tab value="execute">
                         <v-icon start size="18">mdi-play-circle-outline</v-icon>
                         {{ $t('ProcessGPTExecute.processSimulate') }}
@@ -15,16 +32,21 @@
                         {{ $t('ProcessUnitTest.unitTest') }}
                     </v-tab>
                 </v-tabs>
-                <v-spacer v-if="!isMobile"></v-spacer>
-                <div v-if="isMobile" class="d-flex align-center mt-2 ml-auto">
-                    <v-btn @click="closeDialog" rounded density="compact" style="background-color: var(--cds-text-muted); color: white">닫기</v-btn>
-                </div>
-                <div v-else>
-                    <v-btn @click="closeDialog" class="ml-auto" variant="text" density="compact" icon>
-                        <v-icon>mdi-close</v-icon>
-                    </v-btn>
-                </div>
+                <v-spacer></v-spacer>
+                <v-btn @click="closeDialog" class="ml-auto flex-shrink-0" variant="text" density="comfortable" icon aria-label="닫기">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
             </v-row>
+            <v-tabs v-if="isSimulate == 'true' && isMobile" v-model="topTab" color="primary" density="compact" class="px-4">
+                <v-tab value="execute">
+                    <v-icon start size="18">mdi-play-circle-outline</v-icon>
+                    {{ $t('ProcessGPTExecute.processSimulate') }}
+                </v-tab>
+                <v-tab value="unit-test">
+                    <v-icon start size="18">mdi-clipboard-check-multiple-outline</v-icon>
+                    {{ $t('ProcessUnitTest.unitTest') }}
+                </v-tab>
+            </v-tabs>
 
             <!-- 단위 테스트 탭 -->
             <div v-if="isSimulate == 'true' && topTab === 'unit-test'" class="pa-4">
@@ -52,7 +74,70 @@
             </div>
 
             <div v-else :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">
-                <div v-if="isSimulate == 'false'" class="pa-4">
+                <!-- 휴대폰: 역할 지정은 접어 칩으로 요약하고, 소스 업로드는 아이콘 버튼 + 다이얼로그로 둬 폼이 첫 화면에 보이게 한다 -->
+                <div v-if="isSimulate == 'false' && isMobile" class="execute-setup-mobile px-4 pt-2">
+                    <div class="d-flex align-center ga-2">
+                        <div class="execute-role-chips flex-grow-1" @click="roleOpen = !roleOpen">
+                            <v-chip
+                                v-for="role in roleMappings"
+                                :key="role.name"
+                                size="small"
+                                variant="tonal"
+                                :color="roleSummary(role).missing ? 'warning' : 'primary'"
+                            >
+                                <span class="font-weight-medium">{{ role.name }}</span>
+                                <span class="ml-1">{{ roleSummary(role).text }}</span>
+                            </v-chip>
+                        </div>
+                        <v-btn
+                            :icon="roleOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                            variant="text"
+                            density="comfortable"
+                            :aria-label="$t('ProcessGPTExecute.roleMapping')"
+                            @click="roleOpen = !roleOpen"
+                        ></v-btn>
+                        <v-badge :content="sourceCount" :model-value="sourceCount > 0" color="primary" floating>
+                            <v-btn
+                                icon="mdi-paperclip"
+                                variant="tonal"
+                                density="comfortable"
+                                :aria-label="$t('InstanceCard.source')"
+                                @click="sourceOpen = true"
+                            ></v-btn>
+                        </v-badge>
+                    </div>
+                    <div v-if="roleOpen" class="mt-3">
+                        <div v-for="role in roleMappings" :key="role.name" class="mb-2">
+                            <user-select-field
+                                v-model="role.endpoint"
+                                :name="role.name"
+                                :item-value="'id'"
+                                :hide-details="true"
+                                :use-agent="true"
+                                :use-multiple="true"
+                            ></user-select-field>
+                        </div>
+                    </div>
+                    <!-- eager: 닫아도 계속 마운트되어 sourceList 가 실행 입력(source_list)으로 전달된다 -->
+                    <v-dialog v-model="sourceOpen" eager max-width="480">
+                        <v-card>
+                            <v-card-title class="d-flex align-center">
+                                {{ $t('InstanceCard.source') }}
+                                <v-spacer></v-spacer>
+                                <v-btn icon="mdi-close" variant="text" density="comfortable" aria-label="닫기" @click="sourceOpen = false"></v-btn>
+                            </v-card-title>
+                            <v-card-text>
+                                <InstanceSource
+                                    ref="instanceSourceRef"
+                                    :isStarted="isStarted"
+                                    :instId="instId"
+                                    :processDefinitionId="resolvedDefinitionId"
+                                />
+                            </v-card-text>
+                        </v-card>
+                    </v-dialog>
+                </div>
+                <div v-else-if="isSimulate == 'false'" class="pa-4">
                     <v-row class="ma-0 pa-0">
                         <div class="text-h5 font-weight-semibold">{{ $t('ProcessGPTExecute.roleMapping') }}</div>
                     </v-row>
@@ -177,6 +262,11 @@ export default {
         instId: '',
         effectiveBpmn: '',
         roleMappings: [],
+        // 휴대폰 실행 화면: 역할 지정 펼침, 소스 업로드 다이얼로그, 역할 요약 칩용 이름표
+        roleOpen: false,
+        sourceOpen: false,
+        sourceCount: 0,
+        userNameById: {},
         isMobile: false,
         activityIndex: 0,
         renderKey: 0,
@@ -240,6 +330,7 @@ export default {
 
         await this.init();
         this.checkIfMobile();
+        if (this.isSimulate === 'false') this.loadUserNames();
         window.addEventListener('resize', this.checkIfMobile);
     },
     beforeUnmount() {
@@ -274,6 +365,9 @@ export default {
         }
     },
     watch: {
+        sourceOpen() {
+            this.$nextTick(this.refreshSourceCount);
+        },
         // 단위 테스트 실행 중 활성/완료 활동 id 변경을 임베드된 viewer 캔버스에 반영.
         unitTestMarkerSnapshot() {
             this.applyUnitTestMarkers();
@@ -607,6 +701,29 @@ export default {
 
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
+        // 소스 아이콘 배지: $refs 는 반응형이 아니라 다이얼로그를 여닫을 때 읽어 온다
+        refreshSourceCount() {
+            const list = this.$refs.instanceSourceRef && this.$refs.instanceSourceRef.sourceList;
+            this.sourceCount = Array.isArray(list) ? list.filter((f) => f.isProcess && !f.isError).length : 0;
+        },
+        // 접힌 역할 지정을 칩 한 줄로 요약한다. 이름을 못 찾는 id 는 UUID 대신 '알 수 없음'으로 보인다
+        roleSummary(role) {
+            const ids = [].concat(role.endpoint || []).filter(Boolean);
+            if (!ids.length) return { text: '미지정', missing: true };
+            const names = ids.map((id) => this.userNameById[id] || '알 수 없음');
+            return { text: names.join(', '), missing: names.every((n) => n === '알 수 없음') };
+        },
+        async loadUserNames() {
+            try {
+                const users = await backend.getUserList();
+                const agents = this.defaultSetting.getAgentList || [];
+                const map = {};
+                [...agents, ...(users || [])].forEach((u) => (map[u.id] = u.username || u.email));
+                this.userNameById = map;
+            } catch (e) {
+                console.error(e);
+            }
+        },
         checkIfMobile() {
             this.isMobile = window.innerWidth <= 768;
         },
@@ -624,5 +741,19 @@ export default {
 .Process-gpt-execute-mobile-layout {
     height: calc(100vh - 78px);
     overflow: auto;
+}
+.execute-title-mobile {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.execute-role-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+    cursor: pointer;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="form-definition-root">
         <v-row class="ma-0 pa-0 form-definition-chat-box">
             <v-col v-if="type === 'edit'" class="pa-0 overflow-y-auto" style="height: calc(100vh - 260px)">
                 <div v-if="isShowMashup">
@@ -922,6 +922,33 @@ export default {
 </script>
 
 <style scoped>
+/* 폼 편집/시뮬레이션: 놓인 칸이 좁으면(태블릿 패널·휴대폰) 채팅을 편집기 아래로 내려 폭을 모두 편집기에 준다.
+   채팅 칸의 너비·높이는 인라인 스타일로 박혀 있어 !important 로 덮는다. */
+.form-definition-root {
+    container: fd-def / inline-size;
+}
+@container fd-def (max-width: 640px) {
+    .form-definition-chat-box {
+        flex-direction: column;
+        flex-wrap: nowrap;
+    }
+    .form-definition-chat-box > .v-divider {
+        display: none;
+    }
+    .form-definition-chat-box > .v-col {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 100% !important;
+    }
+    .form-definition-chat-box > .v-col:not(.form-definition-simulation-chat-box) {
+        height: auto !important;
+        max-height: 70vh;
+    }
+    .form-definition-chat-box > .form-definition-simulation-chat-box {
+        height: 360px !important;
+        border-top: 1px solid rgba(0, 0, 0, 0.12);
+    }
+}
 .full-width {
     width: 100%;
 }

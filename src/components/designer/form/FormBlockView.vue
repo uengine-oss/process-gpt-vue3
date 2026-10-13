@@ -181,6 +181,13 @@ export default {
     padding: 0 4px;
     min-width: 0;
 }
+/* 좁은 칸에서는 열을 세로로 쌓는다(저장되는 칸 너비 spans 는 그대로) */
+@container fd (max-width: 420px) {
+    .fd-col {
+        flex: 0 0 100% !important;
+        max-width: 100%;
+    }
+}
 .fd-drop {
     min-height: 44px;
     height: 100%;

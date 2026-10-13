@@ -3,7 +3,15 @@
         <div class="pa-2 pb-0 pl-4 pr-4 align-center">
             <div class="d-flex align-center" :style="isMobile ? 'display: block !important;' : ''">
                 <v-row class="pa-0 pt-1 pb-1 ma-0 align-center">
-                    <v-btn @click="goBackToPreviousPage" variant="text" density="comfortable" class="mr-2" icon>
+                    <!-- 목록으로 돌아가는 버튼: 실제 워크아이템 화면에서만. 시뮬레이션·실행 팝업(dry run)에는 돌아갈 목록이 없다 -->
+                    <v-btn
+                        v-if="isSimulate != 'true' && !isDryRun"
+                        @click="goBackToPreviousPage"
+                        variant="text"
+                        density="comfortable"
+                        class="mr-2"
+                        icon
+                    >
                         <v-icon>mdi-arrow-left</v-icon>
                     </v-btn>
                     <h5 class="text-h5 font-weight-semibold mr-2">
