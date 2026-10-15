@@ -8719,6 +8719,57 @@ class ProcessGPTBackend implements Backend {
     }
 
     /**
+     * 스킬 전용 도구 화면용 — 딥 에이전트의 도구 카탈로그·도구별 스킬 연결 현황·스킬 전용 지정.
+     * 카탈로그는 MCP 서버를 띄워 목록을 받으므로 첫 조회가 느릴 수 있다(서버가 캐시한다).
+     */
+    async getSkillToolCatalog() {
+        const resp = await deepagentsApi.get('/process-gpt-deepagents/skill-tools/catalog', {
+            params: { tenant_id: window.$tenantName },
+            timeout: 60000
+        });
+        return resp.data;
+    }
+
+    async getSkillToolBindings() {
+        const resp = await deepagentsApi.get('/process-gpt-deepagents/skill-tools/bindings', {
+            params: { tenant_id: window.$tenantName },
+            timeout: 60000
+        });
+        return resp.data;
+    }
+
+    /** 테넌트 관리자가 스킬 전용으로 지정한 도구 이름. */
+    async getSkillOnlyTools() {
+        const resp = await deepagentsApi.get('/process-gpt-deepagents/skill-tools/skill-only', {
+            params: { tenant_id: window.$tenantName }
+        });
+        return resp.data;
+    }
+
+    /**
+     * 바꾼 도구만 보내 스킬 전용 지정을 고친다. 다른 화면·관리자가 바꾼 지정을 덮어쓰지 않는다.
+     * 관리자가 아니면 서버가 403 으로 거부한다. 결과로 저장된 전체 목록을 돌려준다.
+     */
+    async patchSkillOnlyTools(change: { add?: string[]; remove?: string[] }) {
+        const resp = await deepagentsApi.patch(
+            '/process-gpt-deepagents/skill-tools/skill-only',
+            { tenant_id: window.$tenantName, ...change },
+            { headers: { 'Content-Type': 'application/json' } }
+        );
+        return resp.data;
+    }
+
+    /** 스킬 전용 도구 목록을 통째로 저장한다. 관리자가 아니면 서버가 403 으로 거부한다. */
+    async putSkillOnlyTools(tools: string[]) {
+        const resp = await deepagentsApi.put(
+            '/process-gpt-deepagents/skill-tools/skill-only',
+            { tenant_id: window.$tenantName, tools },
+            { headers: { 'Content-Type': 'application/json' } }
+        );
+        return resp.data;
+    }
+
+    /**
      * Git 없이 스킬 파일 하나를 테넌트 스킬 디렉터리에 직접 저장한다.
      * Git 공급자가 연결되지 않은 테넌트는 커밋 경로(putSkillFile)를 쓸 수 없으므로 이 경로를 쓴다.
      * 버전·병합 관리는 제공되지 않는다(git 연결 시에만 가능).

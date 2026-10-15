@@ -20,7 +20,18 @@
                         @update:model-value="(checked) => toggle(tool.name, checked)"
                     />
                 </template>
-                <v-list-item-title class="text-body-2 font-weight-medium">{{ tool.name }}</v-list-item-title>
+                <v-list-item-title class="text-body-2 font-weight-medium d-flex align-center flex-wrap ga-1">
+                    {{ tool.name }}
+                    <v-chip
+                        v-if="bindings && skillOnly"
+                        size="x-small"
+                        :color="statusOf(tool.name).kind === 'after-skill' ? 'primary' : statusOf(tool.name).kind === 'unusable' ? 'warning' : undefined"
+                        variant="tonal"
+                        :data-binding="tool.name"
+                    >
+                        {{ statusOf(tool.name).label }}
+                    </v-chip>
+                </v-list-item-title>
                 <v-list-item-subtitle class="text-caption mcp-tool-description">{{ tool.description }}</v-list-item-subtitle>
             </v-list-item>
         </v-list>
@@ -29,6 +40,8 @@
 </template>
 
 <script>
+import { toolStatus } from '@/utils/skillToolBinding';
+
 export default {
     name: 'McpValidationResult',
     props: {
@@ -45,10 +58,23 @@ export default {
         modelValue: {
             type: Array,
             default: null
+        },
+        // 딥 에이전트의 도구별 연결 스킬(GET /skill-tools/bindings 의 bindings)과 스킬 전용 지정
+        // (GET /skill-tools/skill-only 의 tools). 둘 다 주면 도구마다 상태를 표시한다.
+        bindings: {
+            type: Object,
+            default: null
+        },
+        skillOnly: {
+            type: Array,
+            default: null
         }
     },
     emits: ['update:modelValue'],
     methods: {
+        statusOf(name) {
+            return toolStatus(name, this.skillOnly, this.bindings);
+        },
         isSelected(name) {
             return !this.modelValue || this.modelValue.includes(name);
         },

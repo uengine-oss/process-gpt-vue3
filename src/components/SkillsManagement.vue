@@ -18,6 +18,18 @@
                                 <span class="ml-1 d-none d-sm-inline">{{ $t('SkillsManagement.viewCard') }}</span>
                             </v-btn>
                         </v-btn-toggle>
+                        <v-btn
+                            v-if="isAdmin"
+                            icon
+                            variant="text"
+                            size="small"
+                            aria-label="스킬 전용 도구"
+                            data-test="open-skill-only-tools"
+                            @click="openSkillOnly()"
+                        >
+                            <v-icon>mdi-lock-outline</v-icon>
+                            <v-tooltip activator="parent" location="bottom">스킬 전용 도구</v-tooltip>
+                        </v-btn>
                         <v-menu location="bottom end" :disabled="isUploading">
                             <template v-slot:activator="{ props }">
                                 <v-btn v-bind="props" color="primary" rounded variant="flat" size="small" :loading="isUploading">
@@ -183,6 +195,30 @@
                                                         >
                                                         <v-icon size="20" class="mr-2 skill-icon">mdi-lightning-bolt-outline</v-icon>
                                                         <span class="skill-name-text">{{ item.name }}</span>
+                                                        <template v-if="skillToolSummary.get(item.name)">
+                                                            <v-chip
+                                                                v-if="skillToolSummary.get(item.name).after"
+                                                                size="x-small"
+                                                                color="primary"
+                                                                variant="tonal"
+                                                                class="ml-1"
+                                                                :data-skill-tools="item.name"
+                                                            >
+                                                                <v-icon start size="12">mdi-lock-outline</v-icon>
+                                                                스킬 전용 {{ skillToolSummary.get(item.name).after }}
+                                                            </v-chip>
+                                                            <v-chip
+                                                                v-if="isAdmin && skillToolSummary.get(item.name).undesignated"
+                                                                size="x-small"
+                                                                
+                                                                variant="tonal"
+                                                                class="ml-1"
+                                                                :data-undesignated-badge="item.name"
+                                                                @click.stop="openSkillOnly(item.name)"
+                                                            >
+                                                                <v-icon start size="12">mdi-lock-open-variant-outline</v-icon>지정 안 됨 {{ skillToolSummary.get(item.name).undesignated }}
+                                                            </v-chip>
+                                                        </template>
                                                         <v-icon v-if="deletingSkillName !== item.name" size="16" class="open-hint"
                                                             >mdi-open-in-new</v-icon
                                                         >
@@ -383,6 +419,32 @@
                                                             </template>
                                                         </div>
                                                         <h3 class="card-title">{{ skill.name }}</h3>
+                                                        <div v-if="skillToolSummary.get(skill.name)" class="mb-1">
+                                                            <template v-if="skillToolSummary.get(skill.name)">
+                                                            <v-chip
+                                                                v-if="skillToolSummary.get(skill.name).after"
+                                                                size="x-small"
+                                                                color="primary"
+                                                                variant="tonal"
+                                                                class="ml-1"
+                                                                :data-skill-tools="skill.name"
+                                                            >
+                                                                <v-icon start size="12">mdi-lock-outline</v-icon>
+                                                                스킬 전용 {{ skillToolSummary.get(skill.name).after }}
+                                                            </v-chip>
+                                                            <v-chip
+                                                                v-if="isAdmin && skillToolSummary.get(skill.name).undesignated"
+                                                                size="x-small"
+                                                                
+                                                                variant="tonal"
+                                                                class="ml-1"
+                                                                :data-undesignated-badge="skill.name"
+                                                                @click.stop="openSkillOnly(skill.name)"
+                                                            >
+                                                                <v-icon start size="12">mdi-lock-open-variant-outline</v-icon>지정 안 됨 {{ skillToolSummary.get(skill.name).undesignated }}
+                                                            </v-chip>
+                                                        </template>
+                                                        </div>
                                                         <p class="card-desc">
                                                             {{
                                                                 deletingSkillName === skill.name
@@ -587,6 +649,12 @@
             :user-info="currentUserInfo"
         />
 
+        <SkillOnlyToolsDialog
+            v-model="skillOnlyDialog"
+            :skills="skillList.map((s) => s.name)"
+            :focus-skill="skillOnlyFocus"
+            @saved="loadSkillToolBindings"
+        />
     </v-card>
 </template>
 
@@ -596,12 +664,20 @@ import BackendFactory from '@/components/api/BackendFactory';
 import SkillProposalBadge from '@/components/ui/SkillProposalBadge.vue';
 import SkillProposalReviewModal from '@/components/ui/SkillProposalReviewModal.vue';
 import { buildSkillProposalMap } from '@/composables/useSkillProposals';
+import { skillBadges } from '@/utils/skillToolBinding';
+import SkillOnlyToolsDialog from '@/components/SkillOnlyToolsDialog.vue';
+import { getIsAdminClaim } from '@/utils/authClaims';
 
 export default {
     name: 'SkillsManagement',
-    components: { AppBaseCard, SkillProposalBadge, SkillProposalReviewModal },
+    components: { AppBaseCard, SkillProposalBadge, SkillProposalReviewModal, SkillOnlyToolsDialog },
     data() {
         return {
+            // 스킬이 여는 스킬 전용 도구 현황(딥 에이전트 GET /skill-tools/bindings). 못 불러오면 배지를 생략한다.
+            skillToolBindings: {},
+            skillOnlyTools: [],
+            skillOnlyDialog: false,
+            skillOnlyFocus: '',
             backend: null,
             skillList: [],
             builtinSkillList: [],
@@ -648,6 +724,13 @@ export default {
         }
     },
     computed: {
+        // 버튼 표시용. 실제 지정 권한은 딥 에이전트가 서버에서 확인한다.
+        isAdmin() {
+            return getIsAdminClaim();
+        },
+        skillToolSummary() {
+            return skillBadges(this.skillToolBindings, this.skillOnlyTools);
+        },
         searchByTab() {
             return this.skillTab === 'uploaded' ? this.searchUploaded : this.searchBuiltin;
         },
@@ -787,6 +870,7 @@ export default {
         this.backend = BackendFactory.createBackend();
     },
     mounted() {
+        this.loadSkillToolBindings();
         if (window.innerWidth <= 1279) {
             this.viewMode = 'card';
         }
@@ -801,6 +885,21 @@ export default {
         }
     },
     methods: {
+        /** 관리자 현황을 연다. 스킬의 "지정 필요" 배지로 열면 그 스킬 항목을 펼친다. */
+        openSkillOnly(skill = '') {
+            this.skillOnlyFocus = skill;
+            this.skillOnlyDialog = true;
+        },
+        async loadSkillToolBindings() {
+            try {
+                const [res, skillOnly] = await Promise.all([this.backend.getSkillToolBindings(), this.backend.getSkillOnlyTools()]);
+                this.skillToolBindings = (res && res.bindings) || {};
+                this.skillOnlyTools = (skillOnly && skillOnly.tools) || [];
+            } catch (e) {
+                this.skillToolBindings = {};
+                this.skillOnlyTools = [];
+            }
+        },
         async refreshAll() {
             await Promise.all([this.loadSkillList(), this.loadSkillUsageCounts(), this.loadSkillOwners()]);
         },

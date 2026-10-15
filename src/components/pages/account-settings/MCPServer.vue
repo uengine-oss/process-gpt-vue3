@@ -80,7 +80,7 @@
 
                                 <v-expand-transition>
                                     <div v-if="expandedServers[key]" class="pl-4 pr-2 pb-2">
-                                        <McpValidationResult :result="validationStatusMap[key]" />
+                                        <McpValidationResult :result="validationStatusMap[key]" :bindings="skillToolBindings" :skill-only="skillOnlyTools" />
                                     </div>
                                 </v-expand-transition>
                             </template>
@@ -275,6 +275,9 @@ export default {
         saving: false,
         adding: false,
         validationStatusMap: {},
+        // 스킬 전용 도구 지정과 여는 스킬(딥 에이전트). 불러오지 못하면 null — 상태 배지와 확인 창을 생략한다.
+        skillToolBindings: null,
+        skillOnlyTools: null,
         expandedServers: {},
         mcpServers: {},
         editDialog: false,
@@ -375,6 +378,7 @@ export default {
         }
     },
     async mounted() {
+        this.loadSkillToolBindings();
         await this.loadData();
     },
     methods: {
@@ -567,7 +571,34 @@ export default {
             }
             return this.$t('MCPServer.validating');
         },
+        /** 이 서버의 "스킬을 읽은 뒤 사용" 도구가 연결된 스킬 이름들. */
+        boundSkillsOfServer(key) {
+            const names = new Set();
+            const designated = new Set(this.skillOnlyTools || []);
+            for (const [tool, info] of Object.entries(this.skillToolBindings || {})) {
+                if (info && info.server === key && designated.has(tool)) (info.skills || []).forEach((s) => names.add(s));
+            }
+            return [...names];
+        },
+        confirmBoundServer(key, action) {
+            const skills = this.boundSkillsOfServer(key);
+            if (!skills.length) return true;
+            return window.confirm(
+                `${skills.join(', ')} 이 이 서버(${key})의 도구를 씁니다.\n서버를 ${action}하면 그 스킬을 읽어도 도구를 쓸 수 없습니다. 계속할까요?`
+            );
+        },
+        async loadSkillToolBindings() {
+            try {
+                const [res, skillOnly] = await Promise.all([backend.getSkillToolBindings(), backend.getSkillOnlyTools()]);
+                this.skillToolBindings = (res && res.bindings) || {};
+                this.skillOnlyTools = (skillOnly && skillOnly.tools) || [];
+            } catch (e) {
+                this.skillToolBindings = null;
+                this.skillOnlyTools = null;
+            }
+        },
         async toggleServer(key, value) {
+            if (value && !this.confirmBoundServer(key, '비활성화')) return;
             try {
                 this.mcpServers[key].enabled = !value;
                 // 기본 서버의 enabled 상태만 저장 (나머지는 그대로 유지)
@@ -667,6 +698,7 @@ export default {
                 return;
             }
 
+            if (!this.confirmBoundServer(this.editingKey, '삭제')) return;
             try {
                 const deletedKey = this.editingKey;
                 const updatedServers = { ...this.mcpServers };

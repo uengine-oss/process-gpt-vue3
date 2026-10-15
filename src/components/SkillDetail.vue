@@ -311,6 +311,8 @@
                             :read-only="isBuiltinSkill"
                             :selected-branch="selectedBranch"
                             :default-branch="defaultBranch"
+                            :git-backed="branches.length > 0"
+                            :git-ready="branchesLoaded"
                             :is-owner="isSkillOwner"
                             @update:isLoading="isEditorLoading = $event"
                             @file-saved="onFileSaved"
@@ -460,6 +462,8 @@ export default {
             originalFolderName: '',
 
             branches: [],
+            // 저장소 연결 여부(branches)를 다 불러왔는지. 스킬 전용 도구 패널이 지정 시점을 정할 때 쓴다.
+            branchesLoaded: false,
             selectedBranch: '',
             defaultBranch: 'main',
             isSkillOwner: false,
@@ -653,6 +657,8 @@ export default {
                 this.branches = [];
                 this.defaultBranch = 'main';
                 this.selectedBranch = 'main';
+            } finally {
+                this.branchesLoaded = true;
             }
         },
 
@@ -771,6 +777,7 @@ export default {
             this.config.roots = [];
             this.skillFilesFromApi = [];
             this.branches = [];
+            this.branchesLoaded = false;
             this.selectedBranch = '';
             this.defaultBranch = 'main';
             this.showHistory = false;
