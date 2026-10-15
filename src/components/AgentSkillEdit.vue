@@ -1,5 +1,5 @@
 <template>
-    <v-card flat v-if="skillFile">
+    <v-card flat v-if="skillFile" class="skill-edit-card">
         <v-card-title class="d-flex align-center justify-space-between pa-0 skill-edit-toolbar">
             <div class="d-flex align-center text-h6">
                 <v-text-field
@@ -39,7 +39,8 @@
                 </v-btn>
             </div>
         </v-card-title>
-        <v-card-text class="h-100 px-0">
+        <v-card-text class="px-0 pb-0 skill-edit-body">
+            <div class="skill-edit-main">
             <v-alert
                 v-if="directiveRemoved"
                 type="warning"
@@ -60,31 +61,26 @@
                 :options="monacoEditorOptions"
                 @mount="handleMount"
             />
+            </div>
+            <!-- 이 스킬을 읽어야 쓰는 도구: 도구줄 아이콘으로 여는 옆 칸. 편집기와 높이가 같고 도구줄(저장)을 가리지 않는다.
+                 닫혀 있어도 남아 있어 저장 뒤 지정을 보낸다. -->
+            <aside v-if="isSkillMd" v-show="toolDrawer" class="skill-tool-aside" data-test="tool-drawer">
+                <SkillToolBindingPanel
+                    ref="toolPanel"
+                    :content="skillContent"
+                    :skill-name="skillName"
+                    :read-only="readOnly"
+                    :git-backed="gitBacked"
+                    :git-ready="gitReady"
+                    @update:content="skillContent = $event"
+                    @status="toolStatus = $event"
+                    @open="toolDrawer = true"
+                    @close="toolDrawer = false"
+                    @reveal="revealIncludeTools"
+                />
+            </aside>
         </v-card-text>
     </v-card>
-
-    <!-- 이 스킬을 읽어야 쓰는 도구: 도구줄 아이콘으로 여는 서랍. 닫혀 있어도 남아 있어 저장 뒤 지정을 보낸다. -->
-    <v-navigation-drawer
-        v-if="isSkillMd"
-        v-model="toolDrawer"
-        location="right"
-        temporary
-        width="440"
-        data-test="tool-drawer"
-    >
-        <SkillToolBindingPanel
-            ref="toolPanel"
-            :content="skillContent"
-            :skill-name="skillName"
-            :read-only="readOnly"
-            :git-backed="gitBacked"
-            :git-ready="gitReady"
-            @update:content="skillContent = $event"
-            @status="toolStatus = $event"
-            @open="toolDrawer = true"
-            @close="toolDrawer = false"
-        />
-    </v-navigation-drawer>
 
     <SkillSaveDialog
         v-model="saveDialog"
@@ -427,8 +423,25 @@ export default {
             }
         },
         openSaveDialog() {
-            this.saveNote = (this.$refs.toolPanel && this.$refs.toolPanel.unsavedText) || '';
+            this.saveNote = (this.$refs.toolPanel && this.$refs.toolPanel.unsavedDetail) || '';
             this.saveDialog = true;
+        },
+        /** 도구 칸의 metadata.include_tools 를 누르면 편집기에서 그 줄을 보여 준다. */
+        revealIncludeTools() {
+            this.markdownPreview = false;
+            this.$nextTick(() => {
+                const editor = this.monacoEditor;
+                const model = editor && editor.getModel();
+                if (!model) return;
+                const lines = model.getLinesContent();
+                let i = lines.findIndex((l) => /^\s+include_tools:/.test(l));
+                if (i < 0) i = lines.findIndex((l) => /^metadata:/.test(l));
+                if (i < 0) return;
+                const line = i + 1;
+                editor.revealLineInCenter(line);
+                editor.setSelection({ startLineNumber: line, startColumn: 1, endLineNumber: line, endColumn: model.getLineMaxColumn(line) });
+                editor.focus();
+            });
         },
         async onSaved({ mode }) {
             // 연결(SKILL.md)이 저장된 뒤에 보류한 스킬 전용 지정을 보낸다.
@@ -554,6 +567,7 @@ export default {
             }
         },
         handleMount(editor) {
+            this.monacoEditor = editor;
             if (editor) {
                 editor.layout({ height: 320, width: editor.getLayoutInfo().width });
             }
@@ -571,6 +585,38 @@ export default {
     top: 0;
     z-index: 2;
     background: rgb(var(--v-theme-surface));
+}
+/* 도구줄 아래 남은 높이만 본문이 쓴다(h-100 이면 도구줄만큼 넘쳐 아래가 잘렸다) */
+.skill-edit-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    height: 100%;
+    min-height: 0;
+}
+/* 편집기와 도구 칸을 나란히 두고 높이를 맞춘다 */
+.skill-edit-body {
+    flex: 1 1 0;
+    display: flex;
+    align-items: stretch;
+    min-height: 0;
+}
+.skill-edit-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+.skill-tool-aside {
+    flex: 0 0 340px;
+    position: relative;
+    border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    background: rgb(var(--v-theme-surface));
+}
+/* 칸의 높이는 편집기가 정한다 — 도구가 많아도 칸 안에서만 스크롤한다 */
+.skill-tool-aside > * {
+    position: absolute;
+    inset: 0;
 }
 .markdown-preview {
     height: 100%;

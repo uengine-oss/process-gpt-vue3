@@ -22,7 +22,13 @@ import {
     oneLine,
     searchTools,
     skillBadges,
-    groupBySkills
+    groupBySkills,
+    addManyPlan,
+    pickerNotice,
+    connectableSkills,
+    shortList,
+    toolSource,
+    groupBySource
 } from './skillToolBinding.js';
 
 const BASE = '---\nname: skill-nda-review\ndescription: NDA 를 검토합니다.\n---\n\n## 본문\n- 한 줄\n';
@@ -228,4 +234,75 @@ test('관리자 표 보기: 지정 안 됨 · 지정됨 · 사용 불가 · 스�
     assert.deepEqual(names({ filter: 'unusable' }), ['gone_tool', 'orphan_tool']);
     assert.deepEqual(names({ filter: 'undesignated', skill: 'supabase-project-admin' }), ['execute_sql', 'list_tables']);
     assert.deepEqual(names({ filter: 'all', query: 'sql' }), ['execute_sql']);
+});
+
+// 2026-10-15 화면 점검(관리자·비관리자로 처음부터 끝까지)에서 막힌 곳
+const SUPA = [
+    { name: 'list_tables', source: 'mcp', server: 'supabase', description: 'Lists all tables in one or more schemas.', category: 'bindable' },
+    { name: 'apply_migration', source: 'mcp', server: 'supabase', description: 'Applies a migration to the database.', category: 'bindable' },
+    { name: 'execute_sql', source: 'mcp', server: 'supabase', description: 'Executes raw SQL in the Postgres database.', category: 'bindable' }
+];
+
+test('검색: MCP 서버 이름으로 그 서버 도구를 모두 찾는다(설명에 서버 이름이 없어도)', () => {
+    const groups = searchTools([...CATALOG, ...SUPA], 'supabase');
+    assert.deepEqual(groups.map((g) => g.key), ['mcp:supabase']);
+    assert.deepEqual(groups[0].tools.map((t) => t.name).sort(), ['apply_migration', 'execute_sql', 'list_tables']);
+    const rows = adminRows([...CATALOG, ...SUPA], {}, []);
+    assert.equal(filterAdminRows(rows, { query: 'supabase' }).length, 3);
+});
+
+test('여러 도구 한 번에 추가: 연결된 것·기본 도구는 빼고, 지정된 것은 연결만, 나머지는 관리자만 지정과 연결', () => {
+    const tools = [...SUPA, CATALOG[2]];
+    const admin = addManyPlan(tools, { isAdmin: true, skillOnly: ['execute_sql'], connected: ['list_tables'] });
+    assert.deepEqual(admin, { connect: ['execute_sql'], designate: ['apply_migration'], blocked: [] });
+    const author = addManyPlan(tools, { isAdmin: false, skillOnly: ['execute_sql'], connected: [] });
+    assert.deepEqual(author, { connect: ['execute_sql'], designate: [], blocked: ['list_tables', 'apply_migration'] });
+});
+
+test('비관리자: 고를 수 없는 이유는 추가 창 맨 위에 한 번만, 관리자에게는 없다', () => {
+    const groups = searchTools([...CATALOG, ...SUPA], '');
+    assert.equal(pickerNotice(groups, { isAdmin: false, skillOnly: [] }), COPY.adminOnlyReason);
+    assert.equal(pickerNotice(groups, { isAdmin: true, skillOnly: [] }), '');
+    // 모두 이미 스킬 전용이면 막힌 도구가 없으니 이유도 없다
+    const all = [...CATALOG, ...SUPA].filter((t) => t.category !== 'unbindable').map((t) => t.name);
+    assert.equal(pickerNotice(groups, { isAdmin: false, skillOnly: all }), '');
+    assert.match(COPY.adminOnlyReason, /관리자/);
+});
+
+test('스킬에 연결 대상에서 서비스 기본 스킬(process-gpt-system)은 뺀다', () => {
+    const list = [
+        { name: 'room-booking-check', collection: 'local' },
+        { name: 'expense-limit-reviewer', collection: 'c301e192' },
+        { name: 'bsc-strategy-interview', collection: 'process-gpt-system' }
+    ];
+    assert.deepEqual(connectableSkills(list), ['room-booking-check', 'expense-limit-reviewer']);
+});
+
+test('확인 창의 긴 도구 목록은 앞의 몇 개와 남은 수로 줄인다', () => {
+    assert.equal(shortList(['a', 'b']), 'a, b');
+    assert.equal(shortList(['a', 'b', 'c', 'd', 'e']), 'a, b, c 외 2개');
+});
+
+test('출처 구분: 딥 에이전트 서비스 도구와 MCP 서버 도구는 다른 묶음·아이콘이다', () => {
+    const service = toolSource({ name: 'execute_process', source: 'service' });
+    const mcp = toolSource({ name: 'list_tables', source: 'mcp', server: 'supabase' });
+    assert.equal(service.kind, 'service');
+    assert.equal(mcp.kind, 'mcp');
+    assert.equal(mcp.label, 'supabase');
+    assert.notEqual(service.icon, mcp.icon);
+});
+
+test('관리자 표: 서비스 도구 묶음 → MCP 서버별 묶음(이름순) → 목록에 없는 지정 순으로 나눈다', () => {
+    const catalog = [
+        ...SUPA,
+        { name: 'send_email_tool', source: 'mcp', server: 'gmail-mcp', description: '', category: 'bindable' },
+        { name: 'execute_process', source: 'service', server: null, description: '', category: 'bindable' },
+        { name: 'read_file', source: 'service', server: null, description: '', category: 'unbindable' }
+    ];
+    const groups = groupBySource(adminRows(catalog, {}, ['gone_tool']));
+    assert.deepEqual(groups.map((g) => g.key), ['service', 'mcp:gmail-mcp', 'mcp:supabase', 'missing']);
+    assert.deepEqual(groups[0].items.map((r) => r.name), ['execute_process']);
+    assert.equal(groups[2].items.length, 3);
+    // 도구 추가 창도 같은 묶음 순서를 쓴다
+    assert.deepEqual(searchTools(catalog, '').map((g) => g.key), ['service', 'mcp:gmail-mcp', 'mcp:supabase']);
 });

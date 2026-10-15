@@ -27,7 +27,7 @@
                             data-test="open-skill-only-tools"
                             @click="openSkillOnly()"
                         >
-                            <v-icon>mdi-lock-outline</v-icon>
+                            <v-icon>mdi-tools</v-icon>
                             <v-tooltip activator="parent" location="bottom">스킬 전용 도구</v-tooltip>
                         </v-btn>
                         <v-menu location="bottom end" :disabled="isUploading">
@@ -664,7 +664,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import SkillProposalBadge from '@/components/ui/SkillProposalBadge.vue';
 import SkillProposalReviewModal from '@/components/ui/SkillProposalReviewModal.vue';
 import { buildSkillProposalMap } from '@/composables/useSkillProposals';
-import { skillBadges } from '@/utils/skillToolBinding';
+import { skillBadges, connectableSkills } from '@/utils/skillToolBinding';
 import SkillOnlyToolsDialog from '@/components/SkillOnlyToolsDialog.vue';
 import { getIsAdminClaim } from '@/utils/authClaims';
 
@@ -885,6 +885,7 @@ export default {
         }
     },
     methods: {
+        connectableSkills,
         /** 관리자 현황을 연다. 스킬의 "지정 필요" 배지로 열면 그 스킬 항목을 펼친다. */
         openSkillOnly(skill = '') {
             this.skillOnlyFocus = skill;
@@ -969,6 +970,8 @@ export default {
                         .map((s) => ({
                             name: typeof s === 'string' ? s : s.name || s.skill_name || '',
                             description: typeof s === 'string' ? '' : s.description || '',
+                            // 서비스 기본 스킬(process-gpt-system)을 도구 연결 대상에서 빼는 데 쓴다
+                            collection: typeof s === 'string' ? '' : s.collection || '',
                             children: typeof s === 'string' ? [] : Array.isArray(s.children) ? s.children : []
                         }))
                         .filter((s) => s.name);

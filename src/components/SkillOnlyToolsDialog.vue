@@ -59,6 +59,16 @@
                 <v-btn size="small" variant="tonal" :disabled="!selectedToRelease.length" data-test="release-selected" @click="askRelease(selectedToRelease)">
                     <v-icon start size="16">mdi-lock-open-variant-outline</v-icon>해제 {{ selectedToRelease.length || '' }}
                 </v-btn>
+                <v-menu location="bottom start">
+                    <template #activator="{ props }">
+                        <v-btn v-bind="props" size="small" variant="tonal" :disabled="!skills.length" data-test="connect-selected">
+                            <v-icon start size="16">mdi-link-variant</v-icon>스킬에 연결
+                        </v-btn>
+                    </template>
+                    <v-list density="compact" max-height="320">
+                        <v-list-item v-for="s in skills" :key="s" :title="s" prepend-icon="mdi-lightning-bolt-outline" :data-connect-skill="s" @click="goConnect(s, selected)" />
+                    </v-list>
+                </v-menu>
                 <v-btn size="small" variant="text" @click="selected = []">선택 취소</v-btn>
             </div>
 
@@ -86,17 +96,43 @@
                             <th class="col-menu"></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr v-for="row in visibleRows" :key="row.name" :data-row="row.name" :data-kind="row.kind">
+                    <tbody v-for="group in visibleGroups" :key="group.key" :data-group="group.key">
+                        <!-- 출처 묶음 머리: 딥 에이전트 서비스 도구 / MCP 서버별 -->
+                        <tr class="group-row" :data-group-head="group.key">
+                            <td class="col-check">
+                                <v-checkbox-btn
+                                    :model-value="groupSelected(group)"
+                                    :indeterminate="groupPartly(group)"
+                                    density="compact"
+                                    :aria-label="`${group.label} 모두 선택`"
+                                    @update:model-value="toggleGroup(group, $event)"
+                                />
+                            </td>
+                            <td colspan="4">
+                                <button type="button" class="group-toggle d-inline-flex align-center ga-1" :data-group-toggle="group.key" @click="toggleCollapse(group.key)">
+                                    <v-icon size="16">{{ collapsed.includes(group.key) ? 'mdi-chevron-right' : 'mdi-chevron-down' }}</v-icon>
+                                    <v-icon size="18" :color="group.kind === 'service' ? 'primary' : undefined" :data-source-icon="group.kind">{{ group.icon }}</v-icon>
+                                    <span class="text-body-2 font-weight-medium">{{ group.label }}</span>
+                                    <span class="text-caption text-medium-emphasis">{{ group.items.length }}</span>
+                                    <v-tooltip activator="parent" location="top start" :text="group.hint" />
+                                </button>
+                            </td>
+                        </tr>
+                        <tr
+                            v-for="row in collapsed.includes(group.key) ? [] : group.items"
+                            :key="row.name"
+                            :data-row="row.name"
+                            :data-kind="row.kind"
+                            :data-source="group.kind"
+                        >
                             <td class="col-check"><v-checkbox-btn v-model="selected" :value="row.name" density="compact" /></td>
-                            <td>
+                            <td class="pl-8">
                                 <v-tooltip location="top start" max-width="420" :disabled="!row.description">
                                     <template #activator="{ props }">
                                         <code v-bind="props" class="text-body-2">{{ row.name }}</code>
                                     </template>
                                     {{ oneLine(row.description, 200) }}
                                 </v-tooltip>
-                                <span v-if="row.server" class="text-caption text-medium-emphasis ml-2">{{ row.server }}</span>
                             </td>
                             <td class="text-caption">
                                 <span v-if="row.skills.length">{{ row.skills.join(', ') }}</span>
@@ -129,7 +165,9 @@
                                 </v-menu>
                             </td>
                         </tr>
-                        <tr v-if="!visibleRows.length">
+                    </tbody>
+                    <tbody v-if="!visibleRows.length">
+                        <tr>
                             <td colspan="5" class="text-center text-caption text-medium-emphasis py-6">해당하는 도구가 없습니다</td>
                         </tr>
                     </tbody>
@@ -165,7 +203,7 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
-import { COPY, toolStatus, oneLine, groupBySkills, adminRows, filterAdminRows, ADMIN_FILTERS } from '@/utils/skillToolBinding';
+import { COPY, toolStatus, oneLine, groupBySkills, adminRows, filterAdminRows, groupBySource, ADMIN_FILTERS } from '@/utils/skillToolBinding';
 
 const MAX_LINES = 6;
 
@@ -173,7 +211,8 @@ const MAX_LINES = 6;
 const STATUS = {
     'after-skill': { icon: 'mdi-lock', label: '스킬 전용', color: 'primary' },
     undesignated: { icon: 'mdi-lock-open-variant-outline', label: '지정 안 됨', color: 'medium-emphasis' },
-    free: { icon: 'mdi-lock-open-variant-outline', label: '지정 안 됨', color: 'medium-emphasis' },
+    // 연결도 지정도 없는 도구 — "지정 안 됨" 보기(연결됐지만 지정 안 된 도구)와 같은 말을 쓰면 보기 숫자와 어긋난다.
+    free: { icon: 'mdi-earth', label: '모든 대화', color: 'medium-emphasis' },
     unusable: { icon: 'mdi-lock-alert-outline', label: '사용 불가', color: 'warning' },
     missing: { icon: 'mdi-help-circle-outline', label: '목록에 없음', color: 'medium-emphasis' }
 };
@@ -208,6 +247,8 @@ export default {
             skill: null,
             query: '',
             selected: [],
+            // 접은 출처 묶음
+            collapsed: [],
             confirm: { open: false, title: '', lines: [], okLabel: '확인', onOk: null },
             toast: { open: false, text: '', undo: null, error: false }
         };
@@ -223,6 +264,9 @@ export default {
         },
         visibleRows() {
             return filterAdminRows(this.rows, { filter: this.filter, skill: this.skill || '', query: this.query });
+        },
+        visibleGroups() {
+            return groupBySource(this.visibleRows);
         },
         boundSkills() {
             return [...new Set(this.rows.flatMap((r) => r.skills))].sort();
@@ -294,6 +338,19 @@ export default {
         connectable(row) {
             return this.skills.filter((s) => !row.skills.includes(s));
         },
+        groupSelected(group) {
+            return group.items.length > 0 && group.items.every((r) => this.selected.includes(r.name));
+        },
+        groupPartly(group) {
+            return !this.groupSelected(group) && group.items.some((r) => this.selected.includes(r.name));
+        },
+        toggleGroup(group, on) {
+            const names = group.items.map((r) => r.name);
+            this.selected = on ? [...new Set([...this.selected, ...names])] : this.selected.filter((n) => !names.includes(n));
+        },
+        toggleCollapse(key) {
+            this.collapsed = this.collapsed.includes(key) ? this.collapsed.filter((k) => k !== key) : [...this.collapsed, key];
+        },
         toggleAll(on) {
             const names = this.visibleRows.map((r) => r.name);
             this.selected = on ? [...new Set([...this.selected, ...names])] : this.selected.filter((n) => !names.includes(n));
@@ -356,9 +413,10 @@ export default {
             });
             if (change) this.apply(change, '되돌렸습니다.', true);
         },
-        goConnect(skill, tool) {
+        goConnect(skill, tools) {
             this.$emit('update:modelValue', false);
-            this.$router.push({ path: `/skills/${encodeURIComponent(skill)}`, query: { addTool: tool } });
+            const addTool = [].concat(tools).join(',');
+            this.$router.push({ path: `/skills/${encodeURIComponent(skill)}`, query: { addTool } });
         }
     }
 };
@@ -379,6 +437,16 @@ export default {
 }
 .col-menu {
     width: 40px;
+}
+.group-row td {
+    background: rgba(var(--v-theme-on-surface), 0.04);
+}
+.group-toggle {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    color: inherit;
 }
 .select-bar {
     min-height: 36px;

@@ -203,6 +203,8 @@ export const COPY = {
     panelHelp: '여기 있는 도구는 에이전트가 이 스킬의 지침을 읽은 뒤에만 쓸 수 있습니다. 지침을 건너뛰고 바로 쓰는 일을 막습니다.',
     connectedButAlways: '스킬 전용으로 지정해야 이 스킬을 읽은 뒤에만 쓰게 됩니다',
     adminOnly: '관리자만 스킬 전용으로 지정할 수 있습니다',
+    adminOnlyReason: '스킬 전용으로 지정되지 않은 도구는 관리자만 연결할 수 있습니다. 지정이 필요하면 관리자에게 요청하세요.',
+    systemSkill: '서비스 기본 스킬이라 바꿀 수 없습니다',
     designateConfirm: (tool, skills) =>
         skills.length
             ? `${tool} 은 저장하면 모든 대화에서 숨겨지고, ${skills.join(', ')} 을 읽은 뒤에만 쓸 수 있습니다.`
@@ -286,10 +288,10 @@ export function adminRows(catalogTools, bindings, skillOnly) {
         const skills = [...((((bindings || {})[tool.name] || {}).skills) || [])].sort();
         const isDesignated = designated.has(tool.name);
         const kind = isDesignated ? (skills.length ? 'after-skill' : 'unusable') : skills.length ? 'undesignated' : 'free';
-        rows.push({ name: tool.name, server: tool.source === 'mcp' ? tool.server : '서비스', description: tool.description || '', skills, designated: isDesignated, kind });
+        rows.push({ name: tool.name, source: tool.source, server: tool.source === 'mcp' ? tool.server : '서비스', description: tool.description || '', skills, designated: isDesignated, kind });
     }
     for (const name of designated) {
-        if (!listed.has(name)) rows.push({ name, server: '', description: '', skills: [], designated: true, kind: 'missing' });
+        if (!listed.has(name)) rows.push({ name, source: '', server: '', description: '', skills: [], designated: true, kind: 'missing' });
     }
     return rows.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -310,7 +312,7 @@ export function filterAdminRows(rows, { filter = 'all', skill = '', query = '' }
         (r) =>
             (!f || !f.kinds || f.kinds.includes(r.kind)) &&
             (!skill || r.skills.includes(skill)) &&
-            (!q || r.name.toLowerCase().includes(q) || r.description.toLowerCase().includes(q))
+            (!q || matchesTool(r, q))
     );
 }
 
@@ -324,6 +326,48 @@ export function addToolPlan(tool, { isAdmin, skillOnly }) {
     if (tool.category === 'unbindable') return 'unbindable';
     if (asSet(skillOnly).has(tool.name)) return 'connect';
     return isAdmin ? 'designate-and-connect' : 'not-allowed';
+}
+
+/**
+ * 여러 도구를 한 번에 추가할 때(서버 단위 "모두 추가", 관리자 표에서 고른 도구) 도구별 할 일을 나눈다.
+ * 이미 연결된 도구와 기본 도구는 뺀다. blocked 는 관리자가 아니어서 고를 수 없는 도구다.
+ * @returns {{connect: string[], designate: string[], blocked: string[]}}
+ */
+export function addManyPlan(tools, { isAdmin, skillOnly, connected }) {
+    const out = { connect: [], designate: [], blocked: [] };
+    const already = asSet(connected);
+    for (const tool of tools || []) {
+        if (!tool || already.has(tool.name)) continue;
+        const plan = addToolPlan(tool, { isAdmin, skillOnly });
+        if (plan === 'connect') out.connect.push(tool.name);
+        else if (plan === 'designate-and-connect') out.designate.push(tool.name);
+        else if (plan === 'not-allowed') out.blocked.push(tool.name);
+    }
+    return out;
+}
+
+/** 이름이 많으면 앞의 몇 개와 남은 수로 줄인다. */
+export function shortList(names, max = 3) {
+    const list = names || [];
+    return list.length > max ? `${list.slice(0, max).join(', ')} 외 ${list.length - max}개` : list.join(', ');
+}
+
+/** 도구 추가 창 맨 위에 한 번만 보일 이유. 고를 수 없는 도구가 있을 때만 있다. */
+export function pickerNotice(groups, { isAdmin, skillOnly }) {
+    if (isAdmin) return '';
+    const blocked = (groups || []).some((g) => g.tools.some((t) => addToolPlan(t, { isAdmin, skillOnly }) === 'not-allowed'));
+    return blocked ? COPY.adminOnlyReason : '';
+}
+
+/**
+ * 서비스가 기본으로 넣는 스킬(process-gpt-system). 서버를 다시 띄울 때마다 원본으로 덮어써지고 모든 테넌트가
+ * 함께 쓰므로 화면에서 고칠 수 없다. 이 스킬에 쓸 도구 연결은 서비스 원본에 들어 있다.
+ */
+export const SYSTEM_SKILL_COLLECTION = 'process-gpt-system';
+
+/** "스킬에 연결" 대상으로 고를 수 있는 스킬 이름 — 서비스 기본 스킬은 뺀다. */
+export function connectableSkills(skillList) {
+    return (skillList || []).filter((s) => s && s.name && s.collection !== SYSTEM_SKILL_COLLECTION).map((s) => s.name);
 }
 
 /**
@@ -369,19 +413,43 @@ export function oneLine(description, max = 90) {
 }
 
 /** "도구 추가" 검색. 에이전트 기본 도구는 빼고, 이름·설명으로 찾아 출처별로 묶는다. */
+// 이름·설명·MCP 서버 이름으로 찾는다 — "supabase" 로 그 서버 도구를 모두 찾을 수 있어야 한다.
+function matchesTool(tool, q) {
+    return [tool.name, tool.description, tool.server].some((v) => String(v || '').toLowerCase().includes(q));
+}
+
+/**
+ * 도구의 출처 묶음. 딥 에이전트 서비스가 코드로 선언한 도구와 테넌트 MCP 서버 도구를 구별해 보인다.
+ * @returns {{key: string, kind: 'service'|'mcp'|'missing', label: string, icon: string, hint: string}}
+ */
+export function toolSource(tool) {
+    if (tool && tool.source === 'mcp') {
+        return { key: `mcp:${tool.server}`, kind: 'mcp', label: tool.server, icon: 'mdi-server-network', hint: 'MCP 서버 도구' };
+    }
+    if (tool && tool.source === 'service') {
+        return { key: 'service', kind: 'service', label: '딥 에이전트 서비스', icon: 'mdi-robot-outline', hint: '딥 에이전트 서비스에 선언된 도구' };
+    }
+    return { key: 'missing', kind: 'missing', label: '목록에 없음', icon: 'mdi-help-circle-outline', hint: '지금 도구 목록에 없는 지정' };
+}
+
+// 묶음 순서: 서비스 도구 → MCP 서버(이름순) → 목록에 없는 지정
+const SOURCE_ORDER = { service: 0, mcp: 1, missing: 2 };
+
+/** 도구(또는 관리자 표의 행)를 출처 묶음으로 나눈다. 묶음 안의 순서는 그대로 둔다. */
+export function groupBySource(items) {
+    const groups = new Map();
+    for (const item of items || []) {
+        const src = toolSource(item);
+        if (!groups.has(src.key)) groups.set(src.key, { ...src, items: [] });
+        groups.get(src.key).items.push(item);
+    }
+    return [...groups.values()].sort((a, b) => SOURCE_ORDER[a.kind] - SOURCE_ORDER[b.kind] || a.label.localeCompare(b.label));
+}
+
 export function searchTools(catalogTools, query) {
     const q = String(query || '').trim().toLowerCase();
-    const groups = new Map();
-    for (const tool of catalogTools || []) {
-        if (tool.category === 'unbindable') continue;
-        if (q && !tool.name.toLowerCase().includes(q) && !String(tool.description || '').toLowerCase().includes(q)) continue;
-        const key = tool.source === 'mcp' ? `mcp:${tool.server}` : 'service';
-        const label = tool.source === 'mcp' ? `MCP 서버 · ${tool.server}` : '서비스 기본 도구';
-        if (!groups.has(key)) groups.set(key, { key, label, tools: [] });
-        groups.get(key).tools.push(tool);
-    }
-    const order = (k) => (k.startsWith('mcp:') ? 0 : 1);
-    return [...groups.values()].sort((a, b) => order(a.key) - order(b.key) || a.label.localeCompare(b.label));
+    const found = (catalogTools || []).filter((tool) => tool.category !== 'unbindable' && (!q || matchesTool(tool, q)));
+    return groupBySource(found).map((g) => ({ key: g.key, kind: g.kind, label: g.label, icon: g.icon, hint: g.hint, tools: g.items }));
 }
 
 /**

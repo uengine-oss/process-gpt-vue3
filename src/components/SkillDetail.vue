@@ -824,7 +824,8 @@ export default {
                     const raw = builtinResult?.skills ?? builtinResult;
                     const builtinList = Array.isArray(raw) ? raw : raw?.skills || [];
                     const builtinNames = builtinList.map((s) => (typeof s === 'string' ? s : s.name || s.skill_name || '')).filter(Boolean);
-                    this.isBuiltinSkill = builtinNames.includes(skill.skill_name);
+                    // 서비스 기본 스킬(process-gpt-system)도 조회 전용이다 — 서버를 다시 띄우면 원본으로 덮어써진다.
+                    this.isBuiltinSkill = builtinNames.includes(skill.skill_name) || skill.system === true;
                 } catch (e) {
                     this.isBuiltinSkill = false;
                 }
