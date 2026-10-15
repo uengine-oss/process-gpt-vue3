@@ -43,6 +43,7 @@ const allRoutes = [
     {
         name: 'System',
         path: '/system',
+        meta: { requiresAdmin: true },
         component: () => import('@/components/ui/SystemList.vue')
     },
     {
@@ -134,16 +135,19 @@ const allRoutes = [
     {
         name: 'Admin',
         path: '/admin',
+        meta: { requiresAdmin: true },
         component: () => import('@/components/ui/Admin.vue')
     },
     {
         name: 'Admin Detail',
         path: '/admin/:id',
+        meta: { requiresAdmin: true },
         component: () => import('@/components/ui/AdminDetail.vue')
     },
     {
         name: 'TaskCatalogAdmin',
         path: '/admin/task-catalog',
+        meta: { requiresAdmin: true },
         component: () => import('@/components/admin/TaskCatalogAdmin.vue')
     },
     {
@@ -433,11 +437,13 @@ const allRoutes = [
     {
         name: 'API Test',
         path: '/api/test',
+        meta: { requiresAdmin: true },
         component: () => import('@/components/TestPage.vue')
     },
     {
         name: 'TaskCatalogAdmin',
         path: '/admin/task-catalog',
+        meta: { requiresAdmin: true },
         component: () => import('@/components/admin/TaskCatalogAdmin.vue')
     },
 

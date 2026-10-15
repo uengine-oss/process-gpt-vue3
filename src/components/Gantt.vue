@@ -557,7 +557,7 @@ export default {
                         assigneeName
                             ? `
                         <span class="custom-task-assignee task-assignee">
-                            <i class="fas fa-user"></i> 
+                            <i class="mdi mdi-account"></i> 
                             ${assigneeName}
                         </span>
                     `
@@ -582,7 +582,7 @@ export default {
                 if (task.assignees) {
                     const user = props.users.find((u) => u.id === task.assignees);
                     return `<div class="custom-task-assignee-icon task-assignee-icon">
-                              <i class="fas fa-user-circle"></i>
+                              <i class="mdi mdi-account-circle"></i>
                            </div>`;
                 }
                 return '';

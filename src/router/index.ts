@@ -94,12 +94,37 @@ function isOnResetPasswordWithRecoveryHash(): boolean {
     );
 }
 
+// 관리자 화면 판정은 사용자가 바꿀 수 있는 localStorage 가 아니라 DB users 행 기준
+const ADMIN_ROLES = ['superAdmin', 'admin', 'PocAdmin'];
+async function isCurrentUserAdmin(): Promise<boolean> {
+    try {
+        const supabase = (window as any).$supabase;
+        if (!supabase) return false;
+        const { data: auth } = await supabase.auth.getUser();
+        const uid = auth?.user?.id;
+        if (!uid) return false;
+        let query = supabase.from('users').select('is_admin, role').eq('id', uid);
+        const tenantName = (window as any).$tenantName;
+        if (tenantName) query = query.eq('tenant_id', tenantName);
+        const { data, error } = await query.limit(1);
+        if (error || !data || data.length === 0) return false;
+        return data[0].is_admin === true || ADMIN_ROLES.includes(data[0].role);
+    } catch (e) {
+        // 판정 실패 시 관리자 화면은 열지 않는다
+        return false;
+    }
+}
+
 router.beforeEach(async (to: any, from: any, next: any) => {
     try {
         // 라우터 에러 상태가 있으면 상태 리셋 후 계속 진행
         if (hasRouterError) {
             console.log('[라우터] 에러 상태 감지 - 상태 리셋 후 계속 진행');
             hasRouterError = false;
+        }
+
+        if (to.matched.some((record: any) => record.meta?.requiresAdmin) && !(await isCurrentUserAdmin())) {
+            return next('/');
         }
 
         // 비밀번호 재설정 화면(recovery 해시)에 있는 동안 테넌트 관리 등으로 나가는 네비게이션 차단 (재설정 완료 후 /auth/login 이동은 허용)
