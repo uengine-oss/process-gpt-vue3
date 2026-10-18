@@ -87,6 +87,12 @@ const allRoutes = [
         component: () => import('@/views/chat/ChatRoomPage.vue')
     },
     {
+        // 외부 업무 시스템이 넘긴 문서로 프로세스 생성을 시작한다 (?source=같은 출처 문서 경로&title=&from=)
+        name: 'Process From Document',
+        path: '/process-from-document',
+        component: () => import('@/views/handoff/ProcessFromDocument.vue')
+    },
+    {
         name: 'Proposals',
         path: '/proposals',
         component: () => import('@/views/apps/proposal/Proposals.vue')

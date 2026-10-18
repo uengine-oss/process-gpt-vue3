@@ -100,8 +100,25 @@
                         <!-- 직접 입력 탭 -->
                         <!-- <v-window-item value="direct-input"> -->
                         <!-- 슬랏으로 버튼 추가 영역  -->
+                        <!-- 워크아이템 화면 플러그인: 등록된 업무 시스템 화면을 폼 대신(또는 함께) 임베드한다 -->
+                        <AppWorkItemFrame
+                            v-if="appHandler"
+                            :handler="appHandler"
+                            :workItem="workItem"
+                            :formId="formDefId"
+                            :values="formData"
+                            :readonly="isCompleted || !isOwnWorkItem"
+                            @values="mergeAppValues"
+                            @save="(v) => { mergeAppValues(v); saveTask(); }"
+                            @submit="(v) => { mergeAppValues(v); executeProcess(); }"
+                        />
+                        <div v-if="appHandler && appHandler.mode === 'replace'" class="text-right mb-2">
+                            <v-btn size="x-small" variant="text" @click="showDataForm = !showDataForm">
+                                {{ showDataForm ? '데이터 폼 숨기기' : '데이터 폼 보기' }}
+                            </v-btn>
+                        </div>
                         <DynamicForm
-                            v-if="html"
+                            v-if="html && (!appHandler || appHandler.mode === 'beside' || showDataForm)"
                             ref="dynamicForm"
                             :formHTML="html"
                             v-model="formData"
@@ -199,6 +216,8 @@
 
 <script>
 import DynamicForm from '@/components/designer/DynamicForm.vue';
+import AppWorkItemFrame from '@/components/apps/todolist/app-handler/AppWorkItemFrame.vue';
+import { resolveAppHandler } from '@/components/apps/todolist/app-handler/resolveAppHandler';
 import ActivityInputData from '@/components/ui/ActivityInputData.vue';
 // import FormInterviewChat from './FormInterviewChat.vue';
 import ChatGenerator from '@/components/ai/FormDesignGenerator';
@@ -212,6 +231,7 @@ const backend = BackendFactory.createBackend();
 
 export default {
     components: {
+        AppWorkItemFrame,
         DynamicForm,
         // FormInterviewChat,
         Instruction,
@@ -283,7 +303,10 @@ export default {
         isInitialized: false,
         fileFieldNames: [],
         /** DynamicForm text-field 중 type="number" 인 필드 name 목록 (formData 값은 대부분 문자열이라 타입 추론용) */
-        numberFieldNames: []
+        numberFieldNames: [],
+        /** 워크아이템 화면 플러그인 (workitem_app_binding) — 없으면 null */
+        appHandler: null,
+        showDataForm: false
         // activeTab: 'direct-input', // 'direct-input' 또는 'chat'
     }),
     computed: {
@@ -625,6 +648,17 @@ export default {
                     }
                     if (!me.isDryRun) {
                         me.loadForm();
+                        try {
+                            me.appHandler = await resolveAppHandler({
+                                formId: me.formDefId,
+                                taskId: me.$route?.params?.taskId || me.workItem?.worklist?.taskId,
+                                procInstId: me.workItem?.worklist?.instId,
+                                procDefId: me.workItem?.worklist?.defId,
+                                activityId: me.workItem?.activity?.tracingTag
+                            });
+                        } catch (e) {
+                            me.appHandler = null;
+                        }
                     }
 
                     if (me.isSimulate == 'true' && me.processDefinition && me.processDefinition['activities']) {
@@ -695,6 +729,11 @@ export default {
                     }
                 }
             }
+        },
+        /** 임베드된 업무 시스템 화면이 보낸 값을 폼 값(데이터 계약)에 병합한다 */
+        mergeAppValues(values) {
+            if (!values || typeof values !== 'object') return;
+            this.formData = { ...this.formData, ...values };
         },
         async saveTask() {
             var me = this;
