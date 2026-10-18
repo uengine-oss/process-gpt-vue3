@@ -99,6 +99,12 @@ export default defineConfig({
             // published 포트로 직접 프록시하고, nginx가 하던 prefix strip을
             // 여기서 대신한다 (/completion/langchain-chat/x -> /langchain-chat/x).
             // (반드시 아래 '/complete' 보다 먼저 매칭되도록 최상단에 둔다.)
+            // 인계 마이닝(프로세스/조직 도출) 서비스
+            '/process-miner/': {
+                target: 'http://127.0.0.1:8014',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/process-miner/, '')
+            },
             '/completion/': {
                 target: 'http://127.0.0.1:8000',
                 changeOrigin: true,

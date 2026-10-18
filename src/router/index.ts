@@ -54,6 +54,11 @@ export const router = createRouter({
             path: '/external-forms/:formId',
             component: () => retryDynamicImport(() => import('@/components/ui/ExternalForms.vue'))
         },
+        {
+            name: 'Handover Mining',
+            path: '/mining/handover',
+            component: () => retryDynamicImport(() => import('@/views/mining/HandoverMining.vue'))
+        },
         ...(devRoutesEnabled
             ? [
                   {
@@ -72,6 +77,11 @@ export const router = createRouter({
                       name: 'BPMN Auto Layout E2E',
                       path: '/bpmn-auto-layout-e2e',
                       component: () => retryDynamicImport(() => import('@/views/e2e/BpmnAutoLayoutE2E.vue'))
+                  },
+                  {
+                      name: 'Handover E2E',
+                      path: '/handover-e2e',
+                      component: () => retryDynamicImport(() => import('@/views/e2e/HandoverE2E.vue'))
                   },
                   {
                       name: 'ProcessGPT Mapper UI E2E',

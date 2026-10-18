@@ -1,0 +1,37 @@
+{
+  "part": 1,
+  "roomId": "53ed0bed-7036-4d01-b835-92ccef4146e7",
+  "total": 91.891,
+  "marks": [
+    {
+      "name": "메인 화면 진입",
+      "phase": "event",
+      "at": 10.918
+    },
+    {
+      "name": "새 대화 시작",
+      "phase": "event",
+      "at": 25.161
+    },
+    {
+      "name": "서술문 전송",
+      "phase": "event",
+      "at": 27.731
+    },
+    {
+      "name": "초안 생성 대기 시작",
+      "phase": "wait",
+      "at": 31.733
+    },
+    {
+      "name": "초안 생성 대기 끝",
+      "phase": "event",
+      "at": 76.329
+    },
+    {
+      "name": "구간1 종료",
+      "phase": "event",
+      "at": 91.335
+    }
+  ]
+}

@@ -103,7 +103,8 @@
                             </v-list-item>
                         </v-list>
                     </v-menu>
-
+                    <!-- 부모(ChatRoomPage 등)가 컴포저 툴바에 버튼을 더 붙일 수 있게 열어둔다. -->
+                    <slot name="custom-input-tools"></slot>
                 </template>
             </Chat>
             <!-- codex 전용 폴더 입력. Chat 의 것과 달리 accept 제한이 없다 —

@@ -1017,6 +1017,15 @@ export default {
                     disable: false
                 },
                 {
+                    // 인계 기록에서 '아직 정의되지 않은' 업무 흐름을 찾아내는 화면.
+                    // 기존 프로세스를 고치는 개선(리뷰 보드)과 달리, 신규 프로세스를 식별한다.
+                    title: 'processIdentification.title',
+                    icon: 'sitemap',
+                    BgColor: 'primary',
+                    to: '/mining/handover',
+                    disable: false
+                },
+                {
                     title: 'analytics.heatmap',
                     icon: 'ibm-process-mining',
                     BgColor: 'primary',
