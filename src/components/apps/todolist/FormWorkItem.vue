@@ -106,11 +106,14 @@
                             :handler="appHandler"
                             :workItem="workItem"
                             :formId="formDefId"
+                            ref="appFrame"
                             :values="formData"
+                            :valuesSource="valuesSource"
+                            :status="workItemStatus"
                             :readonly="isCompleted || !isOwnWorkItem"
-                            @values="mergeAppValues"
-                            @save="(v) => { mergeAppValues(v); saveTask(); }"
-                            @submit="(v) => { mergeAppValues(v); executeProcess(); }"
+                            @values="(v) => mergeAppValues(v)"
+                            @save="onAppSave"
+                            @submit="onAppSubmit"
                         />
                         <div v-if="appHandler && appHandler.mode === 'replace'" class="text-right mb-2">
                             <v-btn size="x-small" variant="text" @click="showDataForm = !showDataForm">
@@ -306,7 +309,10 @@ export default {
         numberFieldNames: [],
         /** 워크아이템 화면 플러그인 (workitem_app_binding) — 없으면 null */
         appHandler: null,
-        showDataForm: false
+        showDataForm: false,
+        /** 마지막으로 폼 값을 바꾼 주체 — 업무 화면에 'fill' 을 보낼 때 출처로 쓴다 */
+        valuesSource: 'form',
+        appSaveDone: false
         // activeTab: 'direct-input', // 'direct-input' 또는 'chat'
     }),
     computed: {
@@ -358,6 +364,7 @@ export default {
         var me = this;
         this.EventBus.on('form-values-updated', (formValues) => {
             if (formValues) {
+                me.valuesSource = 'agent'; // 에이전트 초안 — 업무 화면에는 저장 전 초안(fill)으로만 전달된다
                 let incomingValues = formValues;
                 const fileList = me.extractFilePayload(incomingValues);
                 if (fileList && me.fileFieldNames.length > 0) {
@@ -733,7 +740,34 @@ export default {
         /** 임베드된 업무 시스템 화면이 보낸 값을 폼 값(데이터 계약)에 병합한다 */
         mergeAppValues(values) {
             if (!values || typeof values !== 'object') return;
+            this.valuesSource = 'app';
             this.formData = { ...this.formData, ...values };
+            setTimeout(() => {
+                if (this.valuesSource === 'app') this.valuesSource = 'form';
+            }, 0);
+        },
+        /** 업무 화면이 중간 저장을 요청 — 병합 후 기존 중간 저장, 결과를 ack 로 돌려준다 */
+        async onAppSave(values, done) {
+            this.mergeAppValues(values);
+            try {
+                await this.saveTask();
+                done && done(true, 'saved');
+            } catch (e) {
+                done && done(false, 'saved', String(e?.message || e));
+            }
+        },
+        /** 업무 화면이 제출을 요청 — 화면은 이미 자기 데이터를 저장했으므로 save-request 없이 제출한다 */
+        onAppSubmit(values, done) {
+            this.mergeAppValues(values);
+            this.appSaveDone = true;
+            try {
+                this.executeProcess();
+                done && done(true, 'accepted');
+            } catch (e) {
+                done && done(false, 'accepted', String(e?.message || e));
+            } finally {
+                this.appSaveDone = false;
+            }
         },
         async saveTask() {
             var me = this;
@@ -888,6 +922,23 @@ export default {
             this.$emit('fail', msg);
         },
         executeProcess() {
+            // 업무 화면이 임베드되어 있으면 제출 전에 그 화면의 저장을 먼저 요청한다 (업무 데이터는 업무 화면만 저장한다)
+            if (this.appHandler && !this.appSaveDone && this.$refs.appFrame) {
+                this.$refs.appFrame.requestSave().then((r) => {
+                    if (!r.ok) {
+                        this.$try({ action: async () => {}, warningMsg: `업무 화면 저장에 실패해 제출하지 않았습니다. ${r.error || ''}` });
+                        return;
+                    }
+                    if (r.values) this.mergeAppValues(r.values);
+                    this.appSaveDone = true;
+                    try {
+                        this.executeProcess();
+                    } finally {
+                        this.appSaveDone = false;
+                    }
+                });
+                return;
+            }
             if (this.isSimulate == 'true') {
                 this.isLoading = true;
             }

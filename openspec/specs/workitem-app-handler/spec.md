@@ -49,21 +49,53 @@ Process GPT 코드는 특정 업무 시스템을 알지 않으며, 업무 시스
 - **WHEN** 사용자가 워크아이템을 연다
 - **THEN** 기존 폼이 표시되고 작업은 그대로 진행할 수 있다
 
-### Requirement: postMessage 계약 (protocol 1)
+### Requirement: Process GPT 는 업무 데이터를 직접 쓰지 않는다
+에이전트나 폼이 만든 값은 업무 화면에 **저장 전 초안(`fill`)** 으로만 SHALL 전달된다. 업무 화면은 `fill` 을 받아 입력값만 채우고 업무 데이터를 저장해서는 MUST NOT 된다.
+업무 데이터 저장은 업무 화면 자신의 저장(담당자 조작) 또는 Process GPT 의 `save-request` 에 대한 응답으로만 SHALL 일어난다.
+그래서 사용자는 에이전트를 멈추고 화면을 고친 뒤 반영할 수 있어야 MUST 한다.
+
+#### Scenario: 에이전트 초안은 화면에만 채워진다
+- **GIVEN** 업무 화면이 `fill` 을 받겠다고 협상했다
+- **WHEN** 에이전트 초안으로 워크아이템 폼 값이 `{choice:'SPLIT'}` 으로 바뀐다
+- **THEN** 업무 화면은 `pgpt:workitem:fill {values, source:'agent', draft:true}` 를 받아 입력값을 채우고 '저장 전' 표시를 한다
+- **AND** 업무 시스템에는 아무 데이터도 쓰이지 않는다
+
+#### Scenario: 사용자가 초안을 고쳐 제출한다
+- **GIVEN** 에이전트 초안 `choice='SPLIT'` 이 화면에 채워져 있다
+- **WHEN** 사용자가 화면에서 `ALT_MOLD` 를 고르고 Process GPT 의 '제출 완료'를 누른다
+- **THEN** Process GPT 는 `pgpt:workitem:save-request` 를 보내고, 화면이 `pgpt:workitem:saved {ok:true, values}` 로 돌려준 값을 병합해 제출한다
+- **AND** 제출된 결정 값은 `ALT_MOLD` 다
+
+#### Scenario: 업무 화면 저장이 실패하면 제출하지 않는다
+- **WHEN** `save-request` 에 화면이 `{ok:false, error}` 로 응답하거나 30초 안에 응답하지 않는다
+- **THEN** Process GPT 는 경고를 보이고 제출하지 않는다
+
+### Requirement: postMessage 계약과 기능 협상 (protocol 1 · 2)
 Process GPT 와 앱 화면은 `type` 이 `pgpt:workitem:` 으로 시작하는 메시지로만 SHALL 통신한다.
-Process GPT 는 iframe 이 로드되거나 읽기 전용 여부가 바뀌면, 또는 앱이 `pgpt:workitem:ready` 를 보내면 `pgpt:workitem:init` 을 보내야 MUST 한다.
+앱은 `pgpt:workitem:ready {protocol, accepts, channel}` 로 받을 메시지를 밝히고, Process GPT 는 앱이 `accepts` 에 넣은 메시지(`fill`·`update`·`save-request`·`ack`)만 보내야 MUST 한다.
+`ready` 가 없거나 `protocol` 이 1 이면 protocol 1 로 동작한다(로드·읽기 전용 변경 때 `init` 만 보낸다).
 init 의 `workitem` 은 `taskId, procInstId, procDefId, activityId, activityName, formId, status, readonly, values, user{email,name}` 를 담아야 MUST 한다.
-앱은 `values`(폼 값 병합), `save`(병합 후 중간 저장), `submit`(병합 후 제출 완료), `resize`(높이) 를 보낼 수 있다.
+앱은 `values`(폼 값 병합), `save`(병합 후 중간 저장), `submit`(병합 후 제출 완료), `resize`(높이), `saved`(save-request 응답) 를 보낼 수 있다.
 
-#### Scenario: 앱이 값을 보내면 폼 값에 병합된다
-- **GIVEN** 앱 화면이 열린 진행 중 워크아이템이다
+#### Scenario: protocol 2 협상과 전용 채널
+- **WHEN** 앱이 `{type:'pgpt:workitem:ready', protocol:2, accepts:['fill','update','save-request','ack'], channel:true}` 를 보낸다
+- **THEN** Process GPT 는 `MessageChannel` 의 포트를 넘기며 `init {protocol:2, channel:true}` 을 보낸다
+- **AND** 이후 메시지는 그 포트로만 주고받는다
+
+#### Scenario: 상태 변화 알림
+- **GIVEN** 앱이 `update` 를 받겠다고 협상했다
+- **WHEN** 워크아이템 상태나 읽기 전용 여부가 바뀐다
+- **THEN** 앱은 `pgpt:workitem:update {status, readonly}` 를 받는다
+
+#### Scenario: 앱의 저장·제출 요청에 대한 응답
+- **GIVEN** 앱이 `ack` 를 받겠다고 협상했다
+- **WHEN** 앱이 `{type:'pgpt:workitem:submit', values, requestId:'r1'}` 를 보낸다
+- **THEN** 값이 병합되고 기존 제출 절차가 실행된 뒤 앱은 `pgpt:workitem:ack {requestId:'r1', ok:true, stage:'accepted'}` 를 받는다
+
+#### Scenario: 앱이 값을 보내면 폼 값에 병합되고 되돌려 보내지 않는다
 - **WHEN** 앱이 `{type:'pgpt:workitem:values', values:{choice:'ALT_MOLD'}}` 를 보낸다
-- **THEN** 워크아이템 폼 값에 `choice` 가 병합되고 기존 다른 필드는 유지된다
-
-#### Scenario: 앱에서 제출하면 기존 제출 경로로 완료된다
-- **GIVEN** 내 일인 진행 중 워크아이템이다
-- **WHEN** 앱이 `{type:'pgpt:workitem:submit', values:{...}}` 를 보낸다
-- **THEN** 값이 병합된 뒤 폼의 '제출 완료'와 같은 절차(체크포인트 확인 → 워크아이템 완료 요청)가 실행된다
+- **THEN** 폼 값에 `choice` 가 병합되고 기존 다른 필드는 유지된다
+- **AND** 이 변경은 `fill` 로 앱에 되돌아가지 않는다
 
 #### Scenario: 높이 조정
 - **WHEN** 앱이 `{type:'pgpt:workitem:resize', height:1100}` 을 보낸다
@@ -71,7 +103,7 @@ init 의 `workitem` 은 `taskId, procInstId, procDefId, activityId, activityName
 
 ### Requirement: 메시지 출처 검증과 읽기 전용
 Process GPT 는 `event.origin` 이 앱 출처(`allowed_origin` 또는 화면 주소의 출처)와 같고 `event.source` 가 그 iframe 의 창인 메시지만 SHALL 처리한다.
-완료됐거나 내 일이 아닌 워크아이템(읽기 전용)에서는 `save`·`submit` 을 무시해야 MUST 한다. 업무 데이터 자체의 수정 권한은 앱이 정한다.
+완료됐거나 내 일이 아닌 워크아이템(읽기 전용)에서는 `save`·`submit` 을 처리하지 않고, protocol 2 이면 `ack {ok:false, error:'readonly'}` 로 알려야 MUST 한다. 업무 데이터 자체의 수정 권한은 앱이 정한다.
 
 #### Scenario: 다른 출처의 메시지는 무시한다
 - **GIVEN** 앱 출처가 `http://localhost:8080` 이다
