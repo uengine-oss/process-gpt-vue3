@@ -51,8 +51,9 @@
                 @recording-mode-change="(v) => $emit('recording-mode-change', v)"
                 @desktop-voice-toggle="$emit('desktop-voice-toggle')"
             >
-                <template v-if="enableKnowledgeBase" v-slot:custom-input-tools>
+                <template v-slot:custom-input-tools>
                     <v-btn
+                        v-if="enableKnowledgeBase"
                         @click="openKnowledgePicker"
                         class="ml-2 text-medium-emphasis knowledge-tool-btn"
                         :class="{ 'has-selected': selectedKnowledgeDocs.length > 0 }"
@@ -67,6 +68,7 @@
                     </v-btn>
                     <!-- 폴더 통째 업로드(webkitdirectory) — 허용 확장자 파일만 첨부됨. -->
                     <v-btn
+                        v-if="enableKnowledgeBase"
                         @click="uploadFolder"
                         class="ml-2 text-medium-emphasis knowledge-tool-btn"
                         variant="outlined"
@@ -75,6 +77,8 @@
                     >
                         <span class="knowledge-tool-btn__label">폴더 업로드</span>
                     </v-btn>
+                    <!-- 부모(ChatRoomPage 등)가 컴포저 툴바에 버튼을 더 붙일 수 있게 열어둔다. -->
+                    <slot name="custom-input-tools"></slot>
                 </template>
             </Chat>
         </div>

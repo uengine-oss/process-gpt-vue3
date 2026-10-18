@@ -1,0 +1,61 @@
+{
+  "roomId": "0b8fbbcb-ac6a-455d-8f22-a318776be22c",
+  "total": 68.43,
+  "marks": [
+    {
+      "name": "메인 화면 진입",
+      "phase": "event",
+      "at": 10.028
+    },
+    {
+      "name": "새 대화 시작",
+      "phase": "event",
+      "at": 19.114
+    },
+    {
+      "name": "서술문 전송",
+      "phase": "event",
+      "at": 21.659
+    },
+    {
+      "name": "초안 생성 대기 시작",
+      "phase": "wait",
+      "at": 25.66
+    },
+    {
+      "name": "초안 생성 대기 끝",
+      "phase": "event",
+      "at": 25.663
+    },
+    {
+      "name": "승인 전송",
+      "phase": "event",
+      "at": 36.19
+    },
+    {
+      "name": "프로세스 생성 대기 시작",
+      "phase": "wait",
+      "at": 40.193
+    },
+    {
+      "name": "프로세스 생성 대기 끝",
+      "phase": "event",
+      "at": 40.197
+    },
+    {
+      "name": "저장(배포) 클릭",
+      "phase": "event",
+      "at": 52.282
+    },
+    {
+      "name": "저장 완료",
+      "phase": "event",
+      "at": 55.29
+    },
+    {
+      "name": "종료",
+      "phase": "event",
+      "at": 68.294
+    }
+  ]
+}

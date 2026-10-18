@@ -8858,6 +8858,472 @@ class ProcessGPTBackend implements Backend {
     }
 
     // ============================================================
+    // 핸드오버 (업무 이관) — DB: handover_events
+    //
+    // 채팅방에서 다음 담당자에게 일을 넘기는 명시적 인계(chat_handover)와,
+    // 에이전트에게 암묵적으로 위임되는 흐름(agent_delegation)을 같은 이벤트
+    // 로그에 쌓는다. 사람과 에이전트는 모두 users 테이블의 리소스이므로
+    // 구분하지 않고 하나의 핸드오버 네트워크로 기록한다.
+    // process-miner 서비스가 이 로그로부터 조직도/프로세스를 도출한다.
+    // ============================================================
+
+    /**
+     * 방이 속한 핸드오버 체인의 case_id 를 구한다.
+     * 이 방으로 인계받은 이력이 있으면 그 case_id 를 승계하고,
+     * 없으면 이 방이 체인의 루트이므로 방 id 자체가 case_id 가 된다.
+     */
+    async resolveHandoverCaseId(roomId: string): Promise<string> {
+        const origin = await this.resolveOriginRoomId(roomId);
+        return origin.caseId;
+    }
+
+    /**
+     * 이 방이 속한 인계 스레드의 뿌리를 찾는다.
+     *
+     * 이메일이 References/In-Reply-To 로 루트 Message-ID 를 앞으로 끌고 가듯,
+     * 인계도 origin_room_id 를 인계받는 방의 context 에 심어 전파한다.
+     * 그래서 1순위는 방 자신이 들고 있는 값(조회 불필요, 로그 유실에도 견딤)이고,
+     * 2순위가 handover_events 역추적, 마지막이 "이 방이 곧 뿌리".
+     */
+    async resolveOriginRoomId(roomId: string): Promise<{ originRoomId: string; caseId: string }> {
+        if (!roomId) throw new Error('roomId is required');
+
+        // 1) 방 context 에 실려 온 값 (전파된 스레드 헤더)
+        try {
+            const { data: room } = await window.$supabase.from('chat_rooms').select('context').eq('id', roomId).maybeSingle();
+            const h = (room as any)?.context?.handover;
+            if (h?.origin_room_id) {
+                return { originRoomId: h.origin_room_id, caseId: h.case_id || h.origin_room_id };
+            }
+        } catch (e) {
+            console.warn('[handover] 방 context 조회 실패, 이벤트 로그로 역추적:', e);
+        }
+
+        // 2) 이벤트 로그 역추적 (context 가 비어 있는 과거 방 대비)
+        try {
+            const { data } = await window.$supabase
+                .from('handover_events')
+                .select('case_id, origin_room_id')
+                .eq('tenant_id', window.$tenantName)
+                .eq('to_room_id', roomId)
+                .order('occurred_at', { ascending: true })
+                .limit(1);
+            const row = Array.isArray(data) && data.length ? data[0] : null;
+            if (row) {
+                const origin = row.origin_room_id || row.case_id || roomId;
+                return { originRoomId: origin, caseId: row.case_id || origin };
+            }
+        } catch (e) {
+            console.warn('[handover] 이벤트 역추적 실패, 이 방을 뿌리로 간주:', e);
+        }
+
+        // 3) 인계받은 적이 없다 = 이 방이 스레드의 시작점
+        return { originRoomId: roomId, caseId: roomId };
+    }
+
+    /**
+     * 한 스레드(origin_room_id 기준)의 인계 전체를 시간순으로 반환한다.
+     * Gmail 의 forward 묶음처럼, 여러 방에 걸친 인계가 하나로 모인다.
+     */
+    async getHandoverThread(originRoomId: string): Promise<any[]> {
+        if (!originRoomId) return [];
+        try {
+            const { data, error } = await window.$supabase
+                .from('handover_events')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .eq('origin_room_id', originRoomId)
+                .order('occurred_at', { ascending: true });
+            if (error) throw error;
+            return Array.isArray(data) ? data : [];
+        } catch (e) {
+            console.warn('[handover] 인계 스레드 조회 실패:', e);
+            return [];
+        }
+    }
+
+    /** 한 케이스의 인계 체인을 시간순으로 반환 */
+    async getHandoverChain(caseId: string): Promise<any[]> {
+        if (!caseId) return [];
+        try {
+            const { data, error } = await window.$supabase
+                .from('handover_events')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .eq('case_id', caseId)
+                .order('occurred_at', { ascending: true });
+            if (error) throw error;
+            return Array.isArray(data) ? data : [];
+        } catch (e) {
+            console.warn('[handover] 인계 체인 조회 실패:', e);
+            return [];
+        }
+    }
+
+    /** 체인의 직전 이벤트로부터 경과한 초 (병목 분석용) */
+    private async computeHandoverLatency(caseId: string): Promise<number | null> {
+        try {
+            const { data } = await window.$supabase
+                .from('handover_events')
+                .select('occurred_at')
+                .eq('tenant_id', window.$tenantName)
+                .eq('case_id', caseId)
+                .order('occurred_at', { ascending: false })
+                .limit(1);
+            const prev = Array.isArray(data) && data.length ? data[0]?.occurred_at : null;
+            if (!prev) return null;
+            const delta = (Date.now() - new Date(prev).getTime()) / 1000;
+            return delta >= 0 ? Math.round(delta) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * 채팅방에서의 명시적 인계.
+     * 산출물 영속화 → 수신자 방 생성 → 브리핑 메시지 → 첨부 이관 →
+     * ad-hoc 작업 생성 → 이벤트 기록 → 알림 순으로 진행한다.
+     *
+     * 어느 단계가 실패해도 이미 만들어진 것은 되돌리지 않는다(보상 트랜잭션 없음).
+     * 대신 필수 단계(방/작업/이벤트)는 실패 시 즉시 throw 하고, 부가 단계
+     * (첨부·알림)는 경고만 남기고 진행한다.
+     */
+    async createChatHandover(payload: {
+        fromRoomId: string;
+        caseId?: string;
+        toUser: { id: string; name?: string; email?: string; isAgent?: boolean; agentOrch?: string; agentMode?: string; role?: string };
+        doneLabel?: string;
+        nextActivityLabel: string;
+        instruction?: string;
+        reason?: string;
+        dueDate?: string | null;
+        artifacts?: Array<{ type: string; ref?: string; name?: string; storagePath?: string; content?: string }>;
+        carryAgents?: boolean;
+        sourceRoom?: any;
+    }): Promise<{ caseId: string; toRoomId: string; toTaskId: string; eventId: string }> {
+        const tenantId = window.$tenantName;
+        const fromUserId = localStorage.getItem('uid') || localStorage.getItem('email') || '';
+        const fromUserName = localStorage.getItem('userName') || '';
+        const toUserId = payload.toUser?.id;
+        if (!payload.fromRoomId) throw new Error('fromRoomId is required');
+        if (!toUserId) throw new Error('인계 대상이 지정되지 않았습니다.');
+
+        // 스레드 뿌리를 확정한다. 이 값이 수신자 방으로 전파되어 인계가 한 묶음으로 모인다.
+        const thread = await this.resolveOriginRoomId(payload.fromRoomId);
+        const originRoomId = thread.originRoomId;
+        const caseId = payload.caseId || thread.caseId;
+        const toRoomId = this.uuid();
+        const toTaskId = this.uuid();
+        const artifacts = Array.isArray(payload.artifacts) ? payload.artifacts : [];
+
+        // 1) 산출물 영속화 — 워크스페이스 파일은 에이전트 샌드박스에만 있으므로
+        //    스토리지에 올려 영구 경로를 확보한다. 이미 경로가 있는 첨부는 그대로 참조.
+        const artifactRefs: any[] = [];
+        for (const a of artifacts) {
+            if (a.storagePath || !a.content) {
+                artifactRefs.push({ type: a.type, ref: a.ref || null, name: a.name || null, storage_path: a.storagePath || null });
+                continue;
+            }
+            try {
+                const file = new File([a.content], a.name || 'artifact.txt', { type: 'text/plain' });
+                const uploaded: any = await this.uploadFileToStorage(file, { room_id: toRoomId });
+                artifactRefs.push({
+                    type: a.type,
+                    ref: a.ref || null,
+                    name: a.name || null,
+                    storage_path: uploaded?.file_path || uploaded?.publicUrl || null
+                });
+            } catch (e) {
+                console.warn('[handover] 산출물 업로드 실패, 참조만 기록:', a.name, e);
+                artifactRefs.push({ type: a.type, ref: a.ref || null, name: a.name || null, storage_path: null });
+            }
+        }
+
+        // 2) 수신자 방 생성 — 현재 방의 에이전트를 함께 넘길 수 있다.
+        const sourceParticipants: any[] = Array.isArray(payload.sourceRoom?.participants) ? payload.sourceRoom.participants : [];
+        const carriedAgents = payload.carryAgents ? sourceParticipants.filter((p: any) => p?.isAgent || p?.is_agent) : [];
+        const participants = [
+            { id: toUserId, name: payload.toUser?.name || '', email: payload.toUser?.email || '', isAgent: !!payload.toUser?.isAgent },
+            ...carriedAgents.filter((a: any) => a?.id !== toUserId)
+        ];
+        const newRoom = {
+            id: toRoomId,
+            tenant_id: tenantId,
+            name: payload.nextActivityLabel,
+            participants,
+            primary_agent_id: payload.toUser?.isAgent ? toUserId : payload.sourceRoom?.primary_agent_id || null,
+            message: { msg: 'NEW', type: 'handover', createdAt: new Date().toISOString() },
+            context: {
+                handover: {
+                    // 이메일의 References 헤더처럼 스레드 뿌리를 그대로 물려준다.
+                    // 다음 인계 때 이 값이 조회 없이 바로 승계된다.
+                    origin_room_id: originRoomId,
+                    case_id: caseId,
+                    from_room_id: payload.fromRoomId,
+                    from_user_id: fromUserId,
+                    from_user_name: fromUserName,
+                    artifact_refs: artifactRefs
+                }
+            }
+        };
+        await storage.putObject('chat_rooms', newRoom, { onConflict: 'id' });
+
+        // 3) 브리핑 메시지 — 수신자가 방에 들어오자마자 맥락을 잡을 수 있게
+        const briefing = this.buildHandoverBriefing({
+            fromUserName,
+            doneLabel: payload.doneLabel,
+            nextActivityLabel: payload.nextActivityLabel,
+            instruction: payload.instruction,
+            reason: payload.reason,
+            artifactRefs
+        });
+        try {
+            await storage.putObject('chats', {
+                uuid: this.uuid(),
+                id: toRoomId,
+                tenant_id: tenantId,
+                messages: {
+                    role: 'system',
+                    name: fromUserName,
+                    email: localStorage.getItem('email') || '',
+                    content: briefing,
+                    timeStamp: new Date().toISOString(),
+                    handover: { origin_room_id: originRoomId, case_id: caseId, from_room_id: payload.fromRoomId }
+                }
+            });
+        } catch (e) {
+            console.warn('[handover] 브리핑 메시지 저장 실패:', e);
+        }
+
+        // 4) 산출물을 수신자 방 첨부로 연결
+        for (const ref of artifactRefs) {
+            if (!ref.storage_path) continue;
+            try {
+                await storage.putObject('chat_attachments', {
+                    id: this.uuid(),
+                    file_name: ref.name || String(ref.storage_path).split('/').pop(),
+                    file_path: ref.storage_path,
+                    chat_room_id: toRoomId,
+                    user_name: fromUserName,
+                    tenant_id: tenantId
+                });
+            } catch (e) {
+                console.warn('[handover] 첨부 연결 실패:', ref.name, e);
+            }
+        }
+
+        // 5) ad-hoc 작업 생성 — 수신자의 할일에 뜨고, 에이전트면 폴러가 바로 집어간다.
+        const queryLines = [
+            `[Handover] ${fromUserName || fromUserId} 님이 넘긴 업무`,
+            payload.doneLabel ? `[Done] ${payload.doneLabel}` : '',
+            `[Instruction]\n${payload.instruction || payload.nextActivityLabel}`,
+            artifactRefs.length ? `[InputData]\n${JSON.stringify(artifactRefs)}` : '',
+            `[ChatRoom] ${toRoomId}`
+        ].filter(Boolean);
+        // 항상 TODO 로 만든다. putWorklist 는 IN_PROGRESS 일 때 bpm_proc_inst 를
+        // 함께 갱신하는데, ad-hoc 인계에는 인스턴스가 없어 그 경로를 타면 안 된다.
+        await this.putWorklist(toTaskId, {
+            taskId: toTaskId,
+            endpoint: toUserId,
+            title: payload.nextActivityLabel,
+            name: payload.nextActivityLabel,
+            tracingTag: `handover_${toTaskId}`,
+            description: payload.instruction || payload.nextActivityLabel,
+            status: 'TODO',
+            dueDate: payload.dueDate || null,
+            adhoc: true,
+            referenceIds: [payload.fromRoomId]
+        });
+        // putWorklist 가 다루지 않는 필드(query·에이전트 라우팅)를 채운다.
+        // 에이전트 대상이면 여기서 IN_PROGRESS 로 올려 폴러(fetch_pending_task)가 집어가게 한다.
+        const followUp: any = { query: queryLines.join('\n\n') };
+        if (payload.toUser?.isAgent) {
+            followUp.status = 'IN_PROGRESS';
+            followUp.agent_orch = payload.toUser.agentOrch || 'deepagents';
+            followUp.agent_mode = payload.toUser.agentMode || 'COMPLETE';
+        }
+        try {
+            await this.putWorkItem(toTaskId, followUp);
+        } catch (e) {
+            console.warn('[handover] 작업 부가 필드 설정 실패:', e);
+        }
+
+        // 6) 이벤트 기록
+        const eventId = this.uuid();
+        const latency = await this.computeHandoverLatency(caseId);
+        await storage.putObject('handover_events', {
+            id: eventId,
+            tenant_id: tenantId,
+            case_id: caseId,
+            origin_room_id: originRoomId,
+            source: 'chat_handover',
+            is_explicit: true,
+            from_room_id: payload.fromRoomId,
+            to_room_id: toRoomId,
+            to_task_id: toTaskId,
+            from_user_id: fromUserId,
+            from_user_name: fromUserName,
+            from_is_agent: false,
+            to_user_id: toUserId,
+            to_user_name: payload.toUser?.name || null,
+            to_role: payload.toUser?.role || null,
+            to_is_agent: !!payload.toUser?.isAgent,
+            agent_orch: payload.toUser?.isAgent ? payload.toUser.agentOrch || 'deepagents' : null,
+            activity_label: payload.doneLabel || null,
+            next_activity_label: payload.nextActivityLabel,
+            instruction: payload.instruction || null,
+            reason: payload.reason || null,
+            artifact_refs: artifactRefs,
+            participant_agents: carriedAgents.map((a: any) => ({ id: a?.id, name: a?.name })),
+            handover_latency_sec: latency,
+            occurred_at: new Date().toISOString()
+        });
+
+        // 7) 알림
+        await this.sendNotification({
+            userId: toUserId,
+            type: 'handover',
+            title: `[업무 인계] ${payload.nextActivityLabel}`,
+            description: `${fromUserName || fromUserId} 님이 업무를 넘겼습니다.`,
+            url: `/chat?roomId=${toRoomId}`,
+            fromUserId: localStorage.getItem('email') || undefined
+        });
+
+        return { caseId, toRoomId, toTaskId, eventId };
+    }
+
+    private buildHandoverBriefing(p: {
+        fromUserName?: string;
+        doneLabel?: string;
+        nextActivityLabel: string;
+        instruction?: string;
+        reason?: string;
+        artifactRefs: any[];
+    }): string {
+        const lines: string[] = [];
+        lines.push(`**${p.fromUserName || '이전 담당자'}** 님이 업무를 넘겼습니다.`);
+        lines.push('');
+        if (p.doneLabel) {
+            lines.push(`### 지금까지 한 일`);
+            lines.push(p.doneLabel);
+            lines.push('');
+        }
+        lines.push(`### 다음에 할 일`);
+        lines.push(`**${p.nextActivityLabel}**`);
+        if (p.instruction) {
+            lines.push('');
+            lines.push(p.instruction);
+        }
+        if (p.reason) {
+            lines.push('');
+            lines.push(`> 인계 사유: ${p.reason}`);
+        }
+        if (p.artifactRefs.length) {
+            lines.push('');
+            lines.push(`### 넘겨받은 산출물`);
+            for (const a of p.artifactRefs) {
+                lines.push(`- ${a.name || a.ref || a.type}`);
+            }
+        }
+        return lines.join('\n');
+    }
+
+    /**
+     * 에이전트에게 암묵적으로 위임된 순간을 기록한다(버튼 없이 일어나는 인계).
+     * 같은 (방, 에이전트, 트리거 메시지) 조합은 유니크 인덱스가 중복을 막으므로
+     * 스트림 재접속으로 두 번 호출되어도 안전하다.
+     * 기록 자체는 부가 기능이므로 실패해도 throw 하지 않는다.
+     */
+    async recordAgentDelegation(payload: {
+        roomId: string;
+        caseId?: string;
+        agent: { id: string; name?: string; orchestration?: string; role?: string };
+        triggerMessageUuid: string;
+        triggerText?: string;
+    }): Promise<string | null> {
+        try {
+            if (!payload.roomId || !payload.agent?.id || !payload.triggerMessageUuid) return null;
+            const tenantId = window.$tenantName;
+            const thread = await this.resolveOriginRoomId(payload.roomId);
+            const caseId = payload.caseId || thread.caseId;
+            const fromUserId = localStorage.getItem('uid') || localStorage.getItem('email') || '';
+            const eventId = this.uuid();
+            const latency = await this.computeHandoverLatency(caseId);
+
+            const { data, error } = await window.$supabase
+                .from('handover_events')
+                .upsert(
+                    {
+                        id: eventId,
+                        tenant_id: tenantId,
+                        case_id: caseId,
+                        origin_room_id: thread.originRoomId,
+                        source: 'agent_delegation',
+                        is_explicit: false,
+                        from_room_id: payload.roomId,
+                        to_room_id: payload.roomId,
+                        from_user_id: fromUserId,
+                        from_user_name: localStorage.getItem('userName') || '',
+                        from_is_agent: false,
+                        to_user_id: payload.agent.id,
+                        to_user_name: payload.agent.name || null,
+                        to_role: payload.agent.role || null,
+                        to_is_agent: true,
+                        agent_orch: payload.agent.orchestration || null,
+                        activity_label: payload.triggerText ? String(payload.triggerText).slice(0, 500) : null,
+                        trigger_message_uuid: payload.triggerMessageUuid,
+                        handover_latency_sec: latency,
+                        occurred_at: new Date().toISOString()
+                    },
+                    { onConflict: 'from_room_id,to_user_id,trigger_message_uuid', ignoreDuplicates: true }
+                )
+                .select('id');
+            if (error) throw error;
+            return Array.isArray(data) && data.length ? data[0].id : eventId;
+        } catch (e) {
+            console.warn('[handover] 에이전트 위임 기록 실패:', e);
+            return null;
+        }
+    }
+
+    /**
+     * 에이전트 턴이 끝난 시각과 그 턴이 만든 산출물을 채운다.
+     * returned_at - occurred_at 이 에이전트 처리 시간이 되고,
+     * 이후 사람의 다음 행동까지의 간격이 사람 대기 시간이 된다.
+     */
+    async completeAgentDelegation(payload: {
+        roomId: string;
+        agentId: string;
+        triggerMessageUuid: string;
+        artifacts?: Array<{ type: string; ref?: string; name?: string }>;
+    }): Promise<void> {
+        try {
+            if (!payload.roomId || !payload.agentId || !payload.triggerMessageUuid) return;
+            const update: any = { returned_at: new Date().toISOString() };
+            if (Array.isArray(payload.artifacts) && payload.artifacts.length) {
+                update.artifact_refs = payload.artifacts.map((a) => ({
+                    type: a.type,
+                    ref: a.ref || null,
+                    name: a.name || null,
+                    storage_path: null
+                }));
+            }
+            const { error } = await window.$supabase
+                .from('handover_events')
+                .update(update)
+                .eq('tenant_id', window.$tenantName)
+                .eq('source', 'agent_delegation')
+                .eq('from_room_id', payload.roomId)
+                .eq('to_user_id', payload.agentId)
+                .eq('trigger_message_uuid', payload.triggerMessageUuid)
+                .is('returned_at', null);
+            if (error) throw error;
+        } catch (e) {
+            console.warn('[handover] 에이전트 위임 완료 기록 실패:', e);
+        }
+    }
+
+    // ============================================================
     // 범용 리소스 PR 워크플로우 (DB: resource_pull_requests / resource_pr_reviews)
     // resourceType: 'skill' | 'proc_def' | 'dmn'
     // ============================================================

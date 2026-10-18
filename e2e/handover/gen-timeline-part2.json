@@ -1,0 +1,42 @@
+{
+  "part": 2,
+  "roomId": "fea4f690-af74-46e8-bc57-df243271b7b3",
+  "total": 132.307,
+  "marks": [
+    {
+      "name": "대화 이어서 열기",
+      "phase": "event",
+      "at": 9.817
+    },
+    {
+      "name": "승인 전송",
+      "phase": "event",
+      "at": 16.406
+    },
+    {
+      "name": "프로세스 생성 대기 시작",
+      "phase": "wait",
+      "at": 20.409
+    },
+    {
+      "name": "프로세스 생성 대기 끝",
+      "phase": "event",
+      "at": 99.183
+    },
+    {
+      "name": "저장(배포) 클릭",
+      "phase": "event",
+      "at": 113.342
+    },
+    {
+      "name": "저장 완료",
+      "phase": "event",
+      "at": 116.354
+    },
+    {
+      "name": "구간2 종료",
+      "phase": "event",
+      "at": 131.393
+    }
+  ]
+}

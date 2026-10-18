@@ -1,0 +1,50 @@
+{
+  "total": 61.055,
+  "marks": [
+    {
+      "name": "메인 화면",
+      "phase": "event",
+      "at": 4.598
+    },
+    {
+      "name": "메뉴로 진입",
+      "phase": "event",
+      "at": 12.519
+    },
+    {
+      "name": "분석 대기",
+      "phase": "wait",
+      "at": 12.519
+    },
+    {
+      "name": "분석 완료",
+      "phase": "event",
+      "at": 14.545
+    },
+    {
+      "name": "PR 제안 클릭",
+      "phase": "event",
+      "at": 36.662
+    },
+    {
+      "name": "PR 생성 완료",
+      "phase": "event",
+      "at": 38.665
+    },
+    {
+      "name": "실행 전환 클릭",
+      "phase": "event",
+      "at": 50.791
+    },
+    {
+      "name": "전환 대화창 열림",
+      "phase": "event",
+      "at": 52.794
+    },
+    {
+      "name": "구간 종료",
+      "phase": "event",
+      "at": 60.324
+    }
+  ]
+}
