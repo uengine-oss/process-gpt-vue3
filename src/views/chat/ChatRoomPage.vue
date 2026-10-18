@@ -10529,7 +10529,8 @@ export default {
 
             const extractContentField = (rawText) => {
                 if (typeof rawText !== 'string') return null;
-                const matched = rawText.match(/^content=(['"])((?:\\.|(?!\1)[\s\S])*)\1(?:\s+\w+=|$)/);
+                // 백슬래시는 첫 갈래만 소비한다 — 두 갈래가 모두 '\'를 받으면 긴 출력에서 지수 역추적으로 탭이 멈춘다
+                const matched = rawText.match(/^content=(['"])((?:\\[\s\S]|(?!\1)[^\\])*)\1(?:\s+\w+=|$)/);
                 if (matched && matched[2]) {
                     return matched[2];
                 }
