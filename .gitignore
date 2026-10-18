@@ -108,6 +108,11 @@ openspec/specs/*
 !openspec/specs/deep-agent-process-generation/spec.md
 !openspec/specs/chat-hitl-single-render/
 !openspec/specs/chat-hitl-single-render/spec.md
+!openspec/specs/workitem-app-handler/
+!openspec/specs/workitem-app-handler/spec.md
+!openspec/specs/workitem-app-handler/design.md
+!openspec/specs/process-from-document-handoff/
+!openspec/specs/process-from-document-handoff/spec.md
 !openspec/specs/tenant-scoped-agent-streaming/
 !openspec/specs/tenant-scoped-agent-streaming/spec.md
 !openspec/specs/tenant-data-isolation/
