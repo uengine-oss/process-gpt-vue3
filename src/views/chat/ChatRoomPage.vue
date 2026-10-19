@@ -6615,6 +6615,10 @@ export default {
         async trackAgentDelegation(roomId, agent, triggerMessageUuid, triggerText) {
             try {
                 if (!roomId || !agent?.id || !triggerMessageUuid) return;
+                // 프로세스 식별 화면이 만든 실행 전환 방은 업무가 아니라 도출 결과를 다루는 방이다.
+                // 여기서의 요청을 인계로 남기면 마이닝이 자기 출력을 다시 업무로 읽는다.
+                const roomContext = this.currentChatRoom?.id === roomId ? this.currentChatRoom?.context : null;
+                if (roomContext?.identification) return;
                 const key = `${roomId}:${agent.id}:${triggerMessageUuid}`;
                 if (this.agentDelegationTracked[key]) return;
                 this.agentDelegationTracked[key] = true;
@@ -8954,7 +8958,10 @@ export default {
                     }
                 }
                 // 버튼을 누르지 않아도 에이전트에게 일이 넘어간 것이므로 핸드오버로 남긴다.
-                this.trackAgentDelegation(handoverRoomId, { ...agentTarget, orchestration }, handoverTriggerUuid, userText);
+                // 에이전트의 질문에 답하는 턴(run_state 로 재개)은 같은 위임의 연속이라 새로 남기지 않는다.
+                if (!payload?.metadata?.run_state) {
+                    this.trackAgentDelegation(handoverRoomId, { ...agentTarget, orchestration }, handoverTriggerUuid, userText);
+                }
 
                 const assistantUuid = this.uuid();
                 const prevStream = this.activeStreams[agentId];
