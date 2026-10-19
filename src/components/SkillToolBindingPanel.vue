@@ -43,7 +43,7 @@
                 <a href="#" class="where-link" data-test="reveal-include-tools" @click.prevent="$emit('reveal')"
                     ><code>metadata.include_tools</code></a
                 >
-                에 적힙니다.
+                에 추가됩니다.
             </div>
             <v-text-field
                 v-if="adding"

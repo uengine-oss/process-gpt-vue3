@@ -198,7 +198,7 @@ export const COPY = {
     always: '모든 대화에서 사용',
     afterSkill: '스킬을 읽은 뒤 사용',
     unusable: '사용 불가 · 연결된 스킬 없음',
-    notInTenant: '이 테넌트에 없는 도구',
+    notInTenant: '지금 도구 목록에 없는 도구 — MCP 서버가 꺼졌거나 연결되지 않았습니다',
     panelTitle: '이 스킬을 읽어야 쓰는 도구',
     panelHelp: '여기 있는 도구는 에이전트가 이 스킬의 지침을 읽은 뒤에만 쓸 수 있습니다. 지침을 건너뛰고 바로 쓰는 일을 막습니다.',
     connectedButAlways: '스킬 전용으로 지정해야 이 스킬을 읽은 뒤에만 쓰게 됩니다',
