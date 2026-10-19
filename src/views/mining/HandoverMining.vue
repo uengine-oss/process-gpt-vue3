@@ -420,7 +420,7 @@ export default {
             // miningFlow 는 렌더용 computed 라 비어 있을 수 있다. 정의에서 직접 편다.
             const order = (Array.isArray(this.miningFlow) ? this.miningFlow : []).filter((n) => n.kind === 'activity');
             const activities = order.length ? order : (d.activities || []).map((a) => ({ ...a, kind: 'activity' }));
-            const optional = new Set(this.optionalActivityNames(d));
+            const tags = this.conditionalActivityTags(d);
             const lines = [
                 `인계 기록에서 식별된 업무 흐름입니다. 이대로 실행 가능한 프로세스로 만들어 주세요.`,
                 ``,
@@ -428,7 +428,7 @@ export default {
             ];
             activities.forEach((a, i) => {
                 const tag = a.agent ? ` — ${a.role}(자동 수행, ${a.orchestration})` : ` — ${a.role}`;
-                const opt = optional.has(a.name) ? ' (조건에 따라 건너뜀)' : '';
+                const opt = tags[a.name] ? ` (${tags[a.name]})` : '';
                 lines.push(`${i + 1}) ${a.name}${tag}${opt}`);
             });
             lines.push('');
@@ -438,18 +438,35 @@ export default {
             });
             return lines.join('\n');
         },
-        /** 배타 분기(split) 뒤에 달린 활동 = 건너뛸 수 있는 단계 */
-        optionalActivityNames(d) {
-            const outDeg = {};
-            (d.sequences || []).forEach((s) => (outDeg[s.source] = (outDeg[s.source] || 0) + 1));
-            const splits = new Set(
-                (d.gateways || []).filter((g) => g.type === 'exclusiveGateway' && (outDeg[g.id] || 0) >= 2).map((g) => g.id)
-            );
+        /**
+         * 단계마다 붙일 조건 표시 { 활동명: 표시 }.
+         * 마이너가 게이트웨이 properties.minedRole 에 도출 구조를 남긴다. 이름으로 짐작하면
+         * 반복 판정 게이트웨이 뒤의 필수 단계(예: 고객 발송)까지 '건너뜀'으로 읽힌다.
+         */
+        conditionalActivityTags(d) {
+            const roleOf = (g) => {
+                try {
+                    return JSON.parse(g.properties || '{}').minedRole || '';
+                } catch (e) {
+                    return '';
+                }
+            };
+            const gwRole = {};
+            (d.gateways || []).forEach((g) => (gwRole[g.id] = roleOf(g)));
             const actById = {};
             (d.activities || []).forEach((a) => (actById[a.id] = a));
-            const out = [];
-            (d.sequences || []).forEach((s) => {
-                if (splits.has(s.source) && actById[s.target]) out.push(actById[s.target].name);
+            const out = {};
+            const seqs = d.sequences || [];
+            seqs.forEach((s) => {
+                const target = actById[s.target];
+                if (!target) return;
+                const role = gwRole[s.source];
+                if (role === 'choice') {
+                    const hasSkip = seqs.some((x) => x.source === s.source && gwRole[x.target] === 'skip');
+                    out[target.name] = hasSkip ? '조건에 따라 건너뜀' : '조건에 따라 택일';
+                } else if (role === 'loop_exit' && s.condition) {
+                    out[target.name] = '반려 시 반복';
+                }
             });
             return out;
         },
