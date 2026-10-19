@@ -70,6 +70,29 @@ agent graphs.
 - **WHEN** the handover network is computed
 - **THEN** both transfers MUST appear as edges with their counts
 
+#### Scenario: An implicit delegation is counted without an activity name
+- **GIVEN** a person delegates to an agent while holding an activity, with no normalized label
+- **WHEN** the handover network and eligibility are computed
+- **THEN** the person → agent transfer MUST appear in the network
+- **AND** the agent MUST be a candidate for the activity the person was holding
+- **AND** that activity's automation rate MUST include the delegation
+- **AND** the delegation MUST NOT appear in the discovered control flow
+
+### Requirement: Mining APIs are scoped to the caller's tenant
+Mining results MUST only include records of a tenant the caller belongs to, as
+established from the caller's verified token. A request without a tenant MUST NOT
+return records of any other tenant.
+
+#### Scenario: A request without credentials is rejected
+- **GIVEN** a request with no bearer token
+- **WHEN** any mining endpoint is called
+- **THEN** it MUST be rejected and no handover record may be read
+
+#### Scenario: Another tenant cannot be requested
+- **GIVEN** a caller who belongs only to tenant A
+- **WHEN** the caller requests tenant B
+- **THEN** the request MUST be refused
+
 ### Requirement: Eligibility surfaces when choosing the next assignee
 Resources that have actually performed the next step before MUST be marked as
 eligible in the handover assignee picker, and SHALL be ordered ahead of the

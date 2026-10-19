@@ -57,6 +57,24 @@ step observed in only some cases MUST NOT be modelled as mandatory.
 - **THEN** that step MUST be enclosed in an exclusive branch that can be skipped
 - **AND** steps present in every case MUST remain mandatory
 
+#### Scenario: Rework after rejection is discovered as a loop
+- **GIVEN** cases `작성→검토→승인` and `작성→검토→수정→검토→승인`
+- **WHEN** the process is discovered
+- **THEN** 검토 and 수정 MUST form a loop that returns to 검토
+- **AND** they MUST NOT be modelled as "one of 검토 or 수정"
+
+#### Scenario: A step always done within a branch stays mandatory in that branch
+- **GIVEN** three cases `a→b→x→y` and three cases `a→c→z→y`
+- **WHEN** the process is discovered
+- **THEN** b and x MUST be mandatory inside their branch
+- **AND** optionality MUST be counted over the cases of that branch, not over all cases
+
+#### Scenario: Undetermined structure is not presented as an exclusive choice
+- **GIVEN** a sub-log in which no cut can be found
+- **WHEN** the process is discovered
+- **THEN** its activities MUST be emitted as an unordered loop
+- **AND** they MUST NOT be emitted as an exclusive choice of one activity
+
 #### Scenario: Emitted definition passes the engine contract
 - **GIVEN** a discovered process definition
 - **WHEN** it is validated against the engine's definition contract
@@ -82,6 +100,24 @@ from control-flow discovery.
 - **GIVEN** an implicit delegation that has a normalized activity label
 - **WHEN** the event log is built
 - **THEN** that label MUST be used as the activity name
+
+### Requirement: The thread starter's work is the first step
+The first trusted handover of a thread (`chat_handover` or `todolist`) carries what
+the sender has done so far. That work, performed by the sender, MUST become the first
+step of the case. Without it the step that started the work and its performer are
+lost, and a plain handover between two people has a single step and is never analyzed.
+An implicit delegation's raw text MUST NOT be used for this.
+
+#### Scenario: The starter's work becomes the first step
+- **GIVEN** 김 hands over to 이팀장 after "견적서 작성", and 이팀장 hands over to 박대리
+- **WHEN** the event log is built
+- **THEN** the case MUST read 견적서 작성 → 견적 검토 → 고객 발송
+- **AND** 견적서 작성 MUST be attributed to 김
+
+#### Scenario: A handover between two people is analyzed
+- **GIVEN** threads that consist of a single handover from one person to another
+- **WHEN** the process is discovered
+- **THEN** each thread MUST be a two-step case and MUST NOT be excluded
 
 ### Requirement: Cases without ordering information are excluded
 A case containing a single step MUST be excluded from control-flow discovery,

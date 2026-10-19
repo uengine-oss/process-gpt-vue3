@@ -54,6 +54,27 @@ normalized label exists. Adding that normalization (an LLM pass that turns a
 turn into a verb-object activity name) is the natural next step and would let
 those events rejoin discovery.
 
+## Event log rules (stabilization, 2026-10-19)
+
+Three kinds of events are built from one handover row:
+
+| kind | activity | resource | used by |
+|---|---|---|---|
+| start | the sender's "done so far" on the thread's first trusted handover | sender | control flow, org mining |
+| step | "next to do" | receiver | control flow, org mining |
+| delegation | the activity the delegator holds at that moment | agent | network, automation, eligibility only |
+
+The start step is what makes a two-person handover a two-step case, and keeps the
+person who started the work in the model. Delegations stay out of control flow (the
+label-trust rule above still holds) but are no longer dropped: attributing them to the
+held activity is deterministic and needs no LLM. The network counts the row's own
+`from → to` instead of consecutive performers.
+
+Discovery follows the standard Inductive Miner: the log is split per cut and each part
+is mined from its own sub-log, so optionality is counted within a branch; the loop cut
+keeps start/end activities in the body and puts the rest in redo; when no cut exists the
+fall-through is an unordered loop, never an exclusive choice.
+
 ## Rendering with the existing modeler
 
 The miner emits the **flattened** runtime definition (`activities` / `gateways` /

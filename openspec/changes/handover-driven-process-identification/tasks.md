@@ -1,9 +1,9 @@
 # Tasks
 
 ## 1. Handover in the chat (`chat-work-handover`)
-- [x] 1.1 `public.handover_events` 테이블 + RLS (마이그레이션 3개 사본 동기)
+- [x] 1.1 `public.handover_events` 테이블 + RLS (마이그레이션 3개 사본 동기 · 2026-10-19 에 `20261019000001/2` 로 날짜 정리, 실제 스키마 저장소 `process-gpt-infra-docker` init.sql 에도 반영)
 - [x] 1.2 `origin_room_id` 컬럼 + 방 컨텍스트로 전파 (이메일 References 방식)
-- [x] 1.3 `UnifiedChatInput` 에 컴포저 슬롯 패스스루 (기존 도구 보존)
+- [x] 1.3 ~~`UnifiedChatInput` 에 컴포저 슬롯 패스스루~~ → 머리 줄 아이콘 하나로 정리(main 의 `+` 메뉴 구조와 맞춤, 2026-10-19)
 - [x] 1.4 `HandoverDialog.vue` — 산출물 선택 · 다음 단계 · 담당자 · 옵션
 - [x] 1.5 담당자 피커를 표준 `UserSelectField` 로 (내장 에이전트 포함)
 - [x] 1.6 `createChatHandover` — 방·브리핑·첨부·작업·이벤트·알림
@@ -49,7 +49,21 @@
 - [x] 6.1 마이너 단위 테스트 (순차/XOR/AND/루프/선택적/노이즈/계약/라벨)
 - [x] 6.2 인계 이벤트 멱등성 (유니크 인덱스) DB 픽스처 검증
 - [x] 6.3 실제 앱 종단 확인 — 업무 대화 → 인계 → 식별 → 제안 → 생성 → 배포
+- [x] 6.3a 수정 후 실제 브라우저에서 사용자 조작으로 재확인 (2026-10-19, 계정 3개·스레드 3개)
 - [ ] 6.4 Playwright 시나리오화 (현재는 녹화 스크립트로만 확인)
+
+## 8. Stabilization (2026-10-19)
+- [x] 8.1 반복 컷을 표준 IM 방식으로 (반려 후 재검토 → `loop(검토, 수정)`)
+- [x] 8.2 선택 단계 판정을 컷별 하위 로그 기준으로 (갈래 안 필수 단계 유지)
+- [x] 8.3 컷 없음 대안을 순서 없는 반복 `⟲(τ, …)` 으로 (배타 분기 날조 금지)
+- [x] 8.4 스레드 첫 인계의 '지금까지 한 일'과 넘긴 사람을 첫 단계로 (두 사람 인계도 분석)
+- [x] 8.5 활동명 없는 위임을 인계 네트워크·자동화율·활동별 자격에 반영 (제어 흐름 제외 유지)
+- [x] 8.6 회귀 테스트 `tests/test_regressions.py` (12개) · `tests/test_server.py` (15개)
+- [x] 8.7 API 테넌트 강제 (JWT 검증, agent SDK `tenant_auth`) · CORS 기본 닫음 · 데모 기본값 제거
+- [x] 8.8 DB 연결: 읽기 autocommit · 실패 후 회복 · 제안 등록 트랜잭션 + 정의 단위 잠금
+- [x] 8.9 마이너 포트 8015 (strategy 8014 와 동시 기동) · vite 프록시
+- [x] 8.10 인계 todo 생성 실패 수정 — `task_execution_properties.proc_inst_id` NULL 허용 마이그레이션
+- [x] 8.11 에이전트에게 인계하면 넘긴 사람도 방에 남김 (스레드가 에이전트에서 끊기지 않게)
 
 ## 7. Follow-ups (not in this change)
 - [ ] 7.1 활동명 LLM 정규화 → 암묵 위임을 제어 흐름에 복귀

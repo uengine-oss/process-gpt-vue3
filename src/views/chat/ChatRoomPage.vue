@@ -248,18 +248,6 @@
                                 @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
                                 @desktop-voice-toggle="toggleDesktopVoice"
                             >
-                                <template v-slot:custom-input-tools>
-                                    <!-- 산출물을 들고 다음 담당자(사람/에이전트)에게 인계 -->
-                                    <v-btn
-                                        @click="openHandoverDialog"
-                                        class="ml-2 text-medium-emphasis handover-tool-btn"
-                                        variant="outlined"
-                                        rounded="pill"
-                                        prepend-icon="mdi-account-arrow-right-outline"
-                                    >
-                                        <span class="handover-tool-btn__label">{{ $t('Handover.button') }}</span>
-                                    </v-btn>
-                                </template>
                             </UnifiedChatInput>
                         </div>
                     </div>

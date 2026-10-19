@@ -125,7 +125,7 @@
                         </div>
                     </div>
 
-                    <v-alert v-if="prResult" type="success" variant="tonal" density="compact" class="mt-3 e2e-pr-result">
+                    <v-alert v-if="prResult" type="success" variant="tonal" density="compact" class="mt-3 e2e-pr-result mining-pr-result">
                         새 프로세스 제안이 등록되었습니다 — {{ prResult.title }}
                         <div class="text-caption mt-1">아래 목록에서 검토·승인할 수 있습니다.</div>
                     </v-alert>
@@ -456,7 +456,14 @@ export default {
         async proposePr() {
             this.proposing = true;
             try {
-                const r = await processMiner.mine({ tenant_id: this.tenantId, dry_run: false });
+                // 화면에 그린 그 정의로 제안한다(id·이름은 마이너가 도출 결과에서 정한 값)
+                const d = this.discovered?.definition || {};
+                const r = await processMiner.mine({
+                    tenant_id: this.tenantId,
+                    process_id: d.processDefinitionId,
+                    name: d.processDefinitionName,
+                    dry_run: false
+                });
                 this.prResult = r.pr || null;
                 await this.loadProposals(this.discovered?.definition?.processDefinitionId);
             } catch (e) {
@@ -482,6 +489,10 @@ export default {
     padding: 12px 20px;
     background: #2d1b45;
     color: #fff;
+}
+/* 테마의 .text-h6 글자색이 어두운 머리 줄 위에서 묻히지 않게 한다 */
+.mining-header .text-h6 {
+    color: inherit;
 }
 .mining-header__sub {
     margin-left: 14px;
@@ -563,6 +574,10 @@ export default {
 }
 .mining-step.is-implicit {
     border: 1px dashed #b9a8d6;
+}
+/* 세로 flex 안에서 알림이 남는 높이를 차지해 도면을 밀어내지 않게 한다 */
+.mining-pr-result {
+    flex: 0 0 auto;
 }
 .mining-canvas {
     flex: 1;

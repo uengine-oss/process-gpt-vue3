@@ -9420,6 +9420,11 @@ class ProcessGPTBackend implements Backend {
             { id: toUserId, name: payload.toUser?.name || '', email: payload.toUser?.email || '', isAgent: !!payload.toUser?.isAgent },
             ...carriedAgents.filter((a: any) => a?.id !== toUserId)
         ];
+        // 에이전트에게 넘기면 넘긴 사람도 방에 남는다. 에이전트는 다음 담당자에게 스스로
+        // 인계하지 못하므로, 결과를 받아 이어 넘길 사람이 없으면 스레드가 거기서 끊긴다.
+        if (payload.toUser?.isAgent && fromUserId && fromUserId !== toUserId) {
+            participants.push({ id: fromUserId, name: fromUserName || '', email: localStorage.getItem('email') || '', isAgent: false });
+        }
         const newRoom = {
             id: toRoomId,
             tenant_id: tenantId,

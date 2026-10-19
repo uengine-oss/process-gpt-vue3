@@ -1,9 +1,18 @@
 /**
  * process-miner 마이크로서비스 클라이언트.
- * 게이트웨이(nginx)가 /process-miner/* 를 서비스로 프록시한다(prefix strip).
- * dev 에서는 vite.config.ts 의 프록시가 같은 역할을 한다.
+ * dev 에서는 vite.config.ts 의 프록시가 /process-miner/* 를 서비스로 보낸다(prefix strip).
+ *
+ * 서비스는 요청이 보낸 tenant_id 를 믿지 않는다. JWT 로 확인한 사용자의 테넌트와
+ * 대조하므로 모든 호출에 Authorization: Bearer <access_token> 을 싣는다.
  */
+import { getAgentApiToken } from '@/utils/deepagentsApi';
+
 const BASE = '/process-miner';
+
+async function authHeaders(): Promise<Record<string, string>> {
+    const token = await getAgentApiToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 async function get<T>(path: string, params?: Record<string, string | number | undefined>): Promise<T> {
     const qs = new URLSearchParams();
@@ -11,7 +20,7 @@ async function get<T>(path: string, params?: Record<string, string | number | un
         if (v !== undefined && v !== null && v !== '') qs.set(k, String(v));
     }
     const url = `${BASE}${path}${qs.toString() ? `?${qs}` : ''}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: await authHeaders() });
     if (!res.ok) {
         const detail = await res.text().catch(() => '');
         throw new Error(`${path} 실패 (${res.status}) ${detail.slice(0, 200)}`);
@@ -41,6 +50,7 @@ export interface DiscoveredProcess {
         case_count: number;
         activity_count: number;
         dropped_short_cases?: number;
+        delegation_count?: number;
         variants: { trace: string[]; count: number }[];
         handover_matrix: { from: string; to: string; count: number }[];
     };
@@ -84,7 +94,7 @@ export const processMiner = {
     mine: async (body: { tenant_id?: string; process_id?: string; name?: string; dry_run?: boolean }) => {
         const res = await fetch(`${BASE}/mine`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
             body: JSON.stringify(body)
         });
         if (!res.ok) throw new Error(`마이닝 실패 (${res.status}) ${(await res.text()).slice(0, 200)}`);

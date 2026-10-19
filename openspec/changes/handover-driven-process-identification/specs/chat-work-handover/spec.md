@@ -2,25 +2,24 @@
 
 ## ADDED Requirements
 
-### Requirement: Handover entry point in the chat composer
-The `/chat` composer MUST expose a `인계하기` action so a user can hand the current
-work to the next assignee without leaving the conversation. The action SHALL be
-reachable from the composer toolbar and from the room header.
+### Requirement: Handover entry point in the room header
+The room header MUST expose a `인계하기` icon action so a user can hand the current
+work to the next assignee without leaving the conversation. It sits with the other
+header icons; the composer stays a single `+` menu and is not given another button.
 
 The action MUST NOT be offered on draft views that have no room yet, since there
 are no artifacts to hand over.
 
 #### Scenario: Handover action available in an active room
-- **GIVEN** a user is in a chat room that has produced artifacts
-- **WHEN** the composer toolbar renders
-- **THEN** an `인계하기` action MUST be visible
+- **GIVEN** a user is in a chat room
+- **WHEN** the room header renders
+- **THEN** an `인계하기` icon action MUST be visible
 - **AND** activating it MUST open the handover dialog
 
 #### Scenario: Existing composer tools are preserved
-- **GIVEN** the composer already renders `지식 베이스` and `폴더 업로드`
-- **WHEN** the handover action is added through the shared composer slot
-- **THEN** those existing tools MUST still render unchanged for every consumer
-  (`MainChatInput`, `AgentChatRooms`, `UserChatRooms`, `WorkAssistantChatPanel`)
+- **GIVEN** the composer renders its `+` menu (파일 첨부 · 지식 베이스 · 폴더 업로드)
+- **WHEN** the handover feature is present
+- **THEN** the composer MUST render unchanged
 
 ### Requirement: Artifacts of the room are collected automatically
 When the handover dialog opens it MUST present the artifacts this room already
@@ -70,6 +69,18 @@ row, because an ad-hoc handover has no process instance.
 - **THEN** a new chat room MUST exist for the recipient containing a briefing message
 - **AND** an ad-hoc work item MUST exist assigned to the recipient
 - **AND** the work item MUST reference the source room via `reference_ids`
+
+#### Scenario: A work item without a process instance is accepted
+- **GIVEN** the database records task execution for every new work item
+- **WHEN** an ad-hoc handover work item without a process instance is created
+- **THEN** the work item MUST be created
+- **AND** the handover MUST NOT fail on the missing instance id
+
+#### Scenario: Handing over to an agent keeps the sender in the room
+- **GIVEN** a user hands over work to an agent
+- **WHEN** the recipient room is created
+- **THEN** the sender MUST be a participant of that room
+- **AND** the sender MUST be able to hand the agent's result to the next assignee
 
 ### Requirement: Every handover is recorded as an event
 Each handover MUST append a row to `public.handover_events` capturing who handed
