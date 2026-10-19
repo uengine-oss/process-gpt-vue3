@@ -106,6 +106,16 @@ idempotent so that reconnecting to a stream does not duplicate rows.
 - **THEN** a `handover_events` row MUST be written with
   `source = 'agent_delegation'` and `is_explicit = false`
 
+#### Scenario: Answering the agent's question is not a new delegation
+- **GIVEN** an agent asked the user a question and the user answers it
+- **WHEN** the answer resumes the agent run
+- **THEN** no new implicit delegation MUST be recorded
+
+#### Scenario: The conversion room is not recorded
+- **GIVEN** a room opened by the identification screen to convert a discovered process
+- **WHEN** the generation request is sent to the agent
+- **THEN** no handover event MUST be recorded, so mining never reads its own output as work
+
 #### Scenario: Stream reattach does not duplicate the record
 - **GIVEN** a delegation has already been recorded for a trigger message
 - **WHEN** the browser reloads and reattaches to the same stream

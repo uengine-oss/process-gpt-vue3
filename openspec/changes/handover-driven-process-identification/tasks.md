@@ -65,6 +65,12 @@
 - [x] 8.10 인계 todo 생성 실패 수정 — `task_execution_properties.proc_inst_id` NULL 허용 마이그레이션
 - [x] 8.11 에이전트에게 인계하면 넘긴 사람도 방에 남김 (스레드가 에이전트에서 끊기지 않게)
 
+- [x] 8.12 게이트웨이 배포 경로 — nginx `/process-miner/` 라우트, compose `process-miner` 서비스, Dockerfile
+- [x] 8.13 `/handover-suggest` 복구 — 체인을 요청 때 생성(main 의 지연 LLM 과 맞춤)
+- [x] 8.14 실행 전환 요청의 조건 표시를 게이트웨이 역할(minedRole)로 판정
+- [x] 8.15 HITL 응답 턴 · 실행 전환 방은 위임으로 기록하지 않음
+- [x] 8.16 게이트웨이(8088) 뒤 실환경 확인 — 에이전트 응답 · returned_at · AI 제안 · 실행 전환 · 저장
+
 ## 7. Follow-ups (not in this change)
 - [ ] 7.1 활동명 LLM 정규화 → 암묵 위임을 제어 흐름에 복귀
 - [ ] 7.2 업무 키(견적번호 등) 기반 상관 + 케이스 분할
