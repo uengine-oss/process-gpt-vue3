@@ -55,11 +55,25 @@
                     </div>
 
                     <div class="mining-threads">
-                        <div v-for="t in threads" :key="t.origin_room_id" class="mining-thread">
+                        <div
+                            v-for="t in threads"
+                            :key="t.origin_room_id"
+                            class="mining-thread e2e-thread"
+                            :class="{ 'is-open': t.finished === false }"
+                            :data-finished="t.finished === false ? 'false' : 'true'"
+                        >
                             <div class="mining-thread__head">
                                 <v-icon size="13" class="mr-1">mdi-source-branch</v-icon>
                                 <span class="mono">{{ t.origin_room_id }}</span>
                                 <v-chip size="x-small" variant="tonal" class="ml-2">{{ t.step_count }}단계</v-chip>
+                                <!-- 마지막으로 받은 할 일이 끝나지 않은 건은 도출에 들어가지 않는다 -->
+                                <v-tooltip v-if="t.finished === false" text="진행 중 — 도출에서 제외" location="top">
+                                    <template v-slot:activator="{ props }">
+                                        <v-icon v-bind="props" size="14" class="ml-1 text-medium-emphasis e2e-thread-open">
+                                            mdi-progress-clock
+                                        </v-icon>
+                                    </template>
+                                </v-tooltip>
                             </div>
                             <div class="mining-thread__steps">
                                 <template v-for="(s, i) in t.steps" :key="i">
@@ -109,7 +123,10 @@
 
                     <div class="mining-canvas">
                         <BpmnUengineViewer v-if="bpmnXml" :key="bpmnXml.length" :bpmn="bpmnXml" :disable-auto-orientation="true" />
-                        <div v-else class="pa-6 text-caption text-medium-emphasis">도출된 프로세스가 없습니다.</div>
+                        <div v-else class="pa-6 text-caption text-medium-emphasis e2e-discover-empty">
+                            도출된 프로세스가 없습니다.
+                            <div v-if="discoverError" class="mt-1">{{ discoverError }}</div>
+                        </div>
                     </div>
 
                     <div v-if="discovered" class="mining-variants">
@@ -181,6 +198,7 @@ export default {
             error: '',
             threads: [],
             discovered: null,
+            discoverError: '',
             bpmnXml: '',
             proposing: false,
             converting: false,
@@ -208,15 +226,21 @@ export default {
         async load() {
             this.loading = true;
             this.error = '';
+            this.discoverError = '';
             try {
+                // 스레드와 도출은 따로 받는다. 끝난 건이 모자라 도출이 안 돼도 쌓인 스레드
+                // (진행 중인 건 포함)는 보여야 한다.
                 const [th, dc] = await Promise.all([
                     processMiner.threads(this.tenantId),
-                    processMiner.discovered(this.tenantId)
+                    processMiner.discovered(this.tenantId).catch((e) => {
+                        this.discoverError = e?.message || String(e);
+                        return null;
+                    })
                 ]);
                 this.threads = th.threads || [];
                 this.discovered = dc;
-                this.bpmnXml = this.toBpmn(dc.definition);
-                await this.loadProposals(dc.definition?.processDefinitionId);
+                this.bpmnXml = dc ? this.toBpmn(dc.definition) : '';
+                if (dc) await this.loadProposals(dc.definition?.processDefinitionId);
                 this.organization = await processMiner.organization(this.tenantId).catch(() => null);
             } catch (e) {
                 this.error = e?.message || String(e);
@@ -548,6 +572,9 @@ export default {
     font-size: 12px;
     font-weight: 400;
     color: #7a7a8c;
+}
+.mining-thread.is-open {
+    opacity: 0.6;
 }
 .mining-threads {
     flex: 1;

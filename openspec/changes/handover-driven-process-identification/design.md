@@ -93,3 +93,34 @@ definition that already exists. Identification has no existing definition to
 attach to, which is why it needs its own screen and its own menu entry. Both,
 however, land in the same `resource_pull_requests` approval workflow, so review
 and approval behave identically for the user.
+
+## When a thread is finished (2026-10-20)
+
+A thread enters discovery only when the work item last received in it is completed.
+"No further handover" cannot mark the end, because the last assignee never hands over.
+
+| last handover went to | finished when |
+|---|---|
+| a person | that person's work item is completed (work board → 완료됨) |
+| an agent | the sender ends the work in that room (`closed_at`) |
+
+The agent row differs because the agent's work item completes by itself while the sender
+stays in the room and may still pass the result on. The "end work" action is offered only
+there, so a person's end is never decided by two different signals.
+
+Handing over from a received room completes the sender's received work item — the screen
+already says the work was done and passed on, and the record has to say the same. The
+miner reads these records as they are; it does not reconstruct missing completions.
+
+## Files travel through the receiving room's workspace
+
+Handed-over files are copied into `files/skills/{tenant}/{receiving room}/`, the prefix the
+agent hydrates its room workspace from. The receiving room's agent finds them on its first
+turn, the briefing lists them as work-folder entries, and they are candidates again for the
+next handover. Storage rejects keys with characters such as Korean; such path segments are
+encoded as `__u8__` + base64url(UTF-8) on upload and decoded on hydration — the same rule
+in deepagents and the frontend.
+
+A work item handed to an agent runs on the task poller. Its query carries
+`[ChatRoom] <room id>`, so the poller works in that room's workspace and leaves its result
+(text and published documents) as one message in the room.

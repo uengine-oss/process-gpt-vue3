@@ -61,6 +61,7 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { formatRequesterName } from '@/composables/usePrUtils';
 import { describeBpmnChanges } from '@/composables/usePrChanges';
 import { normalizeFormRowLayout, extractFields } from '@/utils/formHtml';
+import { roomWorkspaceKey, roomWorkspacePath, uniqueHandoverNames } from '@/utils/handoverFiles';
 
 enum ErrorCode {
     TableNotFound = '42P01'
@@ -9362,6 +9363,22 @@ class ProcessGPTBackend implements Backend {
      * 대신 필수 단계(방/작업/이벤트)는 실패 시 즉시 throw 하고, 부가 단계
      * (첨부·알림)는 경고만 남기고 진행한다.
      */
+    /**
+     * 스레드가 시작된 방의 이름. 보낸 방이 이미 인계받은 방이면 그 방 context 에 실린 값을 쓴다
+     * (조회 없이 승계). 없으면 시작 방을 한 번 조회한다.
+     */
+    async resolveOriginRoomName(originRoomId: string, fromRoomId: string, sourceRoom?: any): Promise<string> {
+        const carried = sourceRoom?.context?.handover?.origin_room_name;
+        if (carried) return String(carried);
+        if (originRoomId === fromRoomId && sourceRoom?.name) return String(sourceRoom.name);
+        try {
+            const { data } = await window.$supabase.from('chat_rooms').select('name').eq('id', originRoomId).maybeSingle();
+            return data?.name ? String(data.name) : '';
+        } catch (e) {
+            return '';
+        }
+    }
+
     async createChatHandover(payload: {
         fromRoomId: string;
         caseId?: string;
@@ -9390,27 +9407,32 @@ class ProcessGPTBackend implements Backend {
         const toTaskId = this.uuid();
         const artifacts = Array.isArray(payload.artifacts) ? payload.artifacts : [];
 
-        // 1) 산출물 영속화 — 워크스페이스 파일은 에이전트 샌드박스에만 있으므로
-        //    스토리지에 올려 영구 경로를 확보한다. 이미 경로가 있는 첨부는 그대로 참조.
+        // 1) 산출물을 받는 방의 작업 폴더에 놓는다 — 받는 쪽 에이전트는 첫 턴에 그 폴더를
+        //    내려받고, 받는 사람은 방의 작업 폴더에서 파일을 보고 다시 다음 사람에게 넘긴다.
         const artifactRefs: any[] = [];
-        for (const a of artifacts) {
-            if (a.storagePath || !a.content) {
-                artifactRefs.push({ type: a.type, ref: a.ref || null, name: a.name || null, storage_path: a.storagePath || null });
-                continue;
-            }
+        const names = uniqueHandoverNames(artifacts.map((a) => a.name || a.ref || a.type || 'artifact'));
+        for (let i = 0; i < artifacts.length; i++) {
+            const a: any = artifacts[i];
+            const name = names[i];
+            const ref: any = { type: a.type, ref: a.ref || null, name, storage_path: a.storagePath || null };
             try {
-                const file = new File([a.content], a.name || 'artifact.txt', { type: 'text/plain' });
-                const uploaded: any = await this.uploadFileToStorage(file, { room_id: toRoomId });
-                artifactRefs.push({
-                    type: a.type,
-                    ref: a.ref || null,
-                    name: a.name || null,
-                    storage_path: uploaded?.file_path || uploaded?.publicUrl || null
-                });
+                const blob = await this.readHandoverArtifact(a);
+                if (blob) {
+                    const key = roomWorkspaceKey(tenantId, toRoomId, name);
+                    const { error } = await window.$supabase.storage
+                        .from('files')
+                        .upload(key, blob, { contentType: blob.type || 'application/octet-stream' });
+                    if (error) throw error;
+                    ref.storage_path = key;
+                    ref.url = window.$supabase.storage.from('files').getPublicUrl(key)?.data?.publicUrl || null;
+                    ref.workspace_path = roomWorkspacePath(toRoomId, name);
+                    ref.is_text = typeof a.content === 'string' && a.content.length > 0;
+                    ref.size_bytes = blob.size;
+                }
             } catch (e) {
-                console.warn('[handover] 산출물 업로드 실패, 참조만 기록:', a.name, e);
-                artifactRefs.push({ type: a.type, ref: a.ref || null, name: a.name || null, storage_path: null });
+                console.warn('[handover] 산출물을 받는 방 작업 폴더에 놓지 못함, 참조만 기록:', name, e);
             }
+            artifactRefs.push(ref);
         }
 
         // 2) 수신자 방 생성 — 현재 방의 에이전트를 함께 넘길 수 있다.
@@ -9425,10 +9447,13 @@ class ProcessGPTBackend implements Backend {
         if (payload.toUser?.isAgent && fromUserId && fromUserId !== toUserId) {
             participants.push({ id: fromUserId, name: fromUserName || '', email: localStorage.getItem('email') || '', isAgent: false });
         }
+        // 받는 방 이름에 이 업무가 시작된 방 이름을 붙인다. '다음 할 일' 만으로 지으면
+        // 받는 사람 목록에 '견적 검토' 가 건마다 쌓여 어느 건인지 구분할 수 없다.
+        const originRoomName = await this.resolveOriginRoomName(originRoomId, payload.fromRoomId, payload.sourceRoom);
         const newRoom = {
             id: toRoomId,
             tenant_id: tenantId,
-            name: payload.nextActivityLabel,
+            name: originRoomName ? `${payload.nextActivityLabel} · ${originRoomName}` : payload.nextActivityLabel,
             participants,
             primary_agent_id: payload.toUser?.isAgent ? toUserId : payload.sourceRoom?.primary_agent_id || null,
             message: { msg: 'NEW', type: 'handover', createdAt: new Date().toISOString() },
@@ -9437,6 +9462,7 @@ class ProcessGPTBackend implements Backend {
                     // 이메일의 References 헤더처럼 스레드 뿌리를 그대로 물려준다.
                     // 다음 인계 때 이 값이 조회 없이 바로 승계된다.
                     origin_room_id: originRoomId,
+                    origin_room_name: originRoomName || null,
                     case_id: caseId,
                     from_room_id: payload.fromRoomId,
                     from_user_id: fromUserId,
@@ -9456,6 +9482,29 @@ class ProcessGPTBackend implements Backend {
             reason: payload.reason,
             artifactRefs
         });
+        // 넘긴 파일을 브리핑에 작업 폴더 항목으로 싣는다. 방을 열면 작업 폴더에 뜨고,
+        // 다음 인계 때 후보로 다시 잡힌다.
+        const workspaceFiles = artifactRefs
+            .map((r, i) => ({ r, content: r.is_text ? (artifacts[i] as any)?.content || '' : '' }))
+            .filter(({ r }) => r.workspace_path)
+            .map(({ r, content }) => {
+                const entry: any = {
+                    path: r.workspace_path,
+                    name: r.name,
+                    ext: (r.name.split('.').pop() || '').toLowerCase(),
+                    content,
+                    op: 'create',
+                    truncated: false,
+                    status: 'done'
+                };
+                if (!r.is_text) {
+                    entry.document = true;
+                    entry.url = r.url || '';
+                    entry.file_id = '';
+                    entry.size_bytes = r.size_bytes || 0;
+                }
+                return entry;
+            });
         try {
             await storage.putObject('chats', {
                 uuid: this.uuid(),
@@ -9467,7 +9516,8 @@ class ProcessGPTBackend implements Backend {
                     email: localStorage.getItem('email') || '',
                     content: briefing,
                     timeStamp: new Date().toISOString(),
-                    handover: { origin_room_id: originRoomId, case_id: caseId, from_room_id: payload.fromRoomId }
+                    handover: { origin_room_id: originRoomId, case_id: caseId, from_room_id: payload.fromRoomId },
+                    ...(workspaceFiles.length ? { workspaceFiles } : {})
                 }
             });
         } catch (e) {
@@ -9496,6 +9546,7 @@ class ProcessGPTBackend implements Backend {
             `[Handover] ${fromUserName || fromUserId} 님이 넘긴 업무`,
             payload.doneLabel ? `[Done] ${payload.doneLabel}` : '',
             `[Instruction]\n${payload.instruction || payload.nextActivityLabel}`,
+            workspaceFiles.length ? `[Files]\n넘겨받은 파일은 작업 폴더에 있습니다.\n${workspaceFiles.map((f: any) => `- ${f.path}`).join('\n')}` : '',
             artifactRefs.length ? `[InputData]\n${JSON.stringify(artifactRefs)}` : '',
             `[ChatRoom] ${toRoomId}`
         ].filter(Boolean);
@@ -9514,10 +9565,11 @@ class ProcessGPTBackend implements Backend {
             referenceIds: [payload.fromRoomId]
         });
         // putWorklist 가 다루지 않는 필드(query·에이전트 라우팅)를 채운다.
-        // 에이전트 대상이면 여기서 IN_PROGRESS 로 올려 폴러(fetch_pending_task)가 집어가게 한다.
-        const followUp: any = { query: queryLines.join('\n\n') };
+        // 받은 일은 바로 진행 중이다. 할 일 화면은 TODO 를 불러오지 않아, TODO 로 두면 받은 사람의
+        // 업무 목록에 뜨지 않고 끝낼 수도 없다. 사람 할 일은 agent_mode 가 없어 폴러가 집지 않는다.
+        // 에이전트 대상이면 폴러(fetch_pending_task)가 집어가도록 라우팅 필드를 함께 채운다.
+        const followUp: any = { query: queryLines.join('\n\n'), status: 'IN_PROGRESS' };
         if (payload.toUser?.isAgent) {
-            followUp.status = 'IN_PROGRESS';
             followUp.agent_orch = payload.toUser.agentOrch || 'deepagents';
             followUp.agent_mode = payload.toUser.agentMode || 'COMPLETE';
         }
@@ -9558,6 +9610,10 @@ class ProcessGPTBackend implements Backend {
             occurred_at: new Date().toISOString()
         });
 
+        // 6-1) 넘긴 사람이 이 방에서 받은 할 일은 넘기는 순간 끝난 것이다. 화면에서는 일을 마치고
+        //      넘겼는데 할 일이 TODO 로 남으면, 그 스레드가 끝났는지 기록으로 판단할 수 없다.
+        await this.completeReceivedHandoverTask(payload.fromRoomId, fromUserId);
+
         // 7) 알림
         await this.sendNotification({
             userId: toUserId,
@@ -9569,6 +9625,99 @@ class ProcessGPTBackend implements Backend {
         });
 
         return { caseId, toRoomId, toTaskId, eventId };
+    }
+
+    /** 인계할 산출물의 내용. 글은 그대로, 파일은 주소나 저장소 경로에서 받아 온다. 못 받으면 null. */
+    private async readHandoverArtifact(a: any): Promise<Blob | null> {
+        if (typeof a?.content === 'string' && a.content.length > 0) {
+            return new Blob([a.content], { type: 'text/plain;charset=utf-8' });
+        }
+        const source = (a?.url || a?.storagePath || '').toString();
+        if (!source) return null;
+        if (/^https?:\/\//.test(source) || source.startsWith('/')) {
+            const res = await fetch(source);
+            return res.ok ? await res.blob() : null;
+        }
+        // files 버킷은 공개다. 저장소 조회 정책 없이도 받을 수 있게 공개 주소로 받는다.
+        const publicUrl = window.$supabase.storage.from('files').getPublicUrl(source.replace(/^files\//, ''))?.data?.publicUrl;
+        if (!publicUrl) return null;
+        const res = await fetch(publicUrl);
+        return res.ok ? await res.blob() : null;
+    }
+
+    /** 이 방으로 내가 받은 인계 할 일을 끝낸다. 에이전트가 받은 할 일은 에이전트가 끝낸다. */
+    async completeReceivedHandoverTask(roomId: string, userId: string): Promise<void> {
+        try {
+            if (!roomId || !userId) return;
+            const { data } = await window.$supabase
+                .from('handover_events')
+                .select('to_task_id')
+                .eq('tenant_id', window.$tenantName)
+                .eq('source', 'chat_handover')
+                .eq('to_room_id', roomId)
+                .eq('to_user_id', userId)
+                .eq('to_is_agent', false);
+            for (const row of Array.isArray(data) ? data : []) {
+                if (!row?.to_task_id) continue;
+                await this.putWorkItem(row.to_task_id, { status: 'DONE', end_date: new Date().toISOString() });
+            }
+        } catch (e) {
+            console.warn('[handover] 받은 할 일 완료 처리 실패:', e);
+        }
+    }
+
+    /**
+     * 에이전트에게 넘긴 방에서, 넘긴 사람이 더 이어 줄 일 없이 업무를 끝낸다.
+     * 에이전트의 할 일은 에이전트가 마치면 자동으로 완료돼 그것만으로는 스레드의 끝을 알 수 없다.
+     * 이 방으로 들어온 인계 행에 종료 시각을 남긴다.
+     */
+    async closeHandoverThread(roomId: string): Promise<boolean> {
+        if (!roomId) return false;
+        const { data, error } = await window.$supabase
+            .from('handover_events')
+            .update({ closed_at: new Date().toISOString() })
+            .eq('tenant_id', window.$tenantName)
+            .eq('source', 'chat_handover')
+            .eq('to_room_id', roomId)
+            .eq('to_is_agent', true)
+            .is('closed_at', null)
+            .select('id');
+        if (error) throw error;
+        return Array.isArray(data) && data.length > 0;
+    }
+
+    /**
+     * 이 방이 에이전트에게 인계한 방이고 업무 종료를 할 수 있는 상태인가.
+     * 에이전트가 할 일을 마쳤고, 아직 종료하지 않았고, 이 방에서 다음 사람에게 넘기지도 않았을 때.
+     */
+    async getHandoverCloseState(roomId: string): Promise<{ canClose: boolean; closed: boolean }> {
+        const none = { canClose: false, closed: false };
+        try {
+            if (!roomId) return none;
+            const sb = window.$supabase;
+            const { data: ev } = await sb
+                .from('handover_events')
+                .select('to_task_id, closed_at')
+                .eq('tenant_id', window.$tenantName)
+                .eq('source', 'chat_handover')
+                .eq('to_room_id', roomId)
+                .eq('to_is_agent', true)
+                .maybeSingle();
+            if (!ev?.to_task_id) return none;
+            if (ev.closed_at) return { canClose: false, closed: true };
+            const { count } = await sb
+                .from('handover_events')
+                .select('id', { count: 'exact', head: true })
+                .eq('tenant_id', window.$tenantName)
+                .eq('source', 'chat_handover')
+                .eq('from_room_id', roomId);
+            if (count) return none;
+            const { data: todo } = await sb.from('todolist').select('status').eq('id', ev.to_task_id).maybeSingle();
+            const done = ['SUBMITTED', 'DONE', 'COMPLETED'].includes(String(todo?.status || ''));
+            return { canClose: done, closed: false };
+        } catch (e) {
+            return none;
+        }
     }
 
     private buildHandoverBriefing(p: {

@@ -104,6 +104,7 @@
                                                 variant="text"
                                                 density="comfortable"
                                                 size="small"
+                                                class="e2e-handover-open"
                                                 @click="openHandoverDialog"
                                             >
                                                 <v-icon size="18">mdi-account-arrow-right-outline</v-icon>
@@ -725,8 +726,10 @@
                 :recentMessages="handoverRecentMessages"
                 :defaultOrchestration="handoverDefaultOrchestration"
                 :isSubmitting="handoverSubmitting"
+                :canCloseThread="handoverCanClose"
                 @close="handoverDialog = false"
                 @submit="submitHandover"
+                @close-thread="closeHandoverThread"
             />
         </v-dialog>
 
@@ -1045,6 +1048,8 @@ export default {
             handoverDialogKey: 0,
             handoverSubmitting: false,
             handoverArtifactCandidates: [],
+            // 에이전트에게 넘긴 방에서 업무 종료를 할 수 있는가
+            handoverCanClose: false,
             // 인계 다이얼로그를 열 때 확정한다(computed 로 두면 방 전환 시 흔들린다).
             handoverDefaultOrchestration: 'deepagents',
             // 에이전트에게 암묵적으로 위임된 건들 { [`${roomId}:${agentId}:${msgUuid}`]: true }
@@ -6501,12 +6506,21 @@ export default {
                     const base = (f.name || f.path.split('/').pop() || '').toString();
                     // 내부 매니페스트/도트파일은 인계 대상이 아니다(WorkspaceFilesViewer 와 동일 기준).
                     if (base.startsWith('.') || base === 'manifest.json') continue;
-                    candidates.push({
+                    const candidate = {
                         type: 'workspace_file',
                         ref: f.path,
                         name: base,
                         content: typeof f.content === 'string' ? f.content : ''
-                    });
+                    };
+                    // 문서(docx·pdf 등)는 바이너리라 내용 대신 주소로 넘긴다. 주소가 만료됐으면
+                    // 넘기기 직전에 file_id 로 새로 받는다(submitHandover).
+                    if (isDocumentFile(f)) {
+                        candidate.content = '';
+                        candidate.url = f.url || '';
+                        candidate.fileId = f.file_id || '';
+                        candidate.urlExpiresAt = f.url_expires_at || '';
+                    }
+                    candidates.push(candidate);
                 }
             }
 
@@ -6562,10 +6576,11 @@ export default {
             return lines.length ? lines.join('\n\n') : '';
         },
 
-        openHandoverDialog() {
+        async openHandoverDialog() {
             const roomId = this.currentChatRoom?.id || this.roomId;
             if (!roomId) return;
             this.handoverArtifactCandidates = this.collectHandoverArtifacts();
+            this.handoverCanClose = (await backend.getHandoverCloseState(roomId)).canClose;
             // 에이전트에게 넘길 경우 지금 방이 쓰는 런타임을 그대로 물려준다.
             this.handoverDefaultOrchestration = (this.getRoomOrchestration() || 'deepagents').toString();
             // key 를 올려 다이얼로그를 매번 새로 마운트한다(이전 선택 상태가 남지 않게).
@@ -6577,6 +6592,16 @@ export default {
             if (this.handoverSubmitting) return;
             this.handoverSubmitting = true;
             try {
+                // 문서 산출물의 서명 주소는 한 시간이면 죽는다. 넘기기 직전에 새 주소를 받는다.
+                for (const a of payload.artifacts || []) {
+                    if (!a.fileId) continue;
+                    const holder = { url: a.url, file_id: a.fileId, url_expires_at: a.urlExpiresAt };
+                    try {
+                        a.url = (await usableArtifactUrl(holder, this.requestArtifactUrl)) || a.url;
+                    } catch (e) {
+                        /* 들고 있던 주소로 시도한다 */
+                    }
+                }
                 const result = await backend.createChatHandover(payload);
 
                 // 현재 방에도 인계 사실을 남겨 둔다(수신자 방에는 브리핑이 따로 들어간다).
@@ -6588,7 +6613,7 @@ export default {
                     timeStamp: new Date().toISOString(),
                     handover: { case_id: result.caseId, to_room_id: result.toRoomId }
                 };
-                const msgUuid = backend.uuid();
+                const msgUuid = await backend.uuid();
                 await backend.putObject(`db://chats/${msgUuid}`, {
                     uuid: msgUuid,
                     id: payload.fromRoomId,
@@ -6635,6 +6660,35 @@ export default {
                 });
             } catch (e) {
                 console.warn('[handover] 에이전트 위임 추적 실패:', e);
+            }
+        },
+
+        /** 에이전트에게 넘긴 방에서 더 이어 줄 일 없이 업무를 끝낸다. 스레드가 끝난 건으로 도출에 들어간다. */
+        async closeHandoverThread() {
+            const roomId = this.currentChatRoom?.id || this.roomId;
+            if (!roomId || this.handoverSubmitting) return;
+            this.handoverSubmitting = true;
+            try {
+                const closed = await backend.closeHandoverThread(roomId);
+                if (closed) {
+                    const systemMessage = {
+                        role: 'system',
+                        name: this.userInfo?.name || localStorage.getItem('userName') || '',
+                        email: localStorage.getItem('email') || '',
+                        content: this.$t('Handover.closedMessage'),
+                        timeStamp: new Date().toISOString()
+                    };
+                    const msgUuid = await backend.uuid();
+                    await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: systemMessage });
+                    this.messages = [...this.messages, { ...systemMessage, uuid: msgUuid }];
+                    if (this.$toast?.success) this.$toast.success(this.$t('Handover.closedMessage'));
+                }
+                this.handoverDialog = false;
+            } catch (e) {
+                console.error('[handover] 업무 종료 실패:', e);
+                if (this.$toast?.error) this.$toast.error(this.$t('Handover.closeFailed') + ' ' + (e?.message || e));
+            } finally {
+                this.handoverSubmitting = false;
             }
         },
 

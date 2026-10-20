@@ -119,6 +119,25 @@ An implicit delegation's raw text MUST NOT be used for this.
 - **WHEN** the process is discovered
 - **THEN** each thread MUST be a two-step case and MUST NOT be excluded
 
+### Requirement: Only finished threads are discovered
+A thread is finished when the work item last received in it is completed. The last
+assignee does not hand over again, so "no further handover" cannot tell the end. When
+the last handover went to an agent, the thread is finished only when the sender ended
+the work (`closed_at`). Threads in progress MUST NOT change the discovered process; they
+MUST still be listed, marked as in progress, and counted in the statistics.
+
+#### Scenario: An unfinished thread does not make later steps optional
+- **GIVEN** three finished quote threads and one stopped after the draft
+- **WHEN** the process is discovered
+- **THEN** the result MUST equal the result of the three finished threads alone
+- **AND** the stopped thread MUST be listed as in progress
+
+#### Scenario: The thread list is shown even when nothing can be discovered yet
+- **GIVEN** fewer than three finished threads
+- **WHEN** the identification screen opens
+- **THEN** the threads MUST be listed with their progress
+- **AND** the discovery panel MUST say why nothing was discovered
+
 ### Requirement: Cases without ordering information are excluded
 A case containing a single step MUST be excluded from control-flow discovery,
 because it carries no ordering information and would make every step look

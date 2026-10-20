@@ -41,6 +41,8 @@ export interface HandoverStep {
 export interface HandoverThread {
     origin_room_id: string;
     step_count: number;
+    // 마지막으로 받은 할 일이 끝나지 않은 스레드는 false — 도출에 들어가지 않는다
+    finished?: boolean;
     steps: HandoverStep[];
 }
 
@@ -50,6 +52,7 @@ export interface DiscoveredProcess {
         case_count: number;
         activity_count: number;
         dropped_short_cases?: number;
+        in_progress_cases?: number;
         delegation_count?: number;
         variants: { trace: string[]; count: number }[];
         handover_matrix: { from: string; to: string; count: number }[];

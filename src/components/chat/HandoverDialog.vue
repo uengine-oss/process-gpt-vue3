@@ -230,6 +230,22 @@
         <v-row class="ma-0 pa-4 pt-2 align-center">
             <div v-if="validationMessage" class="text-caption text-medium-emphasis">{{ validationMessage }}</div>
             <v-spacer></v-spacer>
+            <!-- 에이전트에게 넘긴 방: 더 이어 줄 일 없이 업무를 끝낸다(에이전트 할 일 완료만으로는 끝을 알 수 없다) -->
+            <v-tooltip v-if="canCloseThread" :text="$t('Handover.closeThread')" location="top">
+                <template v-slot:activator="{ props }">
+                    <v-btn
+                        v-bind="props"
+                        class="e2e-handover-close-thread mr-2"
+                        variant="text"
+                        density="comfortable"
+                        icon
+                        :disabled="isSubmitting"
+                        @click="$emit('close-thread')"
+                    >
+                        <v-icon>mdi-flag-checkered</v-icon>
+                    </v-btn>
+                </template>
+            </v-tooltip>
             <v-btn variant="text" density="compact" class="rounded-pill mr-2" @click="close">
                 {{ $t('Handover.cancel') }}
             </v-btn>
@@ -271,9 +287,11 @@ export default {
         // 지금 방이 쓰고 있는 런타임을 물려받는다. 잘못된 값을 넣으면
         // fetch_pending_task 가 그 작업을 영영 집어가지 않는다.
         defaultOrchestration: { type: String, default: 'deepagents' },
-        isSubmitting: { type: Boolean, default: false }
+        isSubmitting: { type: Boolean, default: false },
+        // 에이전트에게 넘긴 방이고 에이전트가 일을 마쳤으면 업무 종료를 보인다
+        canCloseThread: { type: Boolean, default: false }
     },
-    emits: ['close', 'submit'],
+    emits: ['close', 'submit', 'close-thread'],
     data() {
         return {
             selectedArtifactKeys: [],
