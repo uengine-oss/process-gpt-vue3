@@ -5238,18 +5238,10 @@ export default {
         },
 
         handleArtifactAction({ type, action, panelId, payload }) {
-            if (type === 'hwpx') {
-                if (action === 'page-edit-request') {
-                    this.handleHwpxSectionEdit(panelId, payload);
-                } else if (action === 'download') {
-                    this.handleHwpxDownload(panelId, payload);
-                }
-            } else if (type === 'docx') {
-                if (action === 'page-edit-request') {
-                    this.handleDocxSectionEdit(panelId, payload);
-                } else if (action === 'download') {
-                    this.handleDocxDownload(panelId, payload);
-                }
+            if (type === 'hwpx' && action === 'download') {
+                this.handleHwpxDownload(panelId, payload);
+            } else if (type === 'docx' && action === 'download') {
+                this.handleDocxDownload(panelId, payload);
             }
         },
 
@@ -5677,74 +5669,6 @@ export default {
             return { pageNumber, instruction };
         },
 
-        async requestHwpxPageEdit({ hwpxUrl, pageNumber, instruction }) {
-            const baseUrl = this.resolveHwpxMcpUrl();
-            const payload = {
-                jsonrpc: '2.0',
-                id: Date.now(),
-                method: 'tools/call',
-                params: {
-                    name: 'edit_hwpx_page_html',
-                    arguments: {
-                        hwpx_url: hwpxUrl,
-                        page_number: pageNumber,
-                        instruction
-                    }
-                }
-            };
-            const response = await fetch(baseUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) {
-                throw new Error(`HWPX MCP error: ${response.status}`);
-            }
-            const data = await response.json();
-            return this.parseMcpToolResult(data);
-        },
-
-        async handleHwpxSectionEdit(panelId, payload) {
-            const pageNumber = Number(payload?.pageNumber || 0);
-            const instruction = (payload?.instruction || '').toString().trim();
-            const contextText = (payload?.contextText || '').toString().trim();
-            if (!pageNumber || !instruction) return;
-            const panel = this.artifactPanels.find((p) => p.id === panelId);
-            const hwpxFileUrl = panel?.data?.fileUrl || '';
-            const callMethod = (method, ...args) => this.$refs.artifactPanel?.callPanelMethod?.(panelId, method, ...args);
-            if (!hwpxFileUrl) {
-                callMethod('showEditNotice', 'HWPX 파일 정보가 없어 수정할 수 없습니다.', 'error');
-                return;
-            }
-            const finalInstruction = contextText ? `${instruction}\n\n선택 영역: ${contextText}` : instruction;
-            try {
-                const output = await this.requestHwpxPageEdit({
-                    hwpxUrl: hwpxFileUrl,
-                    pageNumber,
-                    instruction: finalInstruction
-                });
-                const edits = Array.isArray(output?.edits) ? output.edits : [];
-                const editedHtml = output?.edited_page_html || output?.editedPageHtml || '';
-                const applied = edits.length
-                    ? callMethod('applyPageEdits', Number(pageNumber), edits)
-                    : callMethod('applyPageEdit', Number(pageNumber), editedHtml);
-                if (applied) {
-                    if (edits.length) {
-                        const ids = edits.map((e) => e?.id).filter(Boolean);
-                        callMethod('highlightEdits', ids, Number(pageNumber));
-                    }
-                    callMethod('showEditNotice', `${pageNumber}페이지 수정 완료`, 'success');
-                } else {
-                    callMethod('showEditNotice', '페이지 수정에 실패했습니다.', 'error');
-                }
-            } catch (e) {
-                callMethod('showEditNotice', '페이지 수정 중 오류가 발생했습니다.', 'error');
-            }
-        },
-
         appendAssistantNotice(text) {
             const nowIso = new Date().toISOString();
             this.messages.push({
@@ -5834,69 +5758,6 @@ export default {
 
             const data = await response.json();
             return this.parseMcpToolResult(data);
-        },
-
-        async requestDocxPageEdit({ docxUrl, pageNumber, instruction }) {
-            const baseUrl = this.resolveHwpxMcpUrl();
-            const payload = {
-                jsonrpc: '2.0',
-                id: Date.now(),
-                method: 'tools/call',
-                params: {
-                    name: 'edit_docx_page_html',
-                    arguments: {
-                        docx_url: docxUrl,
-                        page_number: pageNumber,
-                        instruction
-                    }
-                }
-            };
-            const response = await fetch(baseUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) throw new Error(`DOCX MCP error: ${response.status}`);
-            const data = await response.json();
-            return this.parseMcpToolResult(data);
-        },
-
-        async handleDocxSectionEdit(panelId, payload) {
-            const pageNumber = Number(payload?.pageNumber || 0);
-            const instruction = (payload?.instruction || '').toString().trim();
-            const contextText = (payload?.contextText || '').toString().trim();
-            if (!pageNumber || !instruction) return;
-            const panel = this.artifactPanels.find((p) => p.id === panelId);
-            const docxFileUrl = panel?.data?.fileUrl || '';
-            const callMethod = (method, ...args) => this.$refs.artifactPanel?.callPanelMethod?.(panelId, method, ...args);
-            if (!docxFileUrl) {
-                callMethod('showEditNotice', 'DOCX 파일 정보가 없어 수정할 수 없습니다.', 'error');
-                return;
-            }
-            const finalInstruction = contextText ? `${instruction}\n\n선택 영역: ${contextText}` : instruction;
-            try {
-                const output = await this.requestDocxPageEdit({
-                    docxUrl: docxFileUrl,
-                    pageNumber,
-                    instruction: finalInstruction
-                });
-                const edits = Array.isArray(output?.edits) ? output.edits : [];
-                const editedHtml = output?.edited_page_html || output?.editedPageHtml || '';
-                const applied = edits.length
-                    ? callMethod('applyPageEdits', Number(pageNumber), edits)
-                    : callMethod('applyPageEdit', Number(pageNumber), editedHtml);
-                if (applied) {
-                    if (edits.length) {
-                        const ids = edits.map((e) => e?.id).filter(Boolean);
-                        callMethod('highlightEdits', ids, Number(pageNumber));
-                    }
-                    callMethod('showEditNotice', `${pageNumber}페이지 수정 완료`, 'success');
-                } else {
-                    callMethod('showEditNotice', '페이지 수정에 실패했습니다.', 'error');
-                }
-            } catch (e) {
-                callMethod('showEditNotice', '페이지 수정 중 오류가 발생했습니다.', 'error');
-            }
         },
 
         async handleDocxDownload(panelId, payload) {

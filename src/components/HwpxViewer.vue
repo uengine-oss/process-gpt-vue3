@@ -16,17 +16,6 @@
                 >
                     {{ editNotice.text }}
                 </v-chip>
-                <v-btn
-                    v-if="!isLoading && !hasError && !readOnly"
-                    variant="text"
-                    density="comfortable"
-                    size="small"
-                    :color="sectionEditMode ? 'primary' : undefined"
-                    @click="toggleSectionEditMode"
-                >
-                    <v-icon size="16" class="mr-1">mdi-robot-outline</v-icon>
-                    AI 편집
-                </v-btn>
                 <v-btn v-if="isEditing && !readOnly" variant="text" density="comfortable" size="small" @click="cancelEdit">
                     <v-icon size="16" class="mr-1">mdi-close</v-icon>
                     편집취소
