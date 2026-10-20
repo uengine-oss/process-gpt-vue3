@@ -119,6 +119,25 @@ An implicit delegation's raw text MUST NOT be used for this.
 - **WHEN** the process is discovered
 - **THEN** each thread MUST be a two-step case and MUST NOT be excluded
 
+### Requirement: Different businesses are discovered separately
+Finished threads MUST be grouped by the steps they went through before discovery, and each
+group MUST be discovered as its own process. Two threads belong to the same business when
+their step sets overlap by at least half (Jaccard ≥ 0.5); connected threads form one group.
+Different businesses MUST NOT be drawn as branches of one process. The identification
+screen MUST let the user pick a business; threads in progress are shown with the closest
+business but never discovered.
+
+#### Scenario: Quotes, contracts and purchases are three processes
+- **GIVEN** finished threads of a quote review, a contract review and a purchase approval
+- **WHEN** the identification screen opens
+- **THEN** three businesses MUST be listed
+- **AND** the process of each business MUST contain only that business's steps
+
+#### Scenario: Variants of one business stay together
+- **GIVEN** quote threads with zero, one and two rejections, and purchases approved by different approvers
+- **WHEN** threads are grouped
+- **THEN** the rework variants MUST be one business and the approver variants MUST be one business
+
 ### Requirement: Only finished threads are discovered
 A thread is finished when the work item last received in it is completed. The last
 assignee does not hand over again, so "no further handover" cannot tell the end. When

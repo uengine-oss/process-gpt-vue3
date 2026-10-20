@@ -43,6 +43,8 @@ export interface HandoverThread {
     step_count: number;
     // 마지막으로 받은 할 일이 끝나지 않은 스레드는 false — 도출에 들어가지 않는다
     finished?: boolean;
+    // 끝난 스레드가 속한 업무 묶음. 진행 중이거나 단계가 하나뿐이면 null
+    process_key?: string | null;
     steps: HandoverStep[];
 }
 
@@ -53,12 +55,25 @@ export interface DiscoveredProcess {
         activity_count: number;
         dropped_short_cases?: number;
         in_progress_cases?: number;
+        process_key?: string | null;
+        process_name?: string | null;
+        process_count?: number;
         delegation_count?: number;
         variants: { trace: string[]; count: number }[];
         handover_matrix: { from: string; to: string; count: number }[];
     };
     tree: string;
     definition: any;
+}
+
+/** 업무 묶음 — 거친 단계가 겹치는 끝난 스레드끼리 묶은 것. 묶음마다 프로세스를 따로 도출한다 */
+export interface MinedProcessGroup {
+    process_key: string;
+    name: string;
+    case_count: number;
+    activities: string[];
+    variants: { trace: string[]; count: number }[];
+    minable: boolean;
 }
 
 export interface IdentifiedProposal {
@@ -78,8 +93,12 @@ export const processMiner = {
         get<{ edges: { from: string; to: string; count: number }[]; automation: Record<string, any> }>('/network', {
             tenant_id: tenantId
         }),
-    discovered: (tenantId?: string, processId?: string, name?: string) =>
-        get<DiscoveredProcess>('/discovered', { tenant_id: tenantId, process_id: processId, name }),
+    processes: (tenantId?: string) =>
+        get<{ processes: MinedProcessGroup[]; in_progress_cases: number; dropped_short_cases: number }>('/processes', {
+            tenant_id: tenantId
+        }),
+    discovered: (tenantId?: string, processKey?: string, processId?: string, name?: string) =>
+        get<DiscoveredProcess>('/discovered', { tenant_id: tenantId, process_key: processKey, process_id: processId, name }),
     /** 조직 마이닝 — 역할 클러스터·활동별 자격·핸드오버 네트워크 */
     organization: (tenantId?: string) =>
         get<{
@@ -94,7 +113,7 @@ export const processMiner = {
             }[];
         }>('/organization', { tenant_id: tenantId }),
     /** 마이닝 실행 → proc_def_version(draft) + PR 생성. 살아있는 proc_def 는 건드리지 않는다. */
-    mine: async (body: { tenant_id?: string; process_id?: string; name?: string; dry_run?: boolean }) => {
+    mine: async (body: { tenant_id?: string; process_id?: string; name?: string; dry_run?: boolean; process_key?: string }) => {
         const res = await fetch(`${BASE}/mine`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },

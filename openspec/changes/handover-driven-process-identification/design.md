@@ -124,3 +124,15 @@ in deepagents and the frontend.
 A work item handed to an agent runs on the task poller. Its query carries
 `[ChatRoom] <room id>`, so the poller works in that room's workspace and leaves its result
 (text and published documents) as one message in the room.
+
+## One process per business (2026-10-20)
+
+A tenant's handover log mixes businesses — quotes, contracts, purchases. Mining them as
+one log puts an exclusive choice between businesses at the very first step: each branch is
+observed, yet different processes are drawn as branches of one. Finished threads are
+therefore grouped before discovery by the set of steps they went through: two threads are
+the same business when their step sets overlap by at least half (Jaccard ≥ 0.5), and
+connected threads form one group (single linkage). Rework variants (0.75) and approver
+variants (0.5) stay together; businesses that share no step split. The group id is the
+same deterministic id as the proposed definition, so re-proposing a business versions one
+definition. Threads in progress are attached to the closest group for display only.

@@ -195,16 +195,38 @@ const df = (traces: string[][]) => {
     return s;
 };
 
-/** 식별 화면을 열고, 화면이 받은 스레드·도출 결과를 함께 돌려준다. */
-async function openMining(page: Page, shotName: string) {
+/**
+ * 식별 화면을 열고, activity 가 든 업무 묶음을 골라, 화면이 받은 스레드·묶음·도출 결과를 돌려준다.
+ * 서로 다른 업무는 묶음으로 갈려 따로 도출된다(한 프로세스의 갈래로 그리지 않는다).
+ */
+async function openMining(page: Page, shotName: string, activity: string) {
     const threadsRes = page.waitForResponse((r) => r.url().includes('/process-miner/threads'), { timeout: 60_000 });
-    const discRes = page.waitForResponse((r) => r.url().includes('/process-miner/discovered'), { timeout: 60_000 });
+    const groupsRes = page.waitForResponse((r) => r.url().includes('/process-miner/processes'), { timeout: 60_000 });
     await page.goto(`${BASE_URL}/mining/handover`, { waitUntil: 'domcontentloaded' });
     const threads = (await (await threadsRes).json()).threads as any[];
+    const groups = (await (await groupsRes).json()).processes as any[];
+    const group = groups.find((g) => g.activities.includes(activity));
+    expect(group, `${activity} 가 든 업무 묶음 — ${JSON.stringify(groups.map((g) => g.activities))}`).toBeTruthy();
+    const discRes = page.waitForResponse(
+        (r) => r.url().includes('/process-miner/discovered') && r.url().includes(`process_key=${group.process_key}`),
+        { timeout: 60_000 }
+    );
+    const chip = page.locator(`.e2e-process-group[data-key="${group.process_key}"]`);
+    await expect(chip).toBeVisible({ timeout: 30_000 });
+    // 처음 고른 묶음이면 다시 눌러도 요청이 없다 — 그때는 다른 묶음을 거쳐 돌아온다
+    const other = groups.find((g) => g.process_key !== group.process_key);
+    if (other) await page.locator(`.e2e-process-group[data-key="${other.process_key}"]`).click();
+    await chip.click();
     const disc = await (await discRes).json();
     await page.waitForTimeout(3_000);
     await shot(page, shotName);
-    return { threads, disc };
+    return { threads, groups, group, disc };
+}
+
+/** 도출 결과의 단계가 이 업무의 단계와 정확히 같다 — 다른 업무가 갈래로 끼지 않았다. */
+function expectOnlyThisBusiness(disc: any, activities: string[]) {
+    const got = [...new Set((disc.stats?.variants || []).flatMap((v: any) => v.trace))].sort();
+    expect(got, disc.tree).toEqual([...activities].sort());
 }
 
 /** AC4 — 도출 결과의 단계·흐름이 관측된 것만으로 이루어졌는가. */
@@ -252,7 +274,7 @@ test('두 사람 인계 — 받은 사람이 할 일을 끝내야 끝난 건이�
     const first = state.twoPerson.first;
 
     // 아직 이팀장이 끝내지 않은 첫 건은 진행 중이다
-    let view = await openMining(hong, '10-mining-before-complete');
+    let view = await openMining(hong, '10-mining-before-complete', '계약서 작성');
     const t1 = view.threads.find((t) => t.origin_room_id === state.twoPerson.rooms[0]);
     expect(t1?.finished).toBe(false);
     await expect(hong.locator(`.e2e-thread[data-finished="false"]`).filter({ hasText: state.twoPerson.rooms[0] })).toBeVisible();
@@ -272,7 +294,8 @@ test('두 사람 인계 — 받은 사람이 할 일을 끝내야 끝난 건이�
         await completeTodoOnBoard(lee, ev.to_task_id, `${tag}상사 계약 조건을 확인해 주세요.`);
     }
 
-    view = await openMining(hong, '11-mining-two-person');
+    view = await openMining(hong, '11-mining-two-person', '계약서 작성');
+    expectOnlyThisBusiness(view.disc, ['계약서 작성', '계약서 검토']);
     for (const r of state.twoPerson.rooms) {
         expect(view.threads.find((t) => t.origin_room_id === r)?.finished, r).toBe(true);
     }
@@ -290,7 +313,7 @@ test('두 사람 인계 — 받은 사람이 할 일을 끝내야 끝난 건이�
     });
     state.twoPerson.openRoom = open.room;
     save();
-    view = await openMining(hong, '12-mining-with-open-thread');
+    view = await openMining(hong, '12-mining-with-open-thread', '계약서 작성');
     expect(view.threads.find((t) => t.origin_room_id === open.room)?.finished).toBe(false);
     await expect(hong.locator(`.e2e-thread[data-finished="false"]`).filter({ hasText: open.room })).toBeVisible();
     expect(view.disc.tree).toBe(state.twoPerson.tree);
@@ -353,7 +376,8 @@ test('반려 후 재검토 — 반복이 반복으로 나오고, 넘기면 내�
         }
     }
 
-    const view = await openMining(hong, '20-mining-rework');
+    const view = await openMining(hong, '20-mining-rework', '견적서 수정');
+    expectOnlyThisBusiness(view.disc, ['견적서 작성', '견적 검토', '견적서 수정', '고객 발송']);
     for (const r of state.rework.rooms) expect(view.threads.find((t) => t.origin_room_id === r)?.finished, r).toBe(true);
     expect(view.disc.tree).toContain("loop('견적 검토', '견적서 수정')");
     assertOnlyObserved(view.disc);
@@ -387,7 +411,8 @@ test('갈래 — 승인자가 나뉘는 업무가 갈래로 나오고, 갈래 �
         await completeTodoOnBoard(hong, back.to_task_id, `${tag} 발주를 진행해 주세요.`);
     }
 
-    const view = await openMining(hong, '30-mining-branch');
+    const view = await openMining(hong, '30-mining-branch', '구매 요청 접수');
+    expectOnlyThisBusiness(view.disc, ['구매 요청 접수', '팀장 승인', '예산 검토', '발주 처리']);
     for (const r of state.branch.rooms) expect(view.threads.find((t) => t.origin_room_id === r)?.finished, r).toBe(true);
     expect(view.disc.tree).toMatch(/xor\('팀장 승인', '예산 검토'\)|xor\('예산 검토', '팀장 승인'\)/);
     assertOnlyObserved(view.disc);
@@ -443,12 +468,12 @@ test('에이전트 중간 단계 — 에이전트가 받은 일의 결과와 파
 
         if (i === 3) {
             // 에이전트가 끝낸 것만으로는 끝난 건이 아니다 — 넘긴 사람이 업무 종료해야 끝
-            let view = await openMining(hong, '41-agent-last-before-close');
+            let view = await openMining(hong, '41-agent-last-before-close', '견적서 초안 작성');
             expect(view.threads.find((t) => t.origin_room_id === room)?.finished).toBe(false);
             state.agent.treeBeforeClose = view.disc.tree;
             await openRoom(hong, toAgent.to_room_id);
             await closeWork(hong);
-            view = await openMining(hong, '42-agent-last-after-close');
+            view = await openMining(hong, '42-agent-last-after-close', '견적서 초안 작성');
             expect(view.threads.find((t) => t.origin_room_id === room)?.finished).toBe(true);
             state.agent.treeAfterClose = view.disc.tree;
             save();
@@ -469,7 +494,8 @@ test('에이전트 중간 단계 — 에이전트가 받은 일의 결과와 파
         await completeTodoOnBoard(lee, toLee.to_task_id, `${tag} 견적서를 승인해 주세요.`);
     }
 
-    const view = await openMining(hong, '44-mining-agent');
+    const view = await openMining(hong, '44-mining-agent', '견적서 초안 작성');
+    expectOnlyThisBusiness(view.disc, ['견적 요청 접수', '견적서 초안 작성', '견적서 승인']);
     expectVariant(view.disc, ['견적 요청 접수', '견적서 초안 작성', '견적서 승인'], 3);
     assertOnlyObserved(view.disc);
 });

@@ -41,22 +41,41 @@
                 <div class="text-caption mt-3 text-medium-emphasis">인계 기록을 분석하는 중…</div>
             </div>
 
-            <div v-else-if="error" class="pa-8">
+            <div v-if="!loading && error" class="pa-8">
                 <v-alert type="error" variant="tonal">{{ error }}</v-alert>
             </div>
 
-            <div v-else class="mining-body">
+            <!-- 업무 묶음: 서로 다른 업무를 한 프로세스의 갈래로 그리지 않도록 묶음마다 따로 도출한다 -->
+            <div v-if="!loading && !error && groups.length" class="mining-groups">
+                <span class="mining-section-sub mr-2">업무</span>
+                <v-chip-group v-model="selectedKey" mandatory selected-class="text-primary" @update:model-value="selectGroup">
+                    <v-chip
+                        v-for="g in groups"
+                        :key="g.process_key"
+                        :value="g.process_key"
+                        size="small"
+                        variant="outlined"
+                        class="e2e-process-group"
+                        :data-key="g.process_key"
+                    >
+                        {{ g.name }}
+                        <span class="ml-1 text-medium-emphasis">{{ g.case_count }}건</span>
+                    </v-chip>
+                </v-chip-group>
+            </div>
+
+            <div v-if="!loading && !error" class="mining-body">
                 <!-- 왼쪽: 인계 스레드 묶음 -->
                 <div class="mining-left">
                     <div class="mining-section-title">
                         인계 스레드
-                        <v-chip size="x-small" variant="tonal" class="ml-2 e2e-thread-count">{{ threads.length }}건</v-chip>
+                        <v-chip size="x-small" variant="tonal" class="ml-2 e2e-thread-count">{{ visibleThreads.length }}건</v-chip>
                         <span class="mining-section-sub">최초 시작된 방 기준 · 방이 바뀌어도 한 묶음</span>
                     </div>
 
                     <div class="mining-threads">
                         <div
-                            v-for="t in threads"
+                            v-for="t in visibleThreads"
                             :key="t.origin_room_id"
                             class="mining-thread e2e-thread"
                             :class="{ 'is-open': t.finished === false }"
@@ -197,6 +216,9 @@ export default {
             loading: true,
             error: '',
             threads: [],
+            // 업무 묶음과 지금 보고 있는 묶음
+            groups: [],
+            selectedKey: null,
             discovered: null,
             discoverError: '',
             bpmnXml: '',
@@ -210,6 +232,11 @@ export default {
     computed: {
         tenantId() {
             return window.$tenantName || 'localhost';
+        },
+        /** 고른 업무의 스레드. 진행 중인 스레드는 가장 가까운 업무에 붙어 함께 보인다. 묶음이 없으면 전부 */
+        visibleThreads() {
+            if (!this.selectedKey) return this.threads;
+            return this.threads.filter((t) => t.process_key === this.selectedKey);
         },
         agentActivities() {
             return (this.discovered?.definition?.activities || []).filter((a) => a.agent).map((a) => a.name);
@@ -226,27 +253,42 @@ export default {
         async load() {
             this.loading = true;
             this.error = '';
-            this.discoverError = '';
             try {
-                // 스레드와 도출은 따로 받는다. 끝난 건이 모자라 도출이 안 돼도 쌓인 스레드
-                // (진행 중인 건 포함)는 보여야 한다.
-                const [th, dc] = await Promise.all([
+                // 스레드와 업무 묶음은 도출과 따로 받는다. 끝난 건이 모자라 도출이 안 돼도
+                // 쌓인 스레드(진행 중인 건 포함)는 보여야 한다.
+                const [th, pg] = await Promise.all([
                     processMiner.threads(this.tenantId),
-                    processMiner.discovered(this.tenantId).catch((e) => {
-                        this.discoverError = e?.message || String(e);
-                        return null;
-                    })
+                    processMiner.processes(this.tenantId).catch(() => ({ processes: [] }))
                 ]);
                 this.threads = th.threads || [];
-                this.discovered = dc;
-                this.bpmnXml = dc ? this.toBpmn(dc.definition) : '';
-                if (dc) await this.loadProposals(dc.definition?.processDefinitionId);
+                this.groups = pg.processes || [];
+                const first = this.groups.find((g) => g.minable) || this.groups[0];
+                this.selectedKey = first ? first.process_key : null;
+                await this.loadDiscovered();
                 this.organization = await processMiner.organization(this.tenantId).catch(() => null);
             } catch (e) {
                 this.error = e?.message || String(e);
             } finally {
                 this.loading = false;
             }
+        },
+        /** 고른 업무 묶음의 프로세스를 도출한다. */
+        async loadDiscovered() {
+            this.discoverError = '';
+            this.prResult = null;
+            const dc = await processMiner.discovered(this.tenantId, this.selectedKey || undefined).catch((e) => {
+                this.discoverError = e?.message || String(e);
+                return null;
+            });
+            this.discovered = dc;
+            this.bpmnXml = dc ? this.toBpmn(dc.definition) : '';
+            this.proposals = [];
+            if (dc) await this.loadProposals(dc.definition?.processDefinitionId);
+        },
+        async selectGroup(key) {
+            if (!key) return;
+            this.selectedKey = key;
+            await this.loadDiscovered();
         },
         /**
          * 마이너가 내는 flattened 정의(activities/gateways/events/sequences)를
@@ -503,6 +545,7 @@ export default {
                     tenant_id: this.tenantId,
                     process_id: d.processDefinitionId,
                     name: d.processDefinitionName,
+                    process_key: this.selectedKey || undefined,
                     dry_run: false
                 });
                 this.prResult = r.pr || null;
@@ -572,6 +615,12 @@ export default {
     font-size: 12px;
     font-weight: 400;
     color: #7a7a8c;
+}
+.mining-groups {
+    display: flex;
+    align-items: center;
+    padding: 6px 20px 0;
+    flex-wrap: wrap;
 }
 .mining-thread.is-open {
     opacity: 0.6;
