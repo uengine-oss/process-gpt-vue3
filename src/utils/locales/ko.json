@@ -1367,6 +1367,8 @@
     },
     "chat": {
         "inputMessage": "메시지 입력",
+        "downloadHwpx": "HWPX로 받기",
+        "hwpxDownloadFailed": "HWPX 파일을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.",
         "definitionMapInputMessage": "예: 선택한 자료에서 핵심 내용 찾아줘 / 이 문서 요약해줘 / NDA 초안 작성해줘 / 계약서 검토해줘",
         "lock": "저장하려면 저장 아이콘을 누르세요.",
         "unlock": "편집하려면 연필 아이콘을 누르세요.",

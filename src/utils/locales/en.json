@@ -1367,6 +1367,8 @@
     },
     "chat": {
         "inputMessage": "Type a Message",
+        "downloadHwpx": "Download as HWPX",
+        "hwpxDownloadFailed": "Could not create the HWPX file. Please try again.",
         "definitionMapInputMessage": "e.g., Find key info in the selected documents / Summarize this document / Draft an NDA / Review this contract",
         "lock": "Click the save icon to save.",
         "unlock": "Click the pencil icon to edit.",

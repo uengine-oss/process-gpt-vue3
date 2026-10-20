@@ -2350,6 +2350,20 @@
                                                                                 :roomId="chatRoomId"
                                                                             />
                                                                             <v-btn
+                                                                                v-if="isAiAnswerMessage(message) && message.content"
+                                                                                @click="downloadAnswerHwpx(message)"
+                                                                                :loading="hwpxExportingUuid === message.uuid"
+                                                                                icon
+                                                                                variant="text"
+                                                                                size="x-small"
+                                                                                class="chat-room-action-btn"
+                                                                            >
+                                                                                <v-icon size="18">mdi-file-download-outline</v-icon>
+                                                                                <v-tooltip activator="parent" location="top">{{
+                                                                                    $t('chat.downloadHwpx')
+                                                                                }}</v-tooltip>
+                                                                            </v-btn>
+                                                                            <v-btn
                                                                                 v-if="!disableChat"
                                                                                 @click="beforeReply(message)"
                                                                                 icon
@@ -3477,6 +3491,7 @@ export default {
     ],
     data() {
         return {
+            hwpxExportingUuid: null,
             workIcons: {
                 ScheduleQuery: 'calendar-line-duotone', // 달력 아이콘
                 ScheduleRegistration: 'calendar-line-duotone', // 달력 아이콘
@@ -4623,6 +4638,37 @@ export default {
                 setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
             } catch (e) {
                 this.emitOpenExternalUrl(url);
+            }
+        },
+        // 화면에 보이는 그대로(내부 저장소 링크 제거) 마크다운을 보내 HWPX 로 받는다.
+        async downloadAnswerHwpx(message) {
+            if (this.hwpxExportingUuid) return;
+            this.hwpxExportingUuid = message.uuid;
+            try {
+                const res = await fetch('/process-gpt-deepagents/export/hwpx', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ markdown: this.stripInternalFileLinks(message.content || '') })
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const blob = await res.blob();
+                const disposition = res.headers.get('Content-Disposition') || '';
+                const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+                const name = encoded ? decodeURIComponent(encoded[1]) : 'answer.hwpx';
+                const objectUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = objectUrl;
+                a.download = name;
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+            } catch (e) {
+                console.error('[downloadAnswerHwpx]', e);
+                alert(this.$t('chat.hwpxDownloadFailed'));
+            } finally {
+                this.hwpxExportingUuid = null;
             }
         },
         getProgressChipColor(status) {
