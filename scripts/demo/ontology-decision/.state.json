@@ -1,0 +1,17 @@
+{
+ "kpis": {
+  "reg_cost": "8d6bf65b-7374-4eba-b0e5-66b0b460b639",
+  "reg_plan": "51f96fdb-1cbc-43f3-ba9a-6a49eef5482f",
+  "urg_lead": "460594d9-3acf-45b3-9006-01a91134f901",
+  "urg_cost": "24704270-2bed-482a-aed1-bedc1f552d4a",
+  "par_quality": "ace9ccbc-5f29-4b9d-8d77-152fa6787ec0",
+  "par_cost": "caf18601-57a6-4b7d-9140-85256a3dcd5d",
+  "exp_pack_cost": "3f82129d-222e-472e-ad03-cd536019235f",
+  "exp_pack_plan": "d478ccd8-95fe-4e04-87de-d1515618de24",
+  "exp_core_lead": "51fd9a38-234a-4ed0-b6c5-9bf080d95160",
+  "exp_core_cost": "828a7214-24f6-41a2-9a61-618695c71ae4",
+  "exp_parts_quality": "0100f2db-91e0-4899-a0de-7ae3c9da0887",
+  "exp_parts_cost": "e940684b-d0c7-44c5-a9ef-8a2dc2d6e818"
+ },
+ "agent": "057303fa-f4bd-58a9-ae68-5c62774cb0a8"
+}
