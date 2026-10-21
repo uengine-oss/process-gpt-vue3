@@ -1,0 +1,19 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-10-14T04:07:03Z"},
+  "lists": "css",
+  "title": "쏠리드 AX 설명회",
+  "order": ["cover", "agenda", "solid-now", "redesign", "case-layers", "case2", "case13", "max", "kpi-tree", "p1-p5", "demo", "stack", "roadmap", "decide", "closing"],
+  "sections": {
+    "s1": {"description": "세션 1 · 왜 도입이 아니라 재설계인가", "start": "cover"},
+    "s2": {"description": "세션 2 · 선도 기업은 어떻게 하고 있나 (CASE 1·2·3)", "start": "case-layers"},
+    "s3": {"description": "세션 3 · 쏠리드 가설: 인당 성과 KPI 트리", "start": "kpi-tree"},
+    "s4": {"description": "세션 4 · 라이브 시연으로 넘어가기", "start": "demo"},
+    "s6": {"description": "세션 6 · 쏠리드 AX 체계와 다음 단계", "start": "stack"}
+  },
+  "faces": {
+    "noto-serif-kr": {"family": "Noto Serif KR", "href": "https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap"},
+    "ibm-plex-sans-kr": {"family": "IBM Plex Sans KR", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600&display=swap"}
+  },
+  "designSystems": []
+}

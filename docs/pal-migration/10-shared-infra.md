@@ -92,6 +92,7 @@ PAL 게이트(`...(window.$pal ? [...] : [])`) 안에 추가된 라우트 전체
 
 ## 이관하지 않은 pi 공용 파일 (현재 버전 유지 — 필요 시 참고)
 
-- `stores/notification.ts`, `utils/{uuidv7.ts, jsonPath.js, lastSeen.ts, formjsSchema.ts, bpmnXmlUuid.ts}`, `ValidationWaiveDialog.vue`, `customDrilldown/`, form-designer(formjs) 계열: 이번에 이관한 기능 단위들이 참조하지 않아 가져오지 않았다. 추후 다른 pi 기능을 이관할 때 단위별로 재평가.
+- `stores/notification.ts`, `utils/{uuidv7.ts, jsonPath.js, lastSeen.ts, formjsSchema.ts, bpmnXmlUuid.ts}`, `ValidationWaiveDialog.vue`, form-designer(formjs) 계열: 이번에 이관한 기능 단위들이 참조하지 않아 가져오지 않았다. 추후 다른 pi 기능을 이관할 때 단위별로 재평가.
+- `customDrilldown/`: 이후 Call Activity 인라인 드릴다운 Migration 가이드를 기준으로 구현·연결했다. 읽기 모드는 표시용 Plane으로 진입하고 캔버스 좌측 상단 카드에서 복귀하며, 편집 모드는 참조 프로세스를 새 탭에서 연다. 저장·History·To-Be 처리와 검증 방법은 [Call Activity 인라인 드릴다운](../specs/call-activity-inline-drilldown.md)을 참고한다.
 - `MyInbox.vue`/`ProcessReviewBoard.vue`/`ProcessReviewDetail.vue`/`reviewVersionGrouping.ts`/`bpmnDiff.ts`/`ProgressBadge.vue`/`reviewBoard.ts` — 이후 **pi 버전으로 전체 이관 완료** ([08-review-board-extensions.md](08-review-board-extensions.md)). 단 `BpmnUengineViewer.vue`는 현재 버전 유지.
 - pi의 `SkillDetail.vue`, `OntologyGraphViewer.vue`(cytoscape 사용) — 현재 프로젝트에 대응 화면이 이미 있거나 사용처 없음.

@@ -1,0 +1,374 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  :root{
+    --ink:#0D1B2A; --panel:#16283C; --line:#24405E;
+    --blue:#4DA3FF; --blue-dim:#2E6FB8; --amber:#E8A13D;
+    --txt:#EAF1F9; --mut:#8FA6C0; --mut2:#5F7A9D;
+    --disp:'NanumSquareRound','NanumSquare',sans-serif;
+    --body:'NanumBarunGothic','NanumSquareRound',sans-serif;
+    --mono:'IBM Plex Mono','DejaVu Sans Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1440px;height:900px;overflow:hidden;background:var(--ink);
+    font-family:var(--body);color:var(--txt)}
+  .scene{position:absolute;inset:0;display:none}
+  body[data-scene="1"] #s1,body[data-scene="2"] #s2,body[data-scene="3"] #s3,
+  body[data-scene="4"] #s4,body[data-scene="5"] #s5,body[data-scene="6"] #s6,
+  body[data-scene="7"] #s7{display:block}
+
+  /* 애니메이션은 .go 이후에만 시작 */
+  .a{opacity:0}
+  body.go .a{animation:fadeUp .9s ease-out forwards;animation-delay:var(--d,0s)}
+  .fade-only{transform:none}
+  body.go .fade-only{animation-name:fadeIn}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .out{opacity:1}
+  body.go .out{animation:fadeOut .8s ease-in forwards;animation-delay:var(--d,0s)}
+  @keyframes fadeOut{to{opacity:0;visibility:hidden}}
+
+  .center{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;gap:30px}
+  .kicker{font-family:var(--mono);font-size:20px;letter-spacing:.3em;color:var(--mut2)}
+  .uechip{background:#fff;border-radius:16px;padding:16px 32px;display:inline-block;box-shadow:0 10px 34px rgba(0,0,0,.4)}
+  .uechip img{display:block;height:52px}
+  h1{font-family:var(--disp);font-weight:800;font-size:64px;line-height:1.45;letter-spacing:-.01em}
+  h1 .b{color:var(--blue)}
+  h1 .m{color:var(--amber)}
+  .sub{font-size:30px;color:var(--mut);line-height:1.7}
+
+  /* ---------- S1 ---------- */
+  #s1 .docs{position:absolute;left:0;right:0;bottom:110px;display:flex;justify-content:center;gap:26px}
+  .doc{width:200px;border-radius:10px;background:var(--panel);border:1px solid var(--line);
+    padding:20px 18px;text-align:left}
+  .doc .ext{font-family:var(--mono);font-size:13px;padding:3px 9px;border-radius:4px;
+    display:inline-block;margin-bottom:12px;color:#fff}
+  .doc .nm{font-size:16.5px;line-height:1.5;color:var(--mut)}
+  .doc .zz{font-family:var(--mono);color:var(--mut2);font-size:15px;margin-top:12px}
+  .e-ppt{background:#B7472A}.e-pdf{background:#8C2F2F}.e-hwp{background:#2F6E8C}.e-xls{background:#2F6E45}
+
+  /* ---------- S2 ---------- */
+  #s2 .grid{position:absolute;left:120px;right:120px;top:250px;display:grid;
+    grid-template-columns:1fr 1fr;gap:34px}
+  .pain{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:34px 38px}
+  .pain .no{font-family:var(--mono);color:var(--amber);font-size:16px;letter-spacing:.2em;margin-bottom:16px}
+  .pain h3{font-family:var(--disp);font-size:29px;font-weight:800;margin-bottom:12px}
+  .pain p{font-size:19px;color:var(--mut);line-height:1.65}
+
+  /* ---------- S3 ---------- */
+  #s3 .lockup{position:absolute;top:150px;left:0;right:0;text-align:center}
+  #s3 .brand{font-family:var(--disp);font-weight:800;font-size:86px}
+  #s3 .brand .pal{color:var(--blue)}
+  #s3 .full{font-family:var(--mono);font-size:30px;color:var(--mut);letter-spacing:.14em;margin-top:22px}
+  #s3 .full b{color:var(--blue);font-weight:500}
+  #s3 .flow{position:absolute;top:420px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:56px}
+  #s3 .stack{width:340px;border-radius:12px;background:var(--panel);border:1px solid var(--line);padding:30px}
+  #s3 .stack .t{font-family:var(--disp);font-weight:800;font-size:21px;margin-bottom:18px;color:var(--mut);white-space:nowrap}
+  #s3 .stack.lib .t{color:var(--txt)}
+  #s3 .row{font-size:18px;color:var(--mut2);padding:10px 0;border-top:1px dashed var(--line)}
+  #s3 .lib .row{color:var(--txt);border-top:1px solid var(--line);display:flex;justify-content:space-between}
+  #s3 .lib .row em{font-style:normal;font-family:var(--mono);font-size:14px;color:var(--blue)}
+  #s3 .arrow{font-size:60px;color:var(--blue)}
+  #s3 .keys{position:absolute;bottom:105px;left:0;right:0;display:flex;justify-content:center;gap:20px}
+  #s3 .key{font-family:var(--disp);font-weight:800;font-size:27px;color:var(--txt);
+    border:1px solid var(--line);background:var(--panel);border-radius:100px;padding:14px 38px}
+  #s3 .key b{color:var(--blue)}
+
+  /* ---------- S4 (BPMN) ---------- */
+  #s4 .head{position:absolute;top:74px;left:0;right:0;text-align:center}
+  #s4 .head h2{font-family:var(--disp);font-weight:800;font-size:44px}
+  #s4 svg{position:absolute;top:190px;left:70px}
+  .lane-bg{fill:rgba(22,40,60,.55);stroke:#24405E;stroke-width:1.5}
+  .lane-lb{font-family:var(--disp);font-size:19px;font-weight:700;fill:#8FA6C0}
+  .task{fill:#16283C;stroke:#4DA3FF;stroke-width:2;rx:10}
+  .task-lb{font-family:var(--disp);font-size:17.5px;font-weight:700;fill:#EAF1F9;text-anchor:middle}
+  .gw{fill:#16283C;stroke:#E8A13D;stroke-width:2}
+  .gw-lb{font-family:var(--disp);font-size:16px;font-weight:700;fill:#E8A13D;text-anchor:middle}
+  .ev-s{fill:none;stroke:#5FD68A;stroke-width:3}
+  .ev-e{fill:none;stroke:#E06666;stroke-width:3.5}
+  .flow-ln{fill:none;stroke:#5F7A9D;stroke-width:2.2;marker-end:url(#arr)}
+  .flow-lb{font-family:var(--mono);font-size:14px;fill:#8FA6C0}
+  .draw{stroke-dasharray:1200;stroke-dashoffset:1200}
+  body.go .draw{animation:draw 1.1s ease-out forwards;animation-delay:var(--d,0s)}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .pop{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.6)}
+  body.go .pop{animation:pop .55s cubic-bezier(.2,1.4,.4,1) forwards;animation-delay:var(--d,0s)}
+  @keyframes pop{to{opacity:1;transform:scale(1)}}
+  #s4 .prop{position:absolute;right:60px;top:250px;width:330px;background:var(--panel);
+    border:1px solid var(--blue-dim);border-radius:12px;padding:26px;box-shadow:0 18px 60px rgba(0,0,0,.5)}
+  #s4 .prop h4{font-family:var(--disp);font-size:21px;font-weight:800;margin-bottom:16px}
+  #s4 .prop .sect{font-family:var(--mono);font-size:13px;color:var(--mut2);letter-spacing:.14em;margin:16px 0 9px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{font-family:var(--disp);font-weight:700;font-size:15.5px;border-radius:6px;padding:6px 12px;
+    background:rgba(77,163,255,.16);color:var(--blue);border:1px solid rgba(77,163,255,.4)}
+  .chip.am{background:rgba(232,161,61,.14);color:var(--amber);border-color:rgba(232,161,61,.4)}
+  #s4 .steps{font-size:16.5px;color:var(--mut);line-height:1.9}
+  #s4 .steps li{list-style:none;padding-left:20px;position:relative}
+  #s4 .steps li::before{content:'·';color:var(--blue);position:absolute;left:4px}
+  #s4 .cat{position:absolute;left:60px;bottom:64px;width:400px;background:var(--panel);
+    border:1px solid var(--amber);border-radius:12px;padding:24px 28px;box-shadow:0 18px 60px rgba(0,0,0,.5)}
+  #s4 .cat .tt{font-family:var(--mono);font-size:13px;color:var(--amber);letter-spacing:.16em;margin-bottom:10px}
+  #s4 .cat h4{font-family:var(--disp);font-size:23px;font-weight:800;margin-bottom:8px}
+  #s4 .cat p{font-size:16.5px;color:var(--mut)}
+  #s4 .tagline{position:absolute;bottom:78px;right:60px;font-family:var(--disp);
+    font-weight:800;font-size:33px;text-align:right}
+  #s4 .tagline .b{color:var(--blue)}
+
+  /* ---------- S5 ---------- */
+  #s5 .head{position:absolute;top:86px;left:0;right:0;text-align:center}
+  #s5 .head h2{font-family:var(--disp);font-weight:800;font-size:44px}
+  #s5 .pipe{position:absolute;top:250px;left:120px;right:120px;display:flex;align-items:center;gap:0}
+  #s5 .stage{flex:1;text-align:center;position:relative}
+  #s5 .dotp{width:26px;height:26px;border-radius:50%;background:var(--panel);
+    border:2px solid var(--mut2);margin:0 auto 14px;position:relative;z-index:2}
+  #s5 .stage.on .dotp{background:var(--blue);border-color:var(--blue);box-shadow:0 0 18px rgba(77,163,255,.6)}
+  #s5 .stage .lb{font-family:var(--disp);font-weight:700;font-size:20px;color:var(--mut)}
+  #s5 .stage.on .lb{color:var(--txt)}
+  #s5 .stage .n{font-family:var(--mono);font-size:13px;color:var(--mut2);margin-top:5px}
+  #s5 .bar{position:absolute;top:12px;left:10%;right:10%;height:2px;background:var(--line);z-index:1}
+  #s5 .warn{position:absolute;top:420px;left:0;right:0;display:flex;justify-content:center}
+  #s5 .warn-inner{display:flex;align-items:center;gap:18px;background:rgba(224,102,102,.12);
+    border:1px solid rgba(224,102,102,.55);border-radius:12px;padding:22px 34px;
+    font-family:var(--disp);font-weight:700;font-size:24px}
+  #s5 .warn-inner .ic{color:#E06666;font-size:30px}
+  #s5 .logbox{position:absolute;bottom:88px;left:180px;right:180px;background:#0A1420;
+    border:1px solid var(--line);border-radius:12px;padding:24px 30px;font-family:var(--mono);font-size:16.5px}
+  #s5 .logbox .hd{display:flex;justify-content:space-between;color:var(--mut2);font-size:13.5px;
+    letter-spacing:.14em;margin-bottom:14px}
+  #s5 .logbox .hd .badge{color:var(--amber);border:1px solid rgba(232,161,61,.5);border-radius:4px;padding:2px 10px}
+  #s5 .lrow{display:flex;gap:22px;padding:7px 0;color:var(--mut);border-top:1px solid #14243A}
+  #s5 .lrow .t{color:var(--mut2)}
+  #s5 .lrow .who{color:var(--blue)}
+
+  /* ---------- S6 ---------- */
+  #s6 .cols{position:absolute;top:230px;left:110px;right:110px;display:grid;grid-template-columns:1fr 1fr;gap:60px}
+  #s6 .head{position:absolute;top:86px;left:0;right:0;text-align:center}
+  #s6 .head h2{font-family:var(--disp);font-weight:800;font-size:44px}
+  #s6 .panelbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:32px 36px}
+  #s6 .panelbox h3{font-family:var(--disp);font-size:26px;font-weight:800;margin-bottom:20px}
+  #s6 .field{border:1px dashed var(--mut2);border-radius:8px;padding:16px 20px;margin-top:14px;
+    font-size:18px;color:var(--mut)}
+  #s6 .field.newf{border:1px solid var(--blue);background:rgba(77,163,255,.1);color:var(--txt)}
+  #s6 .field .k{font-family:var(--mono);font-size:13.5px;color:var(--blue);display:block;margin-bottom:5px}
+  #s6 .stamp{display:inline-block;margin-top:22px;font-family:var(--disp);font-weight:800;font-size:21px;
+    color:var(--blue);border:2px solid var(--blue);border-radius:8px;padding:9px 20px;transform:rotate(-3deg)}
+  #s6 .toggle-wrap{display:flex;flex-direction:column;align-items:center;gap:26px;justify-content:center}
+  #s6 .tg{width:150px;height:74px;border-radius:100px;background:var(--line);position:relative;transition:background .5s}
+  #s6 .tg .knob{position:absolute;top:7px;left:8px;width:60px;height:60px;border-radius:50%;
+    background:#8FA6C0;transition:all .5s}
+  body.go #s6 .tg{animation:tgON .1s linear forwards;animation-delay:13.5s}
+  body.go #s6 .tg .knob{animation:knobON .5s ease forwards;animation-delay:13.5s}
+  @keyframes tgON{to{background:var(--blue)}}
+  @keyframes knobON{to{left:82px;background:#fff}}
+  #s6 .tstate{font-family:var(--mono);font-size:22px;color:var(--mut)}
+  #s6 .tmsg{font-family:var(--disp);font-weight:800;font-size:30px;text-align:center;line-height:1.6}
+  #s6 .tmsg .b{color:var(--blue)}
+
+  /* ---------- S7 ---------- */
+  #s7 .center{gap:36px}
+  #s7 .brand{font-family:var(--disp);font-weight:800;font-size:96px}
+  #s7 .brand .pal{color:var(--blue)}
+  #s7 .full{font-family:var(--mono);font-size:28px;letter-spacing:.2em;color:var(--mut)}
+  #s7 .tag{font-family:var(--disp);font-weight:800;font-size:40px;line-height:1.6}
+  #s7 .url{font-family:var(--mono);font-size:26px;color:var(--blue)}
+  #s7 .rule{width:130px;height:5px;background:var(--blue);border-radius:3px}
+</style>
+
+<!-- ================= S1 ================= -->
+<div class="scene" id="s1">
+  <div class="center" style="justify-content:flex-start;padding-top:150px">
+    <div class="kicker a" style="--d:.4s">PROCESS ASSET</div>
+    <h1 class="a" style="--d:.7s">잘 만든 프로세스는 <span class="b">회사의 자산</span>입니다</h1>
+    <h1 class="a" style="--d:4.7s;font-size:52px;color:var(--mut)">그런데 그 자산은, 지금 어디에 있습니까?</h1>
+  </div>
+  <div class="docs">
+    <div class="doc a" style="--d:9.6s"><span class="ext e-ppt">PPT</span><div class="nm">전사 프로세스 맵<br>2022_최종.pptx</div><div class="zz">마지막 수정 3년 전</div></div>
+    <div class="doc a" style="--d:10.2s"><span class="ext e-pdf">PDF</span><div class="nm">구매관리 규정<br>Rev.7 스캔본.pdf</div><div class="zz">검색 불가</div></div>
+    <div class="doc a" style="--d:10.8s"><span class="ext e-hwp">HWP</span><div class="nm">업무분장표<br>_v2_final_진짜최종.hwp</div><div class="zz">버전 불명</div></div>
+    <div class="doc a" style="--d:11.4s"><span class="ext e-xls">XLS</span><div class="nm">RACI 매트릭스<br>(김부장 PC).xlsx</div><div class="zz">담당자 퇴사</div></div>
+  </div>
+  <div class="center" style="justify-content:flex-end;padding-bottom:44px">
+    <div class="sub a" style="--d:13.2s;font-size:34px;color:var(--txt);font-family:var(--disp);font-weight:800">
+      대부분의 프로세스는, <span style="color:var(--amber)">문서로 잠들어</span> 있습니다.</div>
+  </div>
+</div>
+
+<!-- ================= S2 ================= -->
+<div class="scene" id="s2">
+  <div class="center" style="justify-content:flex-start;padding-top:110px">
+    <h1 class="a" style="--d:.4s;font-size:50px">문서로 잠든 프로세스의 <span class="m">비용</span></h1>
+  </div>
+  <div class="grid">
+    <div class="pain a" style="--d:1.2s">
+      <div class="no">01</div><h3>시스템과 따로 늙어간다</h3>
+      <p>문서는 Rev.7, 실제 업무는 이미 다른 길 — 어느 쪽이 맞는지 아무도 확신하지 못합니다.</p>
+    </div>
+    <div class="pain a" style="--d:5.8s">
+      <div class="no">02</div><h3>개정안이 메일함을 떠돈다</h3>
+      <p>첨부파일로 오가는 개정 — 누가 언제 무엇을 승인했는지는 메일함을 뒤져야 나옵니다.</p>
+    </div>
+    <div class="pain a" style="--d:11.2s">
+      <div class="no">03</div><h3>감사 때마다 증적을 다시 만든다</h3>
+      <p>심사가 다가오면 RACI 표, 절차서, 승인 이력을 몇 주에 걸쳐 다시 꿰맞춥니다.</p>
+    </div>
+    <div class="pain a" style="--d:15.8s">
+      <div class="no">04</div><h3>사람이 떠나면 노하우도 떠난다</h3>
+      <p>프로세스가 문서와 머릿속에만 있는 조직 — 퇴사 한 번에 업무가 멈춥니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= S3 ================= -->
+<div class="scene" id="s3">
+  <div class="lockup">
+    <div class="uechip a fade-only" style="--d:.3s;margin-bottom:26px"><img src="uengine-logo.png" alt="uEngine"></div>
+    <div class="brand a" style="--d:.7s">uEngine <span class="pal">PAL</span></div>
+    <div class="full a" style="--d:2.2s"><b>P</b>rocess <b>A</b>sset <b>L</b>ibrary</div>
+  </div>
+  <div class="flow">
+    <div class="stack a" style="--d:7.2s">
+      <div class="t">문서 보관함</div>
+      <div class="row">프로세스맵_최종.pptx</div>
+      <div class="row">구매규정 Rev.7.pdf</div>
+      <div class="row">RACI_v2.xlsx</div>
+    </div>
+    <div class="arrow a fade-only" style="--d:8.6s">→</div>
+    <div class="stack lib a" style="--d:9.4s">
+      <div class="t" style="color:var(--blue)">프로세스 자산 라이브러리</div>
+      <div class="row">전사 프로세스 지도 <em>NAVIGATE</em></div>
+      <div class="row">절차 · 책임(RACI) <em>DATA</em></div>
+      <div class="row">통제 Rule · 산출물 <em>CONTROL</em></div>
+      <div class="row">버전 · 변경 이력 <em>AUDIT</em></div>
+    </div>
+  </div>
+  <div class="keys">
+    <div class="key a" style="--d:15.5s"><b>검색</b>할 수 있고</div>
+    <div class="key a" style="--d:17.5s"><b>분석</b>할 수 있고</div>
+    <div class="key a" style="--d:19.5s"><b>감사</b>할 수 있는, 살아있는 데이터</div>
+  </div>
+</div>
+
+<!-- ================= S4 ================= -->
+<div class="scene" id="s4">
+  <div class="head"><h2 class="a" style="--d:.5s">자산이 된 프로세스는, <span style="color:var(--blue)">다르게 일합니다</span></h2></div>
+  <svg width="960" height="640" viewBox="0 0 960 640">
+    <defs>
+      <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0,0 L9,4.5 L0,9 z" fill="#5F7A9D"/>
+      </marker>
+    </defs>
+    <!-- 레인 -->
+    <g class="a fade-only" style="--d:3.6s">
+      <rect class="lane-bg" x="0" y="30" width="960" height="180"/>
+      <rect class="lane-bg" x="0" y="210" width="960" height="200"/>
+      <rect class="lane-bg" x="0" y="410" width="960" height="180"/>
+      <text class="lane-lb" x="22" y="60">요청 부서</text>
+      <text class="lane-lb" x="22" y="240">구매팀</text>
+      <text class="lane-lb" x="22" y="440">재무팀</text>
+    </g>
+    <!-- 요소: 구매 프로세스 (일반 예시) -->
+    <circle class="ev-s pop" style="--d:4.4s" cx="90" cy="120" r="17"/>
+    <g class="pop" style="--d:4.8s"><rect class="task" x="140" y="86" width="150" height="68" rx="10"/><text class="task-lb" x="215" y="126">구매 요청</text></g>
+    <g class="pop" style="--d:5.6s"><rect class="task" x="360" y="270" width="150" height="68" rx="10"/><text class="task-lb" x="435" y="310">견적 검토</text></g>
+    <g class="pop" style="--d:6.6s"><rect class="gw" x="592" y="272" width="64" height="64" transform="rotate(45 624 304)"/><text class="gw-lb" x="624" y="250">승인?</text></g>
+    <g class="pop" style="--d:7.6s"><rect class="task" x="700" y="270" width="150" height="68" rx="10"/><text class="task-lb" x="775" y="310">발주</text></g>
+    <g class="pop" style="--d:8.4s"><rect class="task" x="700" y="466" width="150" height="68" rx="10"/><text class="task-lb" x="775" y="506">검수·정산</text></g>
+    <circle class="ev-e pop" style="--d:9.0s" cx="920" cy="500" r="17"/>
+    <!-- 흐름선 -->
+    <path class="flow-ln draw" style="--d:5.2s" d="M107,120 L140,120"/>
+    <path class="flow-ln draw" style="--d:6.1s" d="M290,120 L435,120 L435,270"/>
+    <path class="flow-ln draw" style="--d:7.1s" d="M510,304 L592,304"/>
+    <path class="flow-ln draw" style="--d:8.0s" d="M656,304 L700,304"/>
+    <path class="flow-ln draw" style="--d:8.7s" d="M775,338 L775,466"/>
+    <path class="flow-ln draw" style="--d:9.2s" d="M850,500 L903,500"/>
+    <!-- 반려 루프 -->
+    <path class="flow-ln draw" style="--d:9.7s" d="M624,272 L624,120 L290,120" stroke-dasharray="6 5"/>
+    <text class="flow-lb pop" style="--d:9.7s" x="666" y="298">Yes</text>
+    <text class="flow-lb pop" style="--d:10.1s" x="588" y="185">No · 보완 요청</text>
+  </svg>
+  <!-- 속성 패널 -->
+  <div class="prop a" style="--d:11.6s">
+    <h4>견적 검토 — 속성</h4>
+    <div class="sect">RACI</div>
+    <div class="chips">
+      <span class="chip">R 구매팀</span><span class="chip am">A 재무팀장</span>
+      <span class="chip">C 요청 부서</span><span class="chip">I 경영지원</span>
+    </div>
+    <div class="sect">세부 수행 절차</div>
+    <ul class="steps">
+      <li>견적 3사 이상 비교</li>
+      <li>단가 계약 여부 확인</li>
+      <li>검토 의견서 작성</li>
+    </ul>
+    <div class="sect">산출물</div>
+    <div class="chips"><span class="chip">견적 비교표</span></div>
+  </div>
+  <!-- 카탈로그 -->
+  <div class="cat a" style="--d:18.8s">
+    <div class="tt">TASK CATALOG — 표준 업무 적용</div>
+    <h4>「임원 승인」 카탈로그에서 꺼내오기</h4>
+    <p>이름·업무 유형만이 아니라 수행 절차, RACI 담당까지 속성째 따라옵니다.</p>
+  </div>
+  <div class="tagline a" style="--d:26.6s">두 번째 프로세스부터는,<br>그리기가 아니라 <span class="b">조립</span>입니다</div>
+</div>
+
+<!-- ================= S5 ================= -->
+<div class="scene" id="s5">
+  <div class="head"><h2 class="a" style="--d:.5s">자산은 <span style="color:var(--blue)">통제</span>될 때 가치가 유지됩니다</h2></div>
+  <div class="pipe">
+    <div class="bar"></div>
+    <div class="stage on a" style="--d:2.2s"><div class="dotp"></div><div class="lb">초안</div><div class="n">STAGE 0</div></div>
+    <div class="stage on a" style="--d:3.2s"><div class="dotp"></div><div class="lb">검토</div><div class="n">STAGE 1</div></div>
+    <div class="stage on a" style="--d:4.2s"><div class="dotp"></div><div class="lb">의견수렴</div><div class="n">STAGE 2</div></div>
+    <div class="stage on a" style="--d:5.2s"><div class="dotp"></div><div class="lb">최종편집</div><div class="n">STAGE 3</div></div>
+    <div class="stage on a" style="--d:6.2s"><div class="dotp"></div><div class="lb">게시</div><div class="n">STAGE 4</div></div>
+  </div>
+  <div class="warn a" style="--d:9.4s">
+    <div class="warn-inner"><span class="ic">⚠</span>병합 전 검증 — 이 변경은 기존 동작 2개 단계를 깨뜨립니다</div>
+  </div>
+  <div class="logbox a" style="--d:15.2s">
+    <div class="hd"><span>ADMIN AUDIT LOG</span><span class="badge">APPEND-ONLY</span></div>
+    <div class="lrow a fade-only" style="--d:16.4s"><span class="t">09:12</span><span class="who">kim</span><span>구매 프로세스 v0.8 → 검토 단계 상신</span></div>
+    <div class="lrow a fade-only" style="--d:17.6s"><span class="t">10:40</span><span class="who">choi</span><span>검토 승인 — 사유: 절차 8단계 확인</span></div>
+    <div class="lrow a fade-only" style="--d:18.8s"><span class="t">11:05</span><span class="who">admin</span><span>속성 스키마 필드 추가 (input)</span></div>
+    <div class="lrow a fade-only" style="--d:20.0s"><span class="t">13:30</span><span class="who">ceo</span><span>게시 승인 — v1.0 발행</span></div>
+  </div>
+</div>
+
+<!-- ================= S6 ================= -->
+<div class="scene" id="s6">
+  <div class="head"><h2 class="a" style="--d:.5s">귀사의 양식 그대로. <span style="color:var(--blue)">AI는 선택.</span></h2></div>
+  <div class="cols">
+    <div class="panelbox a" style="--d:1.6s">
+      <h3>속성 스키마 스튜디오</h3>
+      <div class="field">Output (산출 문서) · multiselect</div>
+      <div class="field">필수 Rule (통제) · textarea</div>
+      <div class="field newf a" style="--d:4.4s"><span class="k">+ 방금 추가된 필드</span>Input (참조 문서) · multiselect — 목록 연결</div>
+      <div class="stamp a" style="--d:6.8s">배포 0번 · 코드 수정 0줄</div>
+    </div>
+    <div class="toggle-wrap a" style="--d:10.4s">
+      <div class="tmsg">AI 없이도 <span class="b">완결</span>됩니다</div>
+      <div class="tg"><div class="knob"></div></div>
+      <div class="tstate a" style="--d:14.2s" style-note="">AI FEATURES: ON</div>
+      <div class="tmsg a" style="--d:15.0s">켜는 순간, 작성과 분석이 <span class="b">빨라집니다</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= S7 ================= -->
+<div class="scene" id="s7">
+  <div class="center">
+    <div class="brand a" style="--d:.6s">uEngine <span class="pal">PAL</span></div>
+    <div class="rule a fade-only" style="--d:1.5s"></div>
+    <div class="tag a" style="--d:2.3s">규정서 한 부를 가져오십시오.<br>자산이 되어 돌아옵니다.</div>
+    <div class="uechip a fade-only" style="--d:5.8s;margin-top:14px"><img src="uengine-logo.png" alt="uEngine" style="height:44px"></div>
+    <div class="url a" style="--d:7.0s">www.uengine.org</div>
+  </div>
+</div>
+
+<script>
+  const p = new URLSearchParams(location.search);
+  document.body.dataset.scene = p.get('scene') || '1';
+  addEventListener('load', () => setTimeout(() => document.body.classList.add('go'), 150));
+</script>

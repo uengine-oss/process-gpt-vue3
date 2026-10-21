@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Defs_purchase_kpi_weekly_review" targetNamespace="http://uengine.org/bpmn">
+  <bpmn:collaboration id="Collab_purchase_kpi_weekly_review"><bpmn:participant id="Pool_purchase_kpi_weekly_review" name="구매 KPI 주간 점검" processRef="Proc_purchase_kpi_weekly_review" /></bpmn:collaboration>
+  <bpmn:process id="Proc_purchase_kpi_weekly_review" name="구매 KPI 주간 점검" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_0" name="구매팀장"><bpmn:extensionElements><uengine:properties json="{&quot;roleResolutionContext&quot;: {&quot;_type&quot;: &quot;org.uengine.kernel.DirectRoleResolutionContext&quot;, &quot;endpoint&quot;: &quot;a08e7c0d-9050-4eb8-ad68-c35d4aceadf0&quot;}}" /></bpmn:extensionElements><bpmn:flowNodeRef>Start</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_Request</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_Review</bpmn:flowNodeRef><bpmn:flowNodeRef>End</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_1" name="온톨로지 조회 에이전트"><bpmn:extensionElements><uengine:properties json="{&quot;roleResolutionContext&quot;: {&quot;_type&quot;: &quot;org.uengine.kernel.DirectRoleResolutionContext&quot;, &quot;endpoint&quot;: &quot;116478c6-b16e-5ea0-9118-d3d23971134c&quot;}}" /></bpmn:extensionElements><bpmn:flowNodeRef>Task_Analyze</bpmn:flowNodeRef></bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start" name="시작"><bpmn:outgoing>Flow_Start_Task_Request</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:userTask id="Task_Request" name="점검 요청"><bpmn:extensionElements><uengine:properties json="{&quot;description&quot;: &quot;이번 주 점검할 KPI 이름과 궁금한 점(왜 목표에 못 미치는지, 어느 단계·누가 병목인지)을 적어 분석을 요청한다.&quot;, &quot;procedure&quot;: [&quot;이번 주 점검할 KPI 이름과 궁금한 점(왜 목표에 못 미치는지, 어느 단계·누가 병목인지)을 적어 분석을 요청한다.&quot;], &quot;manualLinks&quot;: [], &quot;systems&quot;: [], &quot;input&quot;: [], &quot;output&quot;: []}" /></bpmn:extensionElements><bpmn:incoming>Flow_Start_Task_Request</bpmn:incoming><bpmn:outgoing>Flow_Task_Request_Task_Analyze</bpmn:outgoing></bpmn:userTask>
+    <bpmn:serviceTask id="Task_Analyze" name="온톨로지 원인 분석"><bpmn:extensionElements><uengine:properties json="{&quot;description&quot;: &quot;요청서에 적힌 KPI 를 전략–실행 온톨로지에서 찾고(ontology_resolve_entity, class_name=KPI) 원인을 실행까지 역추적한다(ontology_kpi_root_cause). 현재값·목표·달성률, 병목 태스크와 평균 소요시간, 담당자, 개선 제안 1~2개를 한국어로 보고한다. 숫자는 도구 결과에 있는 값만 쓴다.&quot;, &quot;instruction&quot;: &quot;요청서에 적힌 KPI 를 전략–실행 온톨로지에서 찾고(ontology_resolve_entity, class_name=KPI) 원인을 실행까지 역추적한다(ontology_kpi_root_cause). 현재값·목표·달성률, 병목 태스크와 평균 소요시간, 담당자, 개선 제안 1~2개를 한국어로 보고한다. 숫자는 도구 결과에 있는 값만 쓴다.&quot;, &quot;procedure&quot;: [&quot;요청서에 적힌 KPI 를 전략–실행 온톨로지에서 찾고(ontology_resolve_entity, class_name=KPI) 원인을 실행까지 역추적한다(ontology_kpi_root_cause). 현재값·목표·달성률, 병목 태스크와 평균 소요시간, 담당자, 개선 제안 1~2개를 한국어로 보고한다. 숫자는 도구 결과에 있는 값만 쓴다.&quot;], &quot;agent&quot;: &quot;116478c6-b16e-5ea0-9118-d3d23971134c&quot;, &quot;agentMode&quot;: &quot;COMPLETE&quot;, &quot;usePresetAgent&quot;: true, &quot;manualLinks&quot;: [], &quot;systems&quot;: [], &quot;input&quot;: [], &quot;output&quot;: []}" /></bpmn:extensionElements><bpmn:incoming>Flow_Task_Request_Task_Analyze</bpmn:incoming><bpmn:outgoing>Flow_Task_Analyze_Task_Review</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:userTask id="Task_Review" name="점검 결과 검토"><bpmn:extensionElements><uengine:properties json="{&quot;description&quot;: &quot;에이전트 보고를 검토하고 후속 조치(담당자 면담·프로세스 개선 요청)를 적는다.&quot;, &quot;procedure&quot;: [&quot;에이전트 보고를 검토하고 후속 조치(담당자 면담·프로세스 개선 요청)를 적는다.&quot;], &quot;manualLinks&quot;: [], &quot;systems&quot;: [], &quot;input&quot;: [], &quot;output&quot;: []}" /></bpmn:extensionElements><bpmn:incoming>Flow_Task_Analyze_Task_Review</bpmn:incoming><bpmn:outgoing>Flow_Task_Review_End</bpmn:outgoing></bpmn:userTask>
+    <bpmn:endEvent id="End" name="완료"><bpmn:incoming>Flow_Task_Review_End</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Task_Request" name="" sourceRef="Start" targetRef="Task_Request" />
+    <bpmn:sequenceFlow id="Flow_Task_Request_Task_Analyze" name="" sourceRef="Task_Request" targetRef="Task_Analyze" />
+    <bpmn:sequenceFlow id="Flow_Task_Analyze_Task_Review" name="" sourceRef="Task_Analyze" targetRef="Task_Review" />
+    <bpmn:sequenceFlow id="Flow_Task_Review_End" name="" sourceRef="Task_Review" targetRef="End" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Collab_purchase_kpi_weekly_review">
+      <bpmndi:BPMNShape id="Pool_purchase_kpi_weekly_review_di" bpmnElement="Pool_purchase_kpi_weekly_review" isHorizontal="true"><dc:Bounds x="120" y="80" width="785" height="340" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0_di" bpmnElement="Lane_0" isHorizontal="true"><dc:Bounds x="150" y="80" width="755" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1_di" bpmnElement="Lane_1" isHorizontal="true"><dc:Bounds x="150" y="250" width="755" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_di" bpmnElement="Start"><dc:Bounds x="190" y="147" width="36" height="36" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Request_di" bpmnElement="Task_Request"><dc:Bounds x="260" y="125" width="130" height="80" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Analyze_di" bpmnElement="Task_Analyze"><dc:Bounds x="435" y="295" width="130" height="80" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Review_di" bpmnElement="Task_Review"><dc:Bounds x="610" y="125" width="130" height="80" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_di" bpmnElement="End"><dc:Bounds x="785" y="147" width="36" height="36" /><bpmndi:BPMNLabel /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Start_Task_Request_di" bpmnElement="Flow_Start_Task_Request"><di:waypoint x="226" y="165" /><di:waypoint x="260" y="165" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Task_Request_Task_Analyze_di" bpmnElement="Flow_Task_Request_Task_Analyze"><di:waypoint x="390" y="165" /><di:waypoint x="412" y="165" /><di:waypoint x="412" y="335" /><di:waypoint x="435" y="335" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Task_Analyze_Task_Review_di" bpmnElement="Flow_Task_Analyze_Task_Review"><di:waypoint x="565" y="335" /><di:waypoint x="587" y="335" /><di:waypoint x="587" y="165" /><di:waypoint x="610" y="165" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Task_Review_End_di" bpmnElement="Flow_Task_Review_End"><di:waypoint x="740" y="165" /><di:waypoint x="785" y="165" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

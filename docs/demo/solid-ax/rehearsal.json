@@ -1,0 +1,228 @@
+{
+  "base": "http://localhost:5174",
+  "out": "docs/demo/solid-ax/images",
+  "viewport": {
+    "width": 1600,
+    "height": 950
+  },
+  "steps": [
+    {
+      "goto": "/strategy-board"
+    },
+    {
+      "wait": 6000
+    },
+    {
+      "shot": "s1-strategy-map.png"
+    },
+    {
+      "goto": "/strategy-board?view=explorer"
+    },
+    {
+      "wait": 6000
+    },
+    {
+      "shot": "s2-explorer-overview.png"
+    },
+    {
+      "fill": ".soe-search input",
+      "value": "제안 리드타임"
+    },
+    {
+      "press": "Enter"
+    },
+    {
+      "wait": 2000
+    },
+    {
+      "shot": "s3-kpi-course.png"
+    },
+    {
+      "click": "text=원인 분석 (실행까지 역추적)"
+    },
+    {
+      "wait": 9000
+    },
+    {
+      "shot": "s4-root-cause.png",
+      "of": "[data-testid=ontology-detail]"
+    },
+    {
+      "fill": ".soe-search input",
+      "value": ""
+    },
+    {
+      "click": "[data-testid=ask-toggle]"
+    },
+    {
+      "wait": 500
+    },
+    {
+      "fill": "[data-testid=ask-input] input",
+      "value": "제안 리드타임이 왜 목표 미달이야?"
+    },
+    {
+      "click": "[data-testid=ask-submit]"
+    },
+    {
+      "wait": "[data-testid=ask-answer]"
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "shot": "s5-ask-answer.png"
+    },
+    {
+      "goto": "/definitions/demo-solid-rfp"
+    },
+    {
+      "wait": 8000
+    },
+    {
+      "shot": "s6-process-definition.png"
+    },
+    {
+      "goto": "/instancelist/demo-solid-rfp_DOT_3062"
+    },
+    {
+      "wait": 8000
+    },
+    {
+      "shot": "s7-running-instance.png"
+    },
+    {
+      "goto": "/strategy-board?view=explorer"
+    },
+    {
+      "wait": 6000
+    },
+    {
+      "click": "[data-testid=hypo-open]"
+    },
+    {
+      "wait": "[data-testid=hypo-dialog]"
+    },
+    {
+      "wait": 800
+    },
+    {
+      "shot": "s8-hypotheses.png",
+      "of": "[data-testid=hypo-dialog]"
+    },
+    {
+      "click": "[data-testid=hypo-row] >> nth=0 >> text=승인"
+    },
+    {
+      "wait": 2500
+    },
+    {
+      "click": "[data-testid=hypo-row] >> nth=1 >> text=승인"
+    },
+    {
+      "wait": 2500
+    },
+    {
+      "click": "[data-testid=hypo-row] >> nth=2 >> text=승인"
+    },
+    {
+      "wait": 2500
+    },
+    {
+      "wait": 2500
+    },
+    {
+      "wait": 2500
+    },
+    {
+      "eval": "[...document.querySelectorAll('[data-testid=hypo-row]')].filter(r => r.textContent.includes('검토 대기')).forEach(r => [...r.querySelectorAll('button')].find(b => b.textContent.trim()==='거절')?.click())"
+    },
+    {
+      "wait": 3500
+    },
+    {
+      "shot": "s8b-hypotheses-decided.png",
+      "of": "[data-testid=hypo-dialog]"
+    },
+    {
+      "press": "Escape"
+    },
+    {
+      "wait": 800
+    },
+    {
+      "fill": ".soe-search input",
+      "value": "수주율"
+    },
+    {
+      "press": "Enter"
+    },
+    {
+      "wait": 2000
+    },
+    {
+      "shot": "s9-manual-kpi-linked.png"
+    },
+    {
+      "click": "[data-testid=time-toggle]"
+    },
+    {
+      "wait": "[data-testid=time-slider]"
+    },
+    {
+      "wait": 800
+    },
+    {
+      "click": "[data-testid=time-slider] .v-slider-thumb"
+    },
+    {
+      "press": "ArrowLeft"
+    },
+    {
+      "press": "ArrowLeft"
+    },
+    {
+      "press": "ArrowLeft"
+    },
+    {
+      "press": "ArrowLeft"
+    },
+    {
+      "press": "ArrowLeft"
+    },
+    {
+      "press": "ArrowLeft"
+    },
+    {
+      "press": "ArrowLeft"
+    },
+    {
+      "press": "ArrowLeft"
+    },
+    {
+      "wait": 3500
+    },
+    {
+      "fill": ".soe-search input",
+      "value": "제안 리드타임"
+    },
+    {
+      "press": "Enter"
+    },
+    {
+      "wait": 2000
+    },
+    {
+      "shot": "s10-time-8weeks-ago.png"
+    },
+    {
+      "goto": "/analysis-dashboard?domain=영업"
+    },
+    {
+      "wait": 7000
+    },
+    {
+      "shot": "s11-dashboard-sales.png"
+    }
+  ]
+}

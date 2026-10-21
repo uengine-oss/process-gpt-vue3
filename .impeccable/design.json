@@ -1,0 +1,694 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-07T07:42:51+00:00",
+  "title": "Design System: 온톨로지 익스플로러 — 오리엔티어링 지도",
+  "scope": "온톨로지 익스플로러(src/components/strategy/ontology/StrategyOntologyExplorer.vue, OntologySymbol.vue, achievementLevel.js) 한 화면 전용. 앱의 나머지 화면은 기존 Vuetify / PAL 체계(src/assets/css/SKGlobalStyle.scss, src/scss/_variables.scss)를 따르며 이 체계로 대체되지 않는다.",
+  "extensions": {
+    "colorMeta": {
+      "course-purple": {
+        "role": "primary",
+        "displayName": "코스 퍼플",
+        "canonical": "#7b2cbf",
+        "oklch": "oklch(48.7% 0.213 303.6)",
+        "tonalRamp": [
+          "#16002e",
+          "#340259",
+          "#561c88",
+          "#7a35ba",
+          "#9c5be1",
+          "#bb87f9",
+          "#dcb3ff",
+          "#fddeff"
+        ]
+      },
+      "course-wash": {
+        "role": "primary",
+        "displayName": "코스 워시",
+        "canonical": "#f3eafb",
+        "oklch": "oklch(94.9% 0.025 309.4)",
+        "tonalRamp": [
+          "#0d0a0f",
+          "#27232b",
+          "#453f4a",
+          "#655e6b",
+          "#867f8d",
+          "#a9a2ae",
+          "#ccc7d1",
+          "#f1ecf5"
+        ]
+      },
+      "risk-red": {
+        "role": "secondary",
+        "displayName": "위험 적색",
+        "canonical": "#c4231b",
+        "oklch": "oklch(53.0% 0.197 28.9)",
+        "tonalRamp": [
+          "#250000",
+          "#520000",
+          "#800203",
+          "#b11f18",
+          "#da4a3d",
+          "#f67b6c",
+          "#ffad9f",
+          "#ffe1d9"
+        ]
+      },
+      "warn-ochre": {
+        "role": "secondary",
+        "displayName": "주의 황토",
+        "canonical": "#a85b00",
+        "oklch": "oklch(55.1% 0.131 58.8)",
+        "tonalRamp": [
+          "#1d0200",
+          "#411700",
+          "#683100",
+          "#924c00",
+          "#b76e2d",
+          "#d59562",
+          "#f3bd93",
+          "#ffe5c4"
+        ]
+      },
+      "achievement-risk": {
+        "role": "secondary",
+        "displayName": "달성률 위험",
+        "canonical": "#dc2626",
+        "oklch": "oklch(57.7% 0.215 27.3)",
+        "tonalRamp": [
+          "#250000",
+          "#520000",
+          "#850000",
+          "#b80411",
+          "#e13f38",
+          "#fd7569",
+          "#ffa99d",
+          "#ffe1da"
+        ]
+      },
+      "achievement-warn": {
+        "role": "secondary",
+        "displayName": "달성률 주의",
+        "canonical": "#b45309",
+        "oklch": "oklch(55.5% 0.146 49.0)",
+        "tonalRamp": [
+          "#200000",
+          "#461100",
+          "#6f2900",
+          "#9b4400",
+          "#c1662f",
+          "#df8f63",
+          "#fbb894",
+          "#ffe3c9"
+        ]
+      },
+      "achievement-ok": {
+        "role": "secondary",
+        "displayName": "달성률 양호",
+        "canonical": "#15803d",
+        "oklch": "oklch(52.7% 0.137 150.1)",
+        "tonalRamp": [
+          "#001200",
+          "#00300a",
+          "#005120",
+          "#147437",
+          "#409758",
+          "#72b881",
+          "#a0daab",
+          "#cffcd7"
+        ]
+      },
+      "achievement-none": {
+        "role": "neutral",
+        "displayName": "달성률 없음",
+        "canonical": "#6b7280",
+        "oklch": "oklch(55.1% 0.023 264.4)",
+        "tonalRamp": [
+          "#090b10",
+          "#21252c",
+          "#3d424c",
+          "#5b616e",
+          "#7c8290",
+          "#9fa5b1",
+          "#c4c9d3",
+          "#ebeff6"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "지도 종이",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "잉크",
+        "canonical": "#1d1b18",
+        "oklch": "oklch(22.3% 0.006 78.2)",
+        "tonalRamp": [
+          "#0d0b08",
+          "#272522",
+          "#44423e",
+          "#63615d",
+          "#84827e",
+          "#a7a5a1",
+          "#cbc9c4",
+          "#f1eeea"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "보조 잉크",
+        "canonical": "#5a544b",
+        "oklch": "oklch(44.9% 0.016 78.1)",
+        "tonalRamp": [
+          "#0d0b08",
+          "#28251f",
+          "#46413b",
+          "#666058",
+          "#878178",
+          "#a9a49c",
+          "#cdc8c2",
+          "#f1eee9"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "흐린 잉크",
+        "canonical": "#6b6358",
+        "oklch": "oklch(50.4% 0.020 76.0)",
+        "tonalRamp": [
+          "#0e0b07",
+          "#29241e",
+          "#474139",
+          "#676056",
+          "#898176",
+          "#aba49b",
+          "#cec8c0",
+          "#f2eee7"
+        ]
+      },
+      "ink-context": {
+        "role": "neutral",
+        "displayName": "맥락 잉크",
+        "canonical": "#7a7064",
+        "oklch": "oklch(55.1% 0.022 72.4)",
+        "tonalRamp": [
+          "#0e0a07",
+          "#29241e",
+          "#484138",
+          "#696055",
+          "#8a8175",
+          "#aca49a",
+          "#cfc8bf",
+          "#f3ede7"
+        ]
+      },
+      "contour-brown": {
+        "role": "neutral",
+        "displayName": "등고선 갈색",
+        "canonical": "#8c5a2b",
+        "oklch": "oklch(51.3% 0.091 61.6)",
+        "tonalRamp": [
+          "#180600",
+          "#391d02",
+          "#5d3815",
+          "#83552b",
+          "#a7774c",
+          "#c69b77",
+          "#e5c1a3",
+          "#ffe9d1"
+        ]
+      },
+      "contour-soft": {
+        "role": "neutral",
+        "displayName": "옅은 등고선",
+        "canonical": "#e2d6c6",
+        "oklch": "oklch(88.1% 0.025 75.3)",
+        "tonalRamp": [
+          "#0e0a06",
+          "#2a241c",
+          "#484136",
+          "#696053",
+          "#8b8173",
+          "#aca498",
+          "#cfc8be",
+          "#f3ede6"
+        ]
+      },
+      "card-stroke": {
+        "role": "neutral",
+        "displayName": "카드 선",
+        "canonical": "#d8cfc3",
+        "oklch": "oklch(85.8% 0.019 75.3)",
+        "tonalRamp": [
+          "#0d0b07",
+          "#29241f",
+          "#474139",
+          "#676056",
+          "#898177",
+          "#aba49b",
+          "#cec8c1",
+          "#f2eee8"
+        ]
+      },
+      "risk-card-stroke": {
+        "role": "neutral",
+        "displayName": "위험 카드 선",
+        "canonical": "#e3a29d",
+        "oklch": "oklch(77.3% 0.078 24.0)",
+        "tonalRamp": [
+          "#180504",
+          "#3a1b19",
+          "#5e3432",
+          "#86504d",
+          "#aa716d",
+          "#c99793",
+          "#e8bdba",
+          "#ffe5e2"
+        ]
+      },
+      "contour-dash": {
+        "role": "neutral",
+        "displayName": "점선 등고선",
+        "canonical": "#c3b39d",
+        "oklch": "oklch(77.4% 0.035 75.9)",
+        "tonalRamp": [
+          "#0f0a04",
+          "#2b2419",
+          "#4b4032",
+          "#6c5f4d",
+          "#8e806d",
+          "#afa392",
+          "#d2c7b9",
+          "#f5ede2"
+        ]
+      },
+      "edge-terrain": {
+        "role": "neutral",
+        "displayName": "지형 엣지",
+        "canonical": "#b9a993",
+        "oklch": "oklch(74.3% 0.036 75.9)",
+        "tonalRamp": [
+          "#0f0a04",
+          "#2c2419",
+          "#4b4031",
+          "#6c5f4c",
+          "#8e806d",
+          "#afa392",
+          "#d2c7b9",
+          "#f5ede2"
+        ]
+      },
+      "edge-chain": {
+        "role": "neutral",
+        "displayName": "체인 엣지",
+        "canonical": "#d8cbb8",
+        "oklch": "oklch(84.8% 0.030 77.5)",
+        "tonalRamp": [
+          "#0f0a05",
+          "#2a241b",
+          "#494134",
+          "#6a6050",
+          "#8c8170",
+          "#ada495",
+          "#d0c8bc",
+          "#f4ede4"
+        ]
+      },
+      "band-open-land": {
+        "role": "tertiary",
+        "displayName": "열린 땅 노랑",
+        "canonical": "#fffbea",
+        "oklch": "oklch(98.7% 0.023 96.0)",
+        "tonalRamp": [
+          "#0c0b06",
+          "#27251d",
+          "#454238",
+          "#656154",
+          "#868374",
+          "#a8a599",
+          "#ccc9bf",
+          "#f0efe6"
+        ]
+      },
+      "band-rough-olive": {
+        "role": "tertiary",
+        "displayName": "덤불 올리브",
+        "canonical": "#f4f7ec",
+        "oklch": "oklch(97.1% 0.015 119.1)",
+        "tonalRamp": [
+          "#0b0c08",
+          "#242621",
+          "#41433c",
+          "#60625a",
+          "#81847b",
+          "#a4a69e",
+          "#c8cac3",
+          "#eeefea"
+        ]
+      },
+      "band-marsh-blue": {
+        "role": "tertiary",
+        "displayName": "습지 파랑",
+        "canonical": "#eef4fa",
+        "oklch": "oklch(96.4% 0.010 247.9)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#3f4246",
+          "#5d6266",
+          "#7e8388",
+          "#a1a6aa",
+          "#c6cacd",
+          "#eceff2"
+        ]
+      },
+      "stage-ink-plan": {
+        "role": "tertiary",
+        "displayName": "계획 지형 잉크",
+        "canonical": "#7a5b00",
+        "oklch": "oklch(49.0% 0.100 85.4)",
+        "tonalRamp": [
+          "#140800",
+          "#332200",
+          "#553e00",
+          "#795c14",
+          "#9c7e3b",
+          "#bba26b",
+          "#dcc79a",
+          "#feedca"
+        ]
+      },
+      "stage-ink-define": {
+        "role": "tertiary",
+        "displayName": "정의 지형 잉크",
+        "canonical": "#4f6b1f",
+        "oklch": "oklch(48.9% 0.108 127.4)",
+        "tonalRamp": [
+          "#060f00",
+          "#1c2b00",
+          "#354a12",
+          "#516b27",
+          "#728d49",
+          "#96af76",
+          "#bdd2a2",
+          "#e5f6d0"
+        ]
+      },
+      "stage-ink-execute": {
+        "role": "tertiary",
+        "displayName": "실행 지형 잉크",
+        "canonical": "#1f5e8c",
+        "oklch": "oklch(46.5% 0.098 244.6)",
+        "tonalRamp": [
+          "#000c1e",
+          "#032741",
+          "#184568",
+          "#2e6691",
+          "#5088b5",
+          "#7cabd2",
+          "#a8ceef",
+          "#d4f3ff"
+        ]
+      },
+      "stage-ink-people": {
+        "role": "tertiary",
+        "displayName": "사람 지형 잉크",
+        "canonical": "#5b4636",
+        "oklch": "oklch(41.2% 0.038 58.7)",
+        "tonalRamp": [
+          "#110904",
+          "#2e2219",
+          "#4e3e32",
+          "#715d4d",
+          "#937e6d",
+          "#b4a193",
+          "#d6c6ba",
+          "#f9ece2"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "numeral-display": {
+        "displayName": "응축 숫자 대",
+        "purpose": "상세 패널의 큰 달성률(달성률 단계색)."
+      },
+      "numeral-headline": {
+        "displayName": "열 머리 숫자",
+        "purpose": "열 머리 노드 개수(지형 잉크)."
+      },
+      "numeral-stat": {
+        "displayName": "통계 숫자",
+        "purpose": "상세 패널 5열 통계."
+      },
+      "numeral-body": {
+        "displayName": "카드 숫자",
+        "purpose": "지점 카드의 달성률·핵심 수치."
+      },
+      "numeral-control": {
+        "displayName": "통제점 번호",
+        "purpose": "코스 통제점 번호(흰 3px stroke), 캔버스 밖 코스 표시."
+      },
+      "numeral-row": {
+        "displayName": "설명표 값",
+        "purpose": "코스 설명표 값 열."
+      },
+      "title": {
+        "displayName": "노드 이름",
+        "purpose": "상세 패널의 선택 노드 이름."
+      },
+      "stage-name": {
+        "displayName": "단계명",
+        "purpose": "열 머리 단계명."
+      },
+      "card-title": {
+        "displayName": "카드 제목",
+        "purpose": "지점 카드 제목 줄."
+      },
+      "body": {
+        "displayName": "본문",
+        "purpose": "범례, 설명표 행, 속성 표, 콜아웃."
+      },
+      "label": {
+        "displayName": "섹션 라벨",
+        "purpose": "상세 패널 섹션 라벨. 대문자·자간 확장 없음."
+      },
+      "state": {
+        "displayName": "상태 문구",
+        "purpose": "카드의 위험·주의·미연결 문구."
+      }
+    },
+    "shadows": [
+      {
+        "name": "off-map-marker",
+        "value": "0 2px 6px rgba(29, 27, 24, 0.15)",
+        "purpose": "캔버스 위에 떠 있는 캔버스 밖 코스 표시에만. 다른 요소는 그림자 없음."
+      }
+    ],
+    "strokes": [
+      {
+        "name": "contour-rule",
+        "value": "1px solid #8c5a2b",
+        "purpose": "열 머리 밑줄, 코스 설명표·통계 상단선."
+      },
+      {
+        "name": "contour-soft-rule",
+        "value": "1px solid #e2d6c6",
+        "purpose": "범례·행 구분선, 캔버스·패널 테두리."
+      },
+      {
+        "name": "course-leg",
+        "value": "2.5px #7b2cbf",
+        "purpose": "코스 선, 출발 삼각형, 통제점 원."
+      },
+      {
+        "name": "selected-point",
+        "value": "2px solid #7b2cbf",
+        "purpose": "선택 지점 카드."
+      },
+      {
+        "name": "focus-ring",
+        "value": "outline 2px solid #7b2cbf, offset 2px",
+        "purpose": "지점 카드 focus-visible. 캔버스 밖 표시는 ink 외곽선."
+      },
+      {
+        "name": "search-match",
+        "value": "outline 2px dashed #8c5a2b, offset 1px",
+        "purpose": "검색 일치 지점."
+      }
+    ],
+    "motion": [
+      {
+        "name": "point-reflow",
+        "value": "top 0.2s ease-out, left 0.2s ease-out",
+        "purpose": "코스 지점이 열 위로 재정렬될 때. prefers-reduced-motion에서 끔."
+      },
+      {
+        "name": "point-border",
+        "value": "border-color 0.15s ease-out",
+        "purpose": "지점 카드 hover 테두리."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stacked",
+        "value": "760px",
+        "purpose": "이하에서 상세 패널을 캔버스 아래로, 범례를 기호표 버튼으로 접음."
+      }
+    ],
+    "layoutConstants": {
+      "cardHeightByStage": [
+        64,
+        64,
+        64,
+        48,
+        48,
+        40,
+        40,
+        40
+      ],
+      "collapsedColumnWidth": "44px",
+      "stageHeaderHeight": "52px",
+      "detailPanelWidth": "344px",
+      "searchWidth": "180-280px",
+      "selection": "#e6d4f6"
+    }
+  },
+  "components": [
+    {
+      "name": "Map Point",
+      "kind": "card",
+      "refersTo": "map-point",
+      "description": "지도 위 지점 카드. 기본·hover·focus.",
+      "html": "<div class=\"ds-point\" tabindex=\"0\"><div class=\"ds-point-title\">구매 프로세스</div><div class=\"ds-point-sub\"><b class=\"ds-num\">67.3%</b> 재무</div></div>",
+      "css": ".ds-point{width:200px;padding:7px 10px 6px;background:#fff;border:1px solid #d8cfc3;border-radius:4px;color:#1d1b18;cursor:pointer;transition:border-color .15s ease-out}.ds-point:hover{border-color:#8c5a2b}.ds-point:focus-visible{outline:2px solid #7b2cbf;outline-offset:2px}.ds-point-title{font-size:13px;font-weight:700;line-height:1.3}.ds-point-sub{display:flex;gap:6px;align-items:baseline;margin-top:3px;font-size:12px;color:#5a544b}.ds-num{font-family:\"Barlow Condensed\",\"Arial Narrow\",system-ui,sans-serif;font-size:17px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:#15803d}"
+    },
+    {
+      "name": "Map Point — Selected",
+      "kind": "card",
+      "refersTo": "map-point-selected",
+      "description": "선택된 코스 지점.",
+      "html": "<div class=\"ds-point-sel\"><div class=\"ds-t\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M6 0.6 L11.4 6 L6 11.4 L0.6 6 Z\" fill=\"#a85b00\"/></svg> 구매 처리 리드타임</div><div class=\"ds-s\"><b class=\"ds-num\">53.1%</b> 70.5 / 48 시간</div></div>",
+      "css": ".ds-point-sel{width:200px;padding:6px 9px 5px;background:#f3eafb;border:2px solid #7b2cbf;border-radius:4px;color:#1d1b18}.ds-t{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700}.ds-s{display:flex;gap:6px;align-items:baseline;margin-top:3px;font-size:12px;color:#5a544b}.ds-num{font-family:\"Barlow Condensed\",\"Arial Narrow\",system-ui,sans-serif;font-size:17px;font-weight:700;line-height:1;color:#b45309}"
+    },
+    {
+      "name": "Map Point — Context",
+      "kind": "card",
+      "refersTo": "map-point-context",
+      "description": "체인 밖 맥락 노드: 상자 없이 글자만.",
+      "html": "<div class=\"ds-point-ctx\"><div class=\"ds-t\">구매 단가 절감률</div></div>",
+      "css": ".ds-point-ctx{width:200px;padding:7px 10px 6px;background:transparent;border:1px solid transparent;color:#7a7064}.ds-t{font-size:13px;font-weight:700}"
+    },
+    {
+      "name": "Course Button",
+      "kind": "button",
+      "refersTo": "button-course",
+      "description": "주 행동(원인 분석). 코스 퍼플 flat.",
+      "html": "<button class=\"ds-btn-course\">원인 분석 (실행까지 역추적)</button>",
+      "css": ".ds-btn-course{width:300px;height:28px;padding:0 12px;background:#7b2cbf;color:#fff;border:0;border-radius:4px;font-size:13px;font-weight:500;letter-spacing:0;cursor:pointer}.ds-btn-course:hover{box-shadow:inset 0 0 0 999px rgba(255,255,255,.08)}.ds-btn-course:focus-visible{outline:2px solid #1d1b18;outline-offset:2px}"
+    },
+    {
+      "name": "Outlined Button",
+      "kind": "button",
+      "refersTo": "button-outlined",
+      "description": "툴바 보조 행동(보기 설정, 동기화).",
+      "html": "<button class=\"ds-btn-out\">동기화</button>",
+      "css": ".ds-btn-out{height:28px;padding:0 10px;background:#fff;color:#1d1b18;border:1px solid #e2d6c6;border-radius:4px;font-size:13px;letter-spacing:0;text-transform:none;cursor:pointer}.ds-btn-out:hover{background:rgba(29,27,24,.04)}.ds-btn-out:focus-visible{outline:2px solid #7b2cbf;outline-offset:2px}"
+    },
+    {
+      "name": "Course Description Table",
+      "kind": "custom",
+      "refersTo": "course-row",
+      "description": "상세 패널 맨 위 코스 설명표.",
+      "html": "<div class=\"ds-ct\"><div class=\"ds-lbl\">코스 설명표</div><button class=\"ds-row\"><span class=\"ds-no\">1</span><span class=\"ds-k\" style=\"color:#7a5b00\">전략</span><span>구매 원가 절감</span><span class=\"ds-v\">67.3%</span></button><button class=\"ds-row cur\"><span class=\"ds-no\">3</span><span class=\"ds-k\" style=\"color:#7a5b00\">KPI</span><span>구매 처리 리드타임</span><span class=\"ds-v\">53.1%</span></button></div>",
+      "css": ".ds-ct{width:310px;border-top:1px solid #8c5a2b;color:#1d1b18}.ds-lbl{font-size:12px;font-weight:800;color:#5a544b;margin:4px 0}.ds-row{display:grid;grid-template-columns:22px 66px 1fr auto;align-items:center;gap:6px;width:100%;padding:6px 2px;border:0;border-bottom:1px solid #e2d6c6;background:none;text-align:left;font-size:12.5px;cursor:pointer}.ds-row:hover,.ds-row:focus-visible{background:#f3eafb;outline:none}.ds-row.cur{background:#f3eafb;font-weight:700}.ds-no{width:20px;height:20px;border-radius:50%;border:2px solid #7b2cbf;color:#7b2cbf;font-family:\"Barlow Condensed\",\"Arial Narrow\",system-ui,sans-serif;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}.ds-k{font-size:11.5px;font-weight:700}.ds-v{font-family:\"Barlow Condensed\",\"Arial Narrow\",system-ui,sans-serif;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Symbol Legend",
+      "kind": "nav",
+      "description": "지도 기호표 범례 한 줄.",
+      "html": "<div class=\"ds-legend\"><span><svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\"><circle cx=\"6\" cy=\"6\" r=\"4.6\" fill=\"#fff\" stroke=\"#7b2cbf\" stroke-width=\"2\"/></svg>코스</span><span><svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\"><path d=\"M6 0.8 L11.4 11 H0.6 Z\" fill=\"#c4231b\"/></svg>위험·병목</span><span><svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\"><path d=\"M6 0.6 L11.4 6 L6 11.4 L0.6 6 Z\" fill=\"#a85b00\"/></svg>주의·지연</span><span><svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\"><circle cx=\"6\" cy=\"6\" r=\"4.4\" fill=\"#fff\" stroke=\"#6b6358\" stroke-width=\"1.6\" stroke-dasharray=\"2 1.6\"/></svg>실행 미연결</span><span class=\"ds-terr\"><i style=\"background:#fffbea\"></i>계획<i style=\"background:#f4f7ec\"></i>정의<i style=\"background:#eef4fa\"></i>실행</span></div>",
+      "css": ".ds-legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;padding:8px 12px;border-top:1px solid #e2d6c6;border-bottom:1px solid #e2d6c6;font-size:12.5px;color:#5a544b}.ds-legend span{display:inline-flex;align-items:center;gap:6px}.ds-terr i{display:inline-block;width:14px;height:10px;margin-left:6px;border-radius:1px;box-shadow:inset 0 0 0 1px rgba(140,90,43,.25)}"
+    },
+    {
+      "name": "Stage Header",
+      "kind": "custom",
+      "description": "지형 띠 열 머리: 단계명 + 응축 개수.",
+      "html": "<div class=\"ds-sh\"><span class=\"ds-sn\">KPI · 이니셔티브</span><span class=\"ds-sc\">18</span></div>",
+      "css": ".ds-sh{width:220px;height:52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 7px;background:#fffbea;border-bottom:1px solid #8c5a2b;box-sizing:border-box;color:#7a5b00}.ds-sn{font-size:13px;font-weight:800}.ds-sc{font-family:\"Barlow Condensed\",\"Arial Narrow\",system-ui,sans-serif;font-size:24px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Off-map Course Marker",
+      "kind": "chip",
+      "refersTo": "off-map-marker",
+      "description": "코스가 캔버스 밖으로 이어질 때.",
+      "html": "<button class=\"ds-off\">코스 8 →</button>",
+      "css": ".ds-off{padding:4px 10px;border:2px solid #7b2cbf;border-radius:999px;background:#fff;color:#7b2cbf;font-family:\"Barlow Condensed\",\"Arial Narrow\",system-ui,sans-serif;font-size:14px;font-weight:700;box-shadow:0 2px 6px rgba(29,27,24,.15);cursor:pointer}.ds-off:focus-visible{outline:2px solid #1d1b18;outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "오리엔티어링 지도",
+    "overview": "전략–실행 그래프 전체는 조용한 지형이다. 흰 바탕(달리기 숲) 위에 단계 열마다 아주 옅은 ISOM 지형 틴트(열린 땅 노랑, 덤불 올리브, 습지 파랑)가 깔리고, 규칙선은 등고선 갈색 1px로만 그어진다. 사용자가 KPI나 노드를 고르면, 그 노드를 지나는 결정적 경로만 코스 퍼플로 위에 얹힌다. 출발 △, 번호 붙은 통제점 ○, 결승 ◎으로 이어지는 코스이고, 오른쪽 상세 패널 맨 위의 코스 설명표가 각 지점의 수치를 읽어 준다.\n\n밀도는 높되 소리는 낮다. 수백 개의 노드가 한 캔버스에 있어도 경보는 진짜 위험에만 울린다. 상태는 지도 기호표처럼 모양으로 먼저 구분하고(▲ 위험·병목, ◆ 주의·지연, 점선 ○ 실행 미연결, 무표시 양호), 색과 문구는 그 위에 겹친다. 숫자(달성률, 열 머리 개수, 통제점 번호)는 Barlow Condensed 응축 숫자로 읽히고, 한글은 앱 기본 서체를 그대로 쓴다.\n\n장식 효과는 없다. 그라데이션, 글로우, 파스텔 칩 덩어리, 흐린 엣지 덩어리를 쓰지 않는다. 사무실 모니터와 회의실 프로젝터를 함께 견디도록 밝은 바탕과 4.5:1 이상의 글자 대비를 유지한다.",
+    "keyCharacteristics": [
+      "흰 지도 바탕 + 단계별 극히 옅은 지형 띠 틴트",
+      "등고선 갈색 1px 규칙선, 그림자 대신 선으로 구획",
+      "코스 퍼플은 선택 경로와 주 행동에만",
+      "모양 우선 상태 기호(SVG ▲◆○◎)와 문구 병기",
+      "응축 숫자체(Barlow Condensed, tabular)로 모든 수치 표기",
+      "맥락 노드는 상자를 지우고 글자만 남긴다"
+    ],
+    "rules": [
+      {
+        "name": "The Course-Only Purple Rule",
+        "body": "코스 퍼플은 선택된 코스와 주 행동에만 쓴다. 체인 강조, 장식, 카테고리 구분 같은 다른 의미에는 절대 쓰지 않는다. 퍼플이 보이면 그것은 \"지금 따라가는 길\" 또는 \"지금 누를 버튼\"이다.",
+        "section": "colors"
+      },
+      {
+        "name": "The Shape-Before-Color Rule",
+        "body": "상태는 ▲(위험·병목) ◆(주의·지연) 점선 ○(실행 미연결)의 모양으로 먼저 구분하고, 색과 한국어 문구(위험·주의·양호)를 병기한다. 양호는 기호 없이 둔다. 신호는 드물어야 하므로.",
+        "section": "colors"
+      },
+      {
+        "name": "The Quiet Terrain Rule",
+        "body": "지형 띠 틴트는 흰 종이에 가까운 극히 옅은 값만 쓴다. 지형은 단계를 구분할 뿐 읽기를 방해하지 않는다. 진한 지형 색은 글자(지형 잉크)에만 쓴다.",
+        "section": "colors"
+      },
+      {
+        "name": "The Condensed Numerals Rule",
+        "body": "모든 수치는 Barlow Condensed에 `font-variant-numeric: tabular-nums`로 쓴다. 한글 문장에는 쓰지 않는다.",
+        "section": "typography"
+      },
+      {
+        "name": "The Contour Line Rule",
+        "body": "구획은 등고선 갈색 계열 1px 선으로만 나눈다. 카드·패널·캔버스에 그림자를 주지 않는다.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** 상태를 SVG 기호(▲◆○◎, `OntologySymbol`)와 한국어 문구로 함께 표기하고, 양호는 무표시로 둔다.",
+      "**Do** 코스 퍼플을 선택 경로·통제점·선택 카드·주 행동 버튼·포커스 외곽선에만 쓴다.",
+      "**Do** 단계 구분은 지형 띠 틴트와 지형 잉크(열 머리·종류 아이콘)로 한다.",
+      "**Do** 수치는 Barlow Condensed tabular로, 한글은 앱 기본 서체로 쓴다.",
+      "**Do** 구획은 1px 등고선 선으로, 선택은 테두리 굵기와 코스 워시로 표현한다.",
+      "**Do** 상태 색은 흰 바탕 4.5:1 이상의 고정색(`risk-red`, `warn-ochre`, `achievement-*`)을 쓴다."
+    ],
+    "donts": [
+      "**Don't** 코스 퍼플을 체인 강조, 카테고리, 장식에 쓰지 않는다. 체인의 나머지 엣지는 `edge-chain`이다.",
+      "**Don't** 상태 색에 Vuetify 테마의 error / warning을 쓰지 않는다(파스텔이라 대비가 모자란다).",
+      "**Don't** 지도 캔버스의 노드를 파스텔 칩이나 진한 색면으로 칠하지 않는다. 지점은 흰 카드, 맥락은 글자뿐이다.",
+      "**Don't** 카드·패널·캔버스에 그림자, 그라데이션, 글로우를 주지 않는다.",
+      "**Don't** 이 체계를 온톨로지 익스플로러 밖의 화면에 적용하지 않는다. 다른 화면은 기존 Vuetify / PAL 체계를 따른다."
+    ]
+  },
+  "notes": "버튼 hover는 Vuetify 기본 상태 레이어를 근사한 값이며 이 체계의 토큰이 아니다."
+}
