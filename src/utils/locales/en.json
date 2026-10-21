@@ -3168,9 +3168,9 @@
     },
     "StorageBaseSupabase": {
         "emailNotConfirmed": "Email verification is not complete. Please check your email and log in again.",
-        "invalidCredentials": "Invalid email or password.",
+        "invalidCredentials": "Invalid email or password. Please also check that you are using your organization's address.",
         "loginRequired": "Login is required.",
-        "unRegisteredTenant": "This tenant is not registered.",
+        "unRegisteredTenant": "This account is not a member of this organization. Use your organization's address or ask an administrator for an invitation.",
         "signupPendingApproval": "Your account is pending admin approval. Please try again later.",
         "signupRejected": "Your signup request was rejected. Please contact an administrator."
     },
