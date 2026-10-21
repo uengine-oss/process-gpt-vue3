@@ -9585,3 +9585,427 @@ ll
 2. (선택) 고르지 않은 분기 카드는 안보이는게 맞음. 
 3. 8081에 sanghoon01@uengine.org/[REDACTED] 계정으로 접속해서 위 테스트 10회 진행해봐. 현재 테스트 이력은 해당 계정에서 안보여서.
 ```
+
+## Prompt — 2026-10-21T06:41:09+00:00
+
+```text
+아 [REDACTED]로 해봐.
+```
+
+## Prompt — 2026-10-21T06:42:22+00:00
+
+```text
+근데 로그인을 안했는데 어떻게 테스트를 진행했음? 실제 화면에서 진행해야함. 그리고 이제 Ontology 테스트 하는데 사용 된 프로세스에 폼도 붙혀서 각 1회씩 진행.
+```
+
+## Prompt — 2026-10-21T06:42:35+00:00
+
+```text
+<task-notification>
+<task-id>btujmmsg9</task-id>
+<tool-use-id>toolu_01FwsHxd69zF3c59mYhHqwdD</tool-use-id>
+<output-file>/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/65a1fcab-a641-4fed-ae8c-3c18ce20bd4b/tasks/btujmmsg9.output</output-file>
+<status>failed</status>
+<summary>Background command "cd /home/kimsanghoon/process-gpt-vue3 &amp;&amp; mkdir -p /tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad &amp;&amp; python3 -u scripts/demo/ontology-decision/check.py --runs 10 --email sanghoon01@uengine.org &gt; /tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/check10.log 2&gt;&amp;1" failed with exit code 144</summary>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T06:47:35+00:00
+
+```text
+<task-notification>
+<task-id>bke7s9c2b</task-id>
+<summary>Monitor event: "UI 시나리오 1 진행 로그(장면 결과·오류)"</summary>
+<event>instance ont-dec-regular.194fc1c5-5179-1110-0f2e-68255ad3d89a</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T06:47:35+00:00
+
+```text
+<task-notification>
+<task-id>bke7s9c2b</task-id>
+<summary>Monitor event: "UI 시나리오 1 진행 로그(장면 결과·오류)"</summary>
+<event>scene1: ok (68s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T06:48:19+00:00
+
+```text
+<task-notification>
+<task-id>bke7s9c2b</task-id>
+<summary>Monitor event: "UI 시나리오 1 진행 로그(장면 결과·오류)"</summary>
+<event>scene2: FAILED — locator.scrollIntoViewIfNeeded: Timeout 30000ms exceeded.</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T06:48:19+00:00
+
+```text
+<task-notification>
+<task-id>bcaozm349</task-id>
+<tool-use-id>toolu_01JkawkYNL65aU5w92cFNpq6</tool-use-id>
+<output-file>/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/65a1fcab-a641-4fed-ae8c-3c18ce20bd4b/tasks/bcaozm349.output</output-file>
+<status>failed</status>
+<summary>Background command "E2E_USER=sanghoon01@uengine.org E2E_PASS='[REDACTED]' node scripts/demo/ontology-decision/record.mjs 1 &gt; /tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/ui1.log 2&gt;&amp;1" failed with exit code 1</summary>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T06:50:41+00:00
+
+```text
+<task-notification>
+<task-id>bke7s9c2b</task-id>
+<summary>Monitor event: "UI 시나리오 1 진행 로그(장면 결과·오류)"</summary>
+<event>instance ont-dec-regular.0d10305f-f915-0193-8573-ebc31985171d</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T06:50:42+00:00
+
+```text
+<task-notification>
+<task-id>bke7s9c2b</task-id>
+<summary>Monitor event: "UI 시나리오 1 진행 로그(장면 결과·오류)"</summary>
+<event>scene1: ok (65s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T06:50:42+00:00
+
+```text
+<task-notification>
+<task-id>bke7s9c2b</task-id>
+<summary>Monitor event: "UI 시나리오 1 진행 로그(장면 결과·오류)"</summary>
+<event>scene2: ok (38s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T06:56:53+00:00
+
+```text
+<task-notification>
+<task-id>bke7s9c2b</task-id>
+<summary>Monitor event: "UI 시나리오 1 진행 로그(장면 결과·오류)"</summary>
+<event>scene3: FAILED — timeout: agent Task_Decide DONE</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T06:56:53+00:00
+
+```text
+<task-notification>
+<task-id>b2fee5ud8</task-id>
+<tool-use-id>toolu_019zeyBAegqSq62A8DPPYosY</tool-use-id>
+<output-file>/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/65a1fcab-a641-4fed-ae8c-3c18ce20bd4b/tasks/b2fee5ud8.output</output-file>
+<status>failed</status>
+<summary>Background command "rm -f docs/manuals/video/ontology-agent-decision/sc1/clips/state.json &amp;&amp; E2E_USER=sanghoon01@uengine.org E2E_PASS='[REDACTED]' node scripts/demo/ontology-decision/record.mjs 1 &gt; /tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/ui1.log 2&gt;&amp;1" failed with exit code 1</summary>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:00:57+00:00
+
+```text
+<task-notification>
+<task-id>bt1brx8qg</task-id>
+<tool-use-id>toolu_01GdRchMjErvWFFmQvTpd222</tool-use-id>
+<output-file>/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/65a1fcab-a641-4fed-ae8c-3c18ce20bd4b/tasks/bt1brx8qg.output</output-file>
+<status>completed</status>
+<summary>Background command "sudo systemctl restart process-gpt-langchain-react; sleep 60; docker exec supabase_db_process-gpt-vue3 psql -U postgres -d postgres -At -c "select activity_id,status,draft_status from todolist where proc_inst_id='ont-dec-regular.0d10305f-f915-0193-8573-ebc31985171d' and activity_id='Task_Decide'"; grep -c "" ~/logs/systemd/langchain-react.log; tail -5 ~/logs/systemd/langchain-react.log | cut -c1-200" completed (exit code 0)</summary>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:01:09+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>=== 2.1</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:35+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene1: ok (36s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:35+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>instance ont-dec-urgent.9f4a8d36-4411-f202-a6e7-1bebd5ef313a</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:35+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene2: ok (33s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:35+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene3: ok (38s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:35+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene4: ok (41s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:35+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene5: ok (74s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:35+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>=== 2.2</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:36+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene1: ok (20s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:36+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>instance ont-dec-parts.cba68954-abc0-858f-7668-3c5cae9be0ac</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:36+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene2: ok (33s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:36+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene3: ok (41s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:36+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene4: ok (33s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:36+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene5: ok (29s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:36+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene6: ok (87s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:11:36+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>instance ont-dec-parts.e8ae8c84-a1b9-22a2-9e50-e00d1889a4b2</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:16+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene7: ok (210s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>=== x</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene1: ok (39s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>instance ont-dec-expansion.0b64607d-bfad-27c9-0399-4dfa6d06521f</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene2: ok (94s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene3: ok (33s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene4: ok (33s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene5: ok (21s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>bke7s9c2b</task-id>
+<summary>Monitor event: "UI 시나리오 1 진행 로그(장면 결과·오류)"</summary>
+<event>[Monitor expired after 30m with 7 events delivered. Re-arm it if you still need the watch.]</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>scene6: ok (108s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>b2qvsfv7q</task-id>
+<tool-use-id>toolu_01X1KhDLzKLwKQgokPeorCYe</tool-use-id>
+<output-file>/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/65a1fcab-a641-4fed-ae8c-3c18ce20bd4b/tasks/b2qvsfv7q.output</output-file>
+<status>completed</status>
+<summary>Background command "for s in sc21 sc22 scx; do rm -f docs/manuals/video/ontology-agent-decision/$s/clips/state.json; done; L=/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/ui-rest.log; : &gt; $L; for s in 2.1 2.2 x; do echo "=== $s" &gt;&gt; $L; E2E_USER=sanghoon01@uengine.org E2E_PASS='[REDACTED]' node scripts/demo/ontology-decision/record.mjs $s &gt;&gt; $L 2&gt;&amp;1 || { echo "=== $s FAILED" &gt;&gt; $L; break; }; done; echo "=== END" &gt;&gt; $L" completed (exit code 0)</summary>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>=== END</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T07:18:17+00:00
+
+```text
+<task-notification>
+<task-id>bnfi3qkys</task-id>
+<tool-use-id>toolu_01MNATAVfHsjioRxqMPiUWTS</tool-use-id>
+<output-file>/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/65a1fcab-a641-4fed-ae8c-3c18ce20bd4b/tasks/bnfi3qkys.output</output-file>
+<status>completed</status>
+<summary>Background command "until grep -qE "^=== (END|.* FAILED)" /tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/ui-rest.log; do sleep 10; done; grep -E "^===|scene|instance" /tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/ui-rest.log" completed (exit code 0)</summary>
+</task-notification>
+```

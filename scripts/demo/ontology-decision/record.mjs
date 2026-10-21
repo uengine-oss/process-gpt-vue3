@@ -11,8 +11,9 @@
 // 결과: docs/manuals/video/ontology-agent-decision/<sc>/clips/sN.webm, docs/manuals/images/ontology-agent-decision/*.png
 // 합성: bash scripts/demo/ontology-decision/make-video.sh <sc> <ffmpeg> <ffprobe>
 //
-// 모든 단계는 화면에서 한다(정의 지도 → 상세 → 실행 → 업무 화면). 화면 밖에서 하는 것은 에이전트 완료를 기다리는
-// DB 조회뿐이다. 실제 인스턴스를 만들고 남긴다(지우려면 seed.py --cleanup).
+// 모든 단계는 화면에서 한다(정의 지도 → 상세 → 실행 → 업무 화면의 폼 입력·제출, 질문 카드 답). 화면 밖에서 하는 것은
+// 에이전트 완료를 기다리는 DB 조회뿐이다. 실제 인스턴스를 만들고 남긴다(지우려면 seed.py --cleanup).
+// 로그인 계정은 E2E_USER / E2E_PASS — 사람 단계 담당과 같아야 한다(seed.py --lead <이메일>).
 
 import { chromium } from '@playwright/test';
 import { execSync } from 'node:child_process';
@@ -136,6 +137,32 @@ async function slowType(locator, text, delay = 18) {
     await locator.pressSequentially(text, { delay });
 }
 
+// 단계 전용 폼(seed.py form_id_of) — 필드 이름(라벨)으로 찾아 값을 넣는다
+const formId = (activity) => `${cfg.proc}-${activity}`.replace(/-/g, '_').toLowerCase() + '_form';
+const fieldsOf = (activity) =>
+    JSON.parse(psql(`select fields_json from public.form_def where tenant_id=${q(TENANT)} and id=${q(formId(activity))}`) || '[]');
+const exact = (t) => new RegExp('^\\s*' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$');
+
+async function fillForm(page, scope, activity, values, delay = 12) {
+    for (const f of fieldsOf(activity)) {
+        const v = values[f.key];
+        if (v == null || f.readonly === 'true') continue;
+        const field = scope.locator('.v-input', { has: page.locator('label', { hasText: exact(f.text) }) }).first();
+        await field.scrollIntoViewIfNeeded();
+        if (f.type === 'select') {
+            await field.locator('.v-field').first().click();
+            await sleep(600);
+            await page.locator('.v-overlay--active .v-list-item', { hasText: exact(v) }).first().click();
+            await sleep(500);
+        } else if (f.type === 'date') {
+            await field.locator('input').first().fill(v);
+        } else {
+            await slowType(field.locator(f.type === 'textarea' ? 'textarea:not(.v-textarea__sizer)' : 'input').first(), v, delay);
+        }
+        await sleep(250);
+    }
+}
+
 async function waitFor(fn, { timeout = 180_000, every = 3000, label = '' } = {}) {
     const t0 = Date.now();
     while (Date.now() - t0 < timeout) {
@@ -187,13 +214,13 @@ async function openProcess(page, n, note) {
 }
 
 // 실행 → 첫 단계(구매 요청) 제출 → 인스턴스
-async function startInstance(page, n) {
-    await caption(page, `${n} 실행 — 첫 단계 <b>구매 요청</b>(요청 부서)을 쓰고 제출`);
+async function startInstance(page, n, shots = true) {
+    await caption(page, `${n} 실행 — 첫 단계 <b>구매 요청</b>(요청 부서) 폼을 채우고 제출`);
     await page.locator('button', { hasText: /^\s*실행\s*$/ }).first().click();
     await sleep(4500);
-    await slowType(page.locator('.v-overlay--active textarea:visible').last(), T.request, 12);
+    await fillForm(page, page.locator('.v-overlay--active'), 'Task_Request', T.request);
     await sleep(1200);
-    await shot(page, `${P}-02-request.png`);
+    if (shots) await shot(page, `${P}-02-request.png`);
     await page.locator('.v-overlay--active button', { hasText: '제출 완료' }).first().click();
     await page.waitForURL(/instancelist\//, { timeout: 30_000 });
     state.instId = decodeURIComponent(page.url().split('/instancelist/')[1].split('?')[0]).replace(/_DOT_/g, '.');
@@ -203,7 +230,7 @@ async function startInstance(page, n) {
 }
 
 // 사람 단계 — 업무를 열어 쓰고 제출
-async function humanStep(page, activity, text, note, shotName) {
+async function humanStep(page, activity, values, note, shotName) {
     const id = await waitFor(() => (todoOf(activity, 'status') === 'IN_PROGRESS' ? todoOf(activity) : null), {
         label: activity + ' ready',
         every: 2000,
@@ -211,7 +238,7 @@ async function humanStep(page, activity, text, note, shotName) {
     });
     await go(page, '/todolist/' + id, 4000);
     await caption(page, note);
-    await slowType(page.locator('textarea:visible').first(), text, 14);
+    await fillForm(page, page, activity, values);
     await sleep(1000);
     if (shotName) await shot(page, shotName);
     await page.locator('button', { hasText: '제출 완료' }).first().click();
@@ -219,9 +246,9 @@ async function humanStep(page, activity, text, note, shotName) {
     await sleep(1500);
 }
 
-async function receiveAndQuote(page, n) {
-    await humanStep(page, 'Task_Receive', T.receive, `${n} 구매 담당 — 요청 접수·사양 확인`, `${P}-03-receive.png`);
-    await humanStep(page, 'Task_Quote', T.quote, `${n} 구매 담당 — 견적 접수(후보 공급사 두 곳의 단가·납기·품질)`, `${P}-04-quote.png`);
+async function receiveAndQuote(page, n, shots = true) {
+    await humanStep(page, 'Task_Receive', T.receive, `${n} 구매 담당 — 요청 접수·사양 확인`, shots && `${P}-03-receive.png`);
+    await humanStep(page, 'Task_Quote', T.quote, `${n} 구매 담당 — 견적 접수(후보 공급사 두 곳의 단가·납기·품질)`, shots && `${P}-04-quote.png`);
 }
 
 async function waitAgent(page, want, activity = 'Task_Decide') {
@@ -435,17 +462,11 @@ const SCENES = {
         async 6(page) {
             await closeOut(page, '⑥', 9);
         },
-        // 같은 프로세스, 다른 답 — 단가를 택하면 검수 Gateway 가 강화 검수로 보낸다.
-        // 요청·접수·견적은 앞 인스턴스와 같아 점검 스크립트의 엔진 호출로 미리 제출하고(화면 밖), 답부터 화면에서 한다.
+        // 같은 프로세스, 다른 답 — 단가를 택하면 검수 Gateway 가 강화 검수로 보낸다. 두 번째 건도 화면에서 시작한다.
         async 7(page) {
-            state.instId = execSync(
-                `python3 -c "import sys; sys.path.insert(0, 'scripts/demo/ontology-decision'); import check; print(check.start('${cfg.proc}'))"`
-            )
-                .toString()
-                .trim()
-                .split('\n')
-                .pop();
-            save();
+            await go(page, '/definition-map/sub/' + cfg.proc, 3500);
+            await startInstance(page, '⑦', false);
+            await receiveAndQuote(page, '⑦', false);
             await waitQuestion(page);
             await go(page, instPath(), 3500);
             await caption(page, '⑦ 같은 프로세스의 두 번째 건 — 요청·견적은 같고, 이번에는 담당자가 <b>단가</b>를 택한다');

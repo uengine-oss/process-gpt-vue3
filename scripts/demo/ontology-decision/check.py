@@ -32,8 +32,7 @@ import urllib.request
 ENGINE = "http://127.0.0.1:8000/complete"
 PSQL = shlex.split("docker exec -i supabase_db_process-gpt-vue3 psql -U postgres -d postgres -At")
 EMAIL = "manual-shots@uengine.org"
-LEAD = "a08e7c0d-9050-4eb8-ad68-c35d4aceadf0"  # seed.py 가 사람 레인에 넣은 담당(manual-shots)
-USER_ID = LEAD
+USER_ID = None  # --email 로 정하면 사람 레인 담당을 그 계정으로 바꿔 시작한다
 
 # 시나리오 문구 — 녹화 스크립트(record.mjs)와 같은 파일을 쓴다
 TEXTS = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "scenarios.json"), encoding="utf-8"))
@@ -55,9 +54,12 @@ def q(v: str) -> str:
 
 
 def role_mappings(proc: str) -> list:
-    """정의의 레인 담당 중 시드 담당(LEAD)을 실행 계정으로 바꾼다 — 에이전트 레인은 그대로."""
+    """사람 레인 담당을 실행 계정으로 바꾼다 — 에이전트 레인은 그대로. --email 이 없으면 정의의 담당 그대로."""
+    if not USER_ID:
+        return []
     roles = json.loads(sql(f"select definition->'roles' from proc_def where id={q(proc)} and tenant_id='tym'"))
-    swap = lambda v: USER_ID if v == LEAD else v
+    agents = set(sql("select id::text from public.users where tenant_id='tym' and is_agent").split())
+    swap = lambda v: v if v in agents else USER_ID
     return [{"name": r["name"], "endpoint": swap(r["endpoint"]), "default": swap(r["default"])} for r in roles]
 
 
@@ -68,12 +70,17 @@ def post(input_: dict) -> dict:
     return json.load(urllib.request.urlopen(req, timeout=60))
 
 
-def submit(inst: str, proc: str, activity: str, text: str) -> None:
+def form_id(proc: str, activity: str) -> str:
+    """단계 전용 폼 id — seed.py form_id_of 와 같다."""
+    return f"{proc}-{activity}".replace("-", "_").lower() + "_form"
+
+
+def submit(inst: str, proc: str, activity: str, values: dict) -> None:
     """사람 단계 제출 — 화면의 '제출 완료'와 같은 엔진 호출."""
     wait(inst, {"IN_PROGRESS"}, timeout=90, activity=activity)
     task_id = sql(f"select id from todolist where proc_inst_id={q(inst)} and activity_id={q(activity)}")
     post({"task_id": task_id, "process_instance_id": inst, "process_definition_id": proc, "activity_id": activity,
-          "form_values": {"defaultform": {"free_input": text}}})
+          "form_values": {form_id(proc, activity): values}})
     wait(inst, {"DONE", "SUBMITTED"}, timeout=90, activity=activity)
 
 
@@ -81,7 +88,7 @@ def start(proc: str) -> str:
     """구매 요청으로 시작 → 접수·사양 확인 → 견적 접수까지 사람 단계를 제출한다(다음은 에이전트 판단)."""
     t = TEXTS[proc]
     inst = post({"process_definition_id": proc, "process_instance_id": "new", "role_mappings": role_mappings(proc),
-                 "form_values": {"defaultform": {"free_input": t["request"]}}})["proc_inst_id"]
+                 "form_values": {form_id(proc, "Task_Request"): t["request"]}})["proc_inst_id"]
     submit(inst, proc, "Task_Receive", t["receive"])
     submit(inst, proc, "Task_Quote", t["quote"])
     return inst
@@ -150,11 +157,11 @@ def report_of(out: dict) -> str:
     return form_of(out).get("free_input") or ""
 
 
-def inspect_branch(inst: str, proc: str, approve: str = "발주 승인합니다.", po: str = "발주서 발행.") -> str:
+def inspect_branch(inst: str, proc: str) -> str:
     """승인·발주서 발행을 제출하고 검수 Gateway 가 연 업무(활동 id)를 돌려준다. 엔진은 분기 양쪽 업무를 TODO 로
     미리 만들어 두므로 진행 중(IN_PROGRESS)이 된 쪽을 본다."""
-    submit(inst, proc, "Task_Approve", approve)
-    submit(inst, proc, "Task_PO", po)
+    submit(inst, proc, "Task_Approve", TEXTS[proc]["approve"])
+    submit(inst, proc, "Task_PO", TEXTS[proc]["po"])
     t0 = time.time()
     while time.time() - t0 < 120:
         rows = sql(f"select activity_id || '=' || status from todolist where proc_inst_id={q(inst)} "

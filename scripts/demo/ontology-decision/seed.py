@@ -3,6 +3,7 @@
 
     python3 scripts/demo/ontology-decision/seed.py            # 만들기(있으면 지우고 다시)
     python3 scripts/demo/ontology-decision/seed.py --cleanup  # 지우기
+    python3 scripts/demo/ontology-decision/seed.py --lead sanghoon01@uengine.org   # 사람 단계 담당 계정(기본 manual-shots)
     python3 scripts/demo/ontology-decision/seed.py --priority 2.1=lead|cost   # 시나리오 2.1 우선순위 지정(1순위 쪽)
 
 세 프로세스는 같은 모양이다 — 구매 담당이 요청서(품목·후보 공급사 견적)를 쓰면(사람) → 구매 판단 에이전트가
@@ -184,26 +185,60 @@ AGENT_TASK = "userTask"
 AGENT_ORCH = "langchain-react"
 
 
-def decision_form(form_id: str) -> tuple[str, list[dict]]:
-    """판단 업무 폼 — 보고서(에이전트가 씀) + 판단 방식·적용 기준(워커가 판단 근거 결과로 채움, Gateway 조건이 읽음)."""
-    fields = [{"key": "free_input", "text": "판단 보고서", "type": "textarea", "disabled": "false", "readonly": "false"},
-              {"key": "decision_mode", "text": "판단 방식", "type": "text", "disabled": "false", "readonly": "true"},
-              {"key": "decision_chosen", "text": "적용 기준", "type": "text", "disabled": "false", "readonly": "true"}]
+# 사람 단계 폼 — (활동 → 제목, [(키, 이름, 유형, 선택지)]). 단계마다 전용 폼(form_id_of)이라 앞 단계 입력이 뒤 단계에 덮이지 않는다.
+OK_ITEMS = ["합격", "부분 합격(교환 요청)", "불합격"]
+HUMAN_FORMS = {
+    "Task_Request": ("구매 요청", [("item", "품목", "text"), ("quantity", "수량", "text"), ("need_by", "필요일", "date"),
+                               ("reason", "요청 사유", "textarea")]),
+    "Task_Receive": ("요청 접수·사양 확인", [("suppliers", "견적 요청 공급사", "text"), ("spec", "확인한 사양", "textarea")]),
+    "Task_Quote": ("견적 접수", [("quote_a", "A 공급사 견적", "textarea"), ("quote_b", "B 공급사 견적", "textarea")]),
+    "Task_Approve": ("발주 승인", [("approval", "승인 결과", "select", ["승인", "조건부 승인"]),
+                               ("approval_note", "승인 의견", "textarea")]),
+    "Task_PO": ("발주서 발행", [("po_no", "발주 번호", "text"), ("supplier", "발주 공급사", "select", ["A 공급사", "B 공급사", "품목별 혼합"]),
+                             ("promised_date", "약속 납기", "date"), ("po_terms", "발주 조건", "textarea")]),
+    "Task_Inspect": ("입고·검수", [("received_qty", "입고 수량", "text"), ("inspect_result", "검수 결과", "select", OK_ITEMS),
+                                ("inspect_note", "검수 의견", "textarea")]),
+    "Task_Inspect_Strict": ("강화 검수", [("received_qty", "입고 수량", "text"), ("inspect_result", "검수 결과", "select", OK_ITEMS),
+                                       ("test_report", "시험 성적서", "select", ["확인", "미제출"]),
+                                       ("inspect_note", "검수 의견", "textarea")]),
+}
+# 판단 업무 폼 — 보고서(에이전트가 씀) + 판단 방식·적용 기준(워커가 판단 근거 결과로 채움, Gateway 조건이 읽음)
+DECISION_FIELDS = [("decision_mode", "판단 방식", "text", None, "true"), ("decision_chosen", "적용 기준", "text", None, "true"),
+                   ("free_input", "판단 보고서", "textarea")]
 
-    def col(f, width):
-        if f["type"] == "textarea":
-            tag = (f'<textarea-field name="{f["key"]}" alias="{f["text"]}" rows="12" disabled="false" readonly="false" '
-                   f'v-model="slotProps.modelValue[\'{f["key"]}\']"></textarea-field>')
+
+def form_of(form_id: str, title: str, spec: list[tuple]) -> tuple[str, list[dict]]:
+    """폼 html·필드 목록 — 짧은 필드는 한 줄에 나란히, 긴 글(textarea)은 한 줄 전체."""
+    fields, short, rows = [], [], []
+
+    def tag(key, alias, kind, items, readonly):
+        model = f'v-model="slotProps.modelValue[\'{key}\']"'
+        common = f'name="{key}" alias="{alias}" disabled="false" readonly="{readonly}" {model}'
+        if kind == "textarea":
+            return f'<textarea-field {common} rows="{12 if key == "free_input" else 5}"></textarea-field>'
+        if kind == "select":
+            opts = json.dumps([{o: o} for o in items], ensure_ascii=False).replace('"', "'")
+            return f'<select-field {common} is_dynamic_load="false" items="{opts}"></select-field>'
+        return f'<text-field {common} type="{kind}"></text-field>'
+
+    for key, alias, kind, *rest in spec:
+        items = rest[0] if rest else None
+        readonly = rest[1] if len(rest) > 1 else "false"
+        fields.append({"key": key, "text": alias, "type": kind, "disabled": "false", "readonly": readonly})
+        if kind == "textarea":
+            rows.append([tag(key, alias, kind, items, readonly)])
         else:
-            tag = (f'<text-field name="{f["key"]}" alias="{f["text"]}" type="text" disabled="false" readonly="true" '
-                   f'v-model="slotProps.modelValue[\'{f["key"]}\']"></text-field>')
-        return f'<div class="col-sm-{width}">{tag}</div>'
-
-    html = (f'<section><row-layout name="{form_id}_section" alias="공급사 선정 판단" is_multidata_mode="false" '
-            'v-model="formValues" v-slot="slotProps"><div class="row">'
-            + col(fields[1], 4) + col(fields[2], 8) + '</div><div class="row">' + col(fields[0], 12)
-            + '</div></row-layout></section>')
+            short.append(tag(key, alias, kind, items, readonly))
+    width = 12 // max(1, len(short))
+    body = ([f'<div class="row">{"".join(f"<div class=\"col-sm-{width}\">{t}</div>" for t in short)}</div>'] if short else []) + \
+           [f'<div class="row"><div class="col-sm-12">{r[0]}</div></div>' for r in rows]
+    html = (f'<section><row-layout name="{form_id}_section" alias="{title}" is_multidata_mode="false" '
+            f'v-model="formValues" v-slot="slotProps">{"".join(body)}</row-layout></section>')
     return html, fields
+
+
+def decision_form(form_id: str, title: str = "공급사 선정 판단") -> tuple[str, list[dict]]:
+    return form_of(form_id, title, DECISION_FIELDS)
 
 
 def definition_of(p: dict) -> tuple[str, dict]:
@@ -221,7 +256,7 @@ def definition_of(p: dict) -> tuple[str, dict]:
     pid = "Proc_" + p["id"].replace("-", "_")
 
     def tool_of(a):
-        return f"formHandler:{form_id_of(p['id'], a['id'])}" if a["lane"] == AGENT_NAME else "formHandler:defaultform"
+        return f"formHandler:{form_id_of(p['id'], a['id'])}"
 
     def agent_props(a):
         orch = AGENT_ORCH if a["kind"] == "userTask" else ""
@@ -308,6 +343,8 @@ delete from public.todolist where tenant_id = {q(TENANT)} and proc_def_id like '
 delete from public.form_def where tenant_id = {q(TENANT)} and id like '{TAG.replace("-", "_")}%';
 delete from public.bpm_proc_inst where tenant_id = {q(TENANT)} and proc_def_id like '{TAG}%';
 delete from public.proc_def where tenant_id = {q(TENANT)} and id like '{TAG}%';
+delete from public.proc_def_version where proc_def_id like '{TAG}%';
+delete from public.proc_def_arcv where proc_def_id like '{TAG}%';
 delete from public.users where tenant_id = {q(TENANT)} and id::text = {q(AGENT)};
 """)
     raw = psql_value(f"select value::text from public.configuration where tenant_id = {q(TENANT)} and key = 'proc_map'")
@@ -340,10 +377,11 @@ values ({q(AGENT)}, {q(AGENT_NAME)}, null, {q(TENANT)}, true, 'agent',
     for p in PROCESSES:
         xml, definition = definition_of(p)
         for a in definition["activities"]:
-            if a["role"] != AGENT_NAME:
-                continue
             fid = form_id_of(p["id"], a["id"])
-            html, fields = decision_form(fid)
+            if a["role"] == AGENT_NAME:
+                html, fields = decision_form(fid, a["name"])
+            else:
+                html, fields = form_of(fid, a["name"], HUMAN_FORMS[a["id"]][1])
             stmts.append("insert into public.form_def (id, html, proc_def_id, activity_id, tenant_id, fields_json) values "
                          f"({q(fid)}, {q(html)}, {q(p['id'])}, {q(a['id'])}, {q(TENANT)}, {q(json.dumps(fields, ensure_ascii=False))}::jsonb);")
         stmts.append(
@@ -410,10 +448,15 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--cleanup", action="store_true")
     ap.add_argument("--priority")
+    ap.add_argument("--lead", help="사람 레인(요청 부서·구매 담당·구매팀장·품질 관리) 담당 계정 이메일(tym)")
     ap.add_argument("--service-task", action="store_true", help="판단 단계를 서비스 태스크로(오케스트레이션 워커 없이 폴링 서비스가 실행)")
     args = ap.parse_args()
     if args.service_task:
         AGENT_TASK = "serviceTask"
+    if args.lead:
+        LEAD = psql_value(f"select id from public.users where email = {q(args.lead)} and tenant_id = {q(TENANT)}")
+        if not LEAD:
+            sys.exit(f"{TENANT} 테넌트에 {args.lead} 계정이 없습니다")
     if args.priority:
         set_priority(args.priority)
     elif args.cleanup:
