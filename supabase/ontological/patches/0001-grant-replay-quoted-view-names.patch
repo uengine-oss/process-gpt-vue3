@@ -1,0 +1,43 @@
+# 상류 이슈: 타입 생성 시 권한 재부여(apply_to_view)가 이미 따옴표 친 뷰 이름을 다시 따옴표로 감싸
+# GRANT 가 실패하고, SPI 오류가 트랜잭션을 중단시켜 og_grant 이후의 모든 타입 생성이 실패한다.
+# 재현: og_grant(role, ...) 후 og_create_type(...) → relation "og_data."Task"" does not exist
+diff --git a/engine/src/catalog/privileges.rs b/engine/src/catalog/privileges.rs
+index 23a6dfe..20ff48e 100644
+--- a/engine/src/catalog/privileges.rs
++++ b/engine/src/catalog/privileges.rs
+@@ -237,7 +237,7 @@ fn grant_functions(quoted_role: &str, rank: i32) {
+ pub fn apply_to_table(table: &str) {
+     for (role, level) in recorded() {
+         let r = spiu::ident(&role);
+-        let t = spiu::qname(table);
++        let t = quoted_once(table);
+         if let Err(e) = Spi::run(&format!("GRANT SELECT ON {t} TO {r}")) {
+             pgrx::log!("could not grant SELECT on {table} to {role}: {e}");
+         }
+@@ -253,12 +253,25 @@ pub fn apply_to_table(table: &str) {
+ pub fn apply_to_view(view: &str) {
+     for (role, _) in recorded() {
+         let r = spiu::ident(&role);
+-        if let Err(e) = Spi::run(&format!("GRANT SELECT ON {} TO {r}", spiu::qname(view))) {
++        if let Err(e) = Spi::run(&format!("GRANT SELECT ON {} TO {r}", quoted_once(view))) {
+             pgrx::log!("could not grant SELECT on {view} to {role}: {e}");
+         }
+     }
+ }
+ 
++/// Callers pass either a bare `schema.rel` or a name they already quoted
++/// (`og_data."Task"`, as the alias and type views are built). Quoting the second
++/// kind again yields `"og_data"."""Task"""`, the GRANT fails, and because an
++/// SPI error aborts the transaction the "logged, never fatal" failure takes the
++/// type creation down with it.
++fn quoted_once(name: &str) -> String {
++    if name.contains('"') {
++        name.to_string()
++    } else {
++        spiu::qname(name)
++    }
++}
++
+ fn recorded() -> Vec<(String, String)> {
+     Spi::connect(|client| {
+         client

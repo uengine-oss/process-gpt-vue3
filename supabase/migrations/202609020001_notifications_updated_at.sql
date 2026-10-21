@@ -12,8 +12,15 @@
 --
 --   컬럼만 있으면 되고, 기존 행에는 시간 정보가 없으므로 기본값을 두지 않는다.
 
-alter table public.notifications
-    add column if not exists updated_at timestamptz;
+-- notifications 테이블은 어떤 마이그레이션도 만들지 않는다(운영 DB에서 외부 경로로 생성됨).
+-- 테이블이 없는 환경(신규/로컬 DB)에서도 마이그레이션 체인이 멈추지 않도록 존재 가드로 감싼다.
+do $$
+begin
+    if to_regclass('public.notifications') is not null then
+        alter table public.notifications
+            add column if not exists updated_at timestamptz;
 
-comment on column public.notifications.updated_at is
-    'fcm_service 가 이 알림을 선점(발송 담당 지정)한 시각. consumer 와 함께 기록된다.';
+        comment on column public.notifications.updated_at is
+            'fcm_service 가 이 알림을 선점(발송 담당 지정)한 시각. consumer 와 함께 기록된다.';
+    end if;
+end $$;
