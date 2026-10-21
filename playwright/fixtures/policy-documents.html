@@ -1,0 +1,60 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Policy document integration tests</title></head>
+<body><div id="app"></div><script type="module">
+import { createApp, h, reactive } from 'vue';
+import { createPinia } from 'pinia';
+import { createVuetify } from 'vuetify';
+import { VApp } from 'vuetify/components';
+import { createRouter, createWebHistory } from 'vue-router';
+import 'vuetify/styles';
+import BackendFactory from '/src/components/api/BackendFactory.ts';
+const params = new URLSearchParams(location.search);
+window.$mode = 'ProcessGPT';
+window.$tenantName = 'policy-test';
+window.$pal = false;
+const request = async (path, options) => {
+    const response = await fetch('/__policy-test/' + path, options);
+    const data = await response.json();
+    return response.ok ? { data, error: null } : { data: null, error: data };
+};
+window.$supabase = {
+    auth: { getUser: async () => ({ data: { user: { id: 'tester' } } }) },
+    from(table) {
+        const query = new URLSearchParams();
+        let method = 'GET', body;
+        const builder = {
+            select() { return builder; },
+            order() { return builder; },
+            range(from, to) { query.set('offset', from); query.set('limit', to - from + 1); return builder; },
+            is(key, value) { query.set(key, String(value)); return builder; },
+            eq(key, value) { query.set(key, value); return builder; },
+            insert(value) { method = 'POST'; body = value; return builder; },
+            update(value) { method = 'PATCH'; body = value; return builder; },
+            single() { return builder; }, maybeSingle() { return builder; },
+            then(resolve, reject) { return request(table + '?' + query, { method, body: body && JSON.stringify(body), headers: { 'Content-Type': 'application/json' } }).then(resolve, reject); }
+        };
+        return builder;
+    },
+    storage: { from(bucket) { return {
+        async upload(path, file) { return request('storage/' + bucket + '/' + path, { method: 'POST', body: file }); },
+        getPublicUrl(path) { return { data: { publicUrl: '/__policy-test/storage/' + bucket + '/' + path } }; },
+        async download(path) { const response = await fetch('/__policy-test/storage/' + bucket + '/' + path); return { data: await response.blob() }; },
+        async remove(paths) { return request('storage/' + bucket, { method: 'DELETE', body: JSON.stringify(paths) }); }
+    }; } }
+};
+// Use the actual StorageBase upload implementation used by ProcessGPTBackend.
+const { default: StorageBaseSupabase } = await import('/src/utils/StorageBaseSupabase.js');
+const storage = new StorageBaseSupabase();
+BackendFactory.createBackend = () => ({
+    uploadFile: (name, file) => storage.uploadFile(name, file),
+    getMetricsMap: async () => ({ domains: [{ id: 'manufacturing', name: '제조' }, { id: 'finance', name: '재무' }, { id: 'manual', name: '공통' }] }), getProcessDefinitionMap: async () => ({}), insertAdminAuditLog: async () => ({})
+});
+const model = reactive({ dataAttachmentFile: null });
+window.policyTestModel = model;
+const field = { property_key: 'attachment', property_type: 'file', property_label: '첨부 파일', config: { file: { path_prefix: 'data-objects', multiple: params.get('multiple') === 'true' } } };
+const component = params.get('view') === 'library'
+    ? (await import('/src/views/policy-document/PolicyDocumentManager.vue')).default
+    : (await import('/src/components/ui/SchemaFieldInput.vue')).default;
+const props = params.get('view') === 'library' ? {} : { field, model, modelKey: 'dataAttachmentFile', policyLibrary: true, disabled: params.get('readonly') === 'true' };
+const router = createRouter({ history: createWebHistory(), routes: [{ path: '/:pathMatch(.*)*', component: { render: () => null } }] });
+createApp({ render: () => h(VApp, {}, { default: () => h(component, props) }) }).use(createPinia()).use(createVuetify()).use(router).mount('#app');
+</script></body></html>

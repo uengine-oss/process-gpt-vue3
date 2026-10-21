@@ -1,0 +1,44 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Membership approval tests</title></head>
+<body><div id="app"></div><script type="module">
+import { createApp, h } from 'vue';
+import { createPinia } from 'pinia';
+import { createVuetify } from 'vuetify';
+import { VApp } from 'vuetify/components';
+import { createRouter, createWebHistory } from 'vue-router';
+import 'vuetify/styles';
+import BackendFactory from '/src/components/api/BackendFactory.ts';
+import { applyMembershipClaims } from '/src/utils/authClaims.ts';
+const params = new URLSearchParams(location.search);
+window.$pal = false;
+window.$tenantName = 'tym';
+const session = { user: { id: 'test-self', app_metadata: { tenant_id: 'tym' } }, access_token: 'test-session' };
+const request = async (path, options) => {
+    const response = await fetch('/__membership-test/' + path, options);
+    const data = await response.json();
+    return response.ok ? { data, error: null } : { data: null, error: data };
+};
+window.$supabase = {
+    auth: { getSession: async () => ({ data: { session } }), refreshSession: async () => ({ data: { session } }) },
+    rpc: (name, args) => request('rpc/' + name, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(args || {}) }),
+    from(table) {
+        const query = new URLSearchParams();
+        const builder = {
+            select() { return builder; }, order() { return builder; },
+            eq(key, value) { query.set(key, value); return builder; },
+            then(resolve, reject) { return request(table + '?' + query).then(resolve, reject); }
+        };
+        return builder;
+    }
+};
+BackendFactory.createBackend = () => ({});
+applyMembershipClaims({ status: 'approved', role: params.get('admin') === 'true' ? 'admin' : 'viewer', tenant_id: 'tym' });
+const views = {
+    role: () => import('/src/views/organization/RoleRequestPage.vue'),
+    approval: () => import('/src/views/organization/MembershipApprovalPanel.vue'),
+    pending: () => import('/src/views/authentication/SignupPending.vue'),
+    badge: () => import('/src/components/ui/MembershipRequestBadge.vue')
+};
+const component = (await views[params.get('view') || 'role']()).default;
+const router = createRouter({ history: createWebHistory(), routes: [{ path: '/:pathMatch(.*)*', component: { render: () => null } }] });
+createApp({ render: () => h(VApp, {}, { default: () => h(component) }) }).use(createPinia()).use(createVuetify()).use(router).mount('#app');
+</script></body></html>

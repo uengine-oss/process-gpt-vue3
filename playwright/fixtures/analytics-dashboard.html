@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><title>Dashboard component test</title></head>
+<body><div id="app"></div>
+<script type="module">
+import { createApp, h } from 'vue';
+import { createPinia } from 'pinia';
+import { createVuetify } from 'vuetify';
+import { VApp } from 'vuetify/components';
+import { createRouter, createWebHistory } from 'vue-router';
+import 'vuetify/styles';
+import BackendFactory from '/src/components/api/BackendFactory.ts';
+
+// HTTP responses are intercepted by the test. No real credentials are used.
+window.$supabase = { auth: { getSession: async () => ({ data: { session: { access_token: 'dashboard-test-session' } } }) } };
+BackendFactory.createBackend = () => ({});
+const view = new URLSearchParams(location.search).get('view') || 'process';
+const views = {
+    process: () => import('/src/views/analytics/tabs/ProcessAnalytics.vue'),
+    quality: () => import('/src/views/analytics/tabs/GovernanceQuality.vue'),
+    operational: () => import('/src/views/analytics/tabs/ModelOperationalBoard.vue')
+};
+const component = (await views[view]()).default;
+const router = createRouter({ history: createWebHistory(), routes: [{ path: '/:pathMatch(.*)*', component: { render: () => null } }] });
+const app = createApp({ render: () => h(VApp, {}, { default: () => h(component) }) });
+app.use(createPinia()).use(createVuetify()).use(router).mount('#app');
+</script>
+</body></html>
