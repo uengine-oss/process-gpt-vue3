@@ -31,6 +31,14 @@ export const useStrategyStore = defineStore('strategy', () => {
         return data;
     }
 
+    // 프로세스 정의의 활동 목록 — KPI '판단 적용 활동' 선택지(spec 018)
+    async function loadProcessActivities(procDefId: string) {
+        const { data } = await axios.get(`${BASE}/process-definitions/${encodeURIComponent(procDefId)}/activities`, {
+            params: { tenant_id: tenantId() }
+        });
+        return data || [];
+    }
+
     async function loadProcessDefinitions() {
         const { data } = await axios.get(`${BASE}/process-definitions`, { params: { tenant_id: tenantId() } });
         processDefinitions.value = data || [];
@@ -141,13 +149,24 @@ export const useStrategyStore = defineStore('strategy', () => {
 
     // ---- 온톨로지 그래프 / 영향도 -------------------------------------
     // 기업 운영 온톨로지(전략→프로세스→리소스→지식) 4레이어 그래프.
-    async function getOntologyGraph(layers?: string[]) {
+    // asOf(YYYY-MM-DD) 를 주면 그날 시점의 KPI 값·실행 상태(spec 014 US5)
+    async function getOntologyGraph(layers?: string[], asOf?: string | null) {
         const { data } = await axios.get(`${BASE}/ontology/graph`, {
             params: {
                 tenant_id: tenantId(),
-                ...(layers && layers.length ? { layers: layers.join(',') } : {})
+                ...(layers && layers.length ? { layers: layers.join(',') } : {}),
+                ...(asOf ? { as_of: asOf } : {})
             }
         });
+        return data;
+    }
+    async function getOntologyTimeline() {
+        const { data } = await axios.get(`${BASE}/ontology/timeline`, { params: { tenant_id: tenantId() } });
+        return data;
+    }
+    // 온톨로지 스키마(레이어·노드/관계 타입 메타 + 테넌트별 개수) — specs/013
+    async function getOntologySchema() {
+        const { data } = await axios.get(`${BASE}/ontology/schema`, { params: { tenant_id: tenantId() } });
         return data;
     }
     async function getNodeNeighbors(id: string, depth = 1) {
@@ -159,6 +178,17 @@ export const useStrategyStore = defineStore('strategy', () => {
     async function getImpactKpi(id: string) {
         const { data } = await axios.get(`${BASE}/impact/kpi/${encodeURIComponent(id)}`, {
             params: { tenant_id: tenantId() }
+        });
+        return data;
+    }
+    // 프로세스 변경 영향(spec 016) — 바꾸면 영향을 받는 다른 프로세스·KPI. versions=true 면 최신·이전 버전 차이로 범위를 정한다.
+    async function getProcessImpact(id: string, opts: { tasks?: string[]; versions?: boolean } = {}) {
+        const { data } = await axios.get(`${BASE}/impact/process/${encodeURIComponent(id)}`, {
+            params: {
+                tenant_id: tenantId(),
+                tasks: opts.tasks?.length ? opts.tasks.join(',') : undefined,
+                versions: opts.versions || undefined
+            }
         });
         return data;
     }
@@ -192,6 +222,28 @@ export const useStrategyStore = defineStore('strategy', () => {
         });
         return data;
     }
+    // 익스플로러 자연어 질의 — 답변 + 근거 경로(spec 014 US3). LLM 탐색이라 수 초 걸린다.
+    async function askOntology(question: string) {
+        const { data } = await axios.post(`${BASE}/ontology/ask`, { tenant_id: tenantId(), question }, { timeout: 90000 });
+        return data;
+    }
+    // 영향 가설 — 실행 지표 ↔ KPI 시계열 제안, 사람이 판정(spec 014 US4)
+    async function getHypotheses(status?: string) {
+        const { data } = await axios.get(`${BASE}/causal/hypotheses`, { params: { tenant_id: tenantId(), status } });
+        return data;
+    }
+    async function discoverHypotheses() {
+        const { data } = await axios.post(`${BASE}/causal/discover`, null, { params: { tenant_id: tenantId() }, timeout: 120000 });
+        return data;
+    }
+    async function decideHypothesis(id: string, verdict: 'approved' | 'rejected' | 'pending', decidedBy: string) {
+        const { data } = await axios.post(
+            `${BASE}/causal/hypotheses/${encodeURIComponent(id)}/decision`,
+            { verdict, decided_by: decidedBy },
+            { params: { tenant_id: tenantId() } }
+        );
+        return data;
+    }
     async function runOntologySync() {
         const { data } = await axios.post(`${BASE}/ontology/sync`, null, {
             params: { tenant_id: tenantId() }
@@ -203,6 +255,7 @@ export const useStrategyStore = defineStore('strategy', () => {
         loading,
         objectives,
         processDefinitions,
+        loadProcessActivities,
         loadMap,
         resetMap,
         loadProcessDefinitions,
@@ -227,9 +280,16 @@ export const useStrategyStore = defineStore('strategy', () => {
         respondSurvey,
         importLegacyBscard,
         getOntologyGraph,
+        getOntologySchema,
         getNodeNeighbors,
         getImpactKpi,
+        getProcessImpact,
         getImpactStrategy,
+        askOntology,
+        getOntologyTimeline,
+        getHypotheses,
+        discoverHypotheses,
+        decideHypothesis,
         getContributionKpi,
         getContributionPerformer,
         getObjectiveContribution,

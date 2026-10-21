@@ -305,7 +305,8 @@ class ProcessGPTBackend implements Backend {
                         options.match = { ...options.match, isdeleted: false };
                     }
                     if (path && !options.like) {
-                        options.like = `${path}%`;
+                        // StorageBaseSupabase.list 는 like 를 { key, value } 로 받는다 (문자열이면 컬럼명이 undefined 가 된다)
+                        options.like = { key: options.orderBy || 'id', value: `${path}%` };
                     }
                 } else {
                     options = {
@@ -773,7 +774,7 @@ class ProcessGPTBackend implements Backend {
                                     .select('snapshot')
                                     .eq('proc_def_id', defId)
                                     .eq('tenant_id', window.$tenantName)
-                                    .order('created_at', { ascending: false })
+                                    .order('timeStamp', { ascending: false })
                                     .limit(1)
                                     .maybeSingle();
                                 if (latestVersion?.snapshot) {
@@ -831,7 +832,8 @@ class ProcessGPTBackend implements Backend {
             if (!input.answer) {
                 input.answer = '';
             }
-            if (!input.process_instance_id) {
+            // 'new' 는 "새 인스턴스" 표시다(uEngine 백엔드 관례). 그대로 넘기면 엔진이 'new' 를 실제 id 로 저장한다.
+            if (!input.process_instance_id || input.process_instance_id === 'new') {
                 input.process_instance_id = `${defId}.${me.uuid()}`;
             } else {
                 input['chat_room_id'] = input.process_instance_id;
@@ -1324,6 +1326,8 @@ class ProcessGPTBackend implements Backend {
                     currentActivities: currentActivities,
                     defVerId: instance && instance.defVersion ? instance.defVersion : null,
                     output: workitem.output || '',
+                    // 에이전트 중간 결과 — 오케스트레이션 워커가 사용자 답을 기다릴 때 awaiting_user_input 을 남긴다(spec 018)
+                    draft: workitem.draft || null,
                     log: workitem.log || '',
                     orchestration: workitem.agent_orch || '',
                     agentMode: workitem.agent_mode || '',
@@ -4715,7 +4719,25 @@ class ProcessGPTBackend implements Backend {
                 // 일반 구성원의 role/is_admin은 가입 trigger가 사전등록 정보를 기준으로
                 // 이미 설정한다. 여기서 'user'로 upsert하면 admin/reviewer 등의 예약 권한을
                 // 로그인 직후 덮어쓰므로, tenant 소유자가 아닌 경우 권한 컬럼을 보내지 않는다.
-                await storage.putObject('users', putObj);
+                //
+                // users 의 INSERT RLS 는 admin 이상만 허용한다(users_insert_admin). upsert 는 행이
+                // 이미 있어도 INSERT 정책을 먼저 검사하므로, 일반 구성원은 여기서 403 이 나고
+                // setTenant 가 false 를 돌려 /tenant/manage?clear=true ↔ / 무한 리다이렉트에 빠진다.
+                // 가입 trigger 가 이미 행을 만들어 둔 경우엔 본인 UPDATE(users_update_self_or_admin)로
+                // 비어 있는 email/username 만 채운다.
+                const existing: any = isOwner
+                    ? null
+                    : await storage.getObject('users', { match: { id: user_id, tenant_id: tenantId } }).catch(() => null);
+                if (existing?.id) {
+                    const patch: any = {};
+                    if (!existing.email && putObj.email) patch.email = putObj.email;
+                    if (!existing.username && putObj.username) patch.username = putObj.username;
+                    if (Object.keys(patch).length > 0) {
+                        await window.$supabase.from('users').update(patch).eq('id', user_id).eq('tenant_id', tenantId);
+                    }
+                } else {
+                    await storage.putObject('users', putObj);
+                }
                 return await storage.isConnection();
             } else {
                 return false;
@@ -7532,6 +7554,10 @@ class ProcessGPTBackend implements Backend {
 
     async getData(path: string, options: any) {
         try {
+            // configuration 은 (tenant_id, key) 로 유일하고 SELECT RLS 가 tenant 를 거르지 않는다.
+            // key 만으로 조회하면 다른 테넌트 행까지 잡혀 maybeSingle 이 PGRST116 → {} 를 돌려주고,
+            // 호출부(조직도 등)는 데이터가 없는 것으로 보고 빈 화면을 그린다.
+            if (path === 'configuration') options = withTenantMatch(options);
             return await storage.getObject(path, options);
         } catch (error) {
             throw new Error(error.message);

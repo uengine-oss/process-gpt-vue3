@@ -4278,6 +4278,9 @@
         "deleteButton": "Delete"
     },
     "BpmnUengine": {
+        "autoLayoutInProgress": "Applying auto layout…",
+        "autoLayoutDone": "Auto layout applied.",
+        "autoLayoutFailed": "Auto layout failed. Please check the diagram structure.",
         "decreaseFontSize": "Decrease Font Size",
         "increaseFontSize": "Increase Font Size",
         "resetZoom": "Fit to Screen",
@@ -5044,7 +5047,13 @@
             "vsLastQuarter": "vs Last Quarter",
             "comparisonHint": "Show quarter-over-quarter change rate",
             "apply": "Apply",
-            "reset": "Reset"
+            "reset": "Reset",
+            "openOntology": "View in ontology",
+            "openOntologyHint": "See this domain's processes on the strategy–execution ontology map",
+            "crossFilterFrom": "Filter from the ontology explorer",
+            "crossFilterDomain": "Domain",
+            "crossFilterPeriod": "Period",
+            "crossFilterClear": "Clear filter"
         },
         "bottleneckTitle": "Process Bottleneck Top 10",
         "totalProcesses": "Total Processes",
@@ -5068,6 +5077,14 @@
         "issueType": "Type",
         "requester": "Requester",
         "noData": "No data available",
+        "thresholds": {
+            "title": "Chart Thresholds",
+            "description": "Thresholds that drive chart colors, grades and lists. Changes apply to every user's dashboard immediately, without code changes.",
+            "default": "Default",
+            "resetDefaults": "Reset to defaults",
+            "changedCount": "{count} changed",
+            "auditNote": "Threshold changes are recorded automatically in Admin Console › Audit Log."
+        },
         "settings": {
             "title": "Dashboard Settings",
             "description": "Configure the render mode and either the dashboard URL or native view per tab. Changes apply immediately without server restart.",

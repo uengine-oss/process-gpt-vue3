@@ -10,6 +10,9 @@ import { parseStorageRef, resolveStorageUrl } from '@/shared/storageUrl/index.js
 // 파일을 가져간 사건은 남긴다 (docs/security.md 3-3, 20260911_file_download_log.sql).
 import { DOWNLOAD_ACTIONS, recordFileDownload } from '@/shared/downloadAudit/index.js';
 
+// PAL 저장(putObject) 제한 시간. 게이트웨이(Kong) 본문 수신 타임아웃 60초보다 짧게 잡는다.
+const PUT_OBJECT_TIMEOUT_MS = 45000;
+
 class StorageBaseError extends Error {
     constructor(message, cause, args) {
         // 원인을 message 에도 적는다.
@@ -712,15 +715,37 @@ export default class StorageBaseSupabase {
     async putObject(path, value, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            let result;
+            let query;
             if (options && options.match) {
-                result = await window.$supabase.from(obj.table).upsert(value).match(options.match);
+                query = window.$supabase.from(obj.table).upsert(value).match(options.match);
             } else if (options && options.onConflict) {
-                result = await window.$supabase.from(obj.table).upsert(value, { onConflict: options.onConflict });
+                query = window.$supabase.from(obj.table).upsert(value, { onConflict: options.onConflict });
             } else if (obj.searchVal) {
-                result = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
+                query = window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
             } else {
-                result = await window.$supabase.from(obj.table).upsert(value);
+                query = window.$supabase.from(obj.table).upsert(value);
+            }
+
+            // PAL: 요청 본문이 네트워크 중간에서 막히면 게이트웨이가 408 을 주고 브라우저가 조용히 재전송해
+            // 저장 스피너가 끝나지 않는다. 제한 시간을 넘기면 끊고 실패로 돌려 호출부의 실패 처리(로컬 백업·토스트)를 태운다.
+            let result;
+            if (window.$pal) {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), PUT_OBJECT_TIMEOUT_MS);
+                try {
+                    result = await query.abortSignal(controller.signal);
+                } finally {
+                    clearTimeout(timer);
+                }
+                if (controller.signal.aborted) {
+                    throw new StorageBaseError(
+                        `서버 응답 시간 초과(${PUT_OBJECT_TIMEOUT_MS / 1000}초) — 네트워크 상태를 확인해 주세요.`,
+                        result?.error,
+                        arguments
+                    );
+                }
+            } else {
+                result = await query;
             }
 
             const { error, status, statusText } = result;

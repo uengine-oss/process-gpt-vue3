@@ -10,7 +10,9 @@ import { useAnalysisDashboardStore } from '@/stores/analytics/analysisDashboardS
 import { authClaimsState } from '@/utils/authClaims';
 import { getSsoUser } from '@/utils/ssoAuth';
 import AnalysisDashboardSettings from './AnalysisDashboardSettings.vue';
+import DashboardThresholdSettings from './DashboardThresholdSettings.vue';
 import { defineAsyncComponent } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 const nativeComponentMap: Record<NativeDashboardView, Component> = {
     'operational-board': defineAsyncComponent(() => import('./tabs/ModelOperationalBoard.vue')),
@@ -65,6 +67,10 @@ const activeTabKey = ref('');
 const tabs = ref<DashboardTab[]>([]);
 const loading = ref(true);
 const showSettings = ref(false);
+// 차트 기준값 설정 (PAL 전용) — 저장 시 version 을 올려 네이티브 뷰를 다시 마운트·재조회한다
+const showThresholds = ref(false);
+const thresholdsVersion = ref(0);
+const isPal = !!(window as any).$pal;
 const refreshTimerId = ref<number | null>(null);
 
 const isAdmin = computed(() => authClaimsState.isAdmin);
@@ -202,6 +208,10 @@ function onSettingsSaved(updated: DashboardTab[]) {
     });
 }
 
+function onThresholdsSaved() {
+    thresholdsVersion.value++;
+}
+
 function openCurrentGrafana() {
     if (!currentTab.value?.url || currentTab.value.mode === 'native') return;
     const url = embedUrlMap.value[currentTab.value.key] || currentTab.value.url;
@@ -282,11 +292,43 @@ watch(
 );
 
 // ============== Lifecycle ==============
+// 온톨로지 익스플로러와 교차 필터(spec 014 US6) — ?domain=&from=&to= 로 들어오면 그대로 걸고,
+// 도메인을 고른 상태에서는 그 도메인의 프로세스를 온톨로지 지도에서 볼 수 있다(한 홉: 도메인 → 프로세스).
+const route = useRoute();
+const router = useRouter();
+function applyRouteFilters() {
+    const q = route.query;
+    const domains = ([] as string[]).concat((q.domain as any) || []).filter(Boolean);
+    if (domains.length) dashboardFilters.domains = domains;
+    if (domains.length || (q.from && q.to))
+        crossFilter.value = { domain: domains[0] || null, from: q.from ? String(q.from) : null, to: q.to ? String(q.to) : null };
+    if (q.from && q.to) {
+        customFrom.value = String(q.from);
+        customTo.value = String(q.to);
+        dashboardFilters.dateRangePreset = 'custom';
+        dashboardFilters.customDateRange = { from: customFrom.value, to: customTo.value };
+    }
+}
+// 대시보드 전역 필터 막대는 숨겨져 있어(showGlobalControls) 들고 온 필터를 따로 보여 준다 — 보이지 않는 필터는 숫자를 오해하게 한다
+const crossFilter = ref<{ domain: string | null; from: string | null; to: string | null } | null>(null);
+function clearCrossFilter() {
+    crossFilter.value = null;
+    resetFilters();
+    router.replace({ query: { ...route.query, domain: undefined, from: undefined, to: undefined } });
+}
+function openInOntology() {
+    const query: Record<string, string> = { view: 'explorer', domain: dashboardFilters.domains[0] };
+    if (dashboardFilters.dateRangePreset === 'custom' && dashboardFilters.customDateRange?.to)
+        query.as_of = dashboardFilters.customDateRange.to;
+    router.push({ path: '/strategy-board', query });
+}
+
 onMounted(async () => {
     const ssoUser = getSsoUser();
     if (ssoUser?.org_code) {
         dashboardFilters.orgCode = ssoUser.org_code;
     }
+    applyRouteFilters();
     await Promise.all([fetchTabs(), fetchOrgList(), dashboardStore.fetchDomainOptions()]);
 });
 
@@ -312,6 +354,17 @@ onUnmounted(stopOperationalRefresh);
                 >
                     새 탭에서 열기
                 </v-btn>
+                <v-btn
+                    v-if="isAdmin && isPal"
+                    icon
+                    variant="text"
+                    size="small"
+                    data-test="dashboard-thresholds-btn"
+                    @click="showThresholds = true"
+                >
+                    <v-icon>mdi-tune-variant</v-icon>
+                    <v-tooltip activator="parent" location="bottom">{{ t('analysisDashboard.thresholds.title') }}</v-tooltip>
+                </v-btn>
                 <v-btn v-if="isAdmin" icon variant="text" size="small" @click="showSettings = true">
                     <v-icon>mdi-cog-outline</v-icon>
                     <v-tooltip activator="parent" location="bottom">{{ t('analysisDashboard.settings.title') }}</v-tooltip>
@@ -320,6 +373,33 @@ onUnmounted(stopOperationalRefresh);
         </div>
 
         <v-card-text class="pa-4">
+            <!-- 교차 필터 — 온톨로지 익스플로러에서 들고 온 도메인·기간 (spec 014 US6) -->
+            <div v-if="crossFilter" class="cross-filter mb-4" data-testid="cross-filter">
+                <v-icon size="16" class="mr-1">mdi-graph-outline</v-icon>
+                <span class="font-weight-medium mr-2">{{ t('analysisDashboard.globalControls.crossFilterFrom') }}</span>
+                <span v-if="crossFilter.domain" class="mr-3"
+                    >{{ t('analysisDashboard.globalControls.crossFilterDomain') }} <b>{{ crossFilter.domain }}</b></span
+                >
+                <span v-if="crossFilter.from && crossFilter.to" class="mr-3"
+                    >{{ t('analysisDashboard.globalControls.crossFilterPeriod') }}
+                    <b>{{ crossFilter.from }} ~ {{ crossFilter.to }}</b></span
+                >
+                <v-spacer />
+                <v-btn
+                    v-if="dashboardFilters.domains.length"
+                    size="small"
+                    variant="text"
+                    color="primary"
+                    data-testid="open-ontology"
+                    @click="openInOntology"
+                >
+                    {{ t('analysisDashboard.globalControls.openOntology') }}
+                </v-btn>
+                <v-btn size="small" variant="text" @click="clearCrossFilter">{{
+                    t('analysisDashboard.globalControls.crossFilterClear')
+                }}</v-btn>
+            </div>
+
             <!-- Global Controls (숨김 상태 — showGlobalControls 로 재노출 가능) -->
             <v-card v-if="showGlobalControls" variant="outlined" rounded="lg" class="global-controls mb-5">
                 <div class="gc-row">
@@ -388,7 +468,14 @@ onUnmounted(stopOperationalRefresh);
                             class="gc-date-toggle"
                             @update:model-value="onDateRangePresetChange"
                         >
-                            <v-btn v-for="opt in dateRangeOptions" :key="opt.value" :value="opt.value" size="small" variant="text" class="gc-date-btn">
+                            <v-btn
+                                v-for="opt in dateRangeOptions"
+                                :key="opt.value"
+                                :value="opt.value"
+                                size="small"
+                                variant="text"
+                                class="gc-date-btn"
+                            >
                                 {{ opt.title }}
                             </v-btn>
                         </v-btn-toggle>
@@ -445,6 +532,18 @@ onUnmounted(stopOperationalRefresh);
 
                     <!-- Reset -->
                     <div class="gc-field gc-field--actions">
+                        <v-btn
+                            v-if="dashboardFilters.domains.length"
+                            size="small"
+                            variant="text"
+                            color="secondary"
+                            prepend-icon="mdi-graph-outline"
+                            :title="t('analysisDashboard.globalControls.openOntologyHint')"
+                            data-testid="open-ontology-gc"
+                            @click="openInOntology"
+                        >
+                            {{ t('analysisDashboard.globalControls.openOntology') }}
+                        </v-btn>
                         <v-btn size="small" variant="text" color="secondary" prepend-icon="mdi-refresh" @click="resetFilters">
                             {{ t('analysisDashboard.globalControls.reset') }}
                         </v-btn>
@@ -479,7 +578,13 @@ onUnmounted(stopOperationalRefresh);
 
                 <div v-if="currentTab" class="tab-content-area">
                     <div v-if="currentTab.mode === 'native'" class="native-board-wrap">
-                        <component :is="getNativeComponent(currentTab)" v-if="getNativeComponent(currentTab)" ref="nativeDashboardRef" :filters="dashboardFilters" />
+                        <component
+                            :is="getNativeComponent(currentTab)"
+                            v-if="getNativeComponent(currentTab)"
+                            :key="`${currentTab.key}-${thresholdsVersion}`"
+                            ref="nativeDashboardRef"
+                            :filters="dashboardFilters"
+                        />
 
                         <div v-else class="grafana-empty-state">
                             <div class="empty-icon">
@@ -495,7 +600,12 @@ onUnmounted(stopOperationalRefresh);
                     </div>
 
                     <div v-else-if="currentTab.url" class="grafana-frame-wrap">
-                        <iframe :src="embedUrlMap[currentTab.key] || currentTab.url" :title="`${currentTab.label || currentTab.key} Dashboard`" class="grafana-frame" frameborder="0" />
+                        <iframe
+                            :src="embedUrlMap[currentTab.key] || currentTab.url"
+                            :title="`${currentTab.label || currentTab.key} Dashboard`"
+                            class="grafana-frame"
+                            frameborder="0"
+                        />
                     </div>
 
                     <div v-else class="grafana-empty-state">
@@ -508,13 +618,7 @@ onUnmounted(stopOperationalRefresh);
                         <p class="text-body-2 text-medium-emphasis mb-2">
                             {{ t('analysisDashboard.settings.emptyHint') }}
                         </p>
-                        <v-btn
-                            v-if="isAdmin"
-                            variant="tonal"
-                            color="primary"
-                            prepend-icon="mdi-cog-outline"
-                            @click="showSettings = true"
-                        >
+                        <v-btn v-if="isAdmin" variant="tonal" color="primary" prepend-icon="mdi-cog-outline" @click="showSettings = true">
                             {{ t('analysisDashboard.settings.title') }}
                         </v-btn>
                     </div>
@@ -538,6 +642,7 @@ onUnmounted(stopOperationalRefresh);
         </v-card-text>
 
         <AnalysisDashboardSettings v-model="showSettings" :tabs="tabs" @saved="onSettingsSaved" />
+        <DashboardThresholdSettings v-if="isAdmin && isPal" v-model="showThresholds" @saved="onThresholdsSaved" />
     </v-card>
 </template>
 
@@ -545,6 +650,16 @@ onUnmounted(stopOperationalRefresh);
 /* page-header 계열 클래스는 src/assets/css/SKGlobalStyle.scss 에 글로벌 정의되어 있음 */
 
 /* ===== Global Controls ===== */
+.cross-filter {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 12px;
+    border: 1px dashed rgba(var(--v-theme-primary), 0.5);
+    border-radius: 8px;
+    font-size: 13px;
+}
 .global-controls {
     border-color: #e0e3ea;
     background: linear-gradient(180deg, #fbfcff 0%, #f8f9fc 100%);

@@ -376,34 +376,33 @@
                         </v-btn>
                     </template>
                 </v-tooltip>
-                <v-tooltip
-                    v-if="isExecUser"
-                    text="이 프로세스의 인스턴스를 시작합니다 (실행 정의가 등록된 프로세스만 실행됩니다)"
-                    location="bottom"
-                >
-                    <template #activator="{ props: tt }">
-                        <v-btn
-                            v-bind="tt"
-                            variant="flat"
-                            color="success"
-                            size="small"
-                            :disabled="!processNameText"
-                            :loading="runStarting"
-                            @click="$emit('run')"
-                        >
-                            <v-icon start size="16">mdi-play</v-icon>
-                            실행
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <v-tooltip v-if="isExecUser" text="이 프로세스의 인스턴스 ID / 태스크 ID를 확인합니다" location="bottom">
-                    <template #activator="{ props: tt }">
-                        <v-btn v-bind="tt" variant="text" size="small" :disabled="!processNameText" @click="$emit('execInfo')">
-                            <v-icon start size="16">mdi-identifier</v-icon>
-                            실행 ID
-                        </v-btn>
-                    </template>
-                </v-tooltip>
+                <!-- 실행 묶음 — 툴바 줄이 좁아 가로로 스크롤돼도 오른쪽 끝에 붙어 늘 보인다 -->
+                <div v-if="isExecUser" class="toolbar-run-group">
+                    <v-tooltip text="이 프로세스의 인스턴스를 시작합니다 (실행 정의가 등록된 프로세스만 실행됩니다)" location="bottom">
+                        <template #activator="{ props: tt }">
+                            <v-btn
+                                v-bind="tt"
+                                variant="flat"
+                                color="success"
+                                size="small"
+                                :disabled="!processNameText"
+                                :loading="runStarting"
+                                @click="$emit('run')"
+                            >
+                                <v-icon start size="16">mdi-play</v-icon>
+                                실행
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                    <v-tooltip text="이 프로세스의 인스턴스 ID / 태스크 ID를 확인합니다" location="bottom">
+                        <template #activator="{ props: tt }">
+                            <v-btn v-bind="tt" variant="text" size="small" :disabled="!processNameText" @click="$emit('execInfo')">
+                                <v-icon start size="16">mdi-identifier</v-icon>
+                                실행 ID
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                </div>
             </div>
         </div>
 
@@ -471,7 +470,9 @@
                     :showPiFlag="showPiFlag"
                     :showRelatedProjectGroup="showRelatedProjectGroup"
                     @openPanel="(id) => $emit('openPanel', id)"
+                    @selectElement="(id) => $emit('selectElement', id)"
                     @addComment="(payload) => $emit('addComment', payload)"
+                    @addPiFlag="(payload) => $emit('addPiFlag', payload)"
                     @openTaskMapping="(payload) => $emit('openTaskMapping', payload)"
                     @openPiFlagTab="(payload) => $emit('openPiFlagTab', payload)"
                     @openDefinition="(bo) => $emit('openDefinition', bo)"
@@ -1220,6 +1221,8 @@ export default {
     },
     emits: [
         'openPanel',
+        'selectElement',
+        'addPiFlag',
         'openDefinition',
         'updateXml',
         'save',
@@ -4242,6 +4245,20 @@ export default {
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: thin;
+}
+
+.toolbar-run-group {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    padding-left: 8px;
+    background: rgb(var(--v-theme-surface));
+    box-shadow: -8px 0 8px -6px rgba(15, 23, 42, 0.12);
 }
 
 .toolbar-left {

@@ -4284,6 +4284,9 @@
         "deleteButton": "삭제"
     },
     "BpmnUengine": {
+        "autoLayoutInProgress": "자동 레이아웃 정렬 중…",
+        "autoLayoutDone": "자동 정렬을 완료했습니다.",
+        "autoLayoutFailed": "자동 정렬에 실패했습니다. 다이어그램 구조를 확인해 주세요.",
         "decreaseFontSize": "글꼴 크기 축소",
         "increaseFontSize": "글꼴 크기 확대",
         "resetZoom": "화면에 맞춤",
@@ -5391,7 +5394,13 @@
             "vsLastQuarter": "전분기 대비",
             "comparisonHint": "전분기 대비 증감률 표시",
             "apply": "적용",
-            "reset": "초기화"
+            "reset": "초기화",
+            "openOntology": "온톨로지에서 보기",
+            "openOntologyHint": "이 도메인의 프로세스를 전략–실행 온톨로지 지도에서 봅니다",
+            "crossFilterFrom": "온톨로지 익스플로러에서 온 필터",
+            "crossFilterDomain": "도메인",
+            "crossFilterPeriod": "기간",
+            "crossFilterClear": "필터 해제"
         },
         "bottleneckTitle": "고비용 프로세스 Top 10",
         "totalProcesses": "전체 프로세스",
@@ -5415,6 +5424,14 @@
         "issueType": "유형",
         "requester": "요청자",
         "noData": "데이터가 없습니다",
+        "thresholds": {
+            "title": "차트 기준값 설정",
+            "description": "대시보드 차트의 색·등급·목록 기준값입니다. 저장하면 코드 수정 없이 즉시 모든 사용자의 대시보드에 반영됩니다.",
+            "default": "기본값",
+            "resetDefaults": "기본값으로 되돌리기",
+            "changedCount": "{count}개 항목 변경됨",
+            "auditNote": "기준값 변경 이력은 관리자 콘솔 › 감사 로그에 자동으로 기록됩니다."
+        },
         "settings": {
             "title": "대시보드 설정",
             "description": "탭별 렌더링 모드와 URL 또는 Native View를 설정합니다. 서버 재기동 없이 즉시 반영됩니다.",

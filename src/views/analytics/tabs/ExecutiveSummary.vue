@@ -20,10 +20,12 @@ import {
     type Stage,
     type ProcessStatus
 } from '@/utils/processStages';
+import { useDashboardThresholds } from '@/services/dashboardThresholdsService';
 
 const backend = BackendFactory.createBackend() as any;
 const props = defineProps<{ filters?: { domains?: string[] } }>();
 
+const thresholds = useDashboardThresholds();
 const loading = ref(true);
 const error = ref('');
 const d = ref<ExecutiveSummaryData | null>(null);
@@ -189,6 +191,7 @@ const velocity = computed(() => {
         target: Number(w.target) || 0
     }));
 });
+const velocityTarget = computed(() => velocity.value.reduce((m, w) => Math.max(m, w.target), 0));
 const velocityMax = computed(() => Math.max(...velocity.value.map((w) => Math.max(w.actual, w.target)), 1));
 const churnData = computed(() => d.value?.churn || []);
 const maxChurn = computed(() => Math.max(...churnData.value.map((c) => c.total_churn), 1));
@@ -235,7 +238,8 @@ const kpiDivisions = computed<KpiDivision[]>(() => {
     }
     for (const entry of groups.values()) {
         const ratio = entry.target_count > 0 ? entry.counts.published / entry.target_count : 0;
-        entry.rag = ratio >= 1 ? 'G' : ratio >= 0.5 ? 'A' : 'R';
+        const pct = ratio * 100;
+        entry.rag = pct >= thresholds.values.kpi_rag_green_pct ? 'G' : pct >= thresholds.values.kpi_rag_amber_pct ? 'A' : 'R';
     }
     return Array.from(groups.values());
 });
@@ -267,7 +271,7 @@ function getKpiDots(div: KpiDivision): Array<{ stage: Stage; color: string; labe
 
 function getSeverity(row: { approved_to_review: number; review_to_draft: number }) {
     const totalRev = row.approved_to_review + row.review_to_draft;
-    return totalRev >= 3 ? 'high' : totalRev >= 2 ? 'med' : 'low';
+    return totalRev >= thresholds.values.churn_high ? 'high' : totalRev >= thresholds.values.churn_medium ? 'med' : 'low';
 }
 function severityColor(sev: string) {
     return sev === 'high' ? '#EF4444' : sev === 'med' ? '#F59E0B' : '#64748B';
@@ -401,9 +405,9 @@ function toggleChurn(row: typeof churnData.value[0]) {
                     <div class="kpi-rag-summary">
                         <div
                             v-for="r in [
-                                { label: 'Green', n: kpiDivisions.filter((d) => d.rag === 'G').length, cls: 'text-emerald' },
-                                { label: 'Amber', n: kpiDivisions.filter((d) => d.rag === 'A').length, cls: 'text-amber' },
-                                { label: 'Red', n: kpiDivisions.filter((d) => d.rag === 'R').length, cls: 'text-red' }
+                                { label: `Green (≥${thresholds.values.kpi_rag_green_pct}%)`, n: kpiDivisions.filter((d) => d.rag === 'G').length, cls: 'text-emerald' },
+                                { label: `Amber (≥${thresholds.values.kpi_rag_amber_pct}%)`, n: kpiDivisions.filter((d) => d.rag === 'A').length, cls: 'text-amber' },
+                                { label: `Red (<${thresholds.values.kpi_rag_amber_pct}%)`, n: kpiDivisions.filter((d) => d.rag === 'R').length, cls: 'text-red' }
                             ]"
                             :key="r.label"
                             class="rag-sum-item"
@@ -432,6 +436,9 @@ function toggleChurn(row: typeof churnData.value[0]) {
                                     :title="`${w.actual}개 게시`"
                                     :style="{ height: Math.round((w.actual / velocityMax) * 100) + '%', backgroundColor: '#3B82F6CC' }">
                                 </div>
+                                <div v-if="w.target > 0" class="velocity-target-line"
+                                    :title="`목표 ${w.target}개`"
+                                    :style="{ bottom: Math.round((w.target / velocityMax) * 100) + '%' }"></div>
                             </div>
                             <span class="velocity-label">{{ w.week }}</span>
                         </div>
@@ -439,6 +446,7 @@ function toggleChurn(row: typeof churnData.value[0]) {
                     <div v-else class="ds-empty-mini">등록된 승인 이력이 없습니다. 게시 완료 시 주차별 실적이 표시됩니다.</div>
                     <div class="velocity-legend">
                         <span class="legend-item"><span class="legend-swatch bg-blue-500"></span>실적</span>
+                        <span v-if="velocityTarget > 0" class="legend-item"><span class="legend-target-swatch"></span>주간 목표 {{ velocityTarget }}개</span>
                     </div>
                 </div>
             </v-col>
@@ -646,7 +654,8 @@ function toggleChurn(row: typeof churnData.value[0]) {
 .velocity-chart { display: flex; align-items: flex-end; gap: 8px; height: 128px; margin-top: 8px; }
 .velocity-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
 .velocity-bar-area { position: relative; width: 100%; flex: 1; display: flex; align-items: flex-end; }
-.velocity-target-line { position: absolute; width: 100%; border-top: 2px dashed rgba(217, 119, 6, 0.55); }
+.velocity-target-line { position: absolute; width: 100%; border-top: 2px dashed rgba(217, 119, 6, 0.55); z-index: 1; }
+.legend-target-swatch { display: inline-block; width: 14px; border-top: 2px dashed rgba(217, 119, 6, 0.8); vertical-align: middle; margin-right: 4px; }
 .velocity-bar { width: 100%; border-radius: 2px 2px 0 0; transition: height 0.7s; }
 .velocity-label { font-size: 11px; color: #64748b; }
 .velocity-legend { display: flex; align-items: center; gap: 16px; margin-top: 12px; font-size: 11px; color: #64748b; }

@@ -2,8 +2,10 @@
 import { computed, ref, watch } from 'vue';
 import { fetchProcessAnalytics, type ProcessAnalyticsData } from '@/services/dashboardDataService';
 import { useAnalysisDashboardStore } from '@/stores/analytics/analysisDashboardStore';
+import { useDashboardThresholds } from '@/services/dashboardThresholdsService';
 const props = defineProps<{ filters?: { domains?: string[] } }>();
 const store = useAnalysisDashboardStore();
+const thresholds = useDashboardThresholds();
 const data = ref<ProcessAnalyticsData | null>(null);
 const loading = ref(false);
 const error = ref('');
@@ -73,7 +75,7 @@ async function refresh() {
         <v-row class="mt-2">
             <v-col cols="12" md="6"><v-card variant="outlined" class="pa-5 h-100">
                 <h3 class="text-h6">장기 미갱신 프로세스</h3>
-                <p class="text-body-2 text-medium-emphasis mb-3">90일 이상 저장하지 않은 초안·검토 중 프로세스</p>
+                <p class="text-body-2 text-medium-emphasis mb-3">{{ thresholds.values.zombie_warning_days }}일 이상 저장하지 않은 초안·검토 중 프로세스</p>
                 <div v-for="row in zombies" :key="row.proc_def_id" class="d-flex justify-space-between py-2">
                     <span>{{ row.proc_def_name || row.proc_def_id }}</span><span>{{ row.days_since_update }}일</span>
                 </div>
@@ -81,7 +83,7 @@ async function refresh() {
             </v-card></v-col>
             <v-col cols="12" md="6"><v-card variant="outlined" class="pa-5 h-100">
                 <h3 class="text-h6">검토 및 재개 요청</h3>
-                <p class="text-body-2 text-medium-emphasis mb-3">승인 이력에 등록된 검토 지연 및 재개 대기 현황</p>
+                <p class="text-body-2 text-medium-emphasis mb-3">검토 요청 후 {{ thresholds.values.review_delay_days }}일 이상 지난 검토 지연 및 재개 대기 현황</p>
                 <div v-for="row in delayedReviews" :key="`review-${row.proc_def_id}`" class="py-2">{{ row.proc_def_name }} · 검토 지연 {{ row.days_delayed }}일</div>
                 <div v-for="row in pendingReopens" :key="`reopen-${row.proc_def_id}`" class="py-2">{{ row.proc_def_name }} · 재개 대기 {{ row.days_pending }}일</div>
                 <p v-if="!store.loading && !store.error && !delayedReviews.length && !pendingReopens.length" class="text-medium-emphasis">검토 지연 또는 재개 대기 요청이 없습니다.</p>

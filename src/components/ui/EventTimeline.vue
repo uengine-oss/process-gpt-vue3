@@ -70,12 +70,24 @@
                                     v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'select'"
                                     class="input-field"
                                 >
-                                    <select v-model="humanQueryAnswers[item.payload.id]" class="query-select">
-                                        <option disabled value="">{{ $t('agentMonitor.selectAnswer') }}</option>
-                                        <option v-for="opt in item.payload.humanQueryData.options" :key="opt" :value="opt">
-                                            {{ opt }}
-                                        </option>
-                                    </select>
+                                    <!-- 선택지는 한눈에 보이게 버튼으로(네이티브 select 는 고르기 전까지 빈 칸으로 보였다) -->
+                                    <div class="query-options" role="radiogroup" :aria-label="$t('agentMonitor.selectAnswer')">
+                                        <button
+                                            v-for="opt in item.payload.humanQueryData.options"
+                                            :key="opt"
+                                            type="button"
+                                            role="radio"
+                                            class="query-option"
+                                            :class="{ 'query-option--active': humanQueryAnswers[item.payload.id] === opt }"
+                                            :aria-checked="humanQueryAnswers[item.payload.id] === opt"
+                                            @click="humanQueryAnswers[item.payload.id] = opt"
+                                        >
+                                            <v-icon size="16">{{
+                                                humanQueryAnswers[item.payload.id] === opt ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'
+                                            }}</v-icon>
+                                            <span>{{ opt }}</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div
                                     v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'confirm'"
@@ -3018,5 +3030,32 @@ export default {
     object-fit: contain;
     display: block;
     background: #0f1117;
+}
+.query-options {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+}
+.query-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--cds-border, rgba(15, 23, 42, 0.12));
+    border-radius: 10px;
+    background: var(--cds-surface-2, #fff);
+    font-size: 13px;
+    text-align: left;
+    color: var(--cds-text-primary, inherit);
+    transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+.query-option:hover {
+    border-color: rgb(var(--v-theme-primary));
+}
+.query-option--active {
+    border-color: rgb(var(--v-theme-primary));
+    background: rgba(var(--v-theme-primary), 0.08);
+    font-weight: 600;
 }
 </style>

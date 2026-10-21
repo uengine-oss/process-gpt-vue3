@@ -8,6 +8,7 @@ import { allocateFeedbackChannels } from './feedback-channels.js';
 import { compactLayerRanks } from './layer-compaction.js';
 import {measureLayoutStage} from './layout-profile.js';
 
+const DATA_ARTIFACT_TYPES = ['bpmn:DataObjectReference', 'bpmn:DataStoreReference'];
 const compareId = (a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 const overlaps = (a, b) => Math.min(a.a + a.length, b.a + b.length) > Math.max(a.a, b.a) &&
   Math.min(a.b + a.breadth, b.b + b.breadth) > Math.max(a.b, b.b);
@@ -101,11 +102,11 @@ function assignCoordinates(input, constraints, { horizontal = true, ...overrides
       const nested = node.expanded ? calculateScope(node.id) : null;
       const size = nested ? { length: nested.length, breadth: nested.breadth } : logicalSize(node);
       const parts = [{ id: node.id, kind: 'node', a: 0, b: 0, ...size }];
-      const placeLabels = (part, occupied) => {
+      const placeLabels = (part, occupied, gapOverride) => {
         const labels = [];
         for (const label of labelsByTarget.get(part.id) || []) {
           const preferred = options.compactLabelFootprints ? labelPreferences.get(label.id) : null;
-          const labelGap = preferred?.gap ?? options.nodeLabelGap ?? 2 * options.nodeToEdgeDistance + options.edgeDistance;
+          const labelGap = gapOverride ?? preferred?.gap ?? options.nodeLabelGap ?? 2 * options.nodeToEdgeDistance + options.edgeDistance;
           if (!Number.isFinite(labelGap) || labelGap < options.edgeDistance) throw new Error('Invalid node label gap');
           const dims = logicalSize(label);
           const alongCenter = part.a + (part.length - dims.length) / 2;
@@ -152,14 +153,40 @@ function assignCoordinates(input, constraints, { horizontal = true, ...overrides
         }
         if (!placed) throw new Error(`Insufficient attachment perimeter: ${node.id}`);
       });
-      for (const anchor of parts.filter(part => part.kind === 'node')) for (const artifact of artifactsByAnchor.get(anchor.id) || []) {
-        const dims = logicalSize(artifact), offset = offsets.get(artifact.id);
-        const minimumB = Math.max(...parts.map(part => part.b + part.breadth)) +
-          2 * options.nodeToEdgeDistance + options.edgeDistance;
-        const requestedB = minimumB + (offset?.across || 0), actualB = Math.max(minimumB, requestedB);
-        if (actualB !== requestedB) adjustedOffsets.push({id:`node:${artifact.id}`,scopeId,axis:'across',requested:requestedB,actual:actualB});
-        parts.push({id:artifact.id,kind:'artifact',...dims,
-          a:anchor.a+(anchor.length-dims.length)/2+(offset?.along || 0),b:actualB,stretchB:1});
+      for (const anchor of parts.filter(part => part.kind === 'node')) {
+        const anchored = artifactsByAnchor.get(anchor.id) || [];
+        for (const artifact of anchored.filter(artifact => !DATA_ARTIFACT_TYPES.includes(artifact.type))) {
+          const dims = logicalSize(artifact), offset = offsets.get(artifact.id);
+          const minimumB = Math.max(...parts.map(part => part.b + part.breadth)) +
+            2 * options.nodeToEdgeDistance + options.edgeDistance;
+          const requestedB = minimumB + (offset?.across || 0), actualB = Math.max(minimumB, requestedB);
+          if (actualB !== requestedB) adjustedOffsets.push({id:`node:${artifact.id}`,scopeId,axis:'across',requested:requestedB,actual:actualB});
+          parts.push({id:artifact.id,kind:'artifact',...dims,
+            a:anchor.a+(anchor.length-dims.length)/2+(offset?.along || 0),b:actualB,stretchB:1});
+        }
+        // 데이터 객체·저장소는 앵커 옆에 한 줄로 나란히 두고, 이름 라벨은 각자 아래에 붙인다.
+        const dataArtifacts = anchored.filter(artifact => DATA_ARTIFACT_TYPES.includes(artifact.type));
+        if (!dataArtifacts.length) continue;
+        const slots = dataArtifacts.map(artifact => {
+          const dims = logicalSize(artifact);
+          const labelLength = Math.max(0, ...(labelsByTarget.get(artifact.id) || []).map(label => logicalSize(label).length));
+          return { artifact, dims, slot: Math.max(dims.length, labelLength) };
+        });
+        const rowLength = slots.reduce((sum, { slot }) => sum + slot, 0) + options.edgeDistance * (slots.length - 1);
+        const rowB = Math.max(...parts.map(part => part.b + part.breadth)) + 2 * options.nodeToEdgeDistance + options.edgeDistance;
+        let cursor = anchor.a + (anchor.length - rowLength) / 2;
+        for (const { artifact, dims, slot } of slots) {
+          const offset = offsets.get(artifact.id);
+          const requestedB = rowB + (offset?.across || 0), actualB = Math.max(rowB, requestedB);
+          if (actualB !== requestedB) adjustedOffsets.push({id:`node:${artifact.id}`,scopeId,axis:'across',requested:requestedB,actual:actualB});
+          const part = {id:artifact.id,kind:'artifact',...dims,
+            a:cursor+(slot-dims.length)/2+(offset?.along || 0),b:actualB,stretchB:1};
+          cursor += slot + options.edgeDistance;
+          // 데이터 객체 라벨은 선이 지나갈 일이 없으므로 최소 간격으로 바짝 붙인다
+          const labels = placeLabels(part, [...parts, part], options.edgeDistance);
+          if (!labels) throw new Error(`Insufficient label space: ${artifact.id}`);
+          parts.push(part, ...labels);
+        }
       }
       const minA = Math.min(...parts.map(p => p.a)), minB = Math.min(...parts.map(p => p.b));
       const length = Math.max(...parts.map(p => p.a + p.length)) - minA;

@@ -93,7 +93,9 @@
                     :showTeamChatPanel="showTeamChatPanel"
                     @changeMode="handleChangeMode"
                     @openPanel="handleOpenPanel"
+                    @selectElement="handleSelectElement"
                     @addComment="handleAddComment"
+                    @addPiFlag="handleAddComment"
                     @openTaskMapping="handleOpenTaskMapping"
                     @togglePiFlag="showPiFlag = !showPiFlag"
                     @toggleRelatedProjectGroup="showRelatedProjectGroup = !showRelatedProjectGroup"
@@ -2988,6 +2990,14 @@ export default {
             this.activateContextPanelForSelection();
         },
 
+        // 한 번 클릭 선택 — 속성 패널이 열려 있을 때만 그 요소로 바꾼다(닫혀 있으면 더블클릭으로 연다).
+        // 전에는 클릭으로 고른 태스크가 Task 탭에 반영되지 않아 "요소를 클릭하세요"만 보였다.
+        handleSelectElement(elementId) {
+            if (!this.showProperties || !elementId) return;
+            if (elementId === this.selectedElement?.id) return;
+            this.handleOpenPanel(elementId);
+        },
+
         handleAddComment(payload) {
             if (Array.isArray(payload) && payload.length > 1) {
                 this.handleOpenPanel(payload[0]); // handleOpenPanel이 멀티선택 상태를 초기화하므로 반드시 이후에 세팅
@@ -3693,9 +3703,19 @@ export default {
             }
             const start = startEventId ? starts.find((e) => e?.id === startEventId) : starts[0];
             if (!start) return { startEventId: '', activity: null };
-            const seq = (definition?.sequences || []).find((s) => s?.source === start.id);
-            const activity = seq ? (definition?.activities || []).find((a) => a?.id === seq.target) || null : null;
-            return { startEventId: start.id, activity };
+            const sequences = definition?.sequences || [];
+            const activities = definition?.activities || [];
+            const known = new Set([...(definition?.gateways || []), ...(definition?.events || [])].map((n) => n?.id));
+            // 시작 다음 노드가 정의에 없는 경우(BPMN 과 실행 정의가 어긋난 경우) 엔진처럼 다음 활동까지 따라간다 —
+            // 못 찾은 채 두면 첫 사용자 태스크가 폼 없이 자동 제출됐다. 게이트웨이·이벤트를 만나면 거기서 멈춘다.
+            let target = sequences.find((s) => s?.source === start.id)?.target;
+            for (let hop = 0; target && hop < 10; hop++) {
+                const activity = activities.find((a) => a?.id === target);
+                if (activity) return { startEventId: start.id, activity };
+                if (known.has(target)) break;
+                target = sequences.find((s) => s?.source === target)?.target;
+            }
+            return { startEventId: start.id, activity: null };
         },
 
         isUserTaskType(type) {
@@ -3733,10 +3753,12 @@ export default {
                 };
                 if (startEventId) command.start_event_id = startEventId;
                 const data = await backend.start(command);
-                if (data?.instanceId) {
-                    this.$toast?.success(`프로세스 인스턴스가 시작되었습니다. (ID: ${data.instanceId})`);
+                // uEngine 백엔드는 instanceId, ProcessGPT 엔진(/completion/complete)은 첫 워크아이템(proc_inst_id)을 돌려준다
+                const instanceId = data?.instanceId || data?.proc_inst_id;
+                if (instanceId) {
+                    this.$toast?.success(`프로세스 인스턴스가 시작되었습니다. (ID: ${instanceId})`);
                     // 순서도 화면을 떠나지 않고 인스턴스/태스크 ID를 바로 확인 — 이동은 패널의 열기 버튼으로.
-                    this.execInfoHighlightId = data.instanceId;
+                    this.execInfoHighlightId = instanceId;
                     this.execInfoOpen = true;
                 } else {
                     this.$toast?.error(data?.error?.message || data?.message || '프로세스 실행에 실패했습니다.');
@@ -3796,7 +3818,7 @@ export default {
                 const tenantId = window.$tenantName;
 
                 // SSO 모드에서 Supabase RLS 인증 헤더 갱신
-                await storage.ensureSupabaseAuthHeader();
+                await storage.ensureSupabaseAuthHeader?.();
 
                 // 소프트 삭제: deleted_at 타임스탬프 설정 (휴지통에서 복구 가능)
                 // deleted_by 는 DB 트리거가 JWT 클레임에서 자동 추출해 채움

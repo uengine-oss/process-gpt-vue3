@@ -1,0 +1,98 @@
+/*
+ * 전략 보드 3개 탭(전략맵 · 온톨로지 익스플로러 · 온톨로지 스키마)이 함께 쓰는 시각 토큰.
+ * 루트 요소에 .sx-theme 를 붙이면 그 아래에서 --sx-* 를 쓸 수 있다.
+ * 면·글자·선·그림자는 앱 디자인 토큰(--cds-*, src/ds/styles/tokens.css)을 따라가므로 다크 모드에서도 맞는다.
+ * 강조색은 Vuetify primary(테마마다 다름), 상태색은 achievementLevel.js 의 LEVEL_COLORS 와 같은 값.
+ */
+.sx-theme {
+    --sx-surface: var(--cds-surface-2, #ffffff);
+    --sx-surface-sunken: var(--cds-surface-0, #f8fafc);
+    --sx-surface-hover: var(--cds-bg-neutral, rgba(15, 23, 42, 0.04));
+    --sx-ink: var(--cds-text-primary, #0f172a);
+    --sx-ink-2: var(--cds-text-secondary, #475569);
+    --sx-ink-3: var(--cds-text-muted, #64748b);
+    --sx-line: var(--cds-border, rgba(15, 23, 42, 0.1));
+    --sx-line-strong: var(--cds-border-strong, rgba(15, 23, 42, 0.2));
+    --sx-accent: rgb(var(--v-theme-primary));
+    --sx-accent-soft: rgba(var(--v-theme-primary), 0.08);
+    --sx-accent-ring: rgba(var(--v-theme-primary), 0.22);
+    /* 코스(선택 노드를 지나는 결정적 경로) — 선택·위험과 겹치지 않는 보라 */
+    --sx-course: #6d28d9;
+    --sx-course-soft: rgba(109, 40, 217, 0.08);
+    --sx-course-ring: rgba(109, 40, 217, 0.22);
+    --sx-risk: #dc2626;
+    --sx-risk-soft: rgba(220, 38, 38, 0.08);
+    --sx-warn: #b45309;
+    --sx-warn-soft: rgba(217, 119, 6, 0.1);
+    --sx-ok: #15803d;
+    --sx-ok-soft: rgba(21, 128, 61, 0.08);
+    --sx-ripple: #0369a1;
+    --sx-radius-sm: 6px;
+    --sx-radius: 10px;
+    --sx-radius-lg: 14px;
+    --sx-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --sx-shadow-2: var(--cds-shadow-md, 0 2px 4px rgba(15, 23, 42, 0.06), 0 6px 16px rgba(15, 23, 42, 0.08));
+    --sx-ease: var(--cds-ease-out, cubic-bezier(0.165, 0.84, 0.44, 1));
+    --sx-dur: 160ms;
+}
+[data-mode='dark'] .sx-theme {
+    --sx-course: #a78bfa;
+    --sx-course-soft: rgba(167, 139, 250, 0.14);
+    --sx-course-ring: rgba(167, 139, 250, 0.3);
+    --sx-risk: #f87171;
+    --sx-risk-soft: rgba(248, 113, 113, 0.14);
+    --sx-warn: #fbbf24;
+    --sx-warn-soft: rgba(251, 191, 36, 0.14);
+    --sx-ok: #4ade80;
+    --sx-ripple: #38bdf8;
+    --sx-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+/* 숫자는 앱 본문 서체 + 고정폭 숫자 */
+.sx-theme .sx-num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+/* 상태 알약 — 위험(채움)·주의(옅은 채움)·양호 */
+.sx-theme .sx-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 20px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+.sx-theme .sx-pill--risk {
+    background: var(--sx-risk-soft);
+    color: var(--sx-risk);
+}
+.sx-theme .sx-pill--warn {
+    background: var(--sx-warn-soft);
+    color: var(--sx-warn);
+}
+.sx-theme .sx-pill--ok {
+    background: var(--sx-ok-soft);
+    color: var(--sx-ok);
+}
+.sx-theme .sx-pill--neutral {
+    background: var(--sx-surface-hover);
+    color: var(--sx-ink-2);
+}
+.sx-theme [role='button']:focus-visible,
+.sx-theme button:focus-visible {
+    outline: 2px solid var(--sx-accent);
+    outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .sx-theme *,
+    .sx-theme *::before,
+    .sx-theme *::after {
+        transition-duration: 0ms !important;
+        animation-duration: 0ms !important;
+    }
+}

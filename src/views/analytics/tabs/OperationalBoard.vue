@@ -9,6 +9,7 @@ import { useAnalysisDashboardStore } from '@/stores/analytics/analysisDashboardS
 import { buildProcessHierarchyQuery, PROCESS_HIERARCHY_ENTRY, PROCESS_HIERARCHY_MODE } from '@/views/process-hierarchy/navigation';
 
 import type { AnalysisDashboardFilters } from '@/stores/analytics/analysisDashboardStore';
+import { useDashboardThresholds } from '@/services/dashboardThresholdsService';
 
 const props = defineProps<{
     filters: AnalysisDashboardFilters;
@@ -17,6 +18,10 @@ const props = defineProps<{
 const instance = getCurrentInstance();
 const t = (key: string) => instance?.proxy?.$t(key) || key;
 const router = useRouter();
+// 차트 기준값 (관리자 설정, 기본값 = 기존 하드코딩 값). 좀비·검토 지연 목록 자체는 백엔드가 같은 값으로 거른다.
+const thresholds = useDashboardThresholds();
+const zombieWarningDays = computed(() => thresholds.values.zombie_warning_days);
+const zombieDangerDays = computed(() => thresholds.values.zombie_danger_days);
 
 const store = useAnalysisDashboardStore();
 const zombieFilter = ref<'all' | '3month' | '6month'>('all');
@@ -124,11 +129,12 @@ const heatMaxOss = computed(() => Math.max(...deptHeatmapData.value.map(d => d.o
 // 3. FTE 등급 분포 (Task 유형 분포 형태)
 // ═══════════════════════════════════════════════════════
 const fteDistribution = computed(() => {
+    const { fte_critical: crit, fte_high: high, fte_medium: med } = thresholds.values;
     const buckets = [
-        { label: 'Critical (≥5)', min: 5, max: Infinity, color: '#EF4444', count: 0 },
-        { label: 'High (3~5)', min: 3, max: 5, color: '#F59E0B', count: 0 },
-        { label: 'Medium (1~3)', min: 1, max: 3, color: '#3B82F6', count: 0 },
-        { label: 'Low (<1)', min: 0, max: 1, color: '#10B981', count: 0 }
+        { label: `Critical (≥${crit})`, min: crit, max: Infinity, color: '#EF4444', count: 0 },
+        { label: `High (${high}~${crit})`, min: high, max: crit, color: '#F59E0B', count: 0 },
+        { label: `Medium (${med}~${high})`, min: med, max: high, color: '#3B82F6', count: 0 },
+        { label: `Low (<${med})`, min: -Infinity, max: med, color: '#10B981', count: 0 }
     ];
     store.bottleneckList.forEach((b) => {
         const bucket = buckets.find(bk => b.total_fte >= bk.min && b.total_fte < bk.max);
@@ -145,8 +151,8 @@ const zombieMaxDays = computed(() => Math.max(...store.zombieProcesses.map(z => 
 
 function zombieSeverity(days: number | null): { status: string; color: string } {
     const d = days ?? 0;
-    if (d >= 180) return { status: 'R', color: '#EF4444' };
-    if (d >= 90) return { status: 'A', color: '#F59E0B' };
+    if (d >= zombieDangerDays.value) return { status: 'R', color: '#EF4444' };
+    if (d >= zombieWarningDays.value) return { status: 'A', color: '#F59E0B' };
     return { status: 'G', color: '#10B981' };
 }
 
@@ -406,8 +412,8 @@ watch(() => props.filters, (f) => { store.setFilters(f); }, { deep: true, immedi
                         <button
                             v-for="opt in [
                                 { key: 'all', label: t('analysisDashboard.all') },
-                                { key: '3month', label: '3' + t('analysisDashboard.monthsInactive') },
-                                { key: '6month', label: '6' + t('analysisDashboard.monthsInactive') }
+                                { key: '3month', label: `${zombieWarningDays}~${zombieDangerDays}일` },
+                                { key: '6month', label: `${zombieDangerDays}일+` }
                             ]"
                             :key="opt.key"
                             class="filter-pill"
@@ -481,8 +487,8 @@ watch(() => props.filters, (f) => { store.setFilters(f); }, { deep: true, immedi
                 <div class="card-footer" v-if="store.zombieProcesses.length > 0">
                     <div class="footer-stat" v-for="s in [
                         { label: '총 좀비 프로세스', value: store.zombieTotalCount + '개', cls: 'text-textPrimary' },
-                        { label: '180일+ (위험)', value: store.zombieProcesses.filter(z => (z.days_since_update ?? 0) >= 180).length + '개', cls: 'text-error' },
-                        { label: '90~180일 (주의)', value: store.zombieProcesses.filter(z => { const d = z.days_since_update ?? 0; return d >= 90 && d < 180; }).length + '개', cls: 'text-warning' }
+                        { label: `${zombieDangerDays}일+ (위험)`, value: store.zombieProcesses.filter(z => (z.days_since_update ?? 0) >= zombieDangerDays).length + '개', cls: 'text-error' },
+                        { label: `${zombieWarningDays}~${zombieDangerDays}일 (주의)`, value: store.zombieProcesses.filter(z => { const d = z.days_since_update ?? 0; return d >= zombieWarningDays && d < zombieDangerDays; }).length + '개', cls: 'text-warning' }
                     ]" :key="s.label">
                         <span class="footer-value" :class="s.cls">{{ s.value }}</span>
                         <span class="footer-label">{{ s.label }}</span>

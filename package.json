@@ -22,7 +22,8 @@
         "test:e2e:bpmn-auto-layout": "playwright test --config=playwright.bpmn-auto-layout.config.mjs",
         "test:e2e:bpmn-layout-compare": "playwright test --config=playwright.bpmn-auto-layout.config.mjs bpmn-layout-compare.spec.mjs",
         "test:e2e:call-activity": "playwright test --config=playwright.call-activity.config.mjs playwright/e2e/gateway/call-activity-processgpt.spec.ts",
-        "test:e2e:gateway:deterministic:ci": "node playwright/e2e/gateway/run-gateway-deterministic-ci.cjs"
+        "test:e2e:gateway:deterministic:ci": "node playwright/e2e/gateway/run-gateway-deterministic-ci.cjs",
+        "dev:bpm": "cross-env VITE_PAL_MODE=false VITE_FF_AI=true vite --host --config vite.bpm.config.ts"
     },
     "bin": "server.js",
     "pkg": {
@@ -38,6 +39,7 @@
         "@babel/parser": "^7.24.8",
         "@bpmn-io/cm-theme": "0.2.0",
         "@floating-ui/dom": "1.0.0",
+        "@fontsource/barlow-condensed": "^5.3.0",
         "@fullcalendar/core": "6.1.8",
         "@fullcalendar/daygrid": "6.1.8",
         "@fullcalendar/interaction": "6.1.8",

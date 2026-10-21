@@ -1083,6 +1083,14 @@ export default {
                         BgColor: 'primary',
                         to: '/analysis-dashboard',
                         disable: false
+                    },
+                    {
+                        // 전략맵 + 전략–실행 온톨로지 익스플로러·스키마 (specs/013)
+                        title: '전략 보드',
+                        icon: 'strategy-map',
+                        BgColor: 'primary',
+                        to: '/strategy-board',
+                        disable: false
                     }
                 ];
             }

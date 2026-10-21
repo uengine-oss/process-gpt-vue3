@@ -527,6 +527,7 @@
 import FormDefinition from '@/components/FormDefinition.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { canUseAiFeatures } from '@/utils/aiFeatureGate';
+import { awaitingUserInput } from '@/shared/awaitingUserInput';
 // import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import DefaultWorkItem from './DefaultWorkItem.vue';
 import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
@@ -1959,6 +1960,9 @@ export default {
                             version: me.workItem.worklist.version,
                             version_tag: me.workItem.worklist.version_tag
                         });
+                        // 에이전트가 답을 기다리는 업무는 질문 카드가 있는 '에이전트에 맡기기' 탭으로 바로 연다(spec 018).
+                        // 탭 목록은 BPMN 이 있어야 이 탭을 포함하므로 BPMN 을 읽은 뒤에 고른다.
+                        if (awaitingUserInput(me.workItem?.worklist)) me.selectedTab = 'agent-monitor';
                         if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
                         me.workListByInstId = await this.backend.getWorkListByInstId(me.workItem.worklist.instId);
 

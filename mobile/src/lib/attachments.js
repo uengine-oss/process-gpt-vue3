@@ -149,7 +149,11 @@ export function messageAttachments(message) {
         const url = typeof value === 'string' ? value : value?.url || value?.publicUrl || value?.fileUrl || '';
         if (!url || seen.has(url)) return;
         seen.add(url);
-        images.push({ url });
+        // 저장소 버킷이 비공개라 저장된 주소는 그대로 열리지 않는다. 화면에서
+        // 다시 서명해야 하는데, 경로가 있으면 그쪽이 확실하다(주소는 만료된다).
+        // 없는 옛 메시지는 주소를 되돌려 읽어 처리한다 — 그래서 url 도 남긴다.
+        const path = typeof value === 'object' ? value?.path || '' : '';
+        images.push(path ? { url, path, bucket: value?.bucket || 'chat-images' } : { url });
     };
 
     if (message?.image) pushImage(message.image);
@@ -195,7 +199,9 @@ export async function uploadAll(files, deps) {
                 const result = await deps.uploadImage(path, file);
                 const url = result?.path ? await deps.getImageUrl(result.path) : '';
                 if (!url) throw new Error('주소를 받지 못했습니다.');
-                images.push({ id: `${file.name}-${file.size}`, url });
+                // url 은 1시간짜리 서명 주소다. 메시지에 그것만 남기면 내일 열 때
+                // 깨지므로 경로를 함께 실어 보낸다 — 포털도 같은 모양으로 저장한다.
+                images.push({ id: `${file.name}-${file.size}`, url, path: result.path, bucket: 'chat-images' });
             } else {
                 const result = await deps.uploadFileToStorage(file, deps.roomId ? { room_id: deps.roomId } : {});
                 const info = toFileInfo(file, result);

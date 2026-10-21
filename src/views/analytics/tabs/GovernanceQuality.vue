@@ -6,8 +6,10 @@
 import { watch, ref, computed } from 'vue';
 import { fetchGovernanceQuality } from '@/services/dashboardDataService';
 import type { GovernanceQualityData } from '@/services/dashboardDataService';
+import { useDashboardThresholds } from '@/services/dashboardThresholdsService';
 
 const props = defineProps<{ filters?: { domains?: string[] } }>();
+const thresholds = useDashboardThresholds();
 
 const loading = ref(true);
 const error = ref('');
@@ -52,7 +54,8 @@ const qualityCards = computed(() => {
 
 function dqColor(score: number | null) {
     if (score == null) return '#64748b';
-    return score >= 80 ? '#10B981' : score >= 60 ? '#F59E0B' : '#EF4444';
+    const { dq_good_pct: good, dq_warning_pct: warning } = thresholds.values;
+    return score >= good ? '#10B981' : score >= warning ? '#F59E0B' : '#EF4444';
 }
 </script>
 

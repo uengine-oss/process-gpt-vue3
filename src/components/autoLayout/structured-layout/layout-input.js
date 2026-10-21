@@ -1,6 +1,10 @@
 const typeOf = element => element.businessObject?.$type || element.type;
 const flowNode = type => /^bpmn:(?:\w*Task|\w*Event|\w*Gateway|SubProcess|CallActivity)$/.test(type);
 const compareId = (a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+// 노드 옆에 붙여 두는 산출물: 텍스트 주석과 데이터 객체·저장소.
+const ARTIFACT_TYPES = ['bpmn:TextAnnotation', 'bpmn:DataObjectReference', 'bpmn:DataStoreReference'];
+// 데이터 입출력 연결은 배치·경로 계산에서 연관선(Association)과 똑같이 다룬다.
+const ASSOCIATION_TYPES = ['bpmn:Association', 'bpmn:DataInputAssociation', 'bpmn:DataOutputAssociation'];
 
 // Geometry is deliberately excluded except dimensions. Membership resolution is
 // an explicit input: the layout must not infer new ownership from its own output.
@@ -60,17 +64,18 @@ export function captureLayoutInput(elements, { phaseMembership = new Map(), root
         shapes.some(child => child.parent === element && flowNode(typeOf(child))) } : {}) };
   }).sort(compareId);
   const nodeIds = new Set(nodes.map(n => n.id));
-  const edges = shapes.filter(e => ['bpmn:SequenceFlow', 'bpmn:MessageFlow', 'bpmn:Association'].includes(typeOf(e))).map(edge => {
+  const edges = shapes.filter(e => ['bpmn:SequenceFlow', 'bpmn:MessageFlow', ...ASSOCIATION_TYPES].includes(typeOf(e))).map(edge => {
     const source = edge.source?.id, target = edge.target?.id;
     if (!byId.has(source) || !byId.has(target)) throw new Error(`Missing edge endpoint: ${edge.id}`);
     if (typeOf(edge) === 'bpmn:SequenceFlow' && (!nodeIds.has(source) || !nodeIds.has(target))) throw new Error(`Invalid sequence endpoints: ${edge.id}`);
-    return { id: edge.id, type: typeOf(edge), name: edge.businessObject?.name || '', source, target };
+    const type = ASSOCIATION_TYPES.includes(typeOf(edge)) ? 'bpmn:Association' : typeOf(edge);
+    return { id: edge.id, type, name: edge.businessObject?.name || '', source, target };
   }).sort(compareId);
   const containers = shapes.filter(e => ['bpmn:Participant', 'bpmn:Lane', 'bpmn:SubProcess', 'phase:Phase', 'phase:PhaseContainer'].includes(typeOf(e)))
     .map(e => ({ id: e.id, type: typeOf(e), parentId: e.parent?.id || null, name: e.businessObject?.name || '' })).sort(compareId);
   const labels = elements.filter(e => e.labelTarget && e.businessObject?.name?.trim()).map(e => ({ id: e.id, targetId: e.labelTarget.id,
     text: e.businessObject?.name || '', ...dimensions(e) })).sort(compareId);
-  const artifacts = shapes.filter(e => typeOf(e) === 'bpmn:TextAnnotation').flatMap(element => {
+  const artifacts = shapes.filter(e => ARTIFACT_TYPES.includes(typeOf(e))).flatMap(element => {
     const parents = ancestors(element);
     const scopeId = parents.find(p => ['bpmn:SubProcess', 'bpmn:Participant'].includes(typeOf(p)))?.id || null;
     const rootArtifact = typeOf(element.parent || {}) === 'bpmn:Collaboration';
@@ -79,7 +84,7 @@ export function captureLayoutInput(elements, { phaseMembership = new Map(), root
         node.id === (edge.source === element.id ? edge.target : edge.source) && (rootArtifact || node.scopeId === scopeId)));
     if (!association) return [];
     const anchor = nodes.find(node => node.id === (association.source === element.id ? association.target : association.source));
-    return [{ id: element.id, type: typeOf(element), text: element.businessObject?.text || '',
+    return [{ id: element.id, type: typeOf(element), text: element.businessObject?.text || element.businessObject?.name || '',
       ...dimensions(element), scopeId: anchor.scopeId, participantId: anchor.participantId, anchorId: anchor.id,
       laneIds: [...anchor.laneIds], phaseId: anchor.phaseId }];
   }).sort(compareId);

@@ -2442,9 +2442,12 @@
                                             {{ builtinLabel('task', 'system_mapping', '시스템 매핑') }}
                                         </div>
                                         <div v-show="isOpen('task-system')" class="section-body">
+                                            <!-- 한 태스크가 여러 시스템을 쓴다(ERP 에서 조회하고 전자결재로 상신 등) — 다중 선택 -->
                                             <v-autocomplete
-                                                v-model="taskSystemSingle"
+                                                v-model="taskSystemsSelected"
                                                 :items="atdtSystemItems"
+                                                multiple
+                                                closable-chips
                                                 :loading="atdtSystemListLoading"
                                                 item-title="name"
                                                 :item-value="systemItemValue"
@@ -2656,8 +2659,8 @@
                                                 </div>
                                                 <div class="d-flex flex-wrap ga-1">
                                                     <v-chip
-                                                        v-for="name in multiSelectedElementNames"
-                                                        :key="name"
+                                                        v-for="(name, i) in multiSelectedElementNames"
+                                                        :key="i + '-' + name"
                                                         size="x-small"
                                                         variant="tonal"
                                                         color="blue-darken-1"
@@ -2755,7 +2758,7 @@
                                                     </template>
                                                 </div>
                                             <!-- 개선과제 입력 폼 — 읽기 모드에선 숨기고 목록/빈 안내만 보여준다 -->
-                                            <div v-if="!isViewMode" class="mt-2 px-1">
+                                            <div v-if="!isViewMode" class="mt-2 px-1" ref="piFlagInputForm">
                                                 <v-select
                                                     v-model="newCommentStatus"
                                                     :items="[
@@ -6097,13 +6100,19 @@ export default {
                 return Object.values(projectMap);
             } catch { return []; }
         },
-        taskSystemSingle: {
+        taskSystemsSelected: {
             get() {
                 const arr = this.taskForm.systems;
-                return Array.isArray(arr) && arr.length ? arr[0] : null;
+                return Array.isArray(arr) ? arr : [];
             },
             set(val) {
-                this.taskForm.systems = val ? [val] : [];
+                // 같은 이름은 하나로(목록에서 고른 id 있는 항목을 남긴다)
+                const byName = new Map();
+                this.normalizeSystemList(Array.isArray(val) ? val : val ? [val] : []).forEach((sys) => {
+                    const prev = byName.get(sys.name);
+                    if (!prev || (prev.id == null && sys.id != null)) byName.set(sys.name, sys);
+                });
+                this.taskForm.systems = Array.from(byName.values());
             },
         },
         atdtSystemItems() {
@@ -6121,8 +6130,7 @@ export default {
                     byName.set(key, item);
                 }
             };
-            const current = this.taskSystemSingle;
-            if (current) consider(current);
+            this.taskSystemsSelected.forEach(consider);
             (this.atdtSystemList || []).forEach(consider);
             return Array.from(byName.values());
         },
@@ -6856,8 +6864,12 @@ export default {
                 if (!this.isOpen('element-comments')) {
                     this.toggle('element-comments');
                 }
+                // PI Flag 버튼 진입 → 입력 폼으로 스크롤 후 내용 입력창에 포커스
                 this.$nextTick(() => {
-                    this.$refs.commentSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const form = this.resolveRefEl('piFlagInputForm');
+                    const target = form || this.resolveRefEl('commentSection');
+                    target?.scrollIntoView({ behavior: 'smooth', block: form ? 'center' : 'start' });
+                    form?.querySelector('textarea')?.focus({ preventScroll: true });
                 });
                 this.$emit('commentSectionFocused');
             });
@@ -6883,7 +6895,7 @@ export default {
                     this.toggle('task-related-projects');
                 }
                 this.$nextTick(() => {
-                    this.$refs.taskMappingSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    this.resolveRefEl('taskMappingSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 });
                 this.$emit('taskMappingSectionFocused');
             });
@@ -7084,6 +7096,12 @@ export default {
         }
     },
     methods: {
+        // v-for(섹션 순서) 안의 ref는 배열로 잡히므로 첫 DOM 요소로 정규화
+        resolveRefEl(name) {
+            const r = this.$refs[name];
+            const el = Array.isArray(r) ? r.find(Boolean) : r;
+            return el?.$el || el || null;
+        },
         showAppSnackbar(message, color = 'success') {
             const app = window.$app_;
             if (!app) return;
@@ -7330,11 +7348,13 @@ export default {
             const list = Array.isArray(value) ? value : (value ? [value] : []);
             return list.map(item => toSafeText(item).trim()).filter(Boolean);
         },
+        // 이름으로 비교한다 — BPMN 에는 이름만 저장된 시스템({id:null, name})이 있어 id 로 비교하면 목록의 같은
+        // 시스템과 다른 항목이 되어 선택 표시가 안 되고 중복으로 또 담긴다(다중 선택).
         systemItemValue(item) {
             if (!item) return '';
-            if (item.id != null) return `id:${item.id}`;
-            if (item.name) return `name:${item.name}`;
-            return '';
+            const name = toSafeText(item.name ?? '').trim();
+            if (name) return `name:${name}`;
+            return item.id != null ? `id:${item.id}` : '';
         },
         normalizeSystemList(value) {
             const list = Array.isArray(value) ? value : (value ? [value] : []);
@@ -10836,7 +10856,7 @@ export default {
                     return null;
                 })
                 .filter(Boolean);
-            this.taskForm.systems = this.normalizeSystemList(uengineProps.systems).slice(0, 1);
+            this.taskForm.systems = this.normalizeSystemList(uengineProps.systems);
             this.taskForm.fte = { ...defaultFte(), ...(uengineProps.fte || {}) };
             this.taskForm.futureStatus = toSafeText(uengineProps.futureStatus || 'maintain') || 'maintain';
             this.taskForm.dataAttachmentUrl = toSafeText(uengineProps.dataAttachmentUrl || '');

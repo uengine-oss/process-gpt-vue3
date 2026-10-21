@@ -43,7 +43,14 @@
             <v-card elevation="10">
                 <v-card-text class="pa-4">
                     <!-- 보류/반송된 활동 메시지 -->
-                    <div v-if="workItemStatus == 'PENDING'" class="mb-4">
+                    <div v-if="awaitingInput && ['PENDING', 'IN_PROGRESS'].includes(workItemStatus)" class="mb-4" data-testid="awaiting-user-input">
+                        <v-alert density="compact" type="info" variant="tonal" icon="mdi-message-question-outline">
+                            <div class="text-body-1 font-weight-bold">에이전트가 판단에 필요한 답을 기다리고 있습니다</div>
+                            <div class="text-body-2 mt-1">{{ awaitingInput.question }}</div>
+                            <div class="text-caption mt-1">왼쪽 '에이전트에 맡기기' 탭의 질문 카드에서 답하면 에이전트가 이어서 처리합니다.</div>
+                        </v-alert>
+                    </div>
+                    <div v-else-if="workItemStatus == 'PENDING'" class="mb-4">
                         <v-alert density="compact" type="error" closable>
                             <span class="text-body-1">
                                 {{ workItem.worklist.log }}
@@ -227,6 +234,7 @@ import AudioTextarea from '@/components/ui/AudioTextarea.vue';
 import Checkpoints from '@/components/ui/Checkpoints.vue';
 import DelegateTaskForm from '@/components/apps/todolist/DelegateTaskForm.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import { awaitingUserInput } from '@/shared/awaitingUserInput';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -307,6 +315,10 @@ export default {
         // activeTab: 'direct-input', // 'direct-input' 또는 'chat'
     }),
     computed: {
+        // 에이전트가 사용자 답을 기다리는 PENDING(spec 018) — 오류성 보류와 구분해 안내한다
+        awaitingInput() {
+            return awaitingUserInput(this.workItem?.worklist);
+        },
         simulate() {
             return this.isSimulate === 'true' || this.isSimulate === 'false' ? this.isSimulate === 'true' : this.isSimulate;
         },

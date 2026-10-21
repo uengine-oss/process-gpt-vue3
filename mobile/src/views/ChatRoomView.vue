@@ -18,11 +18,16 @@
                     <a
                         v-if="!brokenImages.has(img.url)"
                         class="bubble__image"
-                        :href="img.url"
+                        :href="imageUrls.signedSrc(img)"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
-                        <img :src="img.url" alt="첨부 이미지" loading="lazy" @error="markBroken(img.url)" />
+                        <img
+                            :src="imageUrls.signedSrc(img)"
+                            alt="첨부 이미지"
+                            loading="lazy"
+                            @error="markBroken(img.url)"
+                        />
                     </a>
                     <!--
                         못 불러온 사진. 깨진 그림 아이콘만 남기면 사용자는 자기가
@@ -31,7 +36,7 @@
                     <a
                         v-else
                         class="bubble__file bubble__file--broken"
-                        :href="img.url"
+                        :href="imageUrls.signedSrc(img) || img.url"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
@@ -201,7 +206,7 @@ import MobileComposer from '../components/MobileComposer.vue';
 import VoiceSession from '../components/VoiceSession.vue';
 import { buildParams, streamUrl } from '../lib/agentChat.js';
 import { sizeText, uploadAll } from '../lib/attachments.js';
-import { download, reasonText } from '../lib/download.js';
+import { download, downloadUrl, reasonText } from '../lib/download.js';
 import { formatToolName } from '@/shared/toolNames/index.js';
 import { backend } from '../lib/backend.js';
 import { take } from '../lib/handoff.js';
@@ -222,6 +227,10 @@ import { apiBase } from '../main';
 
 import FixedBaseWorkAssistantAgentService from '@/services/FixedBaseWorkAssistantAgentService';
 import { getValidToken } from '@/utils/supabaseAuth';
+// 저장소 버킷이 비공개라 첨부 주소는 그릴 때·누를 때 서명해서 만든다.
+// 포털과 같은 규칙(src/shared/storageUrl)을 쓴다.
+import { resolveStorageUrl } from '@/shared/storageUrl';
+import { createSignedUrlView } from '@/utils/storageUrl';
 
 const route = useRoute();
 const router = useRouter();
@@ -247,6 +256,11 @@ let controller: AbortController | null = null;
 const messages = computed(() => toConversation(rows.value));
 
 /** 못 불러온 사진들. 한 번 실패한 것을 계속 다시 시도하면 화면이 깜빡인다. */
+// 첨부 사진의 서명 주소. 만료(1시간)가 가까워지면 알아서 다시 받아 온다 —
+// 대화를 오래 열어 두어도 사진이 죽지 않게.
+const imageUrls = createSignedUrlView('chat-images');
+imageUrls.start();
+
 const brokenImages = ref<Set<string>>(new Set());
 
 function markBroken(url: string) {
@@ -509,12 +523,24 @@ function openLink(event: MouseEvent) {
     if (!href || href.startsWith('#')) return;
 
     event.preventDefault();
-    const result = download({ url: href, name: target?.textContent || '' });
-    if (!result.ok) error.value = reasonText(result.reason);
+    // 우리 저장소를 가리키는 링크면 서명해야 열린다(버킷이 비공개).
+    // 바깥 주소는 그대로 통과한다.
+    void openInBrowser({ url: href, name: target?.textContent || '' });
 }
 
-function saveFile(file: any) {
-    const result = download(file);
+async function saveFile(file: any) {
+    await openInBrowser(file);
+}
+
+/** 기기 브라우저로 넘기기 전에 주소를 지금 열리는 것으로 바꾼다. */
+async function openInBrowser(file: any) {
+    const raw = downloadUrl(file);
+    if (!raw) {
+        error.value = reasonText('no-url');
+        return;
+    }
+    const url = (await resolveStorageUrl(raw)) || raw;
+    const result = download({ ...file, url });
     if (!result.ok) error.value = reasonText(result.reason);
 }
 
@@ -796,6 +822,7 @@ onMounted(async () => {
 onUnmounted(() => {
     void markViewing('');
     controller?.abort();
+    imageUrls.stop();
     // 구독을 끊지 않으면 방을 옮길 때마다 쌓여 한 메시지가 여러 번 들어온다.
     try {
         subscription?.unsubscribe?.();

@@ -1033,8 +1033,7 @@ PaletteProvider.prototype.rerouteRotatedConnections = function(horizontal) {
   resizeSubProcessesToRotatedChildren(this._modeling, elementRegistry);
 };
 
-PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onLoadEnd = () => {}) {
-  if (typeof window !== 'undefined' && window.$pal) return;
+PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onLoadEnd = () => {}, { notify = false } = {}) {
   var injector = this._injector;
   var elementFactory = this._elementFactory;
 
@@ -1044,7 +1043,10 @@ PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onL
           return;
       }
 
-      setTimeout(() => {
+      setAutoLayoutProgress(injector, { active: true });
+      // 레이아웃 계산이 동기로 메인 스레드를 막으므로, 진행 표시가 먼저 그려진 뒤 실행한다
+      afterPaint(() => {
+          let ok = false;
           try {
               const bpmnJS = injector;
               clearSelectionVisualState(bpmnJS);
@@ -1059,10 +1061,13 @@ PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onL
               if (canvas && canvas.zoom) {
                   canvas.zoom('fit-viewport');
               }
+              ok = true;
           } catch (error) {
               console.error('?먮룞?덉씠?꾩썐???ㅽ뙣?덉뒿?덈떎.', error);
+          } finally {
+              setAutoLayoutProgress(injector, { active: false, ok, notify });
           }
-      }, 50);
+      });
 
       
   } catch (error) {
@@ -1074,20 +1079,42 @@ PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onL
  * 신규 자동 정렬(열·행 결정형) — src/lib/bpmnAutoLayout 로직을 살아있는 모델러에 적용.
  * 기존 applyAutoLayout(window.BpmnAutoLayout) 과 결과를 비교하기 위한 두 번째 버튼.
  */
-PaletteProvider.prototype.applyColumnRowLayout = function(onLoadStart = () => {}, onLoadEnd = () => {}) {
-  if (typeof window !== 'undefined' && window.$pal) return;
+PaletteProvider.prototype.applyColumnRowLayout = function(onLoadStart = () => {}, onLoadEnd = () => {}, { notify = false } = {}) {
   const bpmnJS = this._injector;
   const canvas = this._elementFactory && this._elementFactory._canvas;
-  setTimeout(() => {
+  setAutoLayoutProgress(bpmnJS, { active: true });
+  afterPaint(() => {
       clearSelectionVisualState(bpmnJS);
-      applyColumnRowLayout(bpmnJS, { onLoadStart, onLoadEnd })
+      // 신규 로직은 saveXML 이 필요하다 — 주입기(injector)가 아닌 모델러 인스턴스를 넘긴다
+      applyColumnRowLayout(bpmnJS.get('bpmnjs'), { onLoadStart, onLoadEnd })
           .then(() => {
               clearSelectionVisualState(bpmnJS);
               if (canvas && canvas.zoom) canvas.zoom('fit-viewport');
+              setAutoLayoutProgress(bpmnJS, { active: false, ok: true, notify });
           })
-          .catch((error) => console.error('신규 자동 정렬(열·행) 적용에 실패했습니다.', error));
-  }, 50);
+          .catch((error) => {
+              console.error('신규 자동 정렬(열·행) 적용에 실패했습니다.', error);
+              setAutoLayoutProgress(bpmnJS, { active: false, ok: false, notify });
+          });
+  });
 };
+
+/**
+ * 자동 정렬 진행 상태를 알린다 — BpmnUengine 이 받아 진행 중 표시를 띄운다.
+ * notify 가 true 면(팔레트 버튼으로 직접 실행) 끝났을 때 완료/실패 알림도 띄운다.
+ */
+function setAutoLayoutProgress(injector, progress) {
+  try {
+    injector.get('eventBus').fire('autoLayout.progress', progress);
+  } catch (error) {
+    // eventBus 가 없는 환경에서는 표시만 생략한다
+  }
+}
+
+/** 브라우저가 한 번 그린 뒤 실행한다. */
+function afterPaint(fn) {
+  requestAnimationFrame(() => requestAnimationFrame(fn));
+}
 
 PaletteProvider.prototype._rotateRelativePosition = function(relativeX, relativeY, scaleX, scaleY) {
   return {
@@ -2139,7 +2166,7 @@ PaletteProvider.prototype.getPaletteEntries = function (element) {
             title: i18n.global.t('PaletteProvider.autoLayout'),
             action: {
                 click: function (event) {
-                    me.applyAutoLayout();
+                    me.applyAutoLayout(undefined, undefined, { notify: true });
                 }
             }
         },
@@ -2149,7 +2176,7 @@ PaletteProvider.prototype.getPaletteEntries = function (element) {
             title: i18n.global.t('PaletteProvider.autoLayoutColumnRow') || 'Auto Layout (new: column/row)',
             action: {
                 click: function (event) {
-                    me.applyColumnRowLayout();
+                    me.applyColumnRowLayout(undefined, undefined, { notify: true });
                 }
             }
         },

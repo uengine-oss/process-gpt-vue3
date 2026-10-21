@@ -11,6 +11,11 @@
         @drop.prevent="onDrop"
     >
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
+        <!-- PAL: 자동 레이아웃 진행 중 표시 -->
+        <div v-if="isPal && isAutoLayouting" class="auto-layout-progress" role="status" aria-live="polite">
+            <v-progress-circular indeterminate size="20" width="2" color="primary" />
+            <span>{{ $t('BpmnUengine.autoLayoutInProgress') }}</span>
+        </div>
         <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: var(--cds-text-secondary); cursor: pointer">mdi-crosshairs-gps</v-icon>
@@ -126,6 +131,7 @@ export default {
     name: 'bpmn-uengine',
     inheritAttrs: false,
     emits: [
+        'selectElement',
         'closePDFDialog',
         'error',
         'shown',
@@ -220,6 +226,7 @@ export default {
             bpmnViewer: null,
             bpmnModeler: null,
             _layoutTimeout: null,
+            isAutoLayouting: false,
             resizeObserver: null,
             resizeTimeout: null,
             panStart: { x: 0, y: 0 },
@@ -952,10 +959,20 @@ export default {
                 window.$visibleEventTypes = null;
             }
         },
-        applyAutoLayout() {
+        async applyAutoLayout() {
             // PAL 모드에서도 엑셀→BPMN 로드 시 자동 레이아웃 적용
-            const horizontal = getLayoutOrientation(this.bpmnViewer);
-            window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal });
+            this.isAutoLayouting = true;
+            try {
+                // 레이아웃 계산이 동기로 메인 스레드를 막으므로, 진행 표시가 먼저 그려지도록 한 프레임 양보한다
+                await this.waitForPaint();
+                const horizontal = getLayoutOrientation(this.bpmnViewer);
+                window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal });
+            } finally {
+                this.isAutoLayouting = false;
+            }
+        },
+        waitForPaint() {
+            return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         },
         applyColumnRowLayout() {
             // 신규 로직(열·행 결정형, src/lib/bpmnAutoLayout) — 기존 applyAutoLayout 과 비교용
@@ -1362,6 +1379,7 @@ export default {
                     clearTimeout(self._layoutTimeout);
                     self._layoutTimeout = null;
                     self.$emit('update:isAIGenerated', false);
+                    self.isAutoLayouting = false;
                 }
 
                 const elementRegistry = self.bpmnViewer.get('elementRegistry');
@@ -1390,6 +1408,8 @@ export default {
                     layout: self.captureOrientationLayout(),
                     edited: false
                 };
+                self.isAutoLayouting = true;
+                await self.waitForPaint();
                 const result = layoutModeler(self.bpmnViewer, { horizontal: targetHorizontal, nodeOffsets });
                 if (result.plan.status !== 'computed') {
                     self.bpmnViewer.get('eventBus').fire('orientation.failed', { result });
@@ -1401,6 +1421,7 @@ export default {
                 self.bpmnViewer.get('eventBus').fire('orientation.complete', { result });
                 self.resetZoom();
             } finally {
+                self.isAutoLayouting = false;
                 await new Promise(resolve => setTimeout(resolve, 0));
                 self._isChangingOrientation = false;
             }
@@ -1540,6 +1561,24 @@ export default {
             eventBus.on(['commandStack.shape.move.postExecuted', 'commandStack.shape.resize.postExecuted'], 500, function (evt) {
                 if (self.bpmnViewer.get('atomicModeling').isExecuting()) return;
                 if (isPhaseSyncRelevantElement(evt.context?.shape)) syncPhaseContainersNow();
+            });
+            // 팔레트 정렬 버튼(편집 모드)의 진행 상태
+            // 작은 다이어그램은 순식간에 끝나 표시가 깜빡이고 말므로 최소 0.5초는 보여준다
+            let layoutProgressStartedAt = 0;
+            eventBus.on('autoLayout.progress', function (evt) {
+                if (evt.active) {
+                    layoutProgressStartedAt = Date.now();
+                    self.isAutoLayouting = true;
+                    return;
+                }
+                const remaining = Math.max(0, 500 - (Date.now() - layoutProgressStartedAt));
+                setTimeout(() => {
+                    self.isAutoLayouting = false;
+                    if (evt.notify && self.isPal) {
+                        if (evt.ok) self.$toast?.success(self.$t('BpmnUengine.autoLayoutDone'));
+                        else self.$toast?.error(self.$t('BpmnUengine.autoLayoutFailed'));
+                    }
+                }, remaining);
             });
             eventBus.on('autoLayout.complete', function () {
                 self._orientationLayoutSnapshot = null;
@@ -1749,6 +1788,12 @@ export default {
 
                 // Pal 모드: 캔버스 우클릭 → 속성 패널 열기 (View/Edit 공통)
                 self.bindPalContextMenu();
+
+                // 한 번 클릭 선택 — 속성 패널이 이미 열려 있으면 부모가 그 요소로 바꿔 보여 준다(비 PAL, View/Edit 공통).
+                // 패널을 새로 여는 것은 여전히 더블클릭 — 클릭만으로 패널이 튀어나오지 않게.
+                trackListener('element.click', function (e) {
+                    if (!self.isPal && e.element?.id) self.$emit('selectElement', e.element.id);
+                });
 
                 // ContextPad에서 속성 패널 열기 버튼 클릭 시
                 trackListener('element.openPanel', function (e) {
@@ -1970,8 +2015,11 @@ export default {
                     if (self._layoutTimeout) {
                         clearTimeout(self._layoutTimeout);
                     }
+                    // 대기(500ms) 동안에도 진행 중으로 표시한다
+                    self.isAutoLayouting = true;
                     self._layoutTimeout = setTimeout(() => {
-                        self.applyAutoLayout();
+                        self._layoutTimeout = null;
+                        self.applyAutoLayout().catch((error) => console.error('자동 레이아웃 적용 실패:', error));
                         self.$emit('update:isAIGenerated', false);
                     }, 500); // 500ms 안 변하면 실행 (PAL 모드 포함)
                 }
@@ -3318,6 +3366,25 @@ export default {
 </script>
 
 <style>
+/* PAL: 자동 레이아웃 진행 중 표시 */
+.vue-bpmn-diagram-container .auto-layout-progress {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--cds-layer-01, #fff);
+    border: 1px solid var(--cds-border-subtle-01, #e0e0e0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    color: var(--cds-text-primary);
+    font-size: 13px;
+    pointer-events: none;
+}
 /* Phase 1-3: Validation markers */
 .djs-element.validation-error .djs-visual rect,
 .djs-element.validation-error .djs-visual circle,

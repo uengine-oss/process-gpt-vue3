@@ -59,6 +59,11 @@ class PalModeBackend extends ProcessGPTBackend {
     }
 
     async listDefinition(path: string, options?: any) {
+        // 'form_def' / 'dmn' / 'bpmn' 은 경로가 아니라 목록 종류다 — 상위 구현이 테이블·type 필터로 처리한다.
+        // (여기서 id 접두어로 다루면 Task 패널의 폼 라이브러리 목록이 proc_def 조회로 새어 나간다)
+        if (path === 'form_def' || path === 'dmn' || path === 'bpmn') {
+            return super.listDefinition(path, options);
+        }
         try {
             // 목록에는 definition(JSONB)·bpmn(XML 원문)이 필요 없다. select * 는 행당 평균 34KB 로
             // 한 번에 수 MB 를 당겨 PostgREST 커넥션 풀을 점유하고 statement timeout(8s)을 유발한다 —
@@ -66,7 +71,8 @@ class PalModeBackend extends ProcessGPTBackend {
             // 컬럼 선택과 배포별로 없는 컬럼(42703) 처리는 listProcDefWithFallback 이 담당한다.
             const procDefs = await listProcDefWithFallback({
                 ...(options || {}),
-                ...(path ? { like: `${path}%` } : {})
+                // StorageBaseSupabase.list 는 like 를 { key, value } 로 받는다 (문자열이면 컬럼명이 undefined 가 된다)
+                ...(path ? { like: { key: 'id', value: `${path}%` } } : {})
             });
             procDefs.map((item: any) => {
                 item.path = `${item.id}`;

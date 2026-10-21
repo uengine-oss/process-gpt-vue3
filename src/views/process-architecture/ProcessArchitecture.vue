@@ -88,7 +88,13 @@
                         </div>
                     </v-card>
                 </v-menu>
-                <v-btn v-if="canCreateProcess && isEditMode" color="primary" size="small" prepend-icon="mdi-plus" @click="showNewProcessDialog = true">
+                <v-btn
+                    v-if="canCreateProcess && isEditMode"
+                    color="primary"
+                    size="small"
+                    prepend-icon="mdi-plus"
+                    @click="showNewProcessDialog = true"
+                >
                     {{ $t('processArchitecture.newProcess') }}
                 </v-btn>
                 <!-- Edit Mode Toggle -->
@@ -105,347 +111,374 @@
             </div>
         </div>
 
-        <!-- Body -->
-        <div class="pa-4 pb-0">
-            <ProcessArchRestructureStudio
-                v-if="showRestructureMode && isAdmin"
-                :procMap="procMap"
-                :domains="domains"
-                :metricsMap="metricsMap"
-                :initialOperation="restructureInitialOperation"
-                :maintenanceMode="maintenanceMode"
-                :cutoverJobs="adminStore.cutoverJobs"
-                @applyDraft="applyRestructureDraft"
-                @scheduleCutover="scheduleRestructureDraft"
-                @openSystemOps="openSystemOperations"
-                @openReviewBoard="openReviewBoard"
-            />
+        <!-- 본문: 분석 대시보드와 같은 16px 인셋 + 테두리 카드 (PAL 공통 레이아웃) -->
+        <div class="arch-body-shell pa-4">
+            <v-card variant="flat" rounded="lg" class="arch-body-card">
+                <!-- Body -->
+                <div class="pa-4 pb-0">
+                    <ProcessArchRestructureStudio
+                        v-if="showRestructureMode && isAdmin"
+                        :procMap="procMap"
+                        :domains="domains"
+                        :metricsMap="metricsMap"
+                        :initialOperation="restructureInitialOperation"
+                        :maintenanceMode="maintenanceMode"
+                        :cutoverJobs="adminStore.cutoverJobs"
+                        @applyDraft="applyRestructureDraft"
+                        @scheduleCutover="scheduleRestructureDraft"
+                        @openSystemOps="openSystemOperations"
+                        @openReviewBoard="openReviewBoard"
+                    />
 
-            <!-- Edit Lock Banner (다른 사용자가 편집 중) -->
-            <v-alert
-                v-if="editLock.locked && !editLock.isMine"
-                type="warning"
-                variant="tonal"
-                density="compact"
-                class="mt-3 mb-0"
-                icon="mdi-lock-outline"
-            >
-                <strong>{{ lockDisplayName || editLock.lockedBy }}</strong> 님이 체계도를 편집 중입니다. 편집이 완료될 때까지 수정할 수 없습니다.
-            </v-alert>
+                    <!-- Edit Lock Banner (다른 사용자가 편집 중) -->
+                    <v-alert
+                        v-if="editLock.locked && !editLock.isMine"
+                        type="warning"
+                        variant="tonal"
+                        density="compact"
+                        class="mt-3 mb-0"
+                        icon="mdi-lock-outline"
+                    >
+                        <strong>{{ lockDisplayName || editLock.lockedBy }}</strong> 님이 체계도를 편집 중입니다. 편집이 완료될 때까지 수정할
+                        수 없습니다.
+                    </v-alert>
 
-            <!-- Edit Mode Indicator (내가 편집 중) -->
-            <v-alert
-                v-else-if="isEditMode"
-                type="info"
-                variant="tonal"
-                density="compact"
-                class="mt-3 mb-0"
-                icon="mdi-pencil-outline"
-                closable
-                @click:close="exitEditMode()"
-            >
-                편집 모드입니다. 체계도를 수정할 수 있습니다.
-            </v-alert>
+                    <!-- Edit Mode Indicator (내가 편집 중) -->
+                    <v-alert
+                        v-else-if="isEditMode"
+                        type="info"
+                        variant="tonal"
+                        density="compact"
+                        class="mt-3 mb-0"
+                        icon="mdi-pencil-outline"
+                        closable
+                        @click:close="exitEditMode()"
+                    >
+                        편집 모드입니다. 체계도를 수정할 수 있습니다.
+                    </v-alert>
 
-            <!-- View Toggle + Search + Domain Filter -->
-            <div class="d-flex align-center ga-3 mb-4 flex-wrap">
-                <v-btn-toggle v-model="activeView" mandatory density="compact" color="primary" class="view-toggle">
-                    <v-btn value="mermaid" size="small">
-                        <v-icon start size="16">mdi-chart-timeline-variant</v-icon>
-                        {{ $t('processArchitecture.views.hierarchy') }}
-                    </v-btn>
-                    <v-btn value="card" size="small">
-                        <v-icon start size="16">mdi-view-grid-outline</v-icon>
-                        {{ $t('processArchitecture.views.card') }}
-                    </v-btn>
-                    <v-btn value="matrix" size="small">
-                        <v-icon start size="16">mdi-table</v-icon>
-                        {{ $t('processArchitecture.views.matrix') }}
-                    </v-btn>
-                    <v-btn value="tree" size="small">
-                        <v-icon start size="16">mdi-file-tree</v-icon>
-                        {{ $t('processArchitecture.views.tree') }}
-                    </v-btn>
-                </v-btn-toggle>
+                    <!-- View Toggle + Search + Domain Filter -->
+                    <div class="d-flex align-center ga-3 mb-4 flex-wrap">
+                        <v-btn-toggle v-model="activeView" mandatory density="compact" color="primary" class="view-toggle">
+                            <v-btn value="mermaid" size="small">
+                                <v-icon start size="16">mdi-chart-timeline-variant</v-icon>
+                                {{ $t('processArchitecture.views.hierarchy') }}
+                            </v-btn>
+                            <v-btn value="card" size="small">
+                                <v-icon start size="16">mdi-view-grid-outline</v-icon>
+                                {{ $t('processArchitecture.views.card') }}
+                            </v-btn>
+                            <v-btn value="matrix" size="small">
+                                <v-icon start size="16">mdi-table</v-icon>
+                                {{ $t('processArchitecture.views.matrix') }}
+                            </v-btn>
+                            <v-btn value="tree" size="small">
+                                <v-icon start size="16">mdi-file-tree</v-icon>
+                                {{ $t('processArchitecture.views.tree') }}
+                            </v-btn>
+                        </v-btn-toggle>
 
-                <div class="d-flex align-center flex-wrap ga-3 ms-auto">
-                    <!-- Smart Search Bar -->
-                    <div class="smart-search-wrapper" ref="searchWrapperRef">
-                        <v-text-field
-                            v-model="searchInput"
-                            :placeholder="$t('processArchitecture.searchPlaceholder')"
-                            prepend-inner-icon="mdi-magnify"
-                            variant="outlined"
-                            density="compact"
-                            hide-details
-                            clearable
-                            style="max-width: 320px; min-width: 320px"
-                            @focus="onSearchFocus"
-                            @input="onSearchInput"
-                            @keydown.enter.prevent="applySearchInput"
-                            @click:clear="onSearchClear"
-                        />
-                        <!-- Smart Dropdown -->
-                        <div v-if="showSearchDropdown && topRecentlyViewed.length > 0 && !searchInput" class="search-dropdown elevation-4">
-                            <div class="search-dropdown-header">
-                                {{ $t('processArchitecture.search.recentlyViewed') }}
-                            </div>
-                            <v-list density="compact" class="py-0">
-                                <v-list-item
-                                    v-for="item in topRecentlyViewed"
-                                    :key="item.id"
-                                    class="search-dropdown-item"
-                                    @click="handleRecentItemClick(item)"
+                        <div class="d-flex align-center flex-wrap ga-3 ms-auto">
+                            <!-- Smart Search Bar -->
+                            <div class="smart-search-wrapper" ref="searchWrapperRef">
+                                <v-text-field
+                                    v-model="searchInput"
+                                    :placeholder="$t('processArchitecture.searchPlaceholder')"
+                                    prepend-inner-icon="mdi-magnify"
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    clearable
+                                    style="max-width: 320px; min-width: 320px"
+                                    @focus="onSearchFocus"
+                                    @input="onSearchInput"
+                                    @keydown.enter.prevent="applySearchInput"
+                                    @click:clear="onSearchClear"
+                                />
+                                <!-- Smart Dropdown -->
+                                <div
+                                    v-if="showSearchDropdown && topRecentlyViewed.length > 0 && !searchInput"
+                                    class="search-dropdown elevation-4"
                                 >
-                                    <template #prepend>
-                                        <v-icon size="16" color="grey-darken-1">mdi-history</v-icon>
-                                    </template>
-                                    <v-list-item-title class="text-body-2">{{ item.name }}</v-list-item-title>
-                                    <v-list-item-subtitle class="text-caption text-grey">{{ item.id }}</v-list-item-subtitle>
-                                    <template #append>
-                                        <v-btn
-                                            :icon="isFavorite(item.id) ? 'mdi-star' : 'mdi-star-outline'"
-                                            :color="isFavorite(item.id) ? 'amber' : 'grey-lighten-1'"
-                                            size="x-small"
-                                            variant="text"
-                                            @click.stop="toggleFavorite(item.id)"
-                                        />
-                                    </template>
-                                </v-list-item>
-                            </v-list>
+                                    <div class="search-dropdown-header">
+                                        {{ $t('processArchitecture.search.recentlyViewed') }}
+                                    </div>
+                                    <v-list density="compact" class="py-0">
+                                        <v-list-item
+                                            v-for="item in topRecentlyViewed"
+                                            :key="item.id"
+                                            class="search-dropdown-item"
+                                            @click="handleRecentItemClick(item)"
+                                        >
+                                            <template #prepend>
+                                                <v-icon size="16" color="grey-darken-1">mdi-history</v-icon>
+                                            </template>
+                                            <v-list-item-title class="text-body-2">{{ item.name }}</v-list-item-title>
+                                            <v-list-item-subtitle class="text-caption text-grey">{{ item.id }}</v-list-item-subtitle>
+                                            <template #append>
+                                                <v-btn
+                                                    :icon="isFavorite(item.id) ? 'mdi-star' : 'mdi-star-outline'"
+                                                    :color="isFavorite(item.id) ? 'amber' : 'grey-lighten-1'"
+                                                    size="x-small"
+                                                    variant="text"
+                                                    @click.stop="toggleFavorite(item.id)"
+                                                />
+                                            </template>
+                                        </v-list-item>
+                                    </v-list>
+                                </div>
+                            </div>
+
+                            <!-- Advanced Filters button -->
+                            <v-btn
+                                :color="hasAdvancedFilters ? 'primary' : undefined"
+                                :variant="hasAdvancedFilters ? 'flat' : 'outlined'"
+                                size="small"
+                                prepend-icon="mdi-filter-cog"
+                                @click="showAdvancedFilter = true"
+                            >
+                                {{ $t('processArchitecture.advancedFilter.button') }}
+                                <v-chip v-if="hasAdvancedFilters" size="x-small" color="white" class="ml-1">
+                                    {{ advancedFilterCount }}
+                                </v-chip>
+                            </v-btn>
+
+                            <!-- My Processes Filter (inline chips) -->
+                            <div class="d-flex align-center ga-1">
+                                <v-chip
+                                    :color="myProcessFilter.favorites ? 'amber-darken-2' : undefined"
+                                    :variant="myProcessFilter.favorites ? 'flat' : 'outlined'"
+                                    size="small"
+                                    prepend-icon="mdi-star"
+                                    @click="toggleMyProcessChip('favorites')"
+                                >
+                                    {{ $t('processArchitecture.myProcesses.favorites') }}
+                                </v-chip>
+                            </div>
+
+                            <!-- Multi-select Domain Filter -->
+                            <div class="domain-filter-wrapper d-flex align-center flex-wrap ga-1">
+                                <v-chip
+                                    :color="!selectedDomain && (!selectedDomains || selectedDomains.length === 0) ? 'primary' : undefined"
+                                    :variant="!selectedDomain && (!selectedDomains || selectedDomains.length === 0) ? 'flat' : 'outlined'"
+                                    size="small"
+                                    @click="clearDomainFilters"
+                                >
+                                    {{ $t('processArchitecture.allDomains') }}
+                                </v-chip>
+                                <v-chip
+                                    v-for="domain in domains"
+                                    :key="domain.id"
+                                    :color="domain.color || 'grey'"
+                                    :variant="selectedDomains?.includes(domain.name) ? 'flat' : 'outlined'"
+                                    size="small"
+                                    @click="toggleDomain(domain.name)"
+                                >
+                                    {{ domain.name }}
+                                </v-chip>
+                                <!-- 도메인 추가 (PAL 모드 + 관리자) — 주변 칩과 동일 스타일 -->
+                                <v-chip
+                                    v-if="isAdmin && isPalMode"
+                                    size="small"
+                                    variant="outlined"
+                                    color="grey"
+                                    class="domain-add-chip"
+                                    prepend-icon="mdi-plus"
+                                    clickable
+                                    @click="openDomainAddDialog"
+                                >
+                                    {{ $t('metricsView.addDomain') || '도메인 추가' }}
+                                </v-chip>
+                                <!-- 도메인 관리 (이름/색상/순서/삭제) -->
+                                <v-chip
+                                    v-if="isAdmin && isPalMode"
+                                    size="small"
+                                    variant="outlined"
+                                    color="grey"
+                                    prepend-icon="mdi-cog-outline"
+                                    clickable
+                                    @click="openDomainManageDialog"
+                                >
+                                    도메인 관리
+                                </v-chip>
+                                <!-- 미분류 정리 (도메인 미지정 메이저 일괄 배정) -->
+                                <v-chip
+                                    v-if="isAdmin && isPalMode && unassignedMajors.length > 0"
+                                    size="small"
+                                    variant="outlined"
+                                    color="warning"
+                                    prepend-icon="mdi-folder-question-outline"
+                                    clickable
+                                    @click="openUncategorizedDialog"
+                                >
+                                    미분류 정리 ({{ unassignedMajors.length }})
+                                </v-chip>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Advanced Filters button -->
-                    <v-btn
-                        :color="hasAdvancedFilters ? 'primary' : undefined"
-                        :variant="hasAdvancedFilters ? 'flat' : 'outlined'"
-                        size="small"
-                        prepend-icon="mdi-filter-cog"
-                        @click="showAdvancedFilter = true"
-                    >
-                        {{ $t('processArchitecture.advancedFilter.button') }}
-                        <v-chip v-if="hasAdvancedFilters" size="x-small" color="white" class="ml-1">
-                            {{ advancedFilterCount }}
-                        </v-chip>
-                    </v-btn>
-
-                    <!-- My Processes Filter (inline chips) -->
-                    <div class="d-flex align-center ga-1">
-                        <v-chip
-                            :color="myProcessFilter.favorites ? 'amber-darken-2' : undefined"
-                            :variant="myProcessFilter.favorites ? 'flat' : 'outlined'"
-                            size="small"
-                            prepend-icon="mdi-star"
-                            @click="toggleMyProcessChip('favorites')"
-                        >
-                            {{ $t('processArchitecture.myProcesses.favorites') }}
-                        </v-chip>
-                    </div>
-
-                    <!-- Multi-select Domain Filter -->
-                    <div class="domain-filter-wrapper d-flex align-center flex-wrap ga-1">
-                        <v-chip
-                            :color="!selectedDomain && (!selectedDomains || selectedDomains.length === 0) ? 'primary' : undefined"
-                            :variant="!selectedDomain && (!selectedDomains || selectedDomains.length === 0) ? 'flat' : 'outlined'"
-                            size="small"
-                            @click="clearDomainFilters"
-                        >
-                            {{ $t('processArchitecture.allDomains') }}
-                        </v-chip>
-                        <v-chip
-                            v-for="domain in domains"
-                            :key="domain.id"
-                            :color="domain.color || 'grey'"
-                            :variant="selectedDomains?.includes(domain.name) ? 'flat' : 'outlined'"
-                            size="small"
-                            @click="toggleDomain(domain.name)"
-                        >
-                            {{ domain.name }}
-                        </v-chip>
-                        <!-- 도메인 추가 (PAL 모드 + 관리자) — 주변 칩과 동일 스타일 -->
-                        <v-chip
-                            v-if="isAdmin && isPalMode"
-                            size="small"
-                            variant="outlined"
-                            color="grey"
-                            class="domain-add-chip"
-                            prepend-icon="mdi-plus"
-                            clickable
-                            @click="openDomainAddDialog"
-                        >
-                            {{ $t('metricsView.addDomain') || '도메인 추가' }}
-                        </v-chip>
-                        <!-- 도메인 관리 (이름/색상/순서/삭제) -->
-                        <v-chip
-                            v-if="isAdmin && isPalMode"
-                            size="small"
-                            variant="outlined"
-                            color="grey"
-                            prepend-icon="mdi-cog-outline"
-                            clickable
-                            @click="openDomainManageDialog"
-                        >
-                            도메인 관리
-                        </v-chip>
-                        <!-- 미분류 정리 (도메인 미지정 메이저 일괄 배정) -->
-                        <v-chip
-                            v-if="isAdmin && isPalMode && unassignedMajors.length > 0"
-                            size="small"
-                            variant="outlined"
-                            color="warning"
-                            prepend-icon="mdi-folder-question-outline"
-                            clickable
-                            @click="openUncategorizedDialog"
-                        >
-                            미분류 정리 ({{ unassignedMajors.length }})
-                        </v-chip>
+                    <!-- Stats Bar -->
+                    <div class="d-flex align-center ga-4 mb-4 stats-bar flex-wrap">
+                        <div class="stat-item">
+                            <span class="stat-label">전체프로세스</span>
+                            <span class="stat-value font-weight-bold">{{ stats.subTotal }}개</span>
+                        </div>
+                        <v-divider vertical class="stat-divider" />
+                        <div class="stat-item">
+                            <v-icon size="14" :color="getStageDef('draft').color" class="mr-1">{{ getStageDef('draft').icon }}</v-icon>
+                            <span class="stat-label">{{ getStageDef('draft').label }}</span>
+                            <span class="stat-value font-weight-bold" :style="{ color: getStageDef('draft').color }">{{
+                                stats.draft
+                            }}</span>
+                        </div>
+                        <v-divider vertical class="stat-divider" />
+                        <div class="stat-item">
+                            <v-icon size="14" :color="getStageDef('in_review').color" class="mr-1">{{
+                                getStageDef('in_review').icon
+                            }}</v-icon>
+                            <span class="stat-label">{{ getStageDef('in_review').label }}</span>
+                            <span class="stat-value font-weight-bold" :style="{ color: getStageDef('in_review').color }">{{
+                                stats.inReview
+                            }}</span>
+                        </div>
+                        <v-divider vertical class="stat-divider" />
+                        <div class="stat-item">
+                            <v-icon size="14" :color="getStageDef('public_feedback').color" class="mr-1">{{
+                                getStageDef('public_feedback').icon
+                            }}</v-icon>
+                            <span class="stat-label">{{ getStageDef('public_feedback').label }}</span>
+                            <span class="stat-value font-weight-bold" :style="{ color: getStageDef('public_feedback').color }">{{
+                                stats.publicFeedback
+                            }}</span>
+                        </div>
+                        <v-divider vertical class="stat-divider" />
+                        <div class="stat-item">
+                            <v-icon size="14" :color="getStageDef('final_edit').color" class="mr-1">{{
+                                getStageDef('final_edit').icon
+                            }}</v-icon>
+                            <span class="stat-label">{{ getStageDef('final_edit').label }}</span>
+                            <span class="stat-value font-weight-bold" :style="{ color: getStageDef('final_edit').color }">{{
+                                stats.finalEdit
+                            }}</span>
+                        </div>
+                        <v-divider vertical class="stat-divider" />
+                        <div class="stat-item">
+                            <v-icon size="14" :color="getStageDef('published').color" class="mr-1">{{
+                                getStageDef('published').icon
+                            }}</v-icon>
+                            <span class="stat-label">{{ getStageDef('published').label }}</span>
+                            <span class="stat-value font-weight-bold" :style="{ color: getStageDef('published').color }">{{
+                                stats.published
+                            }}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Stats Bar -->
-            <div class="d-flex align-center ga-4 mb-4 stats-bar flex-wrap">
-                <div class="stat-item">
-                    <span class="stat-label">전체프로세스</span>
-                    <span class="stat-value font-weight-bold">{{ stats.subTotal }}개</span>
-                </div>
-                <v-divider vertical class="stat-divider" />
-                <div class="stat-item">
-                    <v-icon size="14" :color="getStageDef('draft').color" class="mr-1">{{ getStageDef('draft').icon }}</v-icon>
-                    <span class="stat-label">{{ getStageDef('draft').label }}</span>
-                    <span class="stat-value font-weight-bold" :style="{ color: getStageDef('draft').color }">{{ stats.draft }}</span>
-                </div>
-                <v-divider vertical class="stat-divider" />
-                <div class="stat-item">
-                    <v-icon size="14" :color="getStageDef('in_review').color" class="mr-1">{{ getStageDef('in_review').icon }}</v-icon>
-                    <span class="stat-label">{{ getStageDef('in_review').label }}</span>
-                    <span class="stat-value font-weight-bold" :style="{ color: getStageDef('in_review').color }">{{ stats.inReview }}</span>
-                </div>
-                <v-divider vertical class="stat-divider" />
-                <div class="stat-item">
-                    <v-icon size="14" :color="getStageDef('public_feedback').color" class="mr-1">{{ getStageDef('public_feedback').icon }}</v-icon>
-                    <span class="stat-label">{{ getStageDef('public_feedback').label }}</span>
-                    <span class="stat-value font-weight-bold" :style="{ color: getStageDef('public_feedback').color }">{{ stats.publicFeedback }}</span>
-                </div>
-                <v-divider vertical class="stat-divider" />
-                <div class="stat-item">
-                    <v-icon size="14" :color="getStageDef('final_edit').color" class="mr-1">{{ getStageDef('final_edit').icon }}</v-icon>
-                    <span class="stat-label">{{ getStageDef('final_edit').label }}</span>
-                    <span class="stat-value font-weight-bold" :style="{ color: getStageDef('final_edit').color }">{{ stats.finalEdit }}</span>
-                </div>
-                <v-divider vertical class="stat-divider" />
-                <div class="stat-item">
-                    <v-icon size="14" :color="getStageDef('published').color" class="mr-1">{{ getStageDef('published').icon }}</v-icon>
-                    <span class="stat-label">{{ getStageDef('published').label }}</span>
-                    <span class="stat-value font-weight-bold" :style="{ color: getStageDef('published').color }">{{ stats.published }}</span>
-                </div>
-            </div>
-        </div>
+                <v-divider />
 
-        <v-divider />
+                <!-- Loading -->
+                <v-progress-linear v-if="loading" indeterminate color="primary" />
 
-        <!-- Loading -->
-        <v-progress-linear v-if="loading" indeterminate color="primary" />
+                <!-- View Area (스크롤 영역) -->
+                <div id="processArchView" class="view-area pa-4" v-if="!loading" style="flex: 1; min-height: 0; overflow: hidden">
+                    <!-- Empty State -->
+                    <div v-if="isFilteredEmpty" class="empty-state">
+                        <svg class="empty-state-illustration" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="30" y="40" width="140" height="90" rx="8" fill="#f0f4ff" stroke="#c5cae9" stroke-width="2" />
+                            <rect x="50" y="60" width="60" height="8" rx="4" fill="#c5cae9" />
+                            <rect x="50" y="76" width="100" height="6" rx="3" fill="#e8eaf6" />
+                            <rect x="50" y="90" width="80" height="6" rx="3" fill="#e8eaf6" />
+                            <circle cx="155" cy="50" r="22" fill="#fff" stroke="#c5cae9" stroke-width="2" />
+                            <line x1="148" y1="43" x2="162" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round" />
+                            <line x1="162" y1="43" x2="148" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round" />
+                        </svg>
+                        <p class="empty-state-message">{{ $t('processArchitecture.emptyState.message') }}</p>
+                        <v-btn color="primary" variant="outlined" size="small" prepend-icon="mdi-filter-remove" @click="resetAllFilters">
+                            {{ $t('processArchitecture.emptyState.resetFilters') }}
+                        </v-btn>
+                    </div>
 
-        <!-- View Area (스크롤 영역) -->
-        <div id="processArchView" class="view-area pa-4" v-if="!loading" style="flex: 1; min-height: 0; overflow: hidden">
-            <!-- Empty State -->
-            <div v-if="isFilteredEmpty" class="empty-state">
-                <svg class="empty-state-illustration" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="30" y="40" width="140" height="90" rx="8" fill="#f0f4ff" stroke="#c5cae9" stroke-width="2" />
-                    <rect x="50" y="60" width="60" height="8" rx="4" fill="#c5cae9" />
-                    <rect x="50" y="76" width="100" height="6" rx="3" fill="#e8eaf6" />
-                    <rect x="50" y="90" width="80" height="6" rx="3" fill="#e8eaf6" />
-                    <circle cx="155" cy="50" r="22" fill="#fff" stroke="#c5cae9" stroke-width="2" />
-                    <line x1="148" y1="43" x2="162" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round" />
-                    <line x1="162" y1="43" x2="148" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round" />
-                </svg>
-                <p class="empty-state-message">{{ $t('processArchitecture.emptyState.message') }}</p>
-                <v-btn color="primary" variant="outlined" size="small" prepend-icon="mdi-filter-remove" @click="resetAllFilters">
-                    {{ $t('processArchitecture.emptyState.resetFilters') }}
-                </v-btn>
-            </div>
-
-            <template v-else>
-                <KeepAlive>
-                    <ProcessArchCardView
-                        v-if="activeView === 'card'"
-                        :procMap="filteredProcMap"
-                        :domains="filteredDomainsForViews"
-                        :processStatuses="processStatuses"
-                        :selectedDomain="selectedDomain"
-                        :showToBe="showToBe"
-                        :isAdmin="isAdmin"
-                        :favorites="favorites"
-                        :hideEmptyColumns="hasProcessResultFilter"
-                        :isUpdatedSinceLastVisit="isUpdatedSinceLastVisit"
-                        :readonly="!isEditMode"
-                        :kpiTaggedProcessIds="kpiTaggedProcessIds"
-                        @navigate="navigateToProcess"
-                        @toggleFavorite="toggleFavorite"
-                        @moveSub="handleMoveSub"
-                        @moveMajor="handleMoveMajor"
-                        @editProcess="openEditProcessDialog"
-                        @addProcess="openAddProcessDialog"
-                    />
-                </KeepAlive>
-                <div v-show="activeView !== 'card'" class="view-scroll-shell">
-                    <KeepAlive>
-                        <ProcessArchTreeView
-                            v-if="activeView === 'tree'"
-                            :procMap="filteredProcMap"
-                            :domains="filteredDomainsForViews"
-                            :processStatuses="processStatuses"
-                            :selectedDomain="selectedDomain"
-                            :showToBe="showToBe"
-                            :hideDomainRoots="hideDomainRootsForViews"
-                            :favorites="favorites"
-                            :searchQuery="searchQuery"
-                            :isUpdatedSinceLastVisit="isUpdatedSinceLastVisit"
-                            :readonly="!isEditMode"
-                            :kpiTaggedProcessIds="kpiTaggedProcessIds"
-                            @navigate="navigateToProcess"
-                            @moveSub="handleMoveSub"
-                            @toggleFavorite="toggleFavorite"
-                            @openPermission="handleOpenPermission"
-                            @editProcess="openEditProcessDialog"
-                            @addProcess="openAddProcessDialog"
-                        />
-                        <ProcessArchMatrixView
-                            v-else-if="activeView === 'matrix'"
-                            :procMap="filteredProcMap"
-                            :domains="filteredDomainsForViews"
-                            :processStatuses="processStatuses"
-                            :selectedDomain="selectedDomain"
-                            :favorites="favorites"
-                            :isUpdatedSinceLastVisit="isUpdatedSinceLastVisit"
-                            :readonly="!isEditMode"
-                            :kpiTaggedProcessIds="kpiTaggedProcessIds"
-                            @navigate="navigateToProcess"
-                            @toggleFavorite="toggleFavorite"
-                            @editProcess="openEditProcessDialog"
-                            @addProcess="openAddProcessDialog"
-                        />
-                        <ProcessArchMermaidView
-                            v-else-if="activeView === 'mermaid'"
-                            :procMap="filteredProcMap"
-                            :domains="filteredDomainsForViews"
-                            :processStatuses="processStatuses"
-                            :selectedDomain="selectedDomain"
-                            :hideDomainRoots="hideDomainRootsForViews"
-                            :favorites="favorites"
-                            :isUpdatedSinceLastVisit="isUpdatedSinceLastVisit"
-                            :readonly="!isEditMode"
-                            :kpiTaggedProcessIds="kpiTaggedProcessIds"
-                            @navigate="navigateToProcess"
-                            @toggleFavorite="toggleFavorite"
-                            @editProcess="openEditProcessDialog"
-                            @addProcess="openAddProcessDialog"
-                        />
-                    </KeepAlive>
+                    <template v-else>
+                        <KeepAlive>
+                            <ProcessArchCardView
+                                v-if="activeView === 'card'"
+                                :procMap="filteredProcMap"
+                                :domains="filteredDomainsForViews"
+                                :processStatuses="processStatuses"
+                                :selectedDomain="selectedDomain"
+                                :showToBe="showToBe"
+                                :isAdmin="isAdmin"
+                                :favorites="favorites"
+                                :hideEmptyColumns="hasProcessResultFilter"
+                                :isUpdatedSinceLastVisit="isUpdatedSinceLastVisit"
+                                :readonly="!isEditMode"
+                                :kpiTaggedProcessIds="kpiTaggedProcessIds"
+                                @navigate="navigateToProcess"
+                                @toggleFavorite="toggleFavorite"
+                                @moveSub="handleMoveSub"
+                                @moveMajor="handleMoveMajor"
+                                @editProcess="openEditProcessDialog"
+                                @addProcess="openAddProcessDialog"
+                            />
+                        </KeepAlive>
+                        <div v-show="activeView !== 'card'" class="view-scroll-shell">
+                            <KeepAlive>
+                                <ProcessArchTreeView
+                                    v-if="activeView === 'tree'"
+                                    :procMap="filteredProcMap"
+                                    :domains="filteredDomainsForViews"
+                                    :processStatuses="processStatuses"
+                                    :selectedDomain="selectedDomain"
+                                    :showToBe="showToBe"
+                                    :hideDomainRoots="hideDomainRootsForViews"
+                                    :favorites="favorites"
+                                    :searchQuery="searchQuery"
+                                    :isUpdatedSinceLastVisit="isUpdatedSinceLastVisit"
+                                    :readonly="!isEditMode"
+                                    :kpiTaggedProcessIds="kpiTaggedProcessIds"
+                                    @navigate="navigateToProcess"
+                                    @moveSub="handleMoveSub"
+                                    @toggleFavorite="toggleFavorite"
+                                    @openPermission="handleOpenPermission"
+                                    @editProcess="openEditProcessDialog"
+                                    @addProcess="openAddProcessDialog"
+                                />
+                                <ProcessArchMatrixView
+                                    v-else-if="activeView === 'matrix'"
+                                    :procMap="filteredProcMap"
+                                    :domains="filteredDomainsForViews"
+                                    :processStatuses="processStatuses"
+                                    :selectedDomain="selectedDomain"
+                                    :favorites="favorites"
+                                    :isUpdatedSinceLastVisit="isUpdatedSinceLastVisit"
+                                    :readonly="!isEditMode"
+                                    :kpiTaggedProcessIds="kpiTaggedProcessIds"
+                                    @navigate="navigateToProcess"
+                                    @toggleFavorite="toggleFavorite"
+                                    @editProcess="openEditProcessDialog"
+                                    @addProcess="openAddProcessDialog"
+                                />
+                                <ProcessArchMermaidView
+                                    v-else-if="activeView === 'mermaid'"
+                                    :procMap="filteredProcMap"
+                                    :domains="filteredDomainsForViews"
+                                    :processStatuses="processStatuses"
+                                    :selectedDomain="selectedDomain"
+                                    :hideDomainRoots="hideDomainRootsForViews"
+                                    :favorites="favorites"
+                                    :isUpdatedSinceLastVisit="isUpdatedSinceLastVisit"
+                                    :readonly="!isEditMode"
+                                    :kpiTaggedProcessIds="kpiTaggedProcessIds"
+                                    @navigate="navigateToProcess"
+                                    @toggleFavorite="toggleFavorite"
+                                    @editProcess="openEditProcessDialog"
+                                    @addProcess="openAddProcessDialog"
+                                />
+                            </KeepAlive>
+                        </div>
+                    </template>
                 </div>
-            </template>
+            </v-card>
         </div>
 
         <!-- New Process Dialog -->
@@ -525,7 +558,8 @@
                     </v-btn>
                 </v-card-title>
                 <p class="text-caption text-grey mb-2">
-                    색상과 표시 순서는 바로 반영됩니다. 이름 변경·삭제는 소속 프로세스에 영향을 주므로 재구성 모드에서 결재를 거쳐 진행합니다.
+                    색상과 표시 순서는 바로 반영됩니다. 이름 변경·삭제는 소속 프로세스에 영향을 주므로 재구성 모드에서 결재를 거쳐
+                    진행합니다.
                 </p>
                 <v-list density="compact" class="py-0 domain-manage-list">
                     <v-list-item v-for="(domain, idx) in manageableDomains" :key="domain.id" class="px-2">
@@ -534,8 +568,20 @@
                         </template>
                         <v-list-item-title class="text-body-2">{{ domain.name }}</v-list-item-title>
                         <template #append>
-                            <v-btn icon="mdi-arrow-up" size="x-small" variant="text" :disabled="idx === 0 || domainManageDialog.saving" @click="moveDomainOrder(idx, -1)" />
-                            <v-btn icon="mdi-arrow-down" size="x-small" variant="text" :disabled="idx === manageableDomains.length - 1 || domainManageDialog.saving" @click="moveDomainOrder(idx, 1)" />
+                            <v-btn
+                                icon="mdi-arrow-up"
+                                size="x-small"
+                                variant="text"
+                                :disabled="idx === 0 || domainManageDialog.saving"
+                                @click="moveDomainOrder(idx, -1)"
+                            />
+                            <v-btn
+                                icon="mdi-arrow-down"
+                                size="x-small"
+                                variant="text"
+                                :disabled="idx === manageableDomains.length - 1 || domainManageDialog.saving"
+                                @click="moveDomainOrder(idx, 1)"
+                            />
                             <v-btn icon="mdi-palette-outline" size="x-small" variant="text" @click="openDomainEditDialog(domain)" />
                         </template>
                     </v-list-item>
@@ -553,13 +599,18 @@
                     <p class="text-caption text-grey mb-2">
                         명시적으로 배정된 프로세스가 없는 도메인입니다. 이름 추론으로만 소속이 정해진 프로세스는
                         <strong>고정</strong>으로 명시 배정하거나, 잘못 만들어진 도메인은 <strong>제거</strong>하세요.
-                        <span v-if="domainInferenceEnabled">(도메인 추론이 켜져 있어 제거 후에도 이름이 일치하면 다시 나타날 수 있습니다 — 용어·분류 설정에서 끌 수 있습니다.)</span>
+                        <span v-if="domainInferenceEnabled"
+                            >(도메인 추론이 켜져 있어 제거 후에도 이름이 일치하면 다시 나타날 수 있습니다 — 용어·분류 설정에서 끌 수
+                            있습니다.)</span
+                        >
                     </p>
                     <v-list density="compact" class="py-0">
                         <v-list-item v-for="row in inferredDomainReview" :key="row.domain.id || row.domain.name" class="px-2">
                             <v-list-item-title class="text-body-2">
                                 {{ row.domain.name }}
-                                <span class="text-caption text-grey ml-1">추론 {{ row.inferredCount }}건{{ row.persisted ? ' · 저장됨' : ' · 미저장' }}</span>
+                                <span class="text-caption text-grey ml-1"
+                                    >추론 {{ row.inferredCount }}건{{ row.persisted ? ' · 저장됨' : ' · 미저장' }}</span
+                                >
                             </v-list-item-title>
                             <template #append>
                                 <v-btn
@@ -604,9 +655,7 @@
         <!-- Domain Color Dialog (표시 속성만 — 이름 변경은 재구성 모드) -->
         <v-dialog v-model="domainEditDialog.show" max-width="400" persistent>
             <v-card class="pa-4 rounded-lg">
-                <v-card-title class="px-0 pt-0 text-h6 font-weight-bold">
-                    도메인 색상 — {{ domainEditDialog.originalName }}
-                </v-card-title>
+                <v-card-title class="px-0 pt-0 text-h6 font-weight-bold"> 도메인 색상 — {{ domainEditDialog.originalName }} </v-card-title>
                 <div class="mt-2">
                     <div class="text-subtitle-2 mb-2">{{ $t('processDefinitionMap.selectColor') || '색상 선택' }}</div>
                     <div class="d-flex flex-wrap" style="gap: 8px">
@@ -622,7 +671,9 @@
                 </div>
                 <v-card-actions class="px-0 pb-0 pt-3">
                     <v-spacer />
-                    <v-btn variant="text" :disabled="domainEditDialog.saving" @click="domainEditDialog.show = false">{{ $t('common.cancel') || '취소' }}</v-btn>
+                    <v-btn variant="text" :disabled="domainEditDialog.saving" @click="domainEditDialog.show = false">{{
+                        $t('common.cancel') || '취소'
+                    }}</v-btn>
                     <v-btn color="primary" variant="flat" :loading="domainEditDialog.saving" @click="saveDomainEdit">
                         {{ $t('common.save') || '저장' }}
                     </v-btn>
@@ -634,17 +685,21 @@
         <v-dialog v-model="uncategorizedDialog.show" max-width="640">
             <v-card class="pa-4 rounded-lg">
                 <v-card-title class="px-0 pt-0 text-h6 font-weight-bold">미분류 정리</v-card-title>
-                <p class="text-caption text-grey mb-3">
-                    도메인이 지정되지 않은 메이저 프로세스를 선택해 도메인에 일괄 배정합니다.
-                </p>
+                <p class="text-caption text-grey mb-3">도메인이 지정되지 않은 메이저 프로세스를 선택해 도메인에 일괄 배정합니다.</p>
                 <div class="uncategorized-list mb-3">
                     <v-table density="compact">
                         <thead>
                             <tr>
                                 <th style="width: 40px">
                                     <v-checkbox-btn
-                                        :model-value="uncategorizedDialog.selected.length > 0 && uncategorizedDialog.selected.length === unassignedMajors.length"
-                                        :indeterminate="uncategorizedDialog.selected.length > 0 && uncategorizedDialog.selected.length < unassignedMajors.length"
+                                        :model-value="
+                                            uncategorizedDialog.selected.length > 0 &&
+                                            uncategorizedDialog.selected.length === unassignedMajors.length
+                                        "
+                                        :indeterminate="
+                                            uncategorizedDialog.selected.length > 0 &&
+                                            uncategorizedDialog.selected.length < unassignedMajors.length
+                                        "
                                         density="compact"
                                         @update:model-value="toggleAllUnassigned"
                                     />
@@ -685,7 +740,9 @@
                 />
                 <v-card-actions class="px-0 pb-0 pt-3">
                     <v-spacer />
-                    <v-btn variant="text" :disabled="uncategorizedDialog.saving" @click="uncategorizedDialog.show = false">{{ $t('common.cancel') || '취소' }}</v-btn>
+                    <v-btn variant="text" :disabled="uncategorizedDialog.saving" @click="uncategorizedDialog.show = false">{{
+                        $t('common.cancel') || '취소'
+                    }}</v-btn>
                     <v-btn
                         color="primary"
                         variant="flat"
@@ -787,11 +844,7 @@ import { formatKST } from '@/utils/datetime';
 import { generateProcessId, getNextSequenceFromIds } from '@/utils/processIdGenerator';
 import type { RecentlyViewedItem } from './useProcessArchitecture';
 import { useAdminConsoleStore } from '@/stores/adminConsole';
-import {
-    buildProcessHierarchyQuery,
-    PROCESS_HIERARCHY_ENTRY,
-    PROCESS_HIERARCHY_MODE
-} from '@/views/process-hierarchy/navigation';
+import { buildProcessHierarchyQuery, PROCESS_HIERARCHY_ENTRY, PROCESS_HIERARCHY_MODE } from '@/views/process-hierarchy/navigation';
 import { getMajorBusinessDomain, getExplicitMajorDomain, isDomainInferenceEnabled, majorMatchesDomain } from './processClassification';
 import { applyMajorStageMove, applySubMajorMove } from './processMapMove';
 import { isUncategorizedProcess } from '@/utils/uncategorizedProcess';
@@ -853,10 +906,16 @@ const lockDisplayName = ref('');
 let lockCheckTimer: ReturnType<typeof setInterval> | null = null;
 
 async function resolveLockDisplayName(userId: string) {
-    if (!userId) { lockDisplayName.value = ''; return; }
+    if (!userId) {
+        lockDisplayName.value = '';
+        return;
+    }
     try {
         const supabase = (window as any).$supabase;
-        if (!supabase) { lockDisplayName.value = userId; return; }
+        if (!supabase) {
+            lockDisplayName.value = userId;
+            return;
+        }
         const { data } = await supabase
             .from('users')
             .select('username, email')
@@ -869,10 +928,13 @@ async function resolveLockDisplayName(userId: string) {
     }
 }
 
-watch(() => editLock.value.lockedBy, (val) => {
-    if (val && !editLock.value.isMine) resolveLockDisplayName(val);
-    else lockDisplayName.value = '';
-});
+watch(
+    () => editLock.value.lockedBy,
+    (val) => {
+        if (val && !editLock.value.isMine) resolveLockDisplayName(val);
+        else lockDisplayName.value = '';
+    }
+);
 
 /** 편집 모드 진입 — lock 획득 시도 */
 async function enterEditMode() {
@@ -931,11 +993,7 @@ const hideDomainRootsForViews = computed(() => false);
 
 const hasProcessResultFilter = computed(() => {
     const af = advancedFilters.value;
-    const hasActiveAdvancedFilters =
-        af.statuses.length > 0 ||
-        af.dateMode !== 'none' ||
-        af.owners.length > 0 ||
-        af.systems.length > 0;
+    const hasActiveAdvancedFilters = af.statuses.length > 0 || af.dateMode !== 'none' || af.owners.length > 0 || af.systems.length > 0;
     const hasFilter =
         !!searchQuery.value ||
         hasActiveDomainFilter.value ||
@@ -1145,7 +1203,12 @@ async function moveDomainOrder(index: number, delta: number) {
             const entry = existing.find((x: any) => matchesDomainEntry(x, dm));
             return { ...(entry || { id: dm.id, name: dm.name, color: dm.color }), order: i + 1 };
         });
-        await saveMetricsMap({ ...current, domains: newDomains, mega_processes: current.mega_processes ?? [], processes: current.processes ?? [] });
+        await saveMetricsMap({
+            ...current,
+            domains: newDomains,
+            mega_processes: current.mega_processes ?? [],
+            processes: current.processes ?? []
+        });
         adminStore.writeAdminAuditLog({
             action: 'process_domain_reorder',
             target_type: 'process',
@@ -1210,7 +1273,12 @@ async function pinInferredDomain(row: { domain: any; majorIds: string[] }) {
         const domainsList = (Array.isArray(current.domains) ? current.domains : []).map((x: any) => ({ ...x }));
         if (!domainsList.some((x: any) => matchesDomainEntry(x, row.domain))) {
             domainsList.push({ id: row.domain.id, name: row.domain.name, color: row.domain.color ?? null, order: domainsList.length + 1 });
-            await saveMetricsMap({ ...current, domains: domainsList, mega_processes: current.mega_processes ?? [], processes: current.processes ?? [] });
+            await saveMetricsMap({
+                ...current,
+                domains: domainsList,
+                mega_processes: current.mega_processes ?? [],
+                processes: current.processes ?? []
+            });
         }
         adminStore.writeAdminAuditLog({
             action: 'process_domain_pin',
@@ -1230,9 +1298,10 @@ async function pinInferredDomain(row: { domain: any; majorIds: string[] }) {
 
 /** 명시 배정이 없는 도메인을 metrics 와 proc_map 참조에서 제거한다(소속 메이저는 미분류로). */
 async function removeInferredDomain(row: { domain: any; inferredCount: number; persisted: boolean }) {
-    const message = row.inferredCount > 0
-        ? `'${row.domain.name}' 도메인을 제거할까요? 추론으로 소속된 ${row.inferredCount}개 프로세스는 미분류가 됩니다.`
-        : `'${row.domain.name}' 도메인을 제거할까요?`;
+    const message =
+        row.inferredCount > 0
+            ? `'${row.domain.name}' 도메인을 제거할까요? 추론으로 소속된 ${row.inferredCount}개 프로세스는 미분류가 됩니다.`
+            : `'${row.domain.name}' 도메인을 제거할까요?`;
     if (!window.confirm(message)) return;
     domainManageDialog.value.saving = true;
     try {
@@ -1345,12 +1414,7 @@ let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 // Advanced filter helpers
 const hasAdvancedFilters = computed(() => {
     const af = advancedFilters.value;
-    return (
-        af.statuses.length > 0 ||
-        af.dateMode !== 'none' ||
-        af.owners.length > 0 ||
-        af.systems.length > 0
-    );
+    return af.statuses.length > 0 || af.dateMode !== 'none' || af.owners.length > 0 || af.systems.length > 0;
 });
 
 const advancedFilterCount = computed(() => {
@@ -1413,62 +1477,63 @@ function collectOwnerIdentifiersFromProcMap(): Set<string> {
     return identifiers;
 }
 
-watch([allProcDefs, visibleProcMap], async ([defs]) => {
-    const ownerIdentifiers = collectOwnerIdentifiersFromProcMap();
-    for (const def of defs) {
-        addOwnerIdentifier(ownerIdentifiers, def.owner);
-        addOwnerIdentifier(ownerIdentifiers, def.created_by);
-        addOwnerIdentifier(ownerIdentifiers, def.primary_owner);
-        addOwnerIdentifier(ownerIdentifiers, def.primaryOwner);
-        addOwnerIdentifier(ownerIdentifiers, def.co_owners);
-        addOwnerIdentifier(ownerIdentifiers, def.field_owners);
-        addOwnerIdentifier(ownerIdentifiers, def.hq_owners);
-        addOwnerIdentifier(ownerIdentifiers, def.master);
-        addOwnerIdentifier(ownerIdentifiers, def.master_owner);
-        addOwnerIdentifier(ownerIdentifiers, def.masterOwner);
-        addOwnerIdentifier(ownerIdentifiers, def.definition?.meta?.owners?.primaryOwner);
-        addOwnerIdentifier(ownerIdentifiers, def.definition?.meta?.owners?.fieldOwners);
-        addOwnerIdentifier(ownerIdentifiers, def.definition?.meta?.owners?.hqOwners);
-        addOwnerIdentifier(ownerIdentifiers, def.definition?.meta?.owners?.masterOwner);
-    }
-    if (ownerIdentifiers.size === 0) {
-        ownerOptionsForFilter.value = [];
-        return;
-    }
+watch(
+    [allProcDefs, visibleProcMap],
+    async ([defs]) => {
+        const ownerIdentifiers = collectOwnerIdentifiersFromProcMap();
+        for (const def of defs) {
+            addOwnerIdentifier(ownerIdentifiers, def.owner);
+            addOwnerIdentifier(ownerIdentifiers, def.created_by);
+            addOwnerIdentifier(ownerIdentifiers, def.primary_owner);
+            addOwnerIdentifier(ownerIdentifiers, def.primaryOwner);
+            addOwnerIdentifier(ownerIdentifiers, def.co_owners);
+            addOwnerIdentifier(ownerIdentifiers, def.field_owners);
+            addOwnerIdentifier(ownerIdentifiers, def.hq_owners);
+            addOwnerIdentifier(ownerIdentifiers, def.master);
+            addOwnerIdentifier(ownerIdentifiers, def.master_owner);
+            addOwnerIdentifier(ownerIdentifiers, def.masterOwner);
+            addOwnerIdentifier(ownerIdentifiers, def.definition?.meta?.owners?.primaryOwner);
+            addOwnerIdentifier(ownerIdentifiers, def.definition?.meta?.owners?.fieldOwners);
+            addOwnerIdentifier(ownerIdentifiers, def.definition?.meta?.owners?.hqOwners);
+            addOwnerIdentifier(ownerIdentifiers, def.definition?.meta?.owners?.masterOwner);
+        }
+        if (ownerIdentifiers.size === 0) {
+            ownerOptionsForFilter.value = [];
+            return;
+        }
 
-    const identifierToName: Record<string, string> = {};
-    try {
-        const supabase = (window as any).$supabase;
-        const tenantId = (window as any).$tenantName;
-        if (supabase && tenantId) {
-            const { data } = await supabase
-                .from('users')
-                .select('id, email, username, employee_no')
-                .eq('tenant_id', tenantId);
-            for (const u of data || []) {
-                const displayName =
-                    normalizeOwnerIdentifier(u?.username) ||
-                    normalizeOwnerIdentifier(u?.email) ||
-                    normalizeOwnerIdentifier(u?.employee_no) ||
-                    normalizeOwnerIdentifier(u?.id);
-                if (!displayName) continue;
-                for (const key of [u?.id, u?.email, u?.username, u?.employee_no]) {
-                    const identifier = normalizeOwnerIdentifier(key);
-                    if (identifier) identifierToName[identifier] = displayName;
+        const identifierToName: Record<string, string> = {};
+        try {
+            const supabase = (window as any).$supabase;
+            const tenantId = (window as any).$tenantName;
+            if (supabase && tenantId) {
+                const { data } = await supabase.from('users').select('id, email, username, employee_no').eq('tenant_id', tenantId);
+                for (const u of data || []) {
+                    const displayName =
+                        normalizeOwnerIdentifier(u?.username) ||
+                        normalizeOwnerIdentifier(u?.email) ||
+                        normalizeOwnerIdentifier(u?.employee_no) ||
+                        normalizeOwnerIdentifier(u?.id);
+                    if (!displayName) continue;
+                    for (const key of [u?.id, u?.email, u?.username, u?.employee_no]) {
+                        const identifier = normalizeOwnerIdentifier(key);
+                        if (identifier) identifierToName[identifier] = displayName;
+                    }
                 }
             }
+        } catch (e) {
+            console.warn('[ProcessArchitecture] Failed to resolve owner names:', e);
         }
-    } catch (e) {
-        console.warn('[ProcessArchitecture] Failed to resolve owner names:', e);
-    }
 
-    ownerOptionsForFilter.value = [...ownerIdentifiers]
-        .map((identifier) => ({
-            value: identifier,
-            label: identifierToName[identifier] || identifier
-        }))
-        .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
-}, { immediate: true });
+        ownerOptionsForFilter.value = [...ownerIdentifiers]
+            .map((identifier) => ({
+                value: identifier,
+                label: identifierToName[identifier] || identifier
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
+    },
+    { immediate: true }
+);
 
 // Systems/OSS from proc_map sub-processes
 const availableSystemsForFilter = computed(() => {
@@ -1649,7 +1714,6 @@ onUnmounted(() => {
     }
 });
 
-
 function openSystemOperations() {
     router.push({ name: 'Admin System Operations' });
 }
@@ -1685,9 +1749,7 @@ async function handleMoveMajor(majorId: string, _megaId: string, newStage: strin
     if (!applyMajorStageMove(newMap, { majorId, sourceMegaId: _megaId, newStage, domains: domains.value })) return;
     await saveProcMap(newMap);
     // 상위(부모) 변경 감사 로그 (fire-and-forget)
-    const movedMajor = (newMap.mega_proc_list || [])
-        .flatMap((m: any) => m.major_proc_list || [])
-        .find((mj: any) => mj.id === majorId);
+    const movedMajor = (newMap.mega_proc_list || []).flatMap((m: any) => m.major_proc_list || []).find((mj: any) => mj.id === majorId);
     adminStore.writeAdminAuditLog({
         action: 'process_parent_change',
         target_type: 'process',
@@ -1707,7 +1769,7 @@ const editProcessDialog = ref({
     id: '',
     name: '',
     domain: '',
-    megaId: '',        // major의 현재 소속 mega
+    megaId: '', // major의 현재 소속 mega
     originalMegaId: '' // 변경 전 소속 mega (이동 판별용)
 });
 
@@ -1771,7 +1833,8 @@ async function saveEditProcess() {
         const newMap = JSON.parse(JSON.stringify(procMap.value));
         if (!newMap.mega_proc_list) newMap.mega_proc_list = [];
         const resolvedDomainName = resolveDomainName(d.domain);
-        const resolvedDomainId = domains.value.find((dm: any) => dm.name === resolvedDomainName || dm.id === resolvedDomainName)?.id || resolvedDomainName;
+        const resolvedDomainId =
+            domains.value.find((dm: any) => dm.name === resolvedDomainName || dm.id === resolvedDomainName)?.id || resolvedDomainName;
 
         // 수정 전 스냅샷 (감사 로그용) — 변경 전 상태를 미리 확보
         let beforeValue: any = undefined;
@@ -1799,7 +1862,7 @@ async function saveEditProcess() {
                 newMap.mega_proc_list.push({
                     id: newId,
                     name: d.name.trim(),
-                    major_proc_list: [],
+                    major_proc_list: []
                 });
             } else if (d.type === 'major') {
                 const mega = (newMap.mega_proc_list || []).find((m: any) => m.id === d.megaId);
@@ -1816,7 +1879,7 @@ async function saveEditProcess() {
                         name: d.name.trim(),
                         domain: resolvedDomainName,
                         ...(resolvedDomainId ? { domain_id: resolvedDomainId } : {}),
-                        sub_proc_list: [],
+                        sub_proc_list: []
                     });
                 }
             }
@@ -1834,7 +1897,12 @@ async function saveEditProcess() {
                 mega.name = d.name.trim();
                 edited = true;
             } else {
-                console.warn('[editProcess] mega not found by id:', d.id, 'available:', newMap.mega_proc_list?.map((m: any) => m.id));
+                console.warn(
+                    '[editProcess] mega not found by id:',
+                    d.id,
+                    'available:',
+                    newMap.mega_proc_list?.map((m: any) => m.id)
+                );
             }
         } else if (d.type === 'major') {
             const megaMoved = d.megaId !== d.originalMegaId;
@@ -1877,7 +1945,12 @@ async function saveEditProcess() {
                     }
                 }
                 if (!edited) {
-                    console.warn('[editProcess] major not found by id:', d.id, 'all majors:', newMap.mega_proc_list?.flatMap((m: any) => (m.major_proc_list || []).map((j: any) => j.id)));
+                    console.warn(
+                        '[editProcess] major not found by id:',
+                        d.id,
+                        'all majors:',
+                        newMap.mega_proc_list?.flatMap((m: any) => (m.major_proc_list || []).map((j: any) => j.id))
+                    );
                 }
             }
         }
@@ -1896,9 +1969,8 @@ async function saveEditProcess() {
             target_id: d.id,
             target_name: d.name.trim(),
             ...(beforeValue ? { before_value: beforeValue } : {}),
-            after_value: d.type === 'major'
-                ? { name: d.name.trim(), domain: resolvedDomainName, mega_id: d.megaId }
-                : { name: d.name.trim() }
+            after_value:
+                d.type === 'major' ? { name: d.name.trim(), domain: resolvedDomainName, mega_id: d.megaId } : { name: d.name.trim() }
         });
         await loadData();
         d.show = false;
@@ -2399,7 +2471,6 @@ async function onProcessCreated(newProc: { id: string; name: string }) {
 </script>
 
 <style scoped>
-
 .view-toggle :deep(.v-btn) {
     text-transform: none;
     letter-spacing: 0;
@@ -2481,6 +2552,21 @@ async function onProcessCreated(newProc: { id: string; name: string }) {
     opacity: 0.3;
 }
 
+.arch-body-shell {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.arch-body-card {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    /* 분석 대시보드 .tab-card 와 같은 테두리 */
+    border: 1px solid #e8eaed;
+    overflow: hidden;
+}
 .view-area {
     min-height: 400px;
     display: flex;

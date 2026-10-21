@@ -6,11 +6,15 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import cytoscape from 'cytoscape';
+import { VCard } from 'vuetify/components';
 import { useStrategyStore } from '@/stores/strategy/strategyStore';
 
 const store = useStrategyStore();
 const router = useRouter();
 const route = useRoute();
+
+// PAL 은 다른 PAL 화면과 같은 박스 레이아웃(sk-page-card + page-header)으로 감싼다. 비 PAL 은 기존 그대로.
+const isPal = !!(window as any).$pal;
 
 // ---------------------------------------------------------------- 상태
 const loading = ref(false);
@@ -78,6 +82,8 @@ const REL_LABEL: Record<string, string> = {
     REFERENCES: '참조',
     HAS_SUB_TEAM: '하위팀',
     MEMBER_OF: '소속',
+    IN_CHARGE_OF: '담당 조직',
+    CONFLICTS_WITH: '상충',
     // 스킬 성장 기여 — agent-feedback 의 skill_contributions 를 온톨로지 동기화가
     // (User)-[:CONTRIBUTED_TO]->(Skill) 엣지로 반영한다 (strategy-contribution-attribution).
     CONTRIBUTED_TO: '기여'
@@ -513,9 +519,7 @@ const kpiList = computed(() =>
         .map((n) => ({ id: n.id, name: n.name, achievement: kpiAchievement(n.properties), lagging: isLaggingKpi(n) }))
 );
 const laggingKpiId = computed(() => kpiList.value.find((k) => k.lagging)?.id || null);
-const strategyList = computed(() =>
-    graph.value.nodes.filter((n) => n.label === 'Strategy').map((n) => ({ id: n.id, name: n.name }))
-);
+const strategyList = computed(() => graph.value.nodes.filter((n) => n.label === 'Strategy').map((n) => ({ id: n.id, name: n.name })));
 
 // 영향도 체인(path 배열 → node/rel 청크)
 function parseChain(path: string[]) {
@@ -556,9 +560,7 @@ const impactCandidateHeaders = [
     { title: '지표', key: 'metricsText' },
     { title: '점수', key: 'score', width: 90 }
 ];
-const impactRows = computed(() =>
-    (impactData.value?.candidates || []).map((c: any) => ({ ...c, metricsText: metricsText(c.metrics) }))
-);
+const impactRows = computed(() => (impactData.value?.candidates || []).map((c: any) => ({ ...c, metricsText: metricsText(c.metrics) })));
 
 const lastSyncedText = computed(() => {
     const t = graph.value.last_synced_at;
@@ -581,9 +583,13 @@ const typeLabelKo: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------- watch / lifecycle
-watch(layerState, () => {
-    if (activeTab.value === 'graph') buildCy();
-}, { deep: true });
+watch(
+    layerState,
+    () => {
+        if (activeTab.value === 'graph') buildCy();
+    },
+    { deep: true }
+);
 
 watch(activeTab, async (tab) => {
     await nextTick();
@@ -624,9 +630,40 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="ontology-explorer pa-4">
-        <!-- 툴바 -->
-        <div class="d-flex align-center justify-space-between mb-3 flex-wrap ga-2">
+    <component
+        :is="isPal ? VCard : 'div'"
+        :class="isPal ? 'ontology-explorer rounded-xl sk-page-card' : 'ontology-explorer pa-4'"
+        v-bind="isPal ? { elevation: 10 } : {}"
+    >
+        <!-- PAL: 공통 page-header 패턴 -->
+        <div v-if="isPal" class="page-header pb-0">
+            <div class="page-header-left">
+                <h1 class="page-title">기업 운영 온톨로지</h1>
+                <p class="page-subtitle">
+                    전략 → 프로세스 → 리소스 → 지식 4레이어 계층 그래프 · {{ nodeCountText }} · 최근 동기화: {{ lastSyncedText }}
+                </p>
+            </div>
+            <div class="page-header-right flex-wrap">
+                <v-chip
+                    v-for="chip in LAYER_CHIPS"
+                    :key="chip.key"
+                    size="small"
+                    :variant="layerState[chip.key] ? 'flat' : 'outlined'"
+                    :color="layerState[chip.key] ? 'primary' : undefined"
+                    @click="layerState[chip.key] = !layerState[chip.key]"
+                >
+                    {{ chip.label }}
+                </v-chip>
+                <v-btn variant="outlined" size="small" :loading="syncing" @click="doSync">
+                    <v-icon start size="16">mdi-sync</v-icon>동기화
+                </v-btn>
+                <v-btn color="primary" variant="outlined" size="small" @click="router.push('/strategy-board')">
+                    <v-icon start size="16">mdi-pencil-ruler</v-icon>전략보드에서 편집
+                </v-btn>
+            </div>
+        </div>
+        <!-- 툴바 (비 PAL) -->
+        <div v-else class="d-flex align-center justify-space-between mb-3 flex-wrap ga-2">
             <div>
                 <h2 class="text-h5 font-weight-bold">기업 운영 온톨로지</h2>
                 <span class="text-caption text-medium-emphasis">
@@ -653,202 +690,245 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
-        <v-tabs v-model="activeTab" density="compact" class="mb-2">
-            <v-tab value="graph">온톨로지 그래프</v-tab>
-            <v-tab value="impact">영향도 분석</v-tab>
-            <v-tab value="improve">전략 개선점</v-tab>
-        </v-tabs>
+        <div :class="{ 'pa-4 pt-2 ontology-pal-body': isPal }">
+            <v-tabs v-model="activeTab" density="compact" class="mb-2">
+                <v-tab value="graph">온톨로지 그래프</v-tab>
+                <v-tab value="impact">영향도 분석</v-tab>
+                <v-tab value="improve">전략 개선점</v-tab>
+            </v-tabs>
 
-        <v-window v-model="activeTab" class="ontology-window">
-            <!-- ============ 그래프 탭 ============ -->
-            <v-window-item value="graph">
-                <div class="graph-layout">
-                    <v-card variant="outlined" class="graph-card">
-                        <div v-if="loading" class="d-flex align-center justify-center" style="height: 100%">
+            <v-window v-model="activeTab" class="ontology-window">
+                <!-- ============ 그래프 탭 ============ -->
+                <v-window-item value="graph">
+                    <div class="graph-layout">
+                        <v-card variant="outlined" class="graph-card">
+                            <div v-if="loading" class="d-flex align-center justify-center" style="height: 100%">
+                                <v-progress-circular indeterminate color="primary" />
+                            </div>
+                            <div v-show="!loading" ref="cyContainer" class="cy-canvas"></div>
+                            <!-- 범례 -->
+                            <div class="legend">
+                                <div v-for="(m, lbl) in LABEL_META" :key="lbl" class="legend-item">
+                                    <span class="legend-dot" :style="{ background: m.color }"></span>{{ lbl }}
+                                </div>
+                                <div class="legend-item"><span class="legend-dot lagging-dot"></span>미달 KPI</div>
+                            </div>
+                        </v-card>
+
+                        <!-- 우측 상세 패널 -->
+                        <v-card variant="outlined" class="detail-card">
+                            <template v-if="selectedNode">
+                                <div class="pa-3">
+                                    <div class="d-flex align-center ga-2 mb-1">
+                                        <v-chip
+                                            size="x-small"
+                                            :color="LABEL_META[selectedNode.label]?.color"
+                                            variant="flat"
+                                            class="text-white"
+                                        >
+                                            {{ selectedNode.label }}
+                                        </v-chip>
+                                        <span
+                                            v-if="selectedAchievement != null"
+                                            :class="selectedAchievement < 100 ? 'text-error' : 'text-success'"
+                                            class="text-caption font-weight-bold"
+                                        >
+                                            달성률 {{ selectedAchievement }}%
+                                        </span>
+                                    </div>
+                                    <div class="text-subtitle-1 font-weight-bold mb-2">{{ selectedNode.name }}</div>
+
+                                    <div class="d-flex flex-column ga-2 mb-3">
+                                        <v-btn color="primary" size="small" block @click="openEdit(selectedNode)">
+                                            <v-icon start size="16">mdi-open-in-new</v-icon>{{ editActionLabel }}
+                                        </v-btn>
+                                        <v-btn
+                                            v-if="selectedNode.label === 'KPI'"
+                                            color="deep-orange"
+                                            variant="tonal"
+                                            size="small"
+                                            block
+                                            @click="analyzeSelectedKpi"
+                                        >
+                                            <v-icon start size="16">mdi-chart-timeline-variant</v-icon>영향도 분석
+                                        </v-btn>
+                                    </div>
+
+                                    <div class="text-caption font-weight-bold text-medium-emphasis mb-1">속성</div>
+                                    <v-table density="compact" class="mb-3 prop-table">
+                                        <tbody>
+                                            <tr v-for="p in nodeProps" :key="p.k">
+                                                <td class="text-caption text-medium-emphasis">{{ p.k }}</td>
+                                                <td class="text-caption">{{ p.v }}</td>
+                                            </tr>
+                                            <tr v-if="!nodeProps.length">
+                                                <td class="text-caption text-medium-emphasis">속성 없음</td>
+                                            </tr>
+                                        </tbody>
+                                    </v-table>
+
+                                    <div class="text-caption font-weight-bold text-medium-emphasis mb-1">
+                                        이웃 관계
+                                        <v-progress-circular v-if="neighborsLoading" size="12" width="2" indeterminate class="ml-1" />
+                                    </div>
+                                    <div v-for="(r, i) in neighborRels" :key="i" class="text-caption mb-1">
+                                        <span class="rel-tag">{{ r.rel }}</span> {{ r.dir }} {{ r.other }}
+                                    </div>
+                                    <div v-if="!neighborRels.length && !neighborsLoading" class="text-caption text-medium-emphasis">
+                                        연결된 관계 없음
+                                    </div>
+                                </div>
+                            </template>
+                            <div v-else class="pa-6 text-center text-medium-emphasis">
+                                <v-icon size="40" class="mb-2">mdi-cursor-default-click-outline</v-icon>
+                                <div class="text-caption">그래프에서 요소를 클릭하면<br />세부 정보와 편집 링크가 표시됩니다.</div>
+                            </div>
+                        </v-card>
+                    </div>
+                </v-window-item>
+
+                <!-- ============ 영향도 분석 탭 ============ -->
+                <v-window-item value="impact">
+                    <div class="pa-2">
+                        <v-select
+                            v-model="selectedKpiId"
+                            :items="kpiList"
+                            item-title="name"
+                            item-value="id"
+                            label="KPI 선택 (미달 강조)"
+                            density="compact"
+                            variant="outlined"
+                            style="max-width: 420px"
+                            class="mb-3"
+                        >
+                            <template #item="{ props, item }">
+                                <v-list-item v-bind="props">
+                                    <template #append>
+                                        <v-chip
+                                            v-if="item.raw.achievement != null"
+                                            size="x-small"
+                                            :color="item.raw.lagging ? 'error' : 'success'"
+                                            variant="tonal"
+                                        >
+                                            {{ Math.round(item.raw.achievement) }}%
+                                        </v-chip>
+                                    </template>
+                                </v-list-item>
+                            </template>
+                        </v-select>
+
+                        <div v-if="impactLoading" class="d-flex justify-center pa-6">
                             <v-progress-circular indeterminate color="primary" />
                         </div>
-                        <div v-show="!loading" ref="cyContainer" class="cy-canvas"></div>
-                        <!-- 범례 -->
-                        <div class="legend">
-                            <div v-for="(m, lbl) in LABEL_META" :key="lbl" class="legend-item">
-                                <span class="legend-dot" :style="{ background: m.color }"></span>{{ lbl }}
+                        <template v-else-if="impactData">
+                            <v-alert v-if="impactData.diagnosis" type="info" variant="tonal" density="compact" class="mb-3">
+                                {{ impactData.diagnosis }}
+                            </v-alert>
+
+                            <div class="text-subtitle-2 font-weight-bold mb-2">역추적 체인 (KPI → 원인 후보)</div>
+                            <div class="chain-scroll mb-4">
+                                <div v-for="(c, ci) in (impactData.candidates || []).slice(0, 4)" :key="ci" class="chain-row mb-2">
+                                    <template v-for="(chunk, idx) in parseChain(c.path)" :key="idx">
+                                        <v-chip v-if="chunk.node" size="small" variant="outlined" class="chain-node">{{
+                                            chunk.node
+                                        }}</v-chip>
+                                        <span v-else class="chain-rel">─ {{ chunk.rel }} →</span>
+                                    </template>
+                                </div>
                             </div>
-                            <div class="legend-item"><span class="legend-dot lagging-dot"></span>미달 KPI</div>
-                        </div>
-                    </v-card>
 
-                    <!-- 우측 상세 패널 -->
-                    <v-card variant="outlined" class="detail-card">
-                        <template v-if="selectedNode">
-                            <div class="pa-3">
-                                <div class="d-flex align-center ga-2 mb-1">
-                                    <v-chip size="x-small" :color="LABEL_META[selectedNode.label]?.color" variant="flat" class="text-white">
-                                        {{ selectedNode.label }}
-                                    </v-chip>
-                                    <span v-if="selectedAchievement != null" :class="selectedAchievement < 100 ? 'text-error' : 'text-success'" class="text-caption font-weight-bold">
-                                        달성률 {{ selectedAchievement }}%
-                                    </span>
-                                </div>
-                                <div class="text-subtitle-1 font-weight-bold mb-2">{{ selectedNode.name }}</div>
-
-                                <div class="d-flex flex-column ga-2 mb-3">
-                                    <v-btn color="primary" size="small" block @click="openEdit(selectedNode)">
-                                        <v-icon start size="16">mdi-open-in-new</v-icon>{{ editActionLabel }}
-                                    </v-btn>
-                                    <v-btn
-                                        v-if="selectedNode.label === 'KPI'"
-                                        color="deep-orange"
-                                        variant="tonal"
-                                        size="small"
-                                        block
-                                        @click="analyzeSelectedKpi"
-                                    >
-                                        <v-icon start size="16">mdi-chart-timeline-variant</v-icon>영향도 분석
-                                    </v-btn>
-                                </div>
-
-                                <div class="text-caption font-weight-bold text-medium-emphasis mb-1">속성</div>
-                                <v-table density="compact" class="mb-3 prop-table">
-                                    <tbody>
-                                        <tr v-for="p in nodeProps" :key="p.k">
-                                            <td class="text-caption text-medium-emphasis">{{ p.k }}</td>
-                                            <td class="text-caption">{{ p.v }}</td>
-                                        </tr>
-                                        <tr v-if="!nodeProps.length"><td class="text-caption text-medium-emphasis">속성 없음</td></tr>
-                                    </tbody>
-                                </v-table>
-
-                                <div class="text-caption font-weight-bold text-medium-emphasis mb-1">
-                                    이웃 관계
-                                    <v-progress-circular v-if="neighborsLoading" size="12" width="2" indeterminate class="ml-1" />
-                                </div>
-                                <div v-for="(r, i) in neighborRels" :key="i" class="text-caption mb-1">
-                                    <span class="rel-tag">{{ r.rel }}</span> {{ r.dir }} {{ r.other }}
-                                </div>
-                                <div v-if="!neighborRels.length && !neighborsLoading" class="text-caption text-medium-emphasis">연결된 관계 없음</div>
-                            </div>
-                        </template>
-                        <div v-else class="pa-6 text-center text-medium-emphasis">
-                            <v-icon size="40" class="mb-2">mdi-cursor-default-click-outline</v-icon>
-                            <div class="text-caption">그래프에서 요소를 클릭하면<br />세부 정보와 편집 링크가 표시됩니다.</div>
-                        </div>
-                    </v-card>
-                </div>
-            </v-window-item>
-
-            <!-- ============ 영향도 분석 탭 ============ -->
-            <v-window-item value="impact">
-                <div class="pa-2">
-                    <v-select
-                        v-model="selectedKpiId"
-                        :items="kpiList"
-                        item-title="name"
-                        item-value="id"
-                        label="KPI 선택 (미달 강조)"
-                        density="compact"
-                        variant="outlined"
-                        style="max-width: 420px"
-                        class="mb-3"
-                    >
-                        <template #item="{ props, item }">
-                            <v-list-item v-bind="props">
-                                <template #append>
-                                    <v-chip v-if="item.raw.achievement != null" size="x-small" :color="item.raw.lagging ? 'error' : 'success'" variant="tonal">
-                                        {{ Math.round(item.raw.achievement) }}%
-                                    </v-chip>
+                            <div class="text-subtitle-2 font-weight-bold mb-2">원인 후보 랭킹</div>
+                            <v-data-table
+                                :headers="impactCandidateHeaders"
+                                :items="impactRows"
+                                density="compact"
+                                :items-per-page="10"
+                                class="rank-table"
+                            >
+                                <template #item.type="{ item }">
+                                    <v-chip size="x-small" variant="tonal">{{ typeLabelKo[item.type] || item.type }}</v-chip>
                                 </template>
-                            </v-list-item>
-                        </template>
-                    </v-select>
-
-                    <div v-if="impactLoading" class="d-flex justify-center pa-6"><v-progress-circular indeterminate color="primary" /></div>
-                    <template v-else-if="impactData">
-                        <v-alert v-if="impactData.diagnosis" type="info" variant="tonal" density="compact" class="mb-3">
-                            {{ impactData.diagnosis }}
-                        </v-alert>
-
-                        <div class="text-subtitle-2 font-weight-bold mb-2">역추적 체인 (KPI → 원인 후보)</div>
-                        <div class="chain-scroll mb-4">
-                            <div v-for="(c, ci) in (impactData.candidates || []).slice(0, 4)" :key="ci" class="chain-row mb-2">
-                                <template v-for="(chunk, idx) in parseChain(c.path)" :key="idx">
-                                    <v-chip v-if="chunk.node" size="small" variant="outlined" class="chain-node">{{ chunk.node }}</v-chip>
-                                    <span v-else class="chain-rel">─ {{ chunk.rel }} →</span>
+                                <template #item.score="{ item }">
+                                    <span class="font-weight-bold">{{ item.score }}</span>
                                 </template>
-                            </div>
-                        </div>
+                            </v-data-table>
+                        </template>
+                        <div v-else class="text-medium-emphasis text-caption pa-4">KPI를 선택하세요.</div>
+                    </div>
+                </v-window-item>
 
-                        <div class="text-subtitle-2 font-weight-bold mb-2">원인 후보 랭킹</div>
-                        <v-data-table
-                            :headers="impactCandidateHeaders"
-                            :items="impactRows"
+                <!-- ============ 전략 개선점 탭 ============ -->
+                <v-window-item value="improve">
+                    <div class="pa-2">
+                        <v-select
+                            v-model="selectedStrategyId"
+                            :items="strategyList"
+                            item-title="name"
+                            item-value="id"
+                            label="전략 선택"
                             density="compact"
-                            :items-per-page="10"
-                            class="rank-table"
-                        >
-                            <template #item.type="{ item }">
-                                <v-chip size="x-small" variant="tonal">{{ typeLabelKo[item.type] || item.type }}</v-chip>
-                            </template>
-                            <template #item.score="{ item }">
-                                <span class="font-weight-bold">{{ item.score }}</span>
-                            </template>
-                        </v-data-table>
-                    </template>
-                    <div v-else class="text-medium-emphasis text-caption pa-4">KPI를 선택하세요.</div>
-                </div>
-            </v-window-item>
-
-            <!-- ============ 전략 개선점 탭 ============ -->
-            <v-window-item value="improve">
-                <div class="pa-2">
-                    <v-select
-                        v-model="selectedStrategyId"
-                        :items="strategyList"
-                        item-title="name"
-                        item-value="id"
-                        label="전략 선택"
-                        density="compact"
-                        variant="outlined"
-                        style="max-width: 420px"
-                        class="mb-3"
-                    />
-                    <div v-if="improveLoading" class="d-flex justify-center pa-6"><v-progress-circular indeterminate color="primary" /></div>
-                    <template v-else-if="improveData">
-                        <v-alert v-if="improveData.diagnosis" type="info" variant="tonal" density="compact" class="mb-3">
-                            {{ improveData.diagnosis }}
-                        </v-alert>
-
-                        <div class="text-subtitle-2 font-weight-bold mb-2">미달 KPI</div>
-                        <div class="d-flex flex-wrap ga-2 mb-4">
-                            <v-card v-for="k in improveData.lagging_kpis || []" :key="k.id" variant="outlined" class="pa-2 kpi-mini">
-                                <div class="text-caption font-weight-bold">{{ k.name }}</div>
-                                <div class="text-caption text-error">달성률 {{ Math.round(k.achievement) }}%</div>
-                                <div class="text-caption text-medium-emphasis">현재 {{ k.current_value }} / 목표 {{ k.target_value }} {{ k.unit }}</div>
-                            </v-card>
-                            <div v-if="!(improveData.lagging_kpis || []).length" class="text-caption text-medium-emphasis">미달 KPI 없음</div>
+                            variant="outlined"
+                            style="max-width: 420px"
+                            class="mb-3"
+                        />
+                        <div v-if="improveLoading" class="d-flex justify-center pa-6">
+                            <v-progress-circular indeterminate color="primary" />
                         </div>
+                        <template v-else-if="improveData">
+                            <v-alert v-if="improveData.diagnosis" type="info" variant="tonal" density="compact" class="mb-3">
+                                {{ improveData.diagnosis }}
+                            </v-alert>
 
-                        <div class="text-subtitle-2 font-weight-bold mb-2">스킬 개선 후보</div>
-                        <div class="d-flex flex-wrap ga-3">
-                            <v-card v-for="(s, si) in improveData.skill_improvements || []" :key="si" variant="outlined" class="pa-3 skill-card">
-                                <div class="d-flex align-center ga-2 mb-1">
-                                    <v-icon size="18" color="pink">mdi-star-four-points</v-icon>
-                                    <span class="text-subtitle-2 font-weight-bold">{{ skillName(s) }}</span>
-                                    <v-chip size="x-small" color="pink" variant="tonal">점수 {{ s.score }}</v-chip>
+                            <div class="text-subtitle-2 font-weight-bold mb-2">미달 KPI</div>
+                            <div class="d-flex flex-wrap ga-2 mb-4">
+                                <v-card v-for="k in improveData.lagging_kpis || []" :key="k.id" variant="outlined" class="pa-2 kpi-mini">
+                                    <div class="text-caption font-weight-bold">{{ k.name }}</div>
+                                    <div class="text-caption text-error">달성률 {{ Math.round(k.achievement) }}%</div>
+                                    <div class="text-caption text-medium-emphasis">
+                                        현재 {{ k.current_value }} / 목표 {{ k.target_value }} {{ k.unit }}
+                                    </div>
+                                </v-card>
+                                <div v-if="!(improveData.lagging_kpis || []).length" class="text-caption text-medium-emphasis">
+                                    미달 KPI 없음
                                 </div>
-                                <div class="text-caption text-medium-emphasis mb-1">연결 경로: {{ skillLinkedChain(s) }}</div>
-                                <div v-if="metricsText(s.metrics)" class="text-caption">{{ metricsText(s.metrics) }}</div>
-                                <v-btn class="mt-2" size="x-small" variant="text" color="pink" @click="router.push(`/skills/${encodeURIComponent(skillName(s))}`)">
-                                    스킬 상세 보기
-                                </v-btn>
-                            </v-card>
-                            <div v-if="!(improveData.skill_improvements || []).length" class="text-caption text-medium-emphasis">스킬 개선 후보 없음</div>
-                        </div>
-                    </template>
-                    <div v-else class="text-medium-emphasis text-caption pa-4">전략을 선택하세요.</div>
-                </div>
-            </v-window-item>
-        </v-window>
-    </div>
+                            </div>
+
+                            <div class="text-subtitle-2 font-weight-bold mb-2">스킬 개선 후보</div>
+                            <div class="d-flex flex-wrap ga-3">
+                                <v-card
+                                    v-for="(s, si) in improveData.skill_improvements || []"
+                                    :key="si"
+                                    variant="outlined"
+                                    class="pa-3 skill-card"
+                                >
+                                    <div class="d-flex align-center ga-2 mb-1">
+                                        <v-icon size="18" color="pink">mdi-star-four-points</v-icon>
+                                        <span class="text-subtitle-2 font-weight-bold">{{ skillName(s) }}</span>
+                                        <v-chip size="x-small" color="pink" variant="tonal">점수 {{ s.score }}</v-chip>
+                                    </div>
+                                    <div class="text-caption text-medium-emphasis mb-1">연결 경로: {{ skillLinkedChain(s) }}</div>
+                                    <div v-if="metricsText(s.metrics)" class="text-caption">{{ metricsText(s.metrics) }}</div>
+                                    <v-btn
+                                        class="mt-2"
+                                        size="x-small"
+                                        variant="text"
+                                        color="pink"
+                                        @click="router.push(`/skills/${encodeURIComponent(skillName(s))}`)"
+                                    >
+                                        스킬 상세 보기
+                                    </v-btn>
+                                </v-card>
+                                <div v-if="!(improveData.skill_improvements || []).length" class="text-caption text-medium-emphasis">
+                                    스킬 개선 후보 없음
+                                </div>
+                            </div>
+                        </template>
+                        <div v-else class="text-medium-emphasis text-caption pa-4">전략을 선택하세요.</div>
+                    </div>
+                </v-window-item>
+            </v-window>
+        </div>
+    </component>
 </template>
 
 <style scoped>

@@ -115,7 +115,7 @@
                     </v-alert>
                     <v-row dense>
                         <v-col cols="4">
-                            <v-select
+                            <v-autocomplete
                                 v-model="form.domain"
                                 :items="domainOptions"
                                 item-title="name"
@@ -142,10 +142,10 @@
                                         </template>
                                     </v-list-item>
                                 </template>
-                            </v-select>
+                            </v-autocomplete>
                         </v-col>
                         <v-col cols="4">
-                            <v-select
+                            <v-autocomplete
                                 v-model="form.mega"
                                 :items="megaOptions"
                                 item-title="name"
@@ -172,10 +172,10 @@
                                         </template>
                                     </v-list-item>
                                 </template>
-                            </v-select>
+                            </v-autocomplete>
                         </v-col>
                         <v-col cols="4">
-                            <v-select
+                            <v-autocomplete
                                 v-model="form.major"
                                 :items="majorOptions"
                                 item-title="name"
@@ -202,7 +202,7 @@
                                         </template>
                                     </v-list-item>
                                 </template>
-                            </v-select>
+                            </v-autocomplete>
                         </v-col>
                     </v-row>
                     <div v-if="!form.domain || !form.mega || !form.major" class="text-caption text-grey mt-1">

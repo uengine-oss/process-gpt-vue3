@@ -91,7 +91,11 @@
                             <v-icon size="16" icon="mdi-alert-circle" style="color: var(--cds-text-danger); padding-top: 3px" />
                             <span class="text-caption ml-1" style="color: var(--cds-text-danger)">{{ $t('kanbanColumnCard.pastDue') }}</span>
                         </div>
-                        <div v-if="isPending" class="d-flex align-center ml-auto">
+                        <div v-if="awaitingInput" class="d-flex align-center ml-auto" :title="awaitingInput.question">
+                            <v-icon size="16" icon="mdi-message-question-outline" color="primary" />
+                            <span class="text-caption ml-1 text-primary text-no-wrap">답변 대기</span>
+                        </div>
+                        <div v-else-if="isPending" class="d-flex align-center ml-auto">
                             <v-icon size="16" icon="mdi-alert-circle" style="color: var(--cds-text-danger)" />
                             <span class="text-caption ml-1" style="color: var(--cds-text-danger)">{{ errorMessage }}</span>
                         </div>
@@ -113,7 +117,16 @@
                         >
                             {{ isPastDue ? $t('kanbanColumnCard.pastDue') : $t('kanbanColumnCard.overdue') }}
                         </v-chip>
-                        <v-tooltip v-if="isPending" location="right">
+                        <v-tooltip v-if="awaitingInput" location="right">
+                            <template v-slot:activator="{ props }">
+                                <div class="d-flex align-center ml-2" v-bind="props" data-testid="kanban-awaiting-input">
+                                    <v-icon size="16" icon="mdi-message-question-outline" color="primary" />
+                                    <span class="text-caption ml-1 text-primary text-no-wrap">답변 대기</span>
+                                </div>
+                            </template>
+                            <div class="text-caption text-wrap" style="max-width: 240px">{{ awaitingInput.question }}</div>
+                        </v-tooltip>
+                        <v-tooltip v-else-if="isPending" location="right">
                             <template v-slot:activator="{ props }">
                                 <div class="d-flex align-center ml-2" v-bind="props">
                                     <v-icon size="16" icon="mdi-alert-circle" style="color: var(--cds-text-danger)" />
@@ -229,6 +242,7 @@
 </template>
 
 <script>
+import { awaitingUserInput } from '@/shared/awaitingUserInput';
 import { format } from 'date-fns';
 import TodoDialog from './TodoDialog.vue';
 
@@ -442,6 +456,10 @@ export default {
         },
         isPending() {
             return this.task.status === 'PENDING';
+        },
+        // 에이전트가 사용자 답을 기다리는 업무(spec 018) — '실행 오류'가 아니라 '답변 대기'로 보인다
+        awaitingInput() {
+            return ['PENDING', 'IN_PROGRESS'].includes(this.task.status) ? awaitingUserInput(this.task) : null;
         },
         errorMessage() {
             if (this.task.status === 'PENDING' && this.task.log && this.task.log.length > 0) {

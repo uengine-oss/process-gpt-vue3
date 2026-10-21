@@ -134,6 +134,14 @@ export const MENU_DEFINITIONS: MenuDefinition[] = [
         excludeFromMatrix: true
     },
     {
+        // 전략맵 + 전략–실행 온톨로지 익스플로러·스키마 탭 (PAL, specs/013). 데이터는 strategy-service.
+        path: '/strategy-board',
+        label: '전략 보드',
+        section: 'analytics',
+        icon: 'strategy-map',
+        requiredRole: 'reviewer'
+    },
+    {
         path: '/ontology-explorer',
         label: '온톨로지 익스플로러',
         section: 'analytics',

@@ -527,6 +527,7 @@ import {
 import { STAGE_DEFS, mapStateToStage } from '@/utils/processStages';
 import { formatIdentityFull } from '@/utils/userIdentity';
 import { formatKST } from '@/utils/datetime';
+import { THRESHOLD_KEY_LABELS } from '@/services/dashboardThresholdsService';
 
 export default defineComponent({
     name: 'AuditTrail',
@@ -1094,6 +1095,8 @@ export default defineComponent({
             role_request_approve: '권한 신청 승인',
             role_request_reject: '권한 신청 반려',
             dashboard_settings_update: '대시보드 설정 변경',
+            dashboard_threshold_update: '대시보드 기준값 변경',
+            dashboard_threshold_reset: '대시보드 기준값 초기화',
             task_catalog_create: 'Task 카탈로그 등록',
             task_catalog_update: 'Task 카탈로그 수정',
             task_catalog_delete: 'Task 카탈로그 삭제',
@@ -1123,6 +1126,7 @@ export default defineComponent({
             organization: '조직도',
             role_request: '권한 신청',
             dashboard: '분석 대시보드',
+            dashboard_threshold: '대시보드 차트 기준값',
             task_catalog: 'Task 카탈로그',
             governance: '데이터 거버넌스',
             audit_log: '감사 로그'
@@ -1212,7 +1216,9 @@ export default defineComponent({
             children_removed: '함께 삭제된 하위 그룹',
             method: '메서드',
             url: 'URL',
-            params: '파라미터'
+            params: '파라미터',
+            // 분석 대시보드 차트 기준값 (configuration.dashboard_thresholds 트리거 로그)
+            ...THRESHOLD_KEY_LABELS
         };
 
         function getApprovalActionLabel(action) {
