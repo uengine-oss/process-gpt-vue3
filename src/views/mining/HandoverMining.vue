@@ -18,7 +18,7 @@
                     :loading="proposing"
                     :disabled="!discovered"
                     class="e2e-propose-pr"
-                    @click="proposePr"
+                    @click="openProposeDialog"
                 >
                     새 프로세스로 제안
                 </v-btn>
@@ -188,6 +188,40 @@
                     </div>
                 </div>
             </div>
+            <!-- 새 프로세스로 제안: 담당자(소유자)를 정한다. 병합함은 소유자를 검토자로 본다 -->
+            <v-dialog v-model="proposeDialog" max-width="520">
+                <v-card class="pa-4 e2e-propose-dialog">
+                    <div class="text-subtitle-1 font-weight-bold mb-1">새 프로세스로 제안</div>
+                    <div class="text-caption text-medium-emphasis mb-4">
+                        담당자가 병합함에서 검토하고 승인하면 실제 프로세스로 저장됩니다. 본인을 지정해도 됩니다.
+                    </div>
+                    <v-text-field v-model="proposeTitle" label="제목" variant="outlined" density="compact" class="mb-2" />
+                    <v-autocomplete
+                        v-model="proposeOwnerId"
+                        :items="people"
+                        item-title="label"
+                        item-value="id"
+                        label="이 프로세스의 담당자(검토자)"
+                        variant="outlined"
+                        density="compact"
+                        class="e2e-propose-owner"
+                    />
+                    <div v-if="proposeError" class="text-caption text-error mb-2">{{ proposeError }}</div>
+                    <div class="d-flex justify-end">
+                        <v-btn variant="text" @click="proposeDialog = false">취소</v-btn>
+                        <v-btn
+                            color="primary"
+                            variant="flat"
+                            class="ml-2 e2e-propose-submit"
+                            :loading="proposing"
+                            :disabled="!proposeOwnerId || !proposeTitle"
+                            @click="proposePr"
+                        >
+                            제안
+                        </v-btn>
+                    </div>
+                </v-card>
+            </v-dialog>
         </div>
     </v-app>
 </template>
@@ -226,6 +260,11 @@ export default {
             converting: false,
             prResult: null,
             proposals: [],
+            proposeDialog: false,
+            proposeTitle: '',
+            proposeOwnerId: null,
+            proposeError: '',
+            people: [],
             organization: null
         };
     },
@@ -536,22 +575,54 @@ export default {
             });
             return out;
         },
+        /** 제안 창을 연다. 담당자는 기본으로 나다(본인이 검토해도 된다). */
+        async openProposeDialog() {
+            const d = this.discovered?.definition || {};
+            this.proposeTitle = `[식별] ${d.processDefinitionName || '새 프로세스'}`;
+            this.proposeOwnerId = localStorage.getItem('uid');
+            this.proposeError = '';
+            if (!this.people.length) {
+                try {
+                    const users = (await backend.getUserList({ orderBy: 'username' })) || [];
+                    this.people = users
+                        .filter((u) => u && !u.is_agent)
+                        .map((u) => ({ id: u.id, label: [u.username, u.email].filter(Boolean).join(' · ') }));
+                } catch (e) {
+                    this.people = [];
+                }
+            }
+            this.proposeDialog = true;
+        },
+        /** 제안 설명 — 관측 근거를 요청 본문에 남긴다. */
+        proposalDescription() {
+            const st = this.discovered?.stats || {};
+            const lines = [`인계 기록의 끝난 업무 ${st.case_count || 0}건에서 도출했습니다.`, '', '관측된 흐름:'];
+            (st.variants || []).slice(0, 5).forEach((v) => lines.push(`- ${v.trace.join(' → ')} (${v.count}건)`));
+            return lines.join('\n');
+        },
+        /**
+         * 화면에 그린 그 정의로 제안한다. 프로세스 편집기와 같은 "버전 저장 → 병합 요청" 경로라
+         * 병합함·변경사항·병합이 그대로 동작한다(BPMN 스냅샷 · v0.x 브랜치 · 요청자 · 소유자).
+         */
         async proposePr() {
             this.proposing = true;
+            this.proposeError = '';
             try {
-                // 화면에 그린 그 정의로 제안한다(id·이름은 마이너가 도출 결과에서 정한 값)
                 const d = this.discovered?.definition || {};
-                const r = await processMiner.mine({
-                    tenant_id: this.tenantId,
-                    process_id: d.processDefinitionId,
+                const r = await backend.proposeIdentifiedProcess({
+                    procDefId: d.processDefinitionId,
                     name: d.processDefinitionName,
-                    process_key: this.selectedKey || undefined,
-                    dry_run: false
+                    xml: this.bpmnXml,
+                    definition: d,
+                    ownerId: this.proposeOwnerId,
+                    title: this.proposeTitle,
+                    description: this.proposalDescription()
                 });
                 this.prResult = r.pr || null;
-                await this.loadProposals(this.discovered?.definition?.processDefinitionId);
+                this.proposeDialog = false;
+                await this.loadProposals(d.processDefinitionId);
             } catch (e) {
-                this.error = e?.message || String(e);
+                this.proposeError = e?.message || String(e);
             } finally {
                 this.proposing = false;
             }

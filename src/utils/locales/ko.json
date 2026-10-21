@@ -5582,7 +5582,8 @@
             },
             "header": {
                 "requestedBy": "{name}님의 요청",
-                "owner": "담당자"
+                "owner": "담당자",
+                "newResource": "새 프로세스"
             },
             "changes": {
                 "loadFailed": "변경 내역을 불러오지 못했습니다.",

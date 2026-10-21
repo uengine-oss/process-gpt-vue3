@@ -9900,6 +9900,88 @@ class ProcessGPTBackend implements Backend {
         return record;
     }
 
+    /**
+     * 프로세스 식별 화면이 도출한 프로세스를 병합 요청으로 제안한다.
+     *
+     * 프로세스 편집기의 "버전 저장 → 병합 요청" 과 같은 모양으로 남겨야 병합함·변경사항·병합이
+     * 그대로 동작한다 — 버전은 BPMN 스냅샷을 가진 `0.x`, 브랜치는 `v0.x`, 요청자 이름까지.
+     *
+     * 새로 발견된 업무라 아직 정의가 없다. 숨김(is_draft) 정의를 만들고 담당자를 소유자로
+     * 둔다. 병합함은 소유자를 검토자로 보므로, 담당자가 이 제안을 검토·승인한다(본인도 된다).
+     * 이미 승인돼 운영 중인 정의면 정의는 건드리지 않고 새 버전만 올린다.
+     * 기준 브랜치가 비어 있으면 '새 프로세스' 제안이다(변경사항은 빈 정의와 비교한다).
+     */
+    async proposeIdentifiedProcess(p: {
+        procDefId: string;
+        name: string;
+        xml: string;
+        definition: any;
+        ownerId: string;
+        title: string;
+        description?: string;
+    }): Promise<{ procDefId: string; version: string; pr: any }> {
+        if (!p.procDefId || !p.xml) throw new Error('제안할 정의가 없습니다.');
+        if (!p.ownerId) throw new Error('이 프로세스의 담당자를 지정해 주세요.');
+        const tenantId = window.$tenantName;
+        const existing: any = await storage.getObject('proc_def', withTenantMatch({ match: { id: p.procDefId } }));
+        const live = !!existing && existing.is_draft !== true;
+
+        const rows: any = await this.getDefinitionVersions(p.procDefId, { orderBy: 'timeStamp', sort: 'desc' });
+        const versions: any[] = Array.isArray(rows) ? rows : [];
+        const parse = (v: any) => String(v || '').split('-')[0].split('.').map((n) => parseInt(n, 10) || 0);
+        const latest = versions
+            .map((row) => String(row.version || ''))
+            .filter(Boolean)
+            .sort((a, b) => {
+                const [am, an] = parse(a);
+                const [bm, bn] = parse(b);
+                return am - bm || an - bn;
+            })
+            .pop();
+        const [major, minor] = latest ? parse(latest) : [0, 0];
+        const version = `${major}.${minor + 1}`;
+
+        if (live) {
+            // 운영 중인 정의는 승인 전까지 그대로 둔다 — 버전만 추가한다.
+            await storage.putObject('proc_def_version', {
+                arcv_id: `${p.procDefId}_${version}`,
+                proc_def_id: p.procDefId,
+                version,
+                version_tag: 'minor',
+                timeStamp: new Date().toISOString(),
+                snapshot: p.xml,
+                definition: p.definition,
+                parent_version: latest || null,
+                message: p.title,
+                tenant_id: tenantId
+            });
+        } else {
+            await this.putRawDefinition(p.xml, p.procDefId, {
+                name: p.name,
+                definition: p.definition,
+                owner: p.ownerId,
+                type: 'bpmn',
+                is_draft: true,
+                version,
+                version_tag: 'minor',
+                arcv_id: `${p.procDefId}_${version}`,
+                message: p.title
+            });
+        }
+
+        const user: any = await this.getUserInfo();
+        const pr = await this.createResourcePrRecord('bpmn', {
+            resourceId: p.procDefId,
+            branchName: `v${version}`,
+            baseBranch: live && latest ? `v${latest}` : '',
+            title: p.title,
+            description: p.description || undefined,
+            requesterId: user.uid,
+            requesterName: user.name || localStorage.getItem('userName') || ''
+        });
+        return { procDefId: p.procDefId, version, pr };
+    }
+
     async getResourcePrRecords(
         resourceType: 'skill' | 'bpmn' | 'dmn',
         resourceId: string,
@@ -10085,7 +10167,9 @@ class ProcessGPTBackend implements Backend {
             resource_type: pr.resource_type,
             resource_id: pr.resource_id,
             branch_name: pr.branch_name,
-            base_branch: pr.base_branch || 'main',
+            // 빈 기준은 '새 프로세스' 제안이라는 표시다(프로세스 식별). 'main' 으로 채우면 승인 뒤
+            // 변경사항이 빈 정의 대신 초안 자신과 비교돼 아무것도 바뀌지 않은 것처럼 보인다.
+            base_branch: pr.base_branch ?? 'main',
             title: pr.title,
             requester_id: pr.requester_id,
             status

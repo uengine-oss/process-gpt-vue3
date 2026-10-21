@@ -25,6 +25,7 @@ import {
     closeWork,
     taskStatus,
     completeTodoOnBoard,
+    myId,
     rest,
     waitUntil,
     shot
@@ -498,4 +499,75 @@ test('에이전트 중간 단계 — 에이전트가 받은 일의 결과와 파
     expectOnlyThisBusiness(view.disc, ['견적 요청 접수', '견적서 초안 작성', '견적서 승인']);
     expectVariant(view.disc, ['견적 요청 접수', '견적서 초안 작성', '견적서 승인'], 3);
     assertOnlyObserved(view.disc);
+});
+
+test('제안 — 담당자를 정해 병합함으로 보내고, 승인·병합하면 정식 프로세스로 저장된다 (흐름 연결)', async ({ browser }) => {
+    const hong = await login(browser, PEOPLE.hong);
+    const lee = await login(browser, PEOPLE.lee);
+
+    // 식별 화면에서 구매 업무를 골라 이팀장을 담당자(검토자)로 제안한다
+    const view = await openMining(hong, '50-propose-before', '구매 요청 접수');
+    const procDefId = view.disc.definition.processDefinitionId;
+    const [before] = await rest(`proc_def?id=eq.${procDefId}&select=id,is_draft,bpmn`);
+    const wasLive = !!before && before.is_draft === false;
+    await hong.locator('.e2e-propose-pr').click();
+    const dlg = hong.locator('.e2e-propose-dialog');
+    await expect(dlg).toBeVisible();
+    const title = `[식별] 구매 요청 접수 프로세스 e2e ${Date.now() % 100000}`;
+    await dlg.getByLabel('제목').fill(title);
+    await dlg.locator('.e2e-propose-owner input').fill(PEOPLE.lee.name);
+    await hong.locator('.v-overlay .v-list-item', { hasText: PEOPLE.lee.name }).first().click();
+    await shot(hong, '51-propose-dialog');
+    await dlg.locator('.e2e-propose-submit').click();
+    await expect(hong.locator('.e2e-pr-result')).toBeVisible({ timeout: 30_000 });
+
+    // 기존 프로세스 제안과 같은 모양 — BPMN 스냅샷을 가진 v0.x 버전, 요청자 이름, 담당자 소유
+    const [pr] = await rest(`resource_pull_requests?title=eq.${encodeURIComponent(title)}&select=*`);
+    expect(pr.branch_name).toMatch(/^v\d+\.\d+$/);
+    expect(pr.requester_name).toBe(PEOPLE.hong.name);
+    const version = pr.branch_name.slice(1);
+    const [ver] = await rest(`proc_def_version?proc_def_id=eq.${procDefId}&version=eq.${version}&select=snapshot,version_tag`);
+    expect(String(ver.snapshot || '')).toContain('구매 요청 접수');
+    const [def] = await rest(`proc_def?id=eq.${procDefId}&select=owner,is_draft,bpmn`);
+    if (wasLive) {
+        // 운영 중인 정의는 승인 전까지 그대로다
+        expect(pr.base_branch).toMatch(/^v\d+\.\d+$/);
+        expect(def.bpmn).toBe(before.bpmn);
+    } else {
+        expect(pr.base_branch).toBe('');
+        expect(def.is_draft).toBe(true);
+        expect(def.owner).toBe(await myId(lee));
+    }
+
+    // 담당자의 병합함에 검토 대기로 보이고, 변경사항이 계산된다
+    await lee.goto(`${BASE_URL}/merge-requests`, { waitUntil: 'domcontentloaded' });
+    const card = lee.locator('.mrb-item', { hasText: title });
+    await expect(card).toBeVisible({ timeout: 30_000 });
+    await card.click();
+    await lee.waitForTimeout(3_000);
+    await shot(lee, '52-merge-request-changes');
+    const body = await lee.locator('body').innerText();
+    expect(body).not.toContain('버전을 찾을 수 없어');
+    expect(body).not.toContain('비교할 이전 버전이 없어');
+    if (!wasLive) expect(body).toContain('새 프로세스');
+
+    // 승인 → 병합
+    await lee.locator('.pab-btn', { hasText: '승인' }).last().click();
+    await lee.locator('.pab-compose-foot .pab-btn').last().click();
+    await waitUntil(async () => (await rest(`resource_pull_requests?id=eq.${pr.id}&select=status`))[0]?.status === 'APPROVED', '승인');
+    const [approved] = await rest(`resource_pull_requests?id=eq.${pr.id}&select=base_branch`);
+    expect(approved.base_branch).toBe(pr.base_branch); // 승인해도 '새 프로세스' 표시가 남는다
+    await lee.locator('.pab-btn.merge').click();
+    await waitUntil(async () => (await rest(`resource_pull_requests?id=eq.${pr.id}&select=status`))[0]?.status === 'MERGED', '병합');
+
+    // 정식 프로세스로 저장 — 숨김이 풀리고 새 메이저 버전, 정의 화면에서 열린다
+    const [saved] = await rest(`proc_def?id=eq.${procDefId}&select=name,is_draft,bpmn`);
+    expect(saved.is_draft).toBe(false);
+    expect(String(saved.bpmn || '')).toContain('구매 요청 접수');
+    const majors = await rest(`proc_def_version?proc_def_id=eq.${procDefId}&version_tag=eq.major&select=version,parent_version`);
+    expect(majors.some((m: any) => m.parent_version === version)).toBe(true);
+    await hong.goto(`${BASE_URL}/definitions/${procDefId}`, { waitUntil: 'domcontentloaded' });
+    await expect(hong.getByText(saved.name).first()).toBeVisible({ timeout: 30_000 });
+    await hong.waitForTimeout(3_000);
+    await shot(hong, '53-saved-definition');
 });
