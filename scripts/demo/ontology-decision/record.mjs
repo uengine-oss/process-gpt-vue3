@@ -34,7 +34,8 @@ const SCENARIOS = {
     1: { slug: 'sc1', proc: 'ont-dec-regular', procName: '소모품 정기 구매' },
     2.1: { slug: 'sc21', proc: 'ont-dec-urgent', procName: '생산 자재 긴급 구매' },
     // decide: 검수 Gateway 가 읽는 판단 단계(그 폼의 '적용 기준')
-    2.2: { slug: 'sc22', proc: 'ont-dec-parts', procName: '설비 부품 구매', answer: '품질', decide: 'Task_Decide' },
+    // poAgent: 발주서 발행을 발주 처리 에이전트가 한다
+    2.2: { slug: 'sc22', proc: 'ont-dec-parts', procName: '설비 부품 구매', answer: '품질', decide: 'Task_Decide', poAgent: true },
     x: { slug: 'scx', proc: 'ont-dec-expansion', procName: '생산라인 증설 자재 조달', answer: '품질', decide: 'Task_Parts' }
 };
 
@@ -134,6 +135,7 @@ async function shot(page, name) {
 
 async function slowType(locator, text, delay = 18) {
     await locator.click();
+    await locator.fill(''); // 숫자 칸의 기본값(0) 뒤에 이어 쓰지 않게
     await locator.pressSequentially(text, { delay });
 }
 
@@ -143,23 +145,47 @@ const fieldsOf = (activity) =>
     JSON.parse(psql(`select fields_json from public.form_def where tenant_id=${q(TENANT)} and id=${q(formId(activity))}`) || '[]');
 const exact = (t) => new RegExp('^\\s*' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$');
 
+async function fillField(page, scope, f, v, delay) {
+    const field = scope.locator('.v-input', { has: page.locator('label', { hasText: exact(f.text) }) }).first();
+    await field.scrollIntoViewIfNeeded();
+    if (f.type === 'select') {
+        await field.locator('.v-field').first().click();
+        await sleep(600);
+        await page.locator('.v-overlay--active .v-list-item', { hasText: exact(v) }).first().click();
+        await sleep(500);
+    } else if (f.type === 'date') {
+        await field.locator('input').first().fill(v);
+    } else {
+        await slowType(field.locator(f.type === 'textarea' ? 'textarea:not(.v-textarea__sizer)' : 'input').first(), v, delay);
+    }
+    await sleep(250);
+}
+
+// 반복 행 — 행은 업무 화면이 앞 단계 값(rows_from)으로 미리 만든다. 기대한 행 수가 생겼는지 확인하고, 행마다 나머지 칸을 채운다.
+async function fillRows(page, scope, f, rows, delay) {
+    const items = scope.locator('.row-layout-box > div');
+    await waitFor(async () => (await items.count()) === rows.length, { label: `${f.key} ${rows.length}행 자동 생성`, every: 500, timeout: 15_000 });
+    for (let i = 0; i < rows.length; i++) {
+        const item = items.nth(i);
+        for (const sub of f.fields) {
+            const v = rows[i][sub.key];
+            if (v == null) continue;
+            if (sub.key === f.row_key) {
+                const got = await item.locator('.v-input', { has: page.locator('label', { hasText: exact(sub.text) }) }).locator('input').first().inputValue();
+                if (got.trim() !== v) throw new Error(`${i + 1}행 ${sub.text}: '${got}' (기대 '${v}')`);
+                continue;
+            }
+            await fillField(page, item, sub, v, delay);
+        }
+    }
+}
+
 async function fillForm(page, scope, activity, values, delay = 12) {
     for (const f of fieldsOf(activity)) {
         const v = values[f.key];
         if (v == null || f.readonly === 'true') continue;
-        const field = scope.locator('.v-input', { has: page.locator('label', { hasText: exact(f.text) }) }).first();
-        await field.scrollIntoViewIfNeeded();
-        if (f.type === 'select') {
-            await field.locator('.v-field').first().click();
-            await sleep(600);
-            await page.locator('.v-overlay--active .v-list-item', { hasText: exact(v) }).first().click();
-            await sleep(500);
-        } else if (f.type === 'date') {
-            await field.locator('input').first().fill(v);
-        } else {
-            await slowType(field.locator(f.type === 'textarea' ? 'textarea:not(.v-textarea__sizer)' : 'input').first(), v, delay);
-        }
-        await sleep(250);
+        if (f.type === 'row-layout') await fillRows(page, scope, f, v, delay);
+        else await fillField(page, scope, f, v, delay);
     }
 }
 
@@ -239,6 +265,8 @@ async function humanStep(page, activity, values, note, shotName) {
     await go(page, '/todolist/' + id, 4000);
     await caption(page, note);
     await fillForm(page, page, activity, values);
+    // 반복 행은 마지막 행까지 내려가 있다 — 촬영 전에 표 머리로 올린다
+    await page.evaluate(() => document.querySelector('.row-layout-box')?.previousElementSibling?.scrollIntoView({ block: 'start' }));
     await sleep(1000);
     if (shotName) await shot(page, shotName);
     await page.locator('button', { hasText: '제출 완료' }).first().click();
@@ -318,7 +346,14 @@ const chosenOf = (activity) =>
 // 승인 → 발주서 발행 → (검수 Gateway) → 입고·검수 또는 강화 검수 → 완료
 async function closeOut(page, n, first, { approve = T.approve, po = T.po, tag = '' } = {}) {
     await humanStep(page, 'Task_Approve', approve, `${n} 구매팀장 — 에이전트의 선정 결과와 근거(전략·KPI)를 보고 승인`, `${P}-${pad(first)}${tag}-approve.png`);
-    await humanStep(page, 'Task_PO', po, `${n} 구매 담당 — 승인된 공급사로 발주서 발행`, null);
+    if (cfg.poAgent) {
+        await go(page, instPath(), 3000);
+        await caption(page, `${n} <b>발주 처리 에이전트</b> — 승인 결과·판단·견적을 읽고 발주서를 쓴다`);
+        await waitAgent(page, ['DONE'], 'Task_PO');
+        await openReport(page, 'Task_PO', `${n} 에이전트가 쓴 발주서 — 발주 번호·공급사·약속 납기·조건`, `${P}-${pad(first)}${tag}-po.png`);
+    } else {
+        await humanStep(page, 'Task_PO', po, `${n} 구매 담당 — 승인된 공급사로 발주서 발행`, null);
+    }
     const inspect = await waitFor(() => Object.keys(INSPECT).find((a) => todoOf(a, 'status') === 'IN_PROGRESS'), {
         label: 'inspection opened',
         every: 2000,

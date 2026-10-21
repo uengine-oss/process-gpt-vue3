@@ -45,6 +45,17 @@ MARK = "[판단 데모 018]"
 LEAD = "a08e7c0d-9050-4eb8-ad68-c35d4aceadf0"  # manual-shots@uengine.org — 구매 담당·구매팀장 역(한 계정으로 시연)
 AGENT = str(uuid.uuid5(uuid.NAMESPACE_URL, f"{TAG}{TENANT}:agent"))
 AGENT_NAME = "구매 판단 에이전트"
+# 발주서 발행을 맡는 에이전트(설비 부품 구매) — 판단 근거 도구는 주지 않는다. 판단은 앞 단계에서 끝났고, 이 프로세스의
+# KPI 는 모든 활동에 걸려 있어 판단 도구를 주면 발주 단계에서 다시 담당자에게 묻는다.
+PO_AGENT = str(uuid.uuid5(uuid.NAMESPACE_URL, f"{TAG}{TENANT}:po-agent"))
+PO_AGENT_NAME = "발주 처리 에이전트"
+AGENTS = {AGENT_NAME: AGENT, PO_AGENT_NAME: PO_AGENT}
+PO_DESC = (
+    "앞 단계 산출물(견적 접수의 공급사별 견적, 공급사 선정 판단의 보고서·적용 기준, 발주 승인의 승인 결과·의견, 구매 요청의 품목·수량)을 "
+    "읽고 승인된 공급사로 발주서를 작성한다. 발주 번호는 'PO-<연도>-<월일>-<품목 약어>' 형식, 발주 공급사는 판단에서 선택한 공급사, "
+    "약속 납기는 오늘 날짜에 그 공급사 견적의 납기 일수를 더한 날짜(YYYY-MM-DD), 발주 조건에는 수량·단가·총액과 승인 의견의 조건"
+    "(조건부 승인이면 그 조건)을 쓴다."
+)
 MEGA, MAJOR_ID, MAJOR_NAME = "구매 운영", "MAJ-ONT-DEC", "AI 판단 시나리오"
 
 AGENT_DESC = (
@@ -80,21 +91,23 @@ def inspect_branch(proc_id: str, decide_id: str, strict_desc: str) -> dict:
     }
 
 
-def std_acts(decide: list[dict] | None = None, approve_name: str = "발주 승인", inspect: bool = True) -> list[dict]:
+def std_acts(decide: list[dict] | None = None, approve_name: str = "발주 승인", inspect: bool = True,
+             po_agent: bool = False) -> list[dict]:
     decide = decide or [{"id": "Task_Decide", "name": "공급사 선정 판단", "lane": AGENT_NAME, "kind": "serviceTask",
                          "desc": "{AGENT}"}]
     return [
         {"id": "Task_Request", "name": "구매 요청", "lane": REQUESTER, "kind": "userTask",
          "desc": "필요한 품목·수량·필요일과 요청 사유를 적어 구매를 요청한다."},
         {"id": "Task_Receive", "name": "요청 접수·사양 확인", "lane": "구매 담당", "kind": "userTask",
-         "desc": "요청 품목의 사양·수량·필요일을 확인하고 견적을 받을 후보 공급사를 정한다."},
+         "desc": "요청 품목의 사양·수량·필요일을 확인하고 견적을 받을 후보 공급사를 정한다(쉼표로 구분)."},
         {"id": "Task_Quote", "name": "견적 접수", "lane": "구매 담당", "kind": "userTask",
-         "desc": "후보 공급사 두 곳의 견적(공급사별 단가·납기·품질 합격률)을 받아 적는다."},
+         "desc": "앞 단계에서 정한 후보 공급사마다 견적(단가·납기·품질 합격률)을 받아 적는다."},
         *decide,
         {"id": "Task_Approve", "name": approve_name, "lane": "구매팀장", "kind": "userTask",
          "desc": "에이전트의 선정 결과와 근거(전략·KPI·우선순위·담당자 답)를 검토하고 발주를 승인하거나 의견을 남긴다."},
-        {"id": "Task_PO", "name": "발주서 발행", "lane": "구매 담당", "kind": "userTask",
-         "desc": "승인된 공급사로 발주서를 발행하고 발주 번호·약속 납기를 적는다."},
+        ({"id": "Task_PO", "name": "발주서 발행", "lane": PO_AGENT_NAME, "kind": "serviceTask", "desc": PO_DESC} if po_agent else
+         {"id": "Task_PO", "name": "발주서 발행", "lane": "구매 담당", "kind": "userTask",
+          "desc": "승인된 공급사로 발주서를 발행하고 발주 번호·약속 납기를 적는다."}),
         *([{"id": "Task_Inspect", "name": "입고·검수", "lane": REQUESTER, "kind": "userTask",
             "desc": "입고된 품목의 수량·품질을 검수하고 결과를 적는다."}] if inspect else []),
     ]
@@ -108,7 +121,7 @@ PROCESSES = [
     {"id": f"{TAG}parts", "name": "설비 부품 구매", "scenario": "2.2",
      "desc": "설비 교체 부품을 구매한다. 품질과 단가 KPI 가 상충하고 우선순위가 없어 에이전트가 담당자에게 묻는다. "
              "담당자가 택한 기준으로 검수 흐름이 갈린다(품질 → 표준 입고·검수, 단가 → 품질 관리 강화 검수).",
-     "acts": std_acts(inspect=False),
+     "acts": std_acts(inspect=False, po_agent=True),
      "branch": inspect_branch(f"{TAG}parts", "Task_Decide",
                               "단가를 택해 품질 합격률이 낮은 공급사로 발주한 건이다. 전수 시운전·시험 성적서·보증 조건을 확인하고 결과를 적는다.")},
     {"id": f"{TAG}expansion", "name": "생산라인 증설 자재 조달", "scenario": "통합",
@@ -191,10 +204,9 @@ HUMAN_FORMS = {
     "Task_Request": ("구매 요청", [("item", "품목", "text"), ("quantity", "수량", "text"), ("need_by", "필요일", "date"),
                                ("reason", "요청 사유", "textarea")]),
     "Task_Receive": ("요청 접수·사양 확인", [("suppliers", "견적 요청 공급사", "text"), ("spec", "확인한 사양", "textarea")]),
-    "Task_Quote": ("견적 접수", [("quote_a", "A 공급사 견적", "textarea"), ("quote_b", "B 공급사 견적", "textarea")]),
     "Task_Approve": ("발주 승인", [("approval", "승인 결과", "select", ["승인", "조건부 승인"]),
                                ("approval_note", "승인 의견", "textarea")]),
-    "Task_PO": ("발주서 발행", [("po_no", "발주 번호", "text"), ("supplier", "발주 공급사", "select", ["A 공급사", "B 공급사", "품목별 혼합"]),
+    "Task_PO": ("발주서 발행", [("po_no", "발주 번호", "text"), ("supplier", "발주 공급사", "select", ["A 공급사", "B 공급사", "C 공급사", "품목별 혼합"]),
                              ("promised_date", "약속 납기", "date"), ("po_terms", "발주 조건", "textarea")]),
     "Task_Inspect": ("입고·검수", [("received_qty", "입고 수량", "text"), ("inspect_result", "검수 결과", "select", OK_ITEMS),
                                 ("inspect_note", "검수 의견", "textarea")]),
@@ -237,22 +249,51 @@ def form_of(form_id: str, title: str, spec: list[tuple]) -> tuple[str, list[dict
     return html, fields
 
 
+def quote_form(form_id: str, proc_id: str, expanded: bool = False) -> tuple[str, list[dict]]:
+    """견적 접수 — 공급사마다 한 행(반복 행). 행 수는 앞 단계(요청 접수·사양 확인)의 '견적 요청 공급사'를 쉼표로 나눈 수만큼
+    업무 화면이 미리 만들고 공급사 이름을 채운다(rows_from / row_key). 행은 화면에서 더하거나 뺄 수 있다."""
+    source = f"{form_id_of(proc_id, 'Task_Receive')}.suppliers"
+    if expanded:  # 품목이 셋 — 공급사마다 품목별 견적을 한 칸에
+        cols = [("supplier", "공급사", "text", 3), ("quote", "견적 내용(품목별 단가·납기·품질 합격률)", "textarea", 9)]
+    else:
+        cols = [("supplier", "공급사", "text", 3), ("price", "단가(원)", "text", 3), ("lead_days", "납기(일)", "number", 2),
+                ("quality", "품질(%)", "text", 2), ("note", "비고", "text", 2)]
+
+    def tag(key, alias, kind):
+        common = f'name="{key}" alias="{alias}" disabled="false" readonly="false" v-model="item[\'{key}\']"'
+        if kind == "textarea":
+            return f'<textarea-field {common} rows="3"></textarea-field>'
+        return f'<text-field {common} type="{kind}"></text-field>'
+
+    row = "".join(f'<div class="col-sm-{w}">{tag(k, a, t)}</div>' for k, a, t, w in cols)
+    html = (f'<section><row-layout name="quotes" alias="공급사별 견적" is_multidata_mode="true" rows_from="{source}" '
+            'row_key="supplier" v-model="formValues" v-slot="slotProps">'
+            '<div v-for="(item, index) in slotProps.modelValue" :key="index">'
+            '<row-layout-item-head :index="index" v-on:on_delete_item="slotProps.deleteItem(index)"></row-layout-item-head>'
+            f'<div class="row">{row}</div></div></row-layout></section>')
+    fields = [{"key": "quotes", "text": "공급사별 견적", "type": "row-layout", "is_multidata_mode": True,
+               "rows_from": source, "row_key": "supplier",
+               "fields": [{"key": k, "text": a, "type": t, "disabled": "false", "readonly": "false"} for k, a, t, _ in cols]}]
+    return html, fields
+
+
 def decision_form(form_id: str, title: str = "공급사 선정 판단") -> tuple[str, list[dict]]:
     return form_of(form_id, title, DECISION_FIELDS)
 
 
 def definition_of(p: dict) -> tuple[str, dict]:
     def norm(a):
-        return dict(a, desc=a["desc"].replace("{AGENT}", AGENT_DESC), kind=AGENT_TASK if a["lane"] == AGENT_NAME else a["kind"])
+        return dict(a, desc=a["desc"].replace("{AGENT}", AGENT_DESC), kind=AGENT_TASK if a["lane"] in AGENTS else a["kind"])
 
     acts = [norm(a) for a in (p.get("acts") or std_acts())]
     branch = p.get("branch")
     branch_acts = [path["act"] for path in branch["paths"]] if branch else []
     all_acts = [*acts, *branch_acts]
-    lanes = [REQUESTER, "구매 담당", AGENT_NAME, "구매팀장", *([QUALITY] if branch else [])]
+    lanes = [REQUESTER, "구매 담당", AGENT_NAME, "구매팀장",
+             *([PO_AGENT_NAME] if any(a["lane"] == PO_AGENT_NAME for a in acts) else []), *([QUALITY] if branch else [])]
     xml = build_bpmn(p["id"], p["name"], lanes, acts, branch=branch)
     # 시연은 한 계정이 사람 역할(요청 부서·구매 담당·구매팀장)을 모두 맡는다
-    owner = {n: (AGENT if n == AGENT_NAME else LEAD) for n in lanes}
+    owner = {n: AGENTS.get(n, LEAD) for n in lanes}
     pid = "Proc_" + p["id"].replace("-", "_")
 
     def tool_of(a):
@@ -261,16 +302,16 @@ def definition_of(p: dict) -> tuple[str, dict]:
     def agent_props(a):
         orch = AGENT_ORCH if a["kind"] == "userTask" else ""
         return {"description": a["desc"], "instruction": a["desc"], "manualLinks": [], "systems": [], "input": [], "output": [],
-                "agent": AGENT, "agentMode": "COMPLETE", "orchestration": orch, "usePresetAgent": True,
+                "agent": AGENTS[a["lane"]], "agentMode": "COMPLETE", "orchestration": orch, "usePresetAgent": True,
                 "tool": tool_of(a)}
 
     def act(a):
-        is_agent = a["lane"] == AGENT_NAME
+        is_agent = a["lane"] in AGENTS
         props = agent_props(a) if is_agent else {"description": a["desc"], "instruction": "", "manualLinks": [], "systems": [],
                                                   "input": [], "output": []}
         return {
             "id": a["id"], "name": a["name"], "role": a["lane"], "tool": tool_of(a), "type": a["kind"],
-            "agent": AGENT if is_agent else "", "agentMode": "COMPLETE" if is_agent else "",
+            "agent": AGENTS.get(a["lane"], ""), "agentMode": "COMPLETE" if is_agent else "",
             "orchestration": props.get("orchestration", ""),
             "process": pid, "systems": [], "duration": 1 if is_agent else 2, "inputData": [], "outputData": [],
             "manualLink": "", "manualLinks": [], "attachments": [], "checkpoints": [], "attachedEvents": None,
@@ -281,7 +322,7 @@ def definition_of(p: dict) -> tuple[str, dict]:
     # 정의 편집기의 에이전트 탭이 BPMN 속성(uengine:properties)에서 읽으므로 에이전트 설정을 BPMN 에도 넣는다
     from html import escape as _esc
     for a in acts:
-        if a["lane"] != AGENT_NAME:
+        if a["lane"] not in AGENTS:
             continue
         start = xml.index(f'<bpmn:{a["kind"]} id="{a["id"]}"')
         j0 = xml.index('json="', start) + len('json="')
@@ -345,7 +386,7 @@ delete from public.bpm_proc_inst where tenant_id = {q(TENANT)} and proc_def_id l
 delete from public.proc_def where tenant_id = {q(TENANT)} and id like '{TAG}%';
 delete from public.proc_def_version where proc_def_id like '{TAG}%';
 delete from public.proc_def_arcv where proc_def_id like '{TAG}%';
-delete from public.users where tenant_id = {q(TENANT)} and id::text = {q(AGENT)};
+delete from public.users where tenant_id = {q(TENANT)} and id::text in ({q(AGENT)}, {q(PO_AGENT)});
 """)
     raw = psql_value(f"select value::text from public.configuration where tenant_id = {q(TENANT)} and key = 'proc_map'")
     if raw:
@@ -371,17 +412,22 @@ def seed() -> None:
 insert into public.users (id, username, email, tenant_id, is_agent, agent_type, description, department_name, tools)
 values ({q(AGENT)}, {q(AGENT_NAME)}, null, {q(TENANT)}, true, 'agent',
         '전략–실행 온톨로지의 판단 근거(전략·KPI 우선순위·상충)로 공급사를 고르고, 정하지 못하면 담당자에게 묻는다',
-        'AI 에이전트', 'strategy-ontology');
+        'AI 에이전트', 'strategy-ontology'),
+       ({q(PO_AGENT)}, {q(PO_AGENT_NAME)}, null, {q(TENANT)}, true, 'agent',
+        '승인된 공급사 선정 결과와 견적으로 발주서(발주 번호·공급사·약속 납기·조건)를 작성한다',
+        'AI 에이전트', '');
 """)
     stmts = []
     for p in PROCESSES:
         xml, definition = definition_of(p)
         for a in definition["activities"]:
             fid = form_id_of(p["id"], a["id"])
-            if a["role"] == AGENT_NAME:
-                html, fields = decision_form(fid, a["name"])
-            else:
+            if a["id"] == "Task_Quote":
+                html, fields = quote_form(fid, p["id"], expanded=p["id"].endswith("expansion"))
+            elif a["id"] in HUMAN_FORMS:
                 html, fields = form_of(fid, a["name"], HUMAN_FORMS[a["id"]][1])
+            else:
+                html, fields = decision_form(fid, a["name"])
             stmts.append("insert into public.form_def (id, html, proc_def_id, activity_id, tenant_id, fields_json) values "
                          f"({q(fid)}, {q(html)}, {q(p['id'])}, {q(a['id'])}, {q(TENANT)}, {q(json.dumps(fields, ensure_ascii=False))}::jsonb);")
         stmts.append(

@@ -768,6 +768,39 @@ export default {
                     }
                 }
             }
+            await me.prefillRowsFromSource();
+        },
+        /**
+         * 반복 행(row-layout is_multidata_mode="true")에 rows_from="<폼id>.<필드>" 가 있으면, 그 앞 단계 값(쉼표·줄바꿈 구분)
+         * 개수만큼 행을 만들고 각 행의 row_key 필드에 값을 채운다. 예) 견적 요청 공급사 "A, B, C" → 견적 행 3개.
+         * 이미 입력한 행이 있으면(중간 저장 등) 건드리지 않는다.
+         */
+        async prefillRowsFromSource() {
+            const me = this;
+            if (!me.html || me.html.indexOf('rows_from') === -1 || !me.workItem?.worklist?.instId) return;
+            const doc = new DOMParser().parseFromString(me.html, 'text/html');
+            for (const layout of doc.querySelectorAll('row-layout[is_multidata_mode="true"][rows_from]')) {
+                const name = layout.getAttribute('name');
+                const source = layout.getAttribute('rows_from');
+                const rowKey = layout.getAttribute('row_key') || layout.querySelector('[name]')?.getAttribute('name');
+                const rows = me.formData?.[name];
+                const filled = Array.isArray(rows) && rows.some((row) => row && Object.values(row).some((v) => v !== '' && v != null));
+                if (!name || !source || !rowKey || filled) continue;
+                try {
+                    const [formId, fieldId] = source.split('.');
+                    const result = await backend.getFieldValue(source, me.workItem.worklist.defId, me.workItem.worklist.instId);
+                    let value = result?.[formId]?.[fieldId];
+                    // 같은 단계가 여러 번 수행됐으면 "회차:값" 목록이 온다 — 마지막 회차를 쓴다
+                    if (Array.isArray(value)) value = String(value[value.length - 1] ?? '').replace(/^\d+:/, '');
+                    const names = String(value ?? '')
+                        .split(/[,\n，]/)
+                        .map((v) => v.trim())
+                        .filter(Boolean);
+                    if (names.length) me.formData[name] = names.map((v) => ({ [rowKey]: v }));
+                } catch (e) {
+                    console.warn('[FormWorkItem] rows_from 값을 읽지 못했습니다:', source, e);
+                }
+            }
         },
         async saveTask() {
             var me = this;

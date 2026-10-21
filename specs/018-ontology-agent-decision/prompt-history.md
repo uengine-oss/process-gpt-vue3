@@ -1213,3 +1213,196 @@ ll
 <summary>Background command "until grep -qE "^=== (END|.* FAILED)" /tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/ui-rest.log; do sleep 10; done; grep -E "^===|scene|instance" /tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/ui-rest.log" completed (exit code 0)</summary>
 </task-notification>
 ```
+
+## Prompt — 2026-10-21T07:31:06+00:00
+
+```text
+<task-notification>
+<task-id>bln1o6j4h</task-id>
+<summary>Monitor event: "UI 시나리오 2.1·2.2·통합 진행(장면 결과·오류)"</summary>
+<event>[Monitor expired after 30m with 26 events delivered. Re-arm it if you still need the watch.]</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:07:16+00:00
+
+```text
+1. 설비 부품 구매 프로세스에서 발주서 발행도 이전 입력값을 토대로 Agent가 처리하도록.
+2. 폼 구성 가능 여부 검토. 공급사 선정에서 n개 업체를 받을 수 있으니 요청 접수, 사양확인 Task의 견적 요청 공급사에 입력된 업체 갯수 (콤마로 구분) 만큼 견적 접수 입력칸이 생기도록 (단순 A,B 구조로 하지않을 것)
+```
+
+## Prompt — 2026-10-21T08:12:26+00:00
+
+```text
+<task-notification>
+<task-id>bo2aeolf8</task-id>
+<summary>Monitor event: "UI 재실행(2.2·1·2.1·통합) 장면 결과·오류"</summary>
+<event>=== 2.2</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:12:51+00:00
+
+```text
+<task-notification>
+<task-id>bo2aeolf8</task-id>
+<summary>Monitor event: "UI 재실행(2.2·1·2.1·통합) 장면 결과·오류"</summary>
+<event>scene1: ok (21s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:14:05+00:00
+
+```text
+<task-notification>
+<task-id>bo2aeolf8</task-id>
+<summary>Monitor event: "UI 재실행(2.2·1·2.1·통합) 장면 결과·오류"</summary>
+<event>scene2: ok (34s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:14:05+00:00
+
+```text
+<task-notification>
+<task-id>bo2aeolf8</task-id>
+<summary>Monitor event: "UI 재실행(2.2·1·2.1·통합) 장면 결과·오류"</summary>
+<event>scene3: ok (40s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:16:55+00:00
+
+```text
+<task-notification>
+<task-id>bo2aeolf8</task-id>
+<summary>Monitor event: "UI 재실행(2.2·1·2.1·통합) 장면 결과·오류"</summary>
+<event>scene4: ok (33s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:16:55+00:00
+
+```text
+<task-notification>
+<task-id>bo2aeolf8</task-id>
+<summary>Monitor event: "UI 재실행(2.2·1·2.1·통합) 장면 결과·오류"</summary>
+<event>scene5: ok (29s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:16:55+00:00
+
+```text
+<task-notification>
+<task-id>bo2aeolf8</task-id>
+<summary>Monitor event: "UI 재실행(2.2·1·2.1·통합) 장면 결과·오류"</summary>
+<event>scene6: ok (108s)</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:17:07+00:00
+
+```text
+<task-notification>
+<task-id>bfanwy7h8</task-id>
+<tool-use-id>toolu_01UgZTzWAEeSKh89JLNEZxsr</tool-use-id>
+<output-file>/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/65a1fcab-a641-4fed-ae8c-3c18ce20bd4b/tasks/bfanwy7h8.output</output-file>
+<status>failed</status>
+<summary>Background command "rm -f docs/manuals/video/ontology-agent-decision/sc*/clips/state.json &amp;&amp; L=/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/ui2.log; : &gt; $L; for s in 2.2 1 2.1 x; do echo "=== $s" &gt;&gt; $L; E2E_USER=sanghoon01@uengine.org E2E_PASS='[REDACTED]' node scripts/demo/ontology-decision/record.mjs $s &gt;&gt; $L 2&gt;&amp;1 || { echo "=== $s FAILED" &gt;&gt; $L; break; }; done; echo "=== END" &gt;&gt; $L" failed with exit code 144</summary>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:17:11+00:00
+
+```text
+<task-notification>
+<task-id>bo2aeolf8</task-id>
+<summary>Monitor event: "UI 재실행(2.2·1·2.1·통합) 장면 결과·오류"</summary>
+<event>scene7: FAILED — locator.scrollIntoViewIfNeeded: Target page, context or browser has been closed</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:17:44+00:00
+
+```text
+<task-notification>
+<task-id>bhg0i31db</task-id>
+<summary>Monitor event: "UI 최종 실행(2.2·1·2.1·통합) 장면 결과·오류"</summary>
+<event>=== 2.2</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:19:55+00:00
+
+```text
+<task-notification>
+<task-id>bl6cdoj5y</task-id>
+<tool-use-id>toolu_017oNfwqETGpvLM2P9Joqswo</tool-use-id>
+<output-file>/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/65a1fcab-a641-4fed-ae8c-3c18ce20bd4b/tasks/bl6cdoj5y.output</output-file>
+<status>failed</status>
+<summary>Background command "L=/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/ui3.log; : &gt; $L; for s in 2.2 1 2.1 x; do echo "=== $s" &gt;&gt; $L; E2E_USER=sanghoon01@uengine.org E2E_PASS='[REDACTED]' node scripts/demo/ontology-decision/record.mjs $s &gt;&gt; $L 2&gt;&amp;1 || { echo "=== $s FAILED" &gt;&gt; $L; break; }; done; echo "=== END" &gt;&gt; $L" failed with exit code 144</summary>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:19:58+00:00
+
+```text
+<task-notification>
+<task-id>bhg0i31db</task-id>
+<summary>Monitor event: "UI 최종 실행(2.2·1·2.1·통합) 장면 결과·오류"</summary>
+<event>scene4: FAILED — page.evaluate: Target page, context or browser has been closed</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:22:15+00:00
+
+```text
+Test 계정으로 test-pyj 만들었는데 권한 superAdmin으로 변경.
+```
+
+## Prompt — 2026-10-21T08:23:16+00:00
+
+```text
+apexacme@gmail.com 도 같이.
+```
+
+## Prompt — 2026-10-21T08:23:38+00:00
+
+```text
+8081에서도 같은 권한처리 되어있음?
+```
+
+## Prompt — 2026-10-21T08:43:43+00:00
+
+```text
+<task-notification>
+<task-id>bo2aeolf8</task-id>
+<summary>Monitor event: "UI 재실행(2.2·1·2.1·통합) 장면 결과·오류"</summary>
+<event>[Monitor expired after 30m with 8 events delivered. Re-arm it if you still need the watch.]</event>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:43:43+00:00
+
+```text
+<task-notification>
+<task-id>bbh2o3chj</task-id>
+<tool-use-id>toolu_01MHTmRiZCrnXV39pA4ZgjcC</tool-use-id>
+<output-file>/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/65a1fcab-a641-4fed-ae8c-3c18ce20bd4b/tasks/bbh2o3chj.output</output-file>
+<status>completed</status>
+<summary>Background command "L=/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/ui4.log; : &gt; $L; for s in 2.2 1 2.1 x; do echo "=== $s" &gt;&gt; $L; E2E_USER=sanghoon01@uengine.org E2E_PASS='[REDACTED]' node scripts/demo/ontology-decision/record.mjs $s &gt;&gt; $L 2&gt;&amp;1 || { echo "=== $s FAILED" &gt;&gt; $L; break; }; done; echo "=== END" &gt;&gt; $L" completed (exit code 0)</summary>
+</task-notification>
+```
+
+## Prompt — 2026-10-21T08:43:43+00:00
+
+```text
+<task-notification>
+<task-id>bmsfdtrxm</task-id>
+<tool-use-id>toolu_015EutpFyT4QmS1rbk3MTV8u</tool-use-id>
+<output-file>/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/65a1fcab-a641-4fed-ae8c-3c18ce20bd4b/tasks/bmsfdtrxm.output</output-file>
+<status>completed</status>
+<summary>Background command "L=/tmp/claude-1001/-home-kimsanghoon-process-gpt-vue3/1be3c856-3a32-4955-8b67-d53b88026efc/scratchpad/ui4.log; until grep -qE "^=== (END|.* FAILED)" $L; do sleep 10; done; grep -E "^===|scene|FAILED" $L" completed (exit code 0)</summary>
+</task-notification>
+```

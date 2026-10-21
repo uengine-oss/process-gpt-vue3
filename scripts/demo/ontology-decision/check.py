@@ -161,7 +161,10 @@ def inspect_branch(inst: str, proc: str) -> str:
     """승인·발주서 발행을 제출하고 검수 Gateway 가 연 업무(활동 id)를 돌려준다. 엔진은 분기 양쪽 업무를 TODO 로
     미리 만들어 두므로 진행 중(IN_PROGRESS)이 된 쪽을 본다."""
     submit(inst, proc, "Task_Approve", TEXTS[proc]["approve"])
-    submit(inst, proc, "Task_PO", TEXTS[proc]["po"])
+    if "po" in TEXTS[proc]:
+        submit(inst, proc, "Task_PO", TEXTS[proc]["po"])
+    else:  # 발주 처리 에이전트가 발주서를 쓴다(설비 부품)
+        wait(inst, {"DONE"}, timeout=360, activity="Task_PO")
     t0 = time.time()
     while time.time() - t0 < 120:
         rows = sql(f"select activity_id || '=' || status from todolist where proc_inst_id={q(inst)} "
@@ -179,7 +182,7 @@ def chosen_supplier(report: str) -> str | None:
     """보고서 첫 결론 문장에서 고른 공급사(A/B)."""
     # 보고 순서: 비교표 → 판단(결론) → 근거. 결론 단락에서 처음 나오는 공급사를 고른 것으로 본다.
     m = re.search(r"판단\s*\(?결론\)?(.*?)(?:#+\s*근거|$)", report, re.S)
-    found = re.findall(r"([AB])\s*공급사", m.group(1) if m else report)
+    found = re.findall(r"([A-C])\s*공급사", m.group(1) if m else report)
     return found[0] if found else None
 
 

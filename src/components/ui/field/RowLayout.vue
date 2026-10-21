@@ -35,7 +35,10 @@ export default {
 
         name: String,
         alias: String,
-        is_multidata_mode: String
+        is_multidata_mode: String,
+        // 반복 행 초기 행 수·값의 출처(앞 단계 '<폼id>.<필드>', 쉼표 구분) — 채우는 쪽은 FormWorkItem.prefillRowsFromSource
+        rows_from: String,
+        row_key: String
     },
 
     data() {
