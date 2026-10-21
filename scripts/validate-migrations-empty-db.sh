@@ -5,7 +5,7 @@
 # - Supabase 플랫폼이 제공하는 전제(auth 스키마/롤/함수, storage 스키마,
 #   supabase_realtime publication)를 최소 셈(shim)으로 주입한다
 # - 타임스탬프 마이그레이션을 C-locale 파일명 순(=supabase CLI 적용 순서)으로
-#   ON_ERROR_STOP 실행하고, 비타임스탬프 파일(auth_audit_log.sql 등)은 마지막에
+#   ON_ERROR_STOP 실행하고, 비타임스탬프 파일(consolidated_schema.sql 등)은 마지막에
 #   별도로 실행한다 (supabase db reset 은 이 파일들을 적용하지 않음)
 #
 # 사용법: bash scripts/validate-migrations-empty-db.sh
@@ -55,7 +55,10 @@ CREATE TABLE IF NOT EXISTS storage.buckets (
   id text PRIMARY KEY,
   name text NOT NULL,
   public boolean DEFAULT false,
-  created_at timestamptz DEFAULT now()
+  file_size_limit bigint,
+  allowed_mime_types text[],
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS storage.objects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

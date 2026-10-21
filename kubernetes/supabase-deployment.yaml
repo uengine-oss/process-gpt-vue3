@@ -72,6 +72,46 @@ spec:
           value: "http://localhost:3000"
         - name: GOTRUE_JWT_SECRET
           value: "COJHReikGoxvQjx69he7teG8euynm9BqOaPYzskiI+cjNDQuFKtGQLvMAP66paXfq6y7QYVrvVpBcrSpa7yi6w=="
+        # 비밀번호 정책 (docs/security.md 2-2, 항목 21)
+        # 클라이언트 검증은 src/utils/passwordPolicy.ts 와 동일한 규칙을 사용한다.
+        # REQUIRED_CHARACTERS는 ':' 로 구분된 집합마다 최소 1자를 요구한다. (소문자:대문자:숫자:특수문자)
+        - name: GOTRUE_PASSWORD_MIN_LENGTH
+          value: "10"
+        - name: GOTRUE_PASSWORD_REQUIRED_CHARACTERS
+          value: "abcdefghijklmnopqrstuvwxyz:ABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789:!@#$%^&*()_+-=[]{};'\\\":|<>?,./`~"
+        - name: GOTRUE_PASSWORD_HIBP_ENABLED
+          value: "true"
+        # 세션 타임아웃 (docs/security.md 2-1, 항목 12)
+        # GOTRUE_JWT_EXP 는 auth 서비스 전용이라 rest/db 의 JWT 설정에는 영향이 없다.
+        # 화면측 유휴 타이머는 src/composables/useIdleTimeout.ts 가 담당한다.
+        - name: GOTRUE_JWT_EXP
+          value: "3600"
+        - name: GOTRUE_SESSIONS_INACTIVITY_TIMEOUT
+          value: "4h"
+        - name: GOTRUE_SESSIONS_TIMEBOX
+          value: "12h"
+        # 반복 로그인 실패 잠금 (docs/security.md 2-4, 항목 18)
+        # 비밀번호 검증 직후 Postgres 훅을 호출해 N회/M분 정책으로 차단 여부를 판단한다.
+        # 함수: supabase/migrations/20260911_password_lockout_hook.sql
+        # 정책 값은 public.configuration 의 key='login_lockout' 로 테넌트별 오버라이드.
+        # ※ 마이그레이션을 먼저 적용한 뒤 이 설정을 켠다 (함수가 없으면 로그인이 실패한다).
+        # ※ 버전 주의: Auth Hooks(pg-functions)는 GoTrue v2.151.0 이상에서 동작한다.
+        #    이 매니페스트의 image 는 아직 v2.143.0 이라 설정만으로는 훅이 호출되지 않는다.
+        #    운영 반영 시 image 를 v2.151.0 이상(compose 와 같은 v2.177.0 권장)으로 올릴 것.
+        #    낮은 버전에서는 두 env 가 무시될 뿐 로그인은 정상 동작한다.
+        - name: GOTRUE_HOOK_PASSWORD_VERIFICATION_ATTEMPT_ENABLED
+          value: "true"
+        - name: GOTRUE_HOOK_PASSWORD_VERIFICATION_ATTEMPT_URI
+          value: "pg-functions://postgres/public/hook_password_verification_attempt"
+        # MFA(TOTP) (docs/security.md 2-3, 항목 3)
+        # enroll = 등록(QR/secret 발급), verify = 챌린지 코드 검증. 둘 다 켜야 2단계 인증이 동작한다.
+        # ※ 버전 주의: GoTrue v2.68.0 이상에서 지원한다. 이 매니페스트의 image 는 v2.143.0 이라 충족한다.
+        # "MFA 필수" 여부는 env 가 아니라 public.configuration 의 key='mfa_policy' 로 테넌트별 관리한다.
+        # 상세: docs/security-gotrue-mfa-policy.md
+        - name: GOTRUE_MFA_TOTP_ENROLL_ENABLED
+          value: "true"
+        - name: GOTRUE_MFA_TOTP_VERIFY_ENABLED
+          value: "true"
 ---
 apiVersion: apps/v1
 kind: Deployment
