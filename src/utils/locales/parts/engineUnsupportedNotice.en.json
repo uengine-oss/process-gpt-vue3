@@ -1,0 +1,12 @@
+{
+  "engineUnsupportedNotice": {
+    "noRecord": {
+      "title": "No execution record for this task.",
+      "body": "This task has not run yet, or its execution history was cleaned up after the retention period."
+    },
+    "unsupported": {
+      "title": "This engine ({engine}) does not support detailed LLM and tool tracing yet.",
+      "body": "Task durations and the event timeline are still shown, but profiling down to prompts and tool arguments is only available on the {deepagents} and {completion} engines."
+    }
+  }
+}

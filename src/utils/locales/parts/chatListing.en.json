@@ -1,0 +1,7 @@
+{
+  "chatListing": {
+    "justNow": "just now",
+    "minutesAgo": "{n} min ago",
+    "ownAccountIncluded": "- Your own account is included automatically."
+  }
+}

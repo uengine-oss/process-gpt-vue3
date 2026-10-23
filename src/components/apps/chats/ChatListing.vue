@@ -238,7 +238,7 @@
                     <span v-if="backgroundGeneratingRooms.has(chat.id)" class="generating-status">
                         <v-icon size="small" class="mr-1">mdi-dots-horizontal</v-icon>
                     </span>
-                    <span v-else-if="chat.message.msg === 'NEW'">{{ $t('chatListing.newChatRoom') }}</span>
+                    <span v-else-if="chat.message.msg === 'NEW'">{{ $t('chatListing.newChat') }}</span>
                     <span v-else>{{ chat.message.msg }}</span>
                 </div>
                 <!---Last seen--->

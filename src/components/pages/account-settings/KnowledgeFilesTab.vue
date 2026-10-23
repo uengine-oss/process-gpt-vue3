@@ -648,6 +648,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import axios from 'axios';
 import { mimeIcon } from '@/utils/fileIcon';
 
@@ -921,7 +922,7 @@ export default {
         formatDate(iso) {
             if (!iso) return '-';
             try {
-                return new Date(iso).toLocaleDateString('ko-KR');
+                return new Date(iso).toLocaleDateString(dateLocale());
             } catch {
                 return '-';
             }

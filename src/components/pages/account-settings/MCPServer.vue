@@ -1,4 +1,14 @@
 <template>
+    <v-alert
+        variant="tonal"
+        density="compact"
+        class="mb-3"
+        icon="mdi-hub-outline"
+    >
+        상태·버전·권한·호출 이력까지 함께 보려면
+        <RouterLink to="/mcp-hub" class="font-weight-medium">MCP 허브</RouterLink>
+        화면을 쓰세요. 여기서 저장한 내용도 그대로 반영됩니다.
+    </v-alert>
     <v-row class="justify-center ma-0 pa-0">
         <!-- 좌측: 리스트 -->
         <v-col cols="12" lg="6">
@@ -395,6 +405,27 @@ export default {
                 this.editDialog = true;
             }
         },
+        /**
+         * MCP 설정 저장.
+         *
+         * tenants.mcp 는 이제 mcp-hub 가 정본 테이블에서 만들어내는 파생
+         * 미러다. 여기에 직접 쓰면 다음 동기화 때 덮여 사라지므로, 허브가
+         * 있으면 허브로 보내 정본에 반영한다. 허브에 닿지 못할 때만 기존
+         * 방식으로 직접 쓴다(허브 도입 전과 동일하게 동작).
+         */
+        async persistMcp(dataToSave) {
+            try {
+                const { default: mcpHubApi } = await import('@/services/mcpHubApi');
+                await mcpHubApi.importJson(dataToSave.mcpServers || {}, {
+                    prune: true,
+                    validateAfter: false
+                });
+                return;
+            } catch (e) {
+                console.warn('mcp-hub 저장 실패 — tenants.mcp 로 폴백합니다.', e);
+            }
+            await backend.setMCPByTenant(dataToSave);
+        },
         closeEdit() {
             this.mcpEditorStore.clearEditingState();
             this.editDialog = false;
@@ -406,7 +437,7 @@ export default {
                 const dataToSave = {
                     mcpServers: this.mcpServers
                 };
-                await backend.setMCPByTenant(dataToSave);
+                await this.persistMcp(dataToSave);
             } catch (error) {
                 this.mcpServers[key].enabled = !value;
                 console.error('서버 토글 중 오류:', error);
@@ -467,7 +498,7 @@ export default {
                     mcpServers: updatedServers
                 };
 
-                await backend.setMCPByTenant(dataToSave);
+                await this.persistMcp(dataToSave);
                 this.mcpServers = updatedServers;
                 this.closeEdit();
             } catch (error) {
@@ -491,7 +522,7 @@ export default {
                 const dataToSave = {
                     mcpServers: updatedServers
                 };
-                await backend.setMCPByTenant(dataToSave);
+                await this.persistMcp(dataToSave);
                 this.mcpServers = updatedServers;
                 this.closeEdit();
             } catch (error) {
@@ -587,7 +618,7 @@ export default {
                     mcpServers: updatedServers
                 };
 
-                await backend.setMCPByTenant(dataToSave);
+                await this.persistMcp(dataToSave);
                 this.mcpServers = updatedServers;
                 this.newJsonText = '';
                 this.selectedToolToAdd = null;

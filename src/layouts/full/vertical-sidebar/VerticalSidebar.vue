@@ -360,6 +360,28 @@
                         </v-list-item>
                     </v-col>
                 </div>
+
+                <!-- MCP 허브 타이틀 + 목록 -->
+                <div v-if="mcpItem.length > 0 && !gs" class="mb-4 mt-8">
+                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
+                        {{ $t('sidebarExt.mcpHub') }}
+                    </div>
+                    <v-col class="pa-0">
+                        <v-list-item
+                            v-for="item in mcpItem"
+                            :key="item.title"
+                            :to="item.to"
+                            :disabled="item.disable"
+                            density="compact"
+                            class="leftPadding sidebar-list-hover-bg"
+                        >
+                            <template v-slot:prepend>
+                                <Icons :icon="item.icon" :size="20" class="mr-2" />
+                            </template>
+                            <v-list-item-title>{{ item.title }}</v-list-item-title>
+                        </v-list-item>
+                    </v-col>
+                </div>
             </v-list>
             <Footer class="mt-2" />
         </div>
@@ -395,6 +417,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import ProjectList from '@/components/ui/ProjectList.vue';
 import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.vue';
@@ -467,6 +490,7 @@ export default {
         processSectionListItems: [],
         processSectionDropdownItems: [],
         analyticsItem: [],
+        mcpItem: [],
         logoPadding: '',
         instanceLists: [],
         isOpen: false,
@@ -786,10 +810,19 @@ export default {
                     disable: false
                 },
                 {
-                    title: '요청 Top List',
+                    title: 'sidebarExt.requestTopList',
                     icon: 'chart-square-linear',
                     BgColor: 'primary',
                     to: '/instance-toplist',
+                    disable: false
+                },
+                {
+                    // 인계 기록에서 '아직 정의되지 않은' 업무 흐름을 찾아내는 화면.
+                    // 기존 프로세스를 고치는 개선(리뷰 보드)과 달리, 신규 프로세스를 식별한다.
+                    title: 'processIdentification.title',
+                    icon: 'sitemap',
+                    BgColor: 'primary',
+                    to: '/mining/handover',
                     disable: false
                 },
                 {
@@ -797,6 +830,22 @@ export default {
                     icon: 'ibm-process-mining',
                     BgColor: 'primary',
                     to: '/analytics/heatmap',
+                    disable: false
+                },
+                {
+                    // 어떤 에이전트·담당자가 어느 프로세스에서 작업량·재작업·리드타임이 높은지
+                    title: 'analytics.resources',
+                    icon: 'users',
+                    BgColor: 'primary',
+                    to: '/analytics/resources',
+                    disable: false
+                },
+                {
+                    // 어떤 툴이 어느 프로세스·부서·엔진에서 쓰이는지 교차분석
+                    title: 'analytics.tools',
+                    icon: 'tool-box',
+                    BgColor: 'primary',
+                    to: '/analytics/tools',
                     disable: false
                 },
                 {
@@ -850,9 +899,51 @@ export default {
                 // }
             ];
 
+            // MCP 허브 메뉴. 등록/갤러리/관측/표준을 한 그룹으로 묶는다.
+            this.mcpItem = [
+                {
+                    title: 'sidebarExt.mcpServers',
+                    icon: 'server-square-linear',
+                    BgColor: 'primary',
+                    to: '/mcp-hub',
+                    disable: false
+                },
+                {
+                    title: 'sidebarExt.mcpGallery',
+                    icon: 'widget-4-linear',
+                    BgColor: 'primary',
+                    to: '/mcp-hub/gallery',
+                    disable: false
+                },
+                {
+                    title: 'sidebarExt.mcpObservability',
+                    icon: 'graph-up-linear',
+                    BgColor: 'primary',
+                    to: '/mcp-hub/observability',
+                    disable: false
+                },
+                {
+                    title: 'sidebarExt.integrationStandard',
+                    icon: 'book-linear',
+                    BgColor: 'primary',
+                    to: '/mcp-hub/guide',
+                    disable: false
+                }
+            ];
+
+            // 분석 메뉴에서도 에이전트/툴 관측으로 바로 들어갈 수 있게 한다.
+            this.analyticsItem.push({
+                title: 'sidebarExt.agentToolObservability',
+                icon: 'graph-up-linear',
+                BgColor: 'primary',
+                to: '/mcp-hub/observability',
+                disable: false
+            });
+
             // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김
             if (this.pal) {
                 this.analyticsItem = [];
+                this.mcpItem = [];
             }
 
             if (!this.JMS) {
@@ -1159,7 +1250,7 @@ export default {
                     return typeA - typeB;
                 }
 
-                return a.title.localeCompare(b.title, 'ko-KR');
+                return a.title.localeCompare(b.title, dateLocale());
             });
 
             // 원본 list 객체를 반환 (children이 정렬된 상태)

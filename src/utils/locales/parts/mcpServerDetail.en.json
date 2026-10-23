@@ -1,0 +1,83 @@
+{
+  "mcpServerDetail": {
+    "refreshTools": "Refresh Tools",
+    "save": "Save",
+    "state": {
+      "healthy": "Healthy",
+      "degraded": "Degraded",
+      "unhealthy": "Unhealthy",
+      "unknown": "Unknown"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "tools": "Tools ({n})",
+      "versions": "Versions ({n})",
+      "permissions": "Permissions",
+      "health": "Health",
+      "calls": "Call History"
+    },
+    "overview": {
+      "transport": "Transport",
+      "currentVersion": "Current Version",
+      "owner": "Owner",
+      "source": "Source",
+      "healthState": "Connection Status",
+      "latency": "Latency",
+      "availability24h": "24h Uptime",
+      "consecutiveFailures": "Consecutive Failures"
+    },
+    "tools": {
+      "gone": "Removed",
+      "empty": "Tools have not been read yet. Try clicking \"Refresh Tools\"."
+    },
+    "refreshOk": "Found {n} tools.",
+    "refreshFailed": "Failed to read tools: {error}",
+    "versions": {
+      "current": "Current",
+      "activate": "Use this version",
+      "activated": "Rolled back to v{version}.",
+      "headers": {
+        "version": "Version",
+        "transport": "Transport",
+        "target": "Target",
+        "note": "Note",
+        "created": "Created"
+      }
+    },
+    "permissions": {
+      "help": "With no permission rows, the whole tenant can use this server. Once you add a row, only principals matching that condition can use it.",
+      "all": "All",
+      "addRow": "Add Row",
+      "saved": "Permissions saved. They apply to agents immediately.",
+      "saveFailed": "Failed to save: {error}",
+      "headers": {
+        "principalType": "Principal Type",
+        "principal": "Principal",
+        "permission": "Permission",
+        "allowedTools": "Allowed Tools",
+        "deniedTools": "Denied Tools"
+      }
+    },
+    "health": {
+      "noData": "No health records.",
+      "headers": {
+        "checkedAt": "Checked At",
+        "state": "State",
+        "latencyMs": "Latency (ms)",
+        "toolCount": "Tools",
+        "error": "Error"
+      }
+    },
+    "calls": {
+      "noData": "No calls recorded for this server.",
+      "headers": {
+        "startedAt": "Started At",
+        "tool": "Tool",
+        "status": "Status",
+        "durationMs": "ms",
+        "engine": "Engine",
+        "process": "Process"
+      }
+    }
+  }
+}

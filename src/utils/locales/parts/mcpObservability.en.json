@@ -1,0 +1,53 @@
+{
+  "mcpObservability": {
+    "title": "MCP Observability",
+    "subtitle": "View call history, latency, and error rates by server and tool.",
+    "range": {
+      "1h": "1h",
+      "24h": "24h",
+      "7d": "7d",
+      "30d": "30d"
+    },
+    "kpi": {
+      "totalCalls": "Total Calls",
+      "successRate": "Success Rate",
+      "p95": "p95 Latency",
+      "healthyServers": "Healthy Servers",
+      "unhealthyServers": "Unhealthy Servers",
+      "llmCalls": "LLM Calls",
+      "totalServers": "{n} total"
+    },
+    "byServer": "By Server",
+    "byTool": "By Tool",
+    "noServerCalls": "No MCP calls recorded in this period.",
+    "noToolCalls": "No tool calls recorded.",
+    "headers": {
+      "server": "Server",
+      "tool": "Tool",
+      "calls": "Calls",
+      "failed": "Failed",
+      "errorRate": "Error Rate",
+      "lastError": "Last Error"
+    },
+    "recentCalls": "Recent Calls",
+    "noCalls": "No calls recorded.",
+    "llm": {
+      "calls": "Calls",
+      "tokens": "Tokens",
+      "cost": "Cost",
+      "note": "Collected by the LiteLLM proxy callback. Linked to the MCP calls above by the same trace_id."
+    },
+    "detail": {
+      "title": "Call Details",
+      "server": "Server",
+      "tool": "Tool",
+      "engine": "Engine",
+      "duration": "Duration",
+      "process": "Process",
+      "workitem": "Work Item",
+      "error": "Error",
+      "input": "Input",
+      "output": "Output"
+    }
+  }
+}

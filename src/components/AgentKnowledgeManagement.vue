@@ -50,7 +50,7 @@
                             variant="text"
                             color="error"
                             @click.stop="deleteKnowledge(item)"
-                            title="삭제"
+                            :title="$t('agentKnowledge.delete')"
                         ></v-btn>
                     </template>
 
@@ -68,32 +68,32 @@
                                 <div v-if="item.activeTab === 'metadata'">
                                     <v-list class="knowledge-expanded-row-list">
                                         <v-list-item>
-                                            <v-list-item-title class="text-caption text-medium-emphasis">내용</v-list-item-title>
+                                            <v-list-item-title class="text-caption text-medium-emphasis">{{ $t('agentKnowledge.content') }}</v-list-item-title>
                                             <div style="white-space: pre-wrap; word-break: break-word">{{ item.metadata.data }}</div>
                                         </v-list-item>
 
                                         <v-list-item>
-                                            <v-list-item-title class="text-caption text-medium-emphasis">해시</v-list-item-title>
+                                            <v-list-item-title class="text-caption text-medium-emphasis">{{ $t('agentKnowledge.hash') }}</v-list-item-title>
                                             <div class="font-family-monospace">{{ item.metadata.hash }}</div>
                                         </v-list-item>
 
                                         <v-list-item>
-                                            <v-list-item-title class="text-caption text-medium-emphasis">역할</v-list-item-title>
+                                            <v-list-item-title class="text-caption text-medium-emphasis">{{ $t('agentKnowledge.role') }}</v-list-item-title>
                                             <div>{{ item.metadata.role }}</div>
                                         </v-list-item>
 
                                         <v-list-item>
-                                            <v-list-item-title class="text-caption text-medium-emphasis">타입</v-list-item-title>
+                                            <v-list-item-title class="text-caption text-medium-emphasis">{{ $t('agentKnowledge.type') }}</v-list-item-title>
                                             <div>{{ item.metadata.type }}</div>
                                         </v-list-item>
 
                                         <v-list-item>
-                                            <v-list-item-title class="text-caption text-medium-emphasis">에이전트 ID</v-list-item-title>
+                                            <v-list-item-title class="text-caption text-medium-emphasis">{{ $t('agentKnowledge.agentId') }}</v-list-item-title>
                                             <div class="font-family-monospace">{{ item.metadata.agent_id }}</div>
                                         </v-list-item>
 
                                         <v-list-item>
-                                            <v-list-item-title class="text-caption text-medium-emphasis">생성일</v-list-item-title>
+                                            <v-list-item-title class="text-caption text-medium-emphasis">{{ $t('agentKnowledge.createdAt') }}</v-list-item-title>
                                             <div>{{ formatDate(item.metadata.created_at) }}</div>
                                         </v-list-item>
                                     </v-list>
@@ -138,6 +138,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 export default {
     props: {
         knowledges: {
@@ -149,17 +150,22 @@ export default {
             default: false
         }
     },
+    computed: {
+        // data() 에 두면 언어를 바꿔도 다시 계산되지 않아 한국어 헤더가 그대로 남는다.
+        headers() {
+            return [
+                { title: this.$t('agentKnowledge.content'), key: 'metadata.data', sortable: true },
+                { title: this.$t('agentKnowledge.createdAt'), key: 'metadata.created_at', sortable: true, width: '150px' },
+                { title: this.$t('agentKnowledge.actions'), key: 'actions', sortable: false, width: '80px' }
+            ];
+        }
+    },
     data() {
         return {
             page: 1,
             itemsPerPage: 10,
             deleteDialog: false,
-            selectedKnowledge: null,
-            headers: [
-                { title: '내용', key: 'metadata.data', sortable: true },
-                { title: '생성일', key: 'metadata.created_at', sortable: true, width: '150px' },
-                { title: '액션', key: 'actions', sortable: false, width: '80px' }
-            ]
+            selectedKnowledge: null
         };
     },
     mounted() {
@@ -175,7 +181,7 @@ export default {
         formatDate(dateString) {
             try {
                 const date = new Date(dateString);
-                return date.toLocaleDateString('ko-KR', {
+                return date.toLocaleDateString(dateLocale(), {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',

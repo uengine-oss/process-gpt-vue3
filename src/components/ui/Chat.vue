@@ -2858,7 +2858,7 @@
                                 <Icons :icon="'stop'" :size="'16'" />
                             </v-btn>
                             <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" style="flex-shrink: 0" />
-                            <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
+                            <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : $t('chat.voiceOneToOneOnly')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn
                                         @click="enableDesktopVoice && (openChatMenu(), handleVoiceButtonClick())"
@@ -3241,7 +3241,7 @@
                                 <Icons v-else :icon="'sharp-mic'" :size="'16'" />
                             </v-btn>
 
-                            <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
+                            <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : $t('chat.voiceOneToOneOnly')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn
                                         @click="enableDesktopVoice && !isGenerationFinished && (openChatMenu(), handleVoiceButtonClick())"

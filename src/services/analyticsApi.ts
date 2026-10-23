@@ -21,6 +21,106 @@ api.interceptors.response.use(
     }
 );
 
+// ============== Timeline / 프로파일링 API ==============
+// 게이트웨이가 /api/analytics/** 의 prefix 를 /api/ 로 바꿔주므로,
+// baseURL 이 /api/analytics 인 상태에서 '/timeline/...' 을 부르면
+// 백엔드의 /api/timeline/... 에 그대로 닿는다. 별도 라우트가 필요 없다.
+export const timelineApi = {
+    async listInstances(params: { search?: string; status?: string; page?: number; page_size?: number } = {}) {
+        const { data } = await api.get('/timeline/instances', { params });
+        return data;
+    },
+    async getSummary(procInstId: string) {
+        const { data } = await api.get(`/timeline/instances/${encodeURIComponent(procInstId)}/summary`);
+        return data;
+    },
+    async getTimeline(procInstId: string) {
+        const { data } = await api.get(`/timeline/instances/${encodeURIComponent(procInstId)}/timeline`);
+        return data;
+    },
+    async getInstanceCost(procInstId: string) {
+        const { data } = await api.get(`/timeline/instances/${encodeURIComponent(procInstId)}/cost`);
+        return data;
+    },
+    async getTaskSpans(todoId: string) {
+        const { data } = await api.get(`/timeline/tasks/${encodeURIComponent(todoId)}/spans`);
+        return data;
+    },
+    async getJobSpans(jobId: string) {
+        const { data } = await api.get(`/timeline/jobs/${encodeURIComponent(jobId)}/spans`);
+        return data;
+    },
+    async getSpan(spanId: string) {
+        const { data } = await api.get(`/timeline/spans/${encodeURIComponent(spanId)}`);
+        return data;
+    },
+    async getTask(todoId: string) {
+        const { data } = await api.get(`/timeline/tasks/${encodeURIComponent(todoId)}`);
+        return data;
+    },
+    /** 리드타임을 큐대기 / 사람판단 / 에이전트수행 으로 분해 */
+    async getBreakdown(procInstId: string) {
+        const { data } = await api.get(`/timeline/instances/${encodeURIComponent(procInstId)}/breakdown`);
+        return data;
+    },
+    /** 툴 관점 다차원 분석 — 차원·측정값 목록과 커버리지 */
+    async getToolMeta() {
+        const { data } = await api.get('/analytics/tools/meta');
+        return data;
+    },
+    async getToolSummary(limit = 10) {
+        const { data } = await api.get('/analytics/tools/summary', { params: { limit } });
+        return data;
+    },
+    /** 행 × 열 교차표. 차원/측정값은 서버 화이트리스트의 key 여야 한다. */
+    async getToolPivot(body: {
+        rows: string[]; cols?: string[]; measures?: string[];
+        filters?: Record<string, string[]>; limit?: number;
+    }) {
+        const { data } = await api.post('/analytics/tools/pivot', body);
+        return data;
+    },
+    /** OLAP 큐브 목록 (툴 / 리소스 ...) */
+    async listCubes() {
+        const { data } = await api.get('/analytics/cubes');
+        return data;
+    },
+    async getCubeMeta(cube: string) {
+        const { data } = await api.get(`/analytics/cubes/${encodeURIComponent(cube)}/meta`);
+        return data;
+    },
+    /** 필터 드롭다운을 채울 차원 값 목록 */
+    async getCubeValues(cube: string, dimension: string, limit = 200) {
+        const { data } = await api.get(
+            `/analytics/cubes/${encodeURIComponent(cube)}/values`,
+            { params: { dimension, limit } });
+        return data;
+    },
+    async getCubePivot(cube: string, body: {
+        rows: string[]; cols?: string[]; measures?: string[];
+        filters?: Record<string, string[]>; limit?: number;
+    }) {
+        const { data } = await api.post(
+            `/analytics/cubes/${encodeURIComponent(cube)}/pivot`, body);
+        return data;
+    },
+    async getCubeSummary(cube: string, body: {
+        filters?: Record<string, string[]>; limit?: number;
+    } = {}) {
+        const { data } = await api.post(
+            `/analytics/cubes/${encodeURIComponent(cube)}/summary`, body);
+        return data;
+    },
+    /** 정의 단위 액티비티별 병목 랭킹 */
+    async getBottlenecks(procDefId: string, limit = 50) {
+        const { data } = await api.get(
+            `/timeline/definitions/${encodeURIComponent(procDefId)}/bottlenecks`,
+            { params: { limit } }
+        );
+        return data;
+    }
+};
+
 // ============== Dashboard & OLAP API ==============
 export const olapApi = {
     /**

@@ -171,6 +171,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
@@ -262,7 +263,7 @@ export default {
         formatDate(date) {
             if (!date) return 'N/A'; // 날짜가 없을 경우 'N/A' 표시
             const options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric' };
-            return new Date(date).toLocaleString('ko-KR', options);
+            return new Date(date).toLocaleString(dateLocale(), options);
         },
         viewDetail(item) {
             this.$router.push({ name: 'Admin Detail', params: { id: item.instId } });

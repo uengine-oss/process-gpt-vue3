@@ -336,6 +336,8 @@ export default {
                     return 'A2A';
                 case 'pgagent':
                     return 'ProcessGPT Agent';
+                case 'n8n':
+                    return 'n8n';
                 default:
                     return 'Agent';
             }

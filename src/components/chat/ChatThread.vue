@@ -284,6 +284,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import HumanFeedbackPanel from '@/components/ui/HumanFeedbackPanel.vue';
 
 export default {
@@ -510,7 +511,7 @@ export default {
         formatTime(timestamp) {
             if (!timestamp) return '';
             const date = new Date(timestamp);
-            return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+            return date.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
         },
         getProgressChipColor(status) {
             if (status === 'completed') return 'success';

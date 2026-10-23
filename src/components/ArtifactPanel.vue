@@ -28,9 +28,16 @@
 
             <template v-for="panel in tabPanels" :key="panel.id">
                 <div v-show="panel.id === activeId" class="artifact-panel__content">
+                    <!-- HWPX·DOCX 원본 편집(이음오피스 웹 편집기, VITE_OFFICE_WEB_URL 이 있을 때) -->
+                    <OfficeEditorFrame
+                        v-if="usesOfficeEditor(panel)"
+                        :fileUrl="panel.data.fileUrl"
+                        :name="fileNameOf(panel.data.fileUrl)"
+                        @saved="onOfficeSaved(panel, $event)"
+                    />
                     <!-- HWPX 문서 미리보기 -->
                     <HwpxViewer
-                        v-if="panel.type === 'hwpx'"
+                        v-else-if="panel.type === 'hwpx'"
                         :ref="(el) => setPanelRef(panel.id, el)"
                         :htmlUrl="panel.data.htmlUrl"
                         @close="$emit('close-panel', panel.id)"
@@ -81,6 +88,8 @@
 
 <script>
 import HwpxViewer from '@/components/HwpxViewer.vue';
+import OfficeEditorFrame from '@/components/OfficeEditorFrame.vue';
+import { canOpenInOfficeEditor } from '@/utils/officeEditor';
 import SlideArtifactViewer from '@/components/SlideArtifactViewer.vue';
 import ProcessArtifactViewer from '@/components/ProcessArtifactViewer.vue';
 import WorkspaceFilesViewer from '@/components/WorkspaceFilesViewer.vue';
@@ -99,7 +108,7 @@ const PANEL_TYPE_ICONS = {
 
 export default {
     name: 'ArtifactPanel',
-    components: { HwpxViewer, SlideArtifactViewer, ProcessArtifactViewer, WorkspaceFilesViewer, AgentChatRoomContext },
+    components: { HwpxViewer, OfficeEditorFrame, SlideArtifactViewer, ProcessArtifactViewer, WorkspaceFilesViewer, AgentChatRoomContext },
     props: {
         panels: { type: Array, default: () => [] },
         activeId: { type: String, default: null }
@@ -119,6 +128,22 @@ export default {
     methods: {
         typeIcon(type) {
             return PANEL_TYPE_ICONS[type] || 'mdi-file-outline';
+        },
+        usesOfficeEditor(panel) {
+            return (panel.type === 'hwpx' || panel.type === 'docx') && canOpenInOfficeEditor(panel.data?.fileUrl);
+        },
+        fileNameOf(url) {
+            const last = (url || '').split('?')[0].split('#')[0].split('/').pop() || '';
+            try {
+                return decodeURIComponent(last);
+            } catch (e) {
+                return last;
+            }
+        },
+        /** 편집기에서 저장한 편집본을 이 패널의 원본으로 삼는다(이후 첨부·다운로드가 편집본을 쓰도록) */
+        onOfficeSaved(panel, { url }) {
+            if (url && panel.data) panel.data.fileUrl = url;
+            this.emitPanelAction(panel, 'office-saved', { url });
         },
         setPanelRef(panelId, el) {
             if (el) {

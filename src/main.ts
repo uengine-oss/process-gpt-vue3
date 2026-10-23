@@ -165,6 +165,9 @@ function refineLocaleInBackground() {
 const i18n = createI18n({
     locale: localStorage.getItem('locale') || 'ko', // localStorage에 저장된 언어 또는 기본값 ko
     fallbackLocale: 'en',
+    // 레거시 모드를 유지하면서 <script setup> 에서 useI18n() 도 쓸 수 있게 한다.
+    // (이 옵션이 없으면 useI18n() 이 "Not available in legacy mode" 로 던진다)
+    allowComposition: true,
     messages
 });
 
@@ -286,7 +289,12 @@ async function setupTenant() {
         Object.defineProperty(window, '$tenantName', {
             // 로컬에서 운영 Supabase 에 붙어 특정 테넌트로 진단할 때 쓴다.
             // (.env 의 VITE_TENANT_OVERRIDE=uengine 등)
-            value: import.meta.env.VITE_TENANT_OVERRIDE || 'localhost',
+            // $mode·$supabase 와 마찬가지로 런타임 주입(window._env_)을 먼저 본다.
+            // 같은 이미지를 테넌트만 바꿔 띄울 수 있어야 하기 때문이다.
+            value:
+                window._env_?.VITE_TENANT_OVERRIDE ||
+                import.meta.env.VITE_TENANT_OVERRIDE ||
+                'localhost',
             writable: false,
             configurable: false
         });

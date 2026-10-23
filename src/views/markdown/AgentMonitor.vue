@@ -237,6 +237,24 @@ export default {
                     }
                 },
                 {
+                    titleKey: 'AgentSelectInfo.orchestration.n8n.title',
+                    value: 'n8n',
+                    label: this.$t('AgentSelectInfo.orchestration.n8n.title'),
+                    startLabel: 'n8n',
+                    icon: 'flowchart',
+                    descKey: 'AgentSelectInfo.orchestration.n8n.description',
+                    costKey: 'AgentSelectInfo.cost.low',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.n8n.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.n8n.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.n8n.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.n8n.detailDesc.details.2.title' },
+                            { title: 'AgentSelectInfo.orchestration.n8n.detailDesc.details.3.title' }
+                        ]
+                    }
+                },
+                {
                     titleKey: 'AgentSelectInfo.orchestration.langchainReact.title',
                     value: 'langchain-react',
                     label: this.$t('AgentSelectInfo.orchestration.langchainReact.title'),
@@ -443,6 +461,8 @@ export default {
                         usageMap[jobId].push({
                             tool_name: data.tool_name || crew_type,
                             query: data.query || null,
+                            // deepagents 는 {tool, tool_name, args} 를 남긴다 — 인자가 판단 근거라 버리지 않는다
+                            args: data.args || null,
                             info: null,
                             status: 'searching'
                         });
@@ -700,10 +720,10 @@ export default {
         getLoadingMessage() {
             const draftStatus = this.todoStatus?.draft_status;
             if (draftStatus === 'STARTED') {
-                return '작업을 진행중입니다...';
+                return this.$t('agentMonitor.loadingInProgress');
             }
             if (draftStatus === 'FB_REQUESTED') {
-                return '피드백을 반영하여 초안을 다시 생성하고 있습니다...';
+                return this.$t('agentMonitor.loadingFeedback');
             }
             return '';
         },

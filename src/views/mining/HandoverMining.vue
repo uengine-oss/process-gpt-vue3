@@ -1,0 +1,652 @@
+<template>
+    <v-app>
+        <div class="mining-page">
+            <div class="mining-header">
+                <v-icon size="20" class="mr-2">mdi-source-branch</v-icon>
+                <span class="text-h6 font-weight-bold">프로세스 식별</span>
+                <span class="mining-header__sub">
+                    아직 정의되지 않은 업무를 인계 기록에서 찾아 <b>새 프로세스로 제안</b>합니다
+                    (기존 프로세스 개선은 리뷰 보드에서 다룹니다)
+                </span>
+                <v-spacer />
+                <v-btn
+                    color="primary"
+                    variant="flat"
+                    rounded="pill"
+                    size="small"
+                    prepend-icon="mdi-source-pull"
+                    :loading="proposing"
+                    :disabled="!discovered"
+                    class="e2e-propose-pr"
+                    @click="proposePr"
+                >
+                    새 프로세스로 제안
+                </v-btn>
+                <v-btn
+                    color="success"
+                    variant="flat"
+                    rounded="pill"
+                    size="small"
+                    class="ml-2 e2e-convert-process"
+                    prepend-icon="mdi-rocket-launch-outline"
+                    :loading="converting"
+                    @click="convertToProcess"
+                >
+                    실행 가능한 프로세스로 전환
+                </v-btn>
+            </div>
+
+            <div v-if="loading" class="pa-8 text-center">
+                <v-progress-circular indeterminate color="primary" />
+                <div class="text-caption mt-3 text-medium-emphasis">인계 기록을 분석하는 중…</div>
+            </div>
+
+            <div v-else-if="error" class="pa-8">
+                <v-alert type="error" variant="tonal">{{ error }}</v-alert>
+            </div>
+
+            <div v-else class="mining-body">
+                <!-- 왼쪽: 인계 스레드 묶음 -->
+                <div class="mining-left">
+                    <div class="mining-section-title">
+                        인계 스레드
+                        <v-chip size="x-small" variant="tonal" class="ml-2 e2e-thread-count">{{ threads.length }}건</v-chip>
+                        <span class="mining-section-sub">최초 시작된 방 기준 · 방이 바뀌어도 한 묶음</span>
+                    </div>
+
+                    <div class="mining-threads">
+                        <div v-for="t in threads" :key="t.origin_room_id" class="mining-thread">
+                            <div class="mining-thread__head">
+                                <v-icon size="13" class="mr-1">mdi-source-branch</v-icon>
+                                <span class="mono">{{ t.origin_room_id }}</span>
+                                <v-chip size="x-small" variant="tonal" class="ml-2">{{ t.step_count }}단계</v-chip>
+                            </div>
+                            <div class="mining-thread__steps">
+                                <template v-for="(s, i) in t.steps" :key="i">
+                                    <span class="mining-step" :class="{ 'is-agent': s.to_is_agent, 'is-implicit': !s.is_explicit }">
+                                        <v-icon v-if="s.to_is_agent" size="11" class="mr-1">mdi-robot-outline</v-icon>
+                                        {{ shortLabel(s.activity) }}
+                                    </span>
+                                    <v-icon v-if="i < t.steps.length - 1" size="12" class="mx-1 text-medium-emphasis">
+                                        mdi-arrow-right
+                                    </v-icon>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 조직 마이닝: 누가 이 일을 할 수 있나 -->
+                    <div v-if="organization" class="mining-org mt-2">
+                        <div class="text-caption font-weight-bold mb-2">
+                            조직 마이닝
+                            <span class="mining-section-sub">이 흐름을 실제로 수행해 온 사람과 역할</span>
+                        </div>
+                        <div v-for="e in organization.eligibility.slice(0, 6)" :key="e.activity" class="mining-elig e2e-elig-row">
+                            <div class="mining-elig__act">{{ e.activity }}</div>
+                            <div class="mining-elig__who">
+                                <span v-for="c in e.candidates.slice(0, 2)" :key="c.user_id" class="mining-who-chip" :class="{ 'is-agent': c.is_agent }">
+                                    <v-icon v-if="c.is_agent" size="10" class="mr-1">mdi-robot-outline</v-icon>{{ c.name }}
+                                    <span class="mining-who-ev">{{ c.evidence_count }}건</span>
+                                </span>
+                            </div>
+                            <div class="mining-elig__auto">
+                                <span v-if="e.automation_rate >= 1">자동</span>
+                                <span v-else-if="e.automation_rate > 0">혼합</span>
+                                <span v-else>사람</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 도출된 프로세스 (기존 BPMN 모델러로 렌더) -->
+                <div class="mining-right">
+                    <div class="mining-section-title">
+                        도출된 프로세스
+                        <span class="mining-section-sub">
+                            케이스 {{ discovered?.stats.case_count ?? 0 }}건에서 도출 · 기존 BPMN 모델러로 표시
+                        </span>
+                    </div>
+
+                    <div class="mining-canvas">
+                        <BpmnUengineViewer v-if="bpmnXml" :key="bpmnXml.length" :bpmn="bpmnXml" :disable-auto-orientation="true" />
+                        <div v-else class="pa-6 text-caption text-medium-emphasis">도출된 프로세스가 없습니다.</div>
+                    </div>
+
+                    <div v-if="discovered" class="mining-variants">
+                        <div class="text-caption font-weight-bold mb-1">관측된 흐름</div>
+                        <div v-for="(v, i) in discovered.stats.variants" :key="i" class="text-caption mining-variant">
+                            <span class="mining-variant__count">{{ v.count }}건</span>
+                            {{ v.trace.join(' → ') }}
+                        </div>
+                        <div v-if="agentActivities.length" class="text-caption mt-2">
+                            <v-icon size="13" class="mr-1">mdi-robot-outline</v-icon>
+                            자동 수행 단계:
+                            <span class="font-weight-bold">{{ agentActivities.join(', ') }}</span>
+                        </div>
+                    </div>
+
+                    <v-alert v-if="prResult" type="success" variant="tonal" density="compact" class="mt-3 e2e-pr-result">
+                        새 프로세스 제안이 등록되었습니다 — {{ prResult.title }}
+                        <div class="text-caption mt-1">아래 목록에서 검토·승인할 수 있습니다.</div>
+                    </v-alert>
+
+                    <!-- 식별된 신규 프로세스 제안이 모이는 곳 -->
+                    <div class="mining-proposals mt-3">
+                        <div class="text-caption font-weight-bold mb-2 d-flex align-center">
+                            식별된 신규 프로세스 제안
+                            <v-chip size="x-small" variant="tonal" class="ml-2 e2e-proposal-count">{{ proposals.length }}건</v-chip>
+                            <span class="mining-section-sub">승인 전까지 실제 프로세스 정의는 바뀌지 않습니다</span>
+                        </div>
+                        <div v-if="!proposals.length" class="text-caption text-medium-emphasis">
+                            아직 제안이 없습니다. 위 [새 프로세스로 제안]을 눌러 등록하세요.
+                        </div>
+                        <div v-for="p in proposals" :key="p.id" class="mining-proposal e2e-proposal-row">
+                            <v-chip size="x-small" :color="p.status === 'OPEN' ? 'success' : 'grey'" variant="flat">
+                                {{ p.status }}
+                            </v-chip>
+                            <span class="ml-2 font-weight-medium">{{ p.title }}</span>
+                            <span class="ml-2 text-caption text-medium-emphasis mono">{{ p.branch_name }}</span>
+                            <v-spacer />
+                            <span class="text-caption text-medium-emphasis">{{ formatDate(p.created_at) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </v-app>
+</template>
+
+<script>
+/**
+ * 인계 마이닝 화면.
+ * process-miner 서비스가 계산한 결과를 읽어, 도출된 프로세스를 **기존 BPMN 모델러**
+ * (BpmnUengineViewer)로 렌더한다. 정의 JSON → BPMN XML 변환은 BPMNXmlGenerator 의
+ * createBpmnXml 을 그대로 재사용한다(ProcessFeedback 과 같은 방식).
+ */
+import BPMNXmlGenerator from '@/components/BPMNXmlGenerator.vue';
+import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
+import { processMiner } from '@/utils/processMiner';
+import BackendFactory from '@/components/api/BackendFactory';
+
+const backend = BackendFactory.createBackend();
+
+export default {
+    name: 'HandoverMining',
+    // createBpmnXml(jsonModel) 만 쓰는 순수 유틸 mixin
+    mixins: [BPMNXmlGenerator],
+    components: { BpmnUengineViewer },
+    data() {
+        return {
+            loading: true,
+            error: '',
+            threads: [],
+            discovered: null,
+            bpmnXml: '',
+            proposing: false,
+            converting: false,
+            prResult: null,
+            proposals: [],
+            organization: null
+        };
+    },
+    computed: {
+        tenantId() {
+            return window.$tenantName || 'localhost';
+        },
+        agentActivities() {
+            return (this.discovered?.definition?.activities || []).filter((a) => a.agent).map((a) => a.name);
+        }
+    },
+    async created() {
+        await this.load();
+    },
+    methods: {
+        shortLabel(s) {
+            const t = String(s || '').trim();
+            return t.length > 22 ? `${t.slice(0, 22)}…` : t;
+        },
+        async load() {
+            this.loading = true;
+            this.error = '';
+            try {
+                const [th, dc] = await Promise.all([
+                    processMiner.threads(this.tenantId),
+                    processMiner.discovered(this.tenantId)
+                ]);
+                this.threads = th.threads || [];
+                this.discovered = dc;
+                this.bpmnXml = this.toBpmn(dc.definition);
+                await this.loadProposals(dc.definition?.processDefinitionId);
+                this.organization = await processMiner.organization(this.tenantId).catch(() => null);
+            } catch (e) {
+                this.error = e?.message || String(e);
+            } finally {
+                this.loading = false;
+            }
+        },
+        /**
+         * 마이너가 내는 flattened 정의(activities/gateways/events/sequences)를
+         * BPMNXmlGenerator 가 소비하는 elements[] 저작 형식으로 바꾼다.
+         * (생성기의 createSequenceFlows/createProcessElements 는 elements[] 를 읽는다)
+         */
+        toElementsFormat(d) {
+            const ACT = { userTask: 'UserActivity', manualTask: 'UserActivity', serviceTask: 'UserActivity' };
+            const GW = {
+                exclusiveGateway: 'ExclusiveGateway',
+                parallelGateway: 'ParallelGateway',
+                inclusiveGateway: 'InclusiveGateway'
+            };
+            const EV = { startEvent: 'StartEvent', endEvent: 'EndEvent', intermediateCatchEvent: 'IntermediateCatchEvent' };
+
+            const roles = d.roles || [];
+            const defaultRole = roles.length ? roles[0].name : '담당자';
+            // 게이트웨이는 role 이 비어 있을 수 있는데, 레인 배치가 role 기준이라
+            // 비면 도형이 어느 레인에도 못 들어간다. 직전 활동의 역할을 물려준다.
+            const roleOfNode = {};
+            (d.activities || []).forEach((a) => (roleOfNode[a.id] = a.role || defaultRole));
+
+            const prevRole = (id) => {
+                const seq = (d.sequences || []).find((s) => s.target === id);
+                return seq ? roleOfNode[seq.source] || defaultRole : defaultRole;
+            };
+
+            const elements = [];
+            (d.events || []).forEach((e) =>
+                elements.push({
+                    elementType: 'Event',
+                    id: e.id,
+                    name: e.name,
+                    type: EV[e.type] || 'StartEvent',
+                    role: e.role || defaultRole,
+                    description: e.description || ''
+                })
+            );
+            (d.activities || []).forEach((a) =>
+                elements.push({
+                    elementType: 'Activity',
+                    id: a.id,
+                    name: a.name,
+                    type: ACT[a.type] || 'UserActivity',
+                    role: a.role || defaultRole,
+                    description: a.description || '',
+                    instruction: a.instruction || '',
+                    inputData: a.inputData || [],
+                    outputData: a.outputData || [],
+                    checkpoints: a.checkpoints || [],
+                    agent: a.agent || '',
+                    agentMode: a.agentMode || '',
+                    orchestration: a.orchestration || '',
+                    duration: a.duration || 1
+                })
+            );
+            (d.gateways || []).forEach((g) =>
+                elements.push({
+                    elementType: 'Gateway',
+                    id: g.id,
+                    name: g.name || '',
+                    type: GW[g.type] || 'ExclusiveGateway',
+                    role: g.role || prevRole(g.id),
+                    description: g.description || ''
+                })
+            );
+            (d.sequences || []).forEach((s) =>
+                elements.push({
+                    elementType: 'Sequence',
+                    id: s.id,
+                    source: s.source,
+                    target: s.target,
+                    condition: s.condition || ''
+                })
+            );
+
+            return {
+                processDefinitionId: d.processDefinitionId,
+                processDefinitionName: d.processDefinitionName,
+                description: d.description || '',
+                isHorizontal: d.isHorizontal !== false,
+                data: d.data || [],
+                roles: roles.length ? roles : [{ name: defaultRole, endpoint: '', resolutionRule: '' }],
+                elements,
+                subProcesses: []
+            };
+        },
+        /** 도출된 정의 JSON → BPMN XML (기존 모델러가 그대로 읽는 형식) */
+        toBpmn(definition) {
+            if (!definition) return '';
+            try {
+                const model = this.toElementsFormat(definition);
+                return this.createBpmnXml(model, model.isHorizontal) || '';
+            } catch (e) {
+                console.error('[mining] BPMN 변환 실패:', e);
+                this.error = `BPMN 변환 실패: ${e?.message || e}`;
+                return '';
+            }
+        },
+        formatDate(v) {
+            if (!v) return '';
+            const d = new Date(v);
+            if (isNaN(d.getTime())) return String(v).slice(0, 16);
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        },
+        /** 이 화면에서 낸 신규 프로세스 제안 목록. 기존 PR 승인 틀(resource_pull_requests)을 그대로 쓴다. */
+        async loadProposals(procDefId) {
+            if (!procDefId) return;
+            try {
+                this.proposals = await backend.getResourcePrRecords('bpmn', procDefId);
+            } catch (e) {
+                console.warn('[mining] 제안 목록 조회 실패:', e);
+                this.proposals = [];
+            }
+        },
+        /**
+         * 도출된 프로세스를 실행 가능한 형태로 전환한다.
+         *
+         * 이미 BPMN 으로 모델링된 결과가 있으므로, 사용자가 프로세스를 말로 다시
+         * 설명할 이유가 없다. 전환용 대화방을 만들어 **도출된 정의를 그대로 실어**
+         * 보내고 그 방으로 이동한다. 대화창은 열리자마자 생성 단계로 들어간다.
+         */
+        async convertToProcess() {
+            if (!this.discovered?.definition) {
+                this.error = '도출된 프로세스가 아직 준비되지 않았습니다.';
+                return;
+            }
+            this.converting = true;
+            try {
+                const d = this.discovered.definition;
+                // 브라우저 표준 UUID 를 쓴다(자체 uuid 생성기는 충돌이 관측됐다)
+                const roomId = crypto.randomUUID();
+                const uid = localStorage.getItem('uid');
+
+                const { error: roomErr } = await window.$supabase.from('chat_rooms').insert({
+                    id: roomId,
+                    tenant_id: this.tenantId,
+                    name: `${d.processDefinitionName} 실행 전환`,
+                    participants: [
+                        {
+                            id: uid,
+                            email: localStorage.getItem('email'),
+                            username: localStorage.getItem('userName') || 'demo',
+                            profile: '/assets/images/profile/user-3.jpg',
+                            is_agent: null,
+                            agent_type: null
+                        },
+                        {
+                            id: 'process-gpt-agent',
+                            email: null,
+                            username: 'Process GPT Agent',
+                            profile: '/images/chat-icon.png',
+                            is_agent: true,
+                            agent_type: 'agent'
+                        }
+                    ],
+                    message: { msg: 'NEW', type: 'text', createdAt: new Date().toISOString() },
+                    // 어디서 온 전환인지 남긴다
+                    context: {
+                        identification: {
+                            source: 'handover-mining',
+                            process_definition_id: d.processDefinitionId,
+                            case_count: this.discovered.stats.case_count
+                        }
+                    }
+                });
+                if (roomErr) throw new Error(`대화방 생성 실패: ${roomErr.message}`);
+
+                // 사람이 다시 서술하지 않는다. 도출된 정의를 그대로 실어 보낸다.
+                const msgUuid = crypto.randomUUID();
+                const { error: msgErr } = await window.$supabase.from('chats').insert({
+                    uuid: msgUuid,
+                    id: roomId,
+                    tenant_id: this.tenantId,
+                    messages: {
+                        role: 'user',
+                        name: localStorage.getItem('userName') || 'demo',
+                        email: localStorage.getItem('email') || '',
+                        content: this.buildConversionRequest(d),
+                        timeStamp: new Date().toISOString()
+                    }
+                });
+                if (msgErr) throw new Error(`요청문 저장 실패: ${msgErr.message}`);
+
+                this.$router.push(`/chat?roomId=${roomId}&autosend=1`);
+            } catch (e) {
+                this.error = e?.message || String(e);
+            } finally {
+                this.converting = false;
+            }
+        },
+        /** 도출 결과를 생성 요청문으로 편다(사람이 타이핑하지 않는다). */
+        buildConversionRequest(d) {
+            // miningFlow 는 렌더용 computed 라 비어 있을 수 있다. 정의에서 직접 편다.
+            const order = (Array.isArray(this.miningFlow) ? this.miningFlow : []).filter((n) => n.kind === 'activity');
+            const activities = order.length ? order : (d.activities || []).map((a) => ({ ...a, kind: 'activity' }));
+            const optional = new Set(this.optionalActivityNames(d));
+            const lines = [
+                `인계 기록에서 식별된 업무 흐름입니다. 이대로 실행 가능한 프로세스로 만들어 주세요.`,
+                ``,
+                `[${d.processDefinitionName}]`
+            ];
+            activities.forEach((a, i) => {
+                const tag = a.agent ? ` — ${a.role}(자동 수행, ${a.orchestration})` : ` — ${a.role}`;
+                const opt = optional.has(a.name) ? ' (조건에 따라 건너뜀)' : '';
+                lines.push(`${i + 1}) ${a.name}${tag}${opt}`);
+            });
+            lines.push('');
+            lines.push(`관측 근거: 업무 케이스 ${this.discovered.stats.case_count}건`);
+            (this.discovered.stats.variants || []).forEach((v) => {
+                lines.push(`- (${v.count}건) ${v.trace.join(' → ')}`);
+            });
+            return lines.join('\n');
+        },
+        /** 배타 분기(split) 뒤에 달린 활동 = 건너뛸 수 있는 단계 */
+        optionalActivityNames(d) {
+            const outDeg = {};
+            (d.sequences || []).forEach((s) => (outDeg[s.source] = (outDeg[s.source] || 0) + 1));
+            const splits = new Set(
+                (d.gateways || []).filter((g) => g.type === 'exclusiveGateway' && (outDeg[g.id] || 0) >= 2).map((g) => g.id)
+            );
+            const actById = {};
+            (d.activities || []).forEach((a) => (actById[a.id] = a));
+            const out = [];
+            (d.sequences || []).forEach((s) => {
+                if (splits.has(s.source) && actById[s.target]) out.push(actById[s.target].name);
+            });
+            return out;
+        },
+        async proposePr() {
+            this.proposing = true;
+            try {
+                const r = await processMiner.mine({ tenant_id: this.tenantId, dry_run: false });
+                this.prResult = r.pr || null;
+                await this.loadProposals(this.discovered?.definition?.processDefinitionId);
+            } catch (e) {
+                this.error = e?.message || String(e);
+            } finally {
+                this.proposing = false;
+            }
+        }
+    }
+};
+</script>
+
+<style scoped>
+.mining-page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #f4f2f8;
+}
+.mining-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    background: #2d1b45;
+    color: #fff;
+}
+.mining-header__sub {
+    margin-left: 14px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+.mining-body {
+    flex: 1;
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    overflow: hidden;
+}
+.mining-left {
+    flex: 0 0 40%;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.mining-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.mining-section-title {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.mining-section-sub {
+    margin-left: 10px;
+    font-size: 12px;
+    font-weight: 400;
+    color: #7a7a8c;
+}
+.mining-threads {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.mining-thread {
+    background: #fff;
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+.mining-thread__head {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    color: #68369a;
+    margin-bottom: 5px;
+}
+.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.mining-thread__steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 4px;
+}
+.mining-step {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11.5px;
+    background: #f0edf7;
+    border-radius: 20px;
+    padding: 3px 9px;
+}
+.mining-step.is-agent {
+    background: #e6efff;
+    color: #1c4ea8;
+}
+.mining-step.is-implicit {
+    border: 1px dashed #b9a8d6;
+}
+.mining-canvas {
+    flex: 1;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 260px;
+}
+.mining-variants {
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-top: 10px;
+}
+.mining-variant {
+    line-height: 1.75;
+}
+.mining-org {
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+.mining-elig {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    padding: 5px 2px;
+    border-bottom: 1px solid #f4f2f8;
+}
+.mining-elig:last-child {
+    border-bottom: none;
+}
+.mining-elig__act {
+    flex: 0 0 36%;
+    font-weight: 600;
+}
+.mining-elig__who {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.mining-who-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #f0edf7;
+    border-radius: 20px;
+    padding: 2px 8px;
+}
+.mining-who-chip.is-agent {
+    background: #e6efff;
+    color: #1c4ea8;
+}
+.mining-who-ev {
+    margin-left: 4px;
+    opacity: 0.6;
+    font-size: 11px;
+}
+.mining-elig__auto {
+    flex: 0 0 44px;
+    text-align: right;
+    color: #7a7a8c;
+}
+.mining-proposals {
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.mining-proposal {
+    display: flex;
+    align-items: center;
+    font-size: 12.5px;
+    padding: 6px 4px;
+    border-bottom: 1px solid #f0eef5;
+}
+.mining-proposal:last-child {
+    border-bottom: none;
+}
+.mining-variant__count {
+    display: inline-block;
+    min-width: 34px;
+    font-weight: 700;
+    color: #68369a;
+}
+</style>

@@ -1,7 +1,21 @@
 <template>
-    <v-dialog v-model="open" max-width="1100" scrollable>
-        <v-card class="hwpx-editor-dialog">
+    <v-dialog v-model="open" :max-width="officeEditor ? 1400 : 1100" :fullscreen="officeEditor && maximized" scrollable>
+        <v-card class="hwpx-editor-dialog" :class="{ 'is-maximized': officeEditor && maximized }">
+            <!-- 문서 편집기가 켜져 있으면 원본 형식 그대로 연다(hwpx 외 docx·xlsx·pptx·pdf 등도) -->
+            <OfficeEditorFrame
+                v-if="officeEditor"
+                v-model:maximized="maximized"
+                :fileUrl="currentFileUrl"
+                :name="name"
+                :readOnly="readOnly"
+                :context="context"
+                maximizable
+                closable
+                @close="open = false"
+                @saved="handleOfficeSaved"
+            />
             <HwpxViewer
+                v-else
                 ref="viewer"
                 :htmlUrl="currentHtmlUrl"
                 :ext="'.hwpx'"
@@ -19,23 +33,28 @@
 // 편집/저장 배선은 채팅(ChatRoomPage)과 동일하게 office-mcp(edit_hwpx_page_html / save_hwpx_from_html)를
 // JSON-RPC로 직접 호출한다. hwpx_url(file_url)로 원본을 받아 편집을 반영하고 결과 URL을 돌려받는다.
 import HwpxViewer from '@/components/HwpxViewer.vue';
+import OfficeEditorFrame from '@/components/OfficeEditorFrame.vue';
+import { canOpenInOfficeEditor } from '@/utils/officeEditor';
 
 export default {
     name: 'HwpxEditorDialog',
-    components: { HwpxViewer },
+    components: { HwpxViewer, OfficeEditorFrame },
     props: {
         modelValue: { type: Boolean, default: false },
         htmlUrl: { type: String, default: '' },
         fileUrl: { type: String, default: '' },
         name: { type: String, default: 'document.hwpx' },
-        readOnly: { type: Boolean, default: false }
+        readOnly: { type: Boolean, default: false },
+        /** 업무 맥락(문서 편집기 AI 에 넘긴다) */
+        context: { type: Object, default: null }
     },
     emits: ['update:modelValue', 'updated'],
     data() {
         return {
             currentHtmlUrl: this.htmlUrl,
             currentFileUrl: this.fileUrl,
-            downloadLoading: false
+            downloadLoading: false,
+            maximized: false
         };
     },
     computed: {
@@ -46,6 +65,9 @@ export default {
             set(v) {
                 this.$emit('update:modelValue', v);
             }
+        },
+        officeEditor() {
+            return canOpenInOfficeEditor(this.name || this.currentFileUrl) && !!this.currentFileUrl;
         }
     },
     watch: {
@@ -105,6 +127,13 @@ export default {
             if (!response.ok) throw new Error(`HWPX MCP error: ${response.status}`);
             const data = await response.json();
             return this.parseMcpToolResult(data);
+        },
+        handleOfficeSaved({ url, name }) {
+            if (!url) return;
+            this.currentFileUrl = url;
+            // 편집본에는 HTML 투영본이 없다: html_url 을 비워 예전 투영본이 남지 않게 한다
+            this.currentHtmlUrl = '';
+            this.$emit('updated', { fileUrl: url, htmlUrl: '', name: name || this.name });
         },
         viewerCall(method, ...args) {
             const v = this.$refs.viewer;
@@ -191,6 +220,9 @@ export default {
 </script>
 
 <style scoped>
+.hwpx-editor-dialog.is-maximized {
+    height: 100vh;
+}
 .hwpx-editor-dialog {
     height: 85vh;
     display: flex;

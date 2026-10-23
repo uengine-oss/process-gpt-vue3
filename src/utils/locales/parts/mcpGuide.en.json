@@ -1,0 +1,114 @@
+{
+  "mcpGuide": {
+    "title": "Integration Standards and Layers",
+    "subtitle": "What an internal business system must follow when implementing an MCP server.",
+    "backToList": "Server List",
+    "tabs": {
+      "layers": "Layer Overview",
+      "standard": "Integration Standards",
+      "check": "Conformance Check"
+    },
+    "criteria": {
+      "title": "One-line decision rule",
+      "processCond": "A long-running flow involving multiple departments and roles, including human intervention",
+      "processResult": "→ Process GPT process",
+      "n8nCond": "Flow control over simple tasks; mechanical work",
+      "n8nResult": "→ n8n workflow (registered as the agent of a single process task)",
+      "toolCond": "A capability that completes in a single call",
+      "toolResult": "→ MCP Tool",
+      "notePrefix": "The dividing line is not complexity but ",
+      "noteStrong": "organizational scope",
+      "noteSuffix": ". An n8n workflow may have dozens of nodes, yet it is still mechanical control flow; the moment departments, roles, approvals, and waiting appear, the layer changes."
+    },
+    "layers": {
+      "processName": "Business Process",
+      "processDesc": "A long-running business flow involving people and agents. It owns approvals, roles, state, SLAs, and auditing.",
+      "automationName": "Task Automation",
+      "automationDesc": "Deterministic system-to-system connection and transformation that completes inside a single task. n8n workflows belong here and are registered as an agent type.",
+      "capabilityName": "Capability",
+      "capabilityDesc": "A stateless, single-call tool — a Tool on an MCP server.",
+      "containment": "MCP Tool ⊂ n8n workflow ⊂ Process GPT process"
+    },
+    "comparison": {
+      "title": "n8n workflow vs. process",
+      "aspect": "Aspect",
+      "n8n": "n8n workflow",
+      "process": "Process GPT process",
+      "rows": {
+        "position": {
+          "aspect": "Position",
+          "n8n": "A means of executing a task (agent type)",
+          "process": "The top level of business orchestration"
+        },
+        "modeling": {
+          "aspect": "Modeling standard",
+          "n8n": "Vendor-specific node graph",
+          "process": "BPMN 2.0 + DMN"
+        },
+        "lifetime": {
+          "aspect": "Execution lifetime",
+          "n8n": "Seconds to minutes, a single execution context",
+          "process": "Days to months, with suspend, resume, and wait"
+        },
+        "human": {
+          "aspect": "Human intervention",
+          "n8n": "None by design",
+          "process": "A first-class concept — work items, forms, approvals, rejections"
+        },
+        "state": {
+          "aspect": "State and data",
+          "n8n": "No state between executions",
+          "process": "Instance variables and a state machine"
+        },
+        "roles": {
+          "aspect": "Roles and organization",
+          "n8n": "None",
+          "process": "Participants, role binding, org-chart integration"
+        },
+        "branching": {
+          "aspect": "Branching",
+          "n8n": "if / switch nodes",
+          "process": "Gateways + DMN decision tables + decision history"
+        },
+        "errors": {
+          "aspect": "Error handling",
+          "n8n": "Node retries",
+          "process": "Compensating transactions, rework, escalation"
+        },
+        "observability": {
+          "aspect": "Observability unit",
+          "n8n": "Workflow execution",
+          "process": "Instance → task → agent → MCP/LLM span"
+        },
+        "audit": {
+          "aspect": "Audit and compliance",
+          "n8n": "Execution logs",
+          "process": "Approval history, SLAs, KPIs"
+        },
+        "change": {
+          "aspect": "Change management",
+          "n8n": "Workflow versions",
+          "process": "Process definition versions and version tags"
+        },
+        "examples": {
+          "aspect": "Good fit",
+          "n8n": "Slack notifications, spreadsheet-to-DB loading",
+          "process": "Partner onboarding, leave approval, proposal review"
+        }
+      }
+    },
+    "check": {
+      "intro": "Verify that your MCP server follows the standards before registering it.",
+      "transport": "Transport",
+      "run": "Check",
+      "connected": "Connected",
+      "failed": "Connection failed",
+      "toolCount": "{n} tools",
+      "violations": "{n} required rules violated"
+    },
+    "level": {
+      "required": "Required",
+      "recommended": "Recommended"
+    }
+  }
+}

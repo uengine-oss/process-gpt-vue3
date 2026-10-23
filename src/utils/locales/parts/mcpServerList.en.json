@@ -1,0 +1,78 @@
+{
+  "mcpServerList": {
+    "title": "MCP Servers",
+    "subtitle": "Manage registration, versions, permissions, and status in one place.",
+    "guide": "Integration Standards",
+    "addFromGallery": "Add from Gallery",
+    "editJson": "Edit JSON",
+    "register": "Register Server",
+    "cancel": "Cancel",
+    "save": "Save",
+    "filters": {
+      "search": "Search",
+      "category": "Category",
+      "department": "Department",
+      "healthState": "Connection Status"
+    },
+    "noData": "No MCP servers registered.",
+    "availability": "Uptime {n}%",
+    "errorRate": "Errors {n}%",
+    "checkNow": "Check connection now",
+    "detail": "Details",
+    "state": {
+      "healthy": "Healthy",
+      "degraded": "Degraded",
+      "unhealthy": "Unhealthy",
+      "unknown": "Unknown"
+    },
+    "headers": {
+      "server": "Server",
+      "department": "Department",
+      "connection": "Connection",
+      "status": "Status",
+      "tools": "Tools",
+      "calls24h": "24h Calls",
+      "enabled": "Enabled"
+    },
+    "create": {
+      "title": "Register MCP Server",
+      "name": "Server Name *",
+      "nameHint": "Identifier referenced by agents",
+      "displayName": "Display Name",
+      "description": "Description",
+      "transport": "Transport",
+      "category": "Category",
+      "department": "Department",
+      "args": "args (space-separated)",
+      "probeSuccess": "Connected — found {n} tools.",
+      "probeFail": "Connection failed — {error}",
+      "test": "Test Connection",
+      "submit": "Register"
+    },
+    "json": {
+      "helpPrefix": "Paste the standard ",
+      "helpSuffix": " format as-is. Saving updates the servers, versions, and tool catalog; only servers whose connection info changed get a new version.",
+      "prune": "Delete servers not present in the JSON",
+      "export": "Export",
+      "loadFailed": "Failed to load configuration: {error}",
+      "copied": "Copied JSON to clipboard.",
+      "copyFailed": "Copy failed. Please select and copy the text manually.",
+      "invalid": "Invalid JSON: {error}",
+      "missingRoot": "A top-level mcpServers object is required.",
+      "created": "Added {n}",
+      "updated": "Updated {n}",
+      "removed": "Removed {n}",
+      "unchanged": "Unchanged {n}",
+      "noChanges": "No changes."
+    },
+    "loadFailed": "Failed to load servers: {error}",
+    "registered": "Registered '{name}'.",
+    "registerFailed": "Registration failed: {error}",
+    "enabledMsg": "'{name}' is enabled again.",
+    "disabledMsg": "'{name}' has been disabled. It is removed from agents immediately.",
+    "toggleFailed": "Update failed: {error}",
+    "checkOk": "'{name}' connected — {n} tools",
+    "checkFail": "'{name}' connection failed — {error}",
+    "checkFailed": "Check failed: {error}"
+  }
+}

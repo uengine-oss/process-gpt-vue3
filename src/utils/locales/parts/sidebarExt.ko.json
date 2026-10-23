@@ -1,0 +1,11 @@
+{
+  "sidebarExt": {
+    "mcpServers": "MCP 서버",
+    "mcpGallery": "MCP 갤러리",
+    "mcpObservability": "MCP 관측",
+    "integrationStandard": "연계 표준",
+    "agentToolObservability": "에이전트/툴 관측",
+    "requestTopList": "요청 Top List",
+    "mcpHub": "MCP 허브"
+  }
+}

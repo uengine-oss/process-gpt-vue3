@@ -460,7 +460,11 @@
                         </div>
 
                         <!-- 도구 사용 상태 -->
-                        <div v-if="getToolUsageList(item.payload.jobId).length" class="tool-usage-status-list">
+                        <div
+                            v-if="getToolUsageList(item.payload.jobId).length"
+                            class="tool-usage-status-list"
+                            :class="{ 'has-expanded': getToolUsageList(item.payload.jobId).some((_, i) => isToolUsageExpanded(item.payload.jobId, i)) }"
+                        >
                             <div
                                 v-for="(tool, idx) in getToolUsageList(item.payload.jobId)"
                                 :key="`${item.payload.jobId}-${tool.tool_name}-${idx}`"
@@ -487,7 +491,7 @@
                                     v-if="tool.status === 'done' && tool.info && isToolUsageExpanded(item.payload.jobId, idx)"
                                     class="tool-usage-result"
                                 >
-                                    {{ tool.info }}
+                                    <ToolResultView :tool-name="tool.tool_name" :info="tool.info" :args="tool.args" />
                                 </div>
                             </div>
                         </div>
@@ -553,11 +557,14 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import { marked } from 'marked';
 import { parseFileDocument } from '@/utils/upstageParser';
 import BackendFactory from '@/components/api/BackendFactory';
+import ToolResultView from '@/components/ui/ToolResultView.vue';
 
 export default {
+    components: { ToolResultView },
     props: {
         timeline: {
             type: Array,
@@ -844,7 +851,10 @@ export default {
         getToolStatusText(tool) {
             const status =
                 tool.status === 'done' ? this.$t('EventTimeline.toolUsageComplete') : this.$t('EventTimeline.toolUsageInProgress');
-            const detail = tool.query;
+            // 인자에서 사람이 읽을 한 줄을 뽑는다 (text · question · query · sql · schema_name 순)
+            const a = tool.args || {};
+            const pick = typeof a === 'object' ? (a.text || a.question || a.query || a.sql || a.schema_name || a.class_name) : null;
+            const detail = tool.query || (pick ? String(pick).replace(/\s+/g, ' ').slice(0, 90) : null);
             return `${tool.tool_name} ${this.$t('EventTimeline.tool')} ${status}${detail ? ': ' + detail : ''}`;
         },
         toggleToolUsageExpansion(jobId, idx) {
@@ -892,7 +902,7 @@ export default {
             return task.isCrewCompleted ? this.$t('EventTimeline.allCompleted') : this.$t('EventTimeline.taskCompleted');
         },
         formatTime(timestamp) {
-            return new Date(timestamp).toLocaleString('ko-KR', {
+            return new Date(timestamp).toLocaleString(dateLocale(), {
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
@@ -1127,7 +1137,7 @@ export default {
         formatDateTime(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);
-            return date.toLocaleString('ko-KR', {
+            return date.toLocaleString(dateLocale(), {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
@@ -1895,6 +1905,11 @@ export default {
     border-left: 2px solid var(--cds-border);
     max-height: 120px;
     overflow-y: auto;
+}
+
+/* 결과를 펼치면 목록 높이 제한을 푼다 — 120px 안에서는 펼친 결과(후보·점수 표)가 몇 줄만 보였다 */
+.tool-usage-status-list.has-expanded {
+    max-height: none;
 }
 
 .tool-usage-status-item {

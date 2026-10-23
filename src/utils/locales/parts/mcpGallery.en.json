@@ -1,0 +1,21 @@
+{
+  "mcpGallery": {
+    "title": "MCP Gallery",
+    "subtitle": "Pick a verified server and register it right away.",
+    "backToList": "Server List",
+    "tabs": {
+      "curated": "Curated",
+      "registry": "Official Registry"
+    },
+    "searchLabel": "Search Registry",
+    "search": "Search",
+    "noDescription": "No description.",
+    "docs": "Docs",
+    "install": "Install",
+    "installTitle": "Install {name}",
+    "serverName": "Server Name",
+    "department": "Department",
+    "cancel": "Cancel",
+    "installed": "Registered — found {n} tools."
+  }
+}

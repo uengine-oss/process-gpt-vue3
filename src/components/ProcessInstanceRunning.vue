@@ -57,6 +57,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import BackendFactory from '@/components/api/BackendFactory';
 import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 const backend = BackendFactory.createBackend();
@@ -110,7 +111,7 @@ export default {
     computed: {
         formattedStartDate() {
             if (!this.instance.startDate) return '';
-            return new Date(this.instance.startDate).toLocaleString('ko-KR');
+            return new Date(this.instance.startDate).toLocaleString(dateLocale());
         },
         isMobile() {
             return window.innerWidth <= 768;

@@ -33,6 +33,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
@@ -59,7 +60,7 @@ export default {
         formatDatetime(dateStr) {
             if (!dateStr) return '-';
             const d = new Date(dateStr);
-            return d.toLocaleString('ko-KR');
+            return d.toLocaleString(dateLocale());
         },
 
         getLabelForKey(key) {

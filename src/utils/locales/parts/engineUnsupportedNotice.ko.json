@@ -1,0 +1,12 @@
+{
+  "engineUnsupportedNotice": {
+    "noRecord": {
+      "title": "이 태스크에는 실행 기록이 없습니다.",
+      "body": "아직 실행되지 않았거나, 실행 이력이 보존 기간을 지나 정리된 태스크입니다."
+    },
+    "unsupported": {
+      "title": "이 엔진({engine})은 아직 LLM·툴 상세 추적을 지원하지 않습니다.",
+      "body": "태스크 소요시간과 이벤트 타임라인은 그대로 보이지만, 프롬프트와 툴 인자까지 내려가는 프로파일링은 {deepagents} · {completion} 엔진에서만 제공됩니다."
+    }
+  }
+}

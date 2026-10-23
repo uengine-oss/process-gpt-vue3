@@ -1,0 +1,14 @@
+{
+  "leadTimeBreakdownBar": {
+    "title": "리드타임 분해",
+    "estimatedIncluded": "추정치 포함",
+    "labels": {
+      "human_work": "사람 판단",
+      "agent_work": "에이전트 수행",
+      "review_wait": "검토 대기",
+      "queue_wait": "큐 대기",
+      "rework": "재작업",
+      "idle_gap": "유휴"
+    }
+  }
+}

@@ -197,6 +197,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import workAssistantAgentService from '@/services/WorkAssistantAgentService.js';
 import BackendFactory from '@/components/api/BackendFactory';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
@@ -1323,7 +1324,7 @@ export default {
         formatTime(timestamp) {
             if (!timestamp) return '';
             const date = new Date(timestamp);
-            return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+            return date.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
         },
 
         // 텍스트 자르기

@@ -475,6 +475,53 @@ const allRoutes = [
         component: () => import('@/views/analytics/Dashboard.vue')
     },
     {
+        name: 'Instance Profiler',
+        path: '/analytics/instances/:procInstId',
+        component: () => import('@/views/analytics/InstanceProfiler.vue')
+    },
+    {
+        name: 'Tool Analytics',
+        path: '/analytics/tools',
+        component: () => import('@/views/analytics/ToolAnalytics.vue')
+    },
+    {
+        name: 'Resource Analytics',
+        path: '/analytics/resources',
+        component: () => import('@/views/analytics/ResourceAnalytics.vue')
+    },
+    {
+        name: 'Definition Bottlenecks',
+        path: '/analytics/definitions/:procDefId/bottlenecks',
+        component: () => import('@/views/analytics/DefinitionBottlenecks.vue')
+    },
+
+    // ============== MCP Hub Routes ==============
+    {
+        name: 'MCP Servers',
+        path: '/mcp-hub',
+        component: () => import('@/views/mcp-hub/McpServerList.vue')
+    },
+    {
+        name: 'MCP Server Detail',
+        path: '/mcp-hub/servers/:id',
+        component: () => import('@/views/mcp-hub/McpServerDetail.vue')
+    },
+    {
+        name: 'MCP Gallery',
+        path: '/mcp-hub/gallery',
+        component: () => import('@/views/mcp-hub/McpGallery.vue')
+    },
+    {
+        name: 'MCP Observability',
+        path: '/mcp-hub/observability',
+        component: () => import('@/views/mcp-hub/McpObservability.vue')
+    },
+    {
+        name: 'MCP Guide',
+        path: '/mcp-hub/guide',
+        component: () => import('@/views/mcp-hub/McpGuide.vue')
+    },
+    {
         name: 'Heatmap',
         path: '/analytics/heatmap',
         component: () => import('@/views/analytics/BottleneckAnalysis.vue')

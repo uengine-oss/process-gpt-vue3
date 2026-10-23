@@ -107,6 +107,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import VTreeview from 'vue3-treeview';
@@ -673,7 +674,7 @@ export default {
                     ['설명', processDefinition.description || ''],
                     ['수평 레이아웃', processDefinition.isHorizontal ? '예' : '아니오'],
                     ['자동 레이아웃', processDefinition.isAutoLayout ? '예' : '아니오'],
-                    ['생성일', new Date().toLocaleDateString('ko-KR')]
+                    ['생성일', new Date().toLocaleDateString(dateLocale())]
                 ];
                 const processInfoSheet = workbook.addWorksheet('1.프로세스정보');
                 processInfoSheet.addRows(processInfoData);

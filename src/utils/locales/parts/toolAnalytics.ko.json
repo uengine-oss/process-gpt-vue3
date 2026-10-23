@@ -1,0 +1,39 @@
+{
+  "toolAnalytics": {
+    "title": "도구 분석",
+    "subtitle": "어떤 도구가 어느 프로세스·부서에서 얼마나 호출되고 실패하는지",
+    "reload": "다시 읽기",
+    "rowDim": "행 (분석 대상)",
+    "colDim": "열 (비교 축)",
+    "measure": "측정값",
+    "total": "합계",
+    "noData": "조건에 맞는 데이터가 없습니다.",
+    "valueCol": "값",
+    "unknown": "(미상)",
+    "toolStatus": "도구별 현황",
+    "deptToolTop": "부서별 도구 상위",
+    "coverageWarning": "도구 호출 {miss}건({pct}%)이 프로세스에 귀속되지 않아 '(미상)'으로 집계됩니다.",
+    "loadFailed": "불러오지 못했습니다: {message}",
+    "coverage": {
+      "toolCalls": "도구 호출",
+      "withProcess": "프로세스 귀속",
+      "withActivity": "액티비티 귀속",
+      "withDepartment": "부서 귀속",
+      "count": "{n}건"
+    },
+    "toolHeaders": {
+      "tool": "도구",
+      "server": "서버",
+      "providerDept": "제공 부서",
+      "calls": "호출",
+      "errorRate": "오류율",
+      "avgMs": "평균(ms)",
+      "processes": "프로세스"
+    },
+    "deptHeaders": {
+      "department": "부서",
+      "tool": "도구",
+      "calls": "호출"
+    }
+  }
+}

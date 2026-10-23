@@ -1,0 +1,39 @@
+{
+  "toolAnalytics": {
+    "title": "Tool Analytics",
+    "subtitle": "Which tools are called — and fail — in which processes and departments",
+    "reload": "Reload",
+    "rowDim": "Row (Subject)",
+    "colDim": "Column (Comparison)",
+    "measure": "Measure",
+    "total": "Total",
+    "noData": "No data matches the current conditions.",
+    "valueCol": "Value",
+    "unknown": "(Unknown)",
+    "toolStatus": "Tool Overview",
+    "deptToolTop": "Top Tools by Department",
+    "coverageWarning": "{miss} tool calls ({pct}%) are not linked to a process and are counted as \"(Unknown)\".",
+    "loadFailed": "Could not load: {message}",
+    "coverage": {
+      "toolCalls": "Tool Calls",
+      "withProcess": "Linked to Process",
+      "withActivity": "Linked to Activity",
+      "withDepartment": "Linked to Department",
+      "count": "{n} calls"
+    },
+    "toolHeaders": {
+      "tool": "Tool",
+      "server": "Server",
+      "providerDept": "Provider Dept",
+      "calls": "Calls",
+      "errorRate": "Error Rate",
+      "avgMs": "Avg (ms)",
+      "processes": "Processes"
+    },
+    "deptHeaders": {
+      "department": "Department",
+      "tool": "Tool",
+      "calls": "Calls"
+    }
+  }
+}

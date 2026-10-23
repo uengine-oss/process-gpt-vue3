@@ -1,0 +1,42 @@
+{
+  "instanceProfiler": {
+    "title": "Execution Profile",
+    "refresh": "Refresh",
+    "spansSection": "Execution Spans",
+    "axis": {
+      "wall": "Wall-Clock Axis",
+      "work": "Work-Time Axis"
+    },
+    "drillHint": "Click a bar to drill down",
+    "backToSpans": "Back to span list",
+    "spanDetail": "Span Details",
+    "loading": "Loading…",
+    "noSpans": "No LLM or tool calls were recorded for this task.",
+    "stats": {
+      "spans": "{n} spans",
+      "tokens": "Tokens {v}",
+      "cost": "Cost {v}"
+    },
+    "spanHint": "Click a bar to view the prompt and arguments.",
+    "unassigned": "(unassigned)",
+    "estimated": "est.",
+    "segments": {
+      "human_work": "Human Decision",
+      "agent_work": "Agent Work",
+      "review_wait": "Review Wait",
+      "queue_wait": "Queue Wait",
+      "rework": "Rework",
+      "idle_gap": "Idle"
+    },
+    "kpi": {
+      "totalDuration": "Total Duration",
+      "activities": "Activities",
+      "tasks": "Tasks",
+      "errors": "Errors",
+      "tokens": "Tokens",
+      "cost": "Cost"
+    },
+    "spanLoadFailed": "Failed to load span: {message}",
+    "loadFailed": "Failed to load: {message}"
+  }
+}

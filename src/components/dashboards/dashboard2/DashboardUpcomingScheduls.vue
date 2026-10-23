@@ -47,6 +47,7 @@
     </v-card>
 </template>
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -138,10 +139,10 @@ export default {
             const [datePart, timePart] = datetime.split('T');
             const date = new Date(datetime);
             if (!timePart) {
-                return new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(date);
+                return new Intl.DateTimeFormat(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric' }).format(date);
             }
             const options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: false };
-            return new Intl.DateTimeFormat('ko-KR', options).format(date);
+            return new Intl.DateTimeFormat(dateLocale(), options).format(date);
         }
     }
 };

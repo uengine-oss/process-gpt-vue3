@@ -1,0 +1,8 @@
+{
+  "spanWaterfall": {
+    "collapsedWait": "Collapsed Wait",
+    "collapsedWaitTitle": "{label} wait (collapsed)",
+    "noTime": "No timing data",
+    "empty": "No spans to display."
+  }
+}

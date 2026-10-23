@@ -12,6 +12,9 @@ class StorageBaseError extends Error {
 export default class StorageBaseSupabase {
     //extends StorageBase{
 
+    /** 로그인 경로에서 백엔드 응답을 기다리는 상한(ms). 넘으면 연결 실패로 안내한다. */
+    static LOGIN_TIMEOUT_MS = 8000;
+
     async recordAuthAudit({ action, email, success, errorMessage, tenantId, metadata }) {
         try {
             // const supabase = window.$supabase;
@@ -204,18 +207,123 @@ export default class StorageBaseSupabase {
         }
     }
 
+    /**
+     * 백엔드에 닿지 못해 생긴 실패인지 판별한다.
+     *
+     * 이걸 구분하지 않으면 supabase 가 잠깐 끊긴 상황이 '가입되지 않은 이메일'로
+     * 표시된다. 사용자는 멀쩡한 자기 계정을 의심하게 되고, 실제 원인(서버 다운)은
+     * 화면 어디에도 나타나지 않는다.
+     */
+    /**
+     * 로그인 경로의 호출에 상한을 둔다.
+     *
+     * 백엔드가 죽어 있으면 supabase-js 는 오류를 돌려주는 대신 재시도하며
+     * promise 를 계속 pending 으로 둔다. 그러면 화면에는 아무 일도 일어나지 않고
+     * 사용자는 '눌렀는데 반응이 없는' 상태에 갇힌다. 실제로 관측된 증상이다.
+     */
+    static withTimeout(promise, ms, label) {
+        let timer;
+        const timeout = new Promise((_, reject) => {
+            timer = setTimeout(() => {
+                const e = new Error(`${label} 응답 없음 (${ms}ms 초과)`);
+                e.isTimeout = true;
+                reject(e);
+            }, ms);
+        });
+        return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+    }
+
+    static isConnectivityError(e) {
+        if (e?.isTimeout) return true;
+        const msg = [e?.message, e?.cause?.message, e?.cause?.details, String(e || '')].filter(Boolean).join(' ');
+        return /Failed to fetch|NetworkError|ERR_CONNECTION|ERR_NETWORK|fetch failed|ECONNREFUSED|Load failed|network/i.test(msg);
+    }
+
+    /**
+     * 로그인 실패를 사용자에게 알리고, 감사 로그도 남긴다.
+     *
+     * 순서가 중요하다. 감사 로그는 같은 백엔드를 쓰기 때문에, 서버가 죽어 있으면
+     * 그 호출이 재시도하며 매달린다. 그걸 먼저 await 하면 정작 사용자는 한참 동안
+     * 아무 메시지도 못 본다 — 지금 고치려는 '조용한 실패' 가 그대로 재현된다.
+     * 그래서 안내를 먼저 띄우고, 감사 로그는 뒤에서 던져만 둔다.
+     */
+    async reportSignInFailure(email, reason, i18nKey) {
+        let message = i18nKey;
+        try {
+            message = window.$i18n.global.t(`StorageBaseSupabase.${i18nKey}`);
+        } catch (e) {
+            console.warn('[auth] 메시지 번역 실패:', e?.message || e);
+        }
+
+        try {
+            await window.$app_.try({
+                action: () => Promise.reject(new Error(reason)),
+                errorMsg: message
+            });
+        } catch (e) {
+            /* $app_.try 는 메시지 표시가 목적이라 여기서 더 할 일이 없다 */
+        }
+
+        // 감사 로그는 사용자를 기다리게 하지 않는다.
+        Promise.resolve()
+            .then(() =>
+                this.recordAuthAudit({
+                    action: 'login',
+                    email,
+                    success: false,
+                    errorMessage: reason,
+                    tenantId: window.$tenantName || null,
+                    metadata: { method: 'password', reason }
+                })
+            )
+            .catch((e) => console.warn('[auth] 감사 로그 기록 실패:', e?.message || e));
+    }
+
     async signIn(userInfo) {
         try {
             const filter = { match: { email: userInfo.email } };
             if (window.$tenantName) {
                 filter.match.tenant_id = window.$tenantName;
             }
-            const existUser = await this.getObject('users', filter);
+            // 사전 조회가 '없음' 인지 '못 물어봄' 인지 구분한다.
+            let existUser;
+            try {
+                existUser = await StorageBaseSupabase.withTimeout(
+                    this.getObject('users', filter),
+                    StorageBaseSupabase.LOGIN_TIMEOUT_MS,
+                    '사용자 조회'
+                );
+            } catch (lookupError) {
+                if (StorageBaseSupabase.isConnectivityError(lookupError)) {
+                    await this.reportSignInFailure(userInfo.email, 'connection_failed', 'connectionFailed');
+                    return { error: true, errorMsg: window.$i18n.global.t('StorageBaseSupabase.connectionFailed') };
+                }
+                await this.reportSignInFailure(userInfo.email, lookupError?.message || 'lookup_failed', 'serverError');
+                return { error: true, errorMsg: window.$i18n.global.t('StorageBaseSupabase.serverError') };
+            }
             if ((window.$isTenantServer && !window.$tenantName) || (existUser && existUser.id)) {
-                const result = await window.$supabase.auth.signInWithPassword({
-                    email: userInfo.email,
-                    password: userInfo.password
-                });
+                let result;
+                try {
+                    result = await StorageBaseSupabase.withTimeout(
+                        window.$supabase.auth.signInWithPassword({
+                            email: userInfo.email,
+                            password: userInfo.password
+                        }),
+                        StorageBaseSupabase.LOGIN_TIMEOUT_MS,
+                        '인증 요청'
+                    );
+                } catch (authError) {
+                    const key = StorageBaseSupabase.isConnectivityError(authError) ? 'connectionFailed' : 'serverError';
+                    await this.reportSignInFailure(userInfo.email, authError?.message || 'auth_call_failed', key);
+                    return { error: true, errorMsg: window.$i18n.global.t(`StorageBaseSupabase.${key}`) };
+                }
+
+                // 인증 서버가 500 류로 답한 경우도 자격 문제로 오인하면 안 된다.
+                if (result.error && (result.error.status >= 500 || StorageBaseSupabase.isConnectivityError(result.error))) {
+                    const key = StorageBaseSupabase.isConnectivityError(result.error) ? 'connectionFailed' : 'serverError';
+                    await this.reportSignInFailure(userInfo.email, result.error.message || 'auth_server_error', key);
+                    return { error: true, errorMsg: window.$i18n.global.t(`StorageBaseSupabase.${key}`) };
+                }
 
                 if (!result.error) {
                     // 로그인 성공
@@ -246,7 +354,19 @@ export default class StorageBaseSupabase {
                         tenantId: window.$tenantName || null,
                         metadata: { method: 'password' }
                     });
-                    const users = await this.list('users');
+                    let users;
+                    try {
+                        users = await StorageBaseSupabase.withTimeout(
+                            this.list('users'),
+                            StorageBaseSupabase.LOGIN_TIMEOUT_MS,
+                            '사용자 목록 조회'
+                        );
+                    } catch (listError) {
+                        // 원인을 되묻는 조회조차 실패했다 = 자격 문제라고 말할 근거가 없다.
+                        const key = StorageBaseSupabase.isConnectivityError(listError) ? 'connectionFailed' : 'serverError';
+                        await this.reportSignInFailure(userInfo.email, listError?.message || 'diagnose_failed', key);
+                        return { error: true, errorMsg: window.$i18n.global.t(`StorageBaseSupabase.${key}`) };
+                    }
                     if (users && users.length > 0) {
                         const checkedId = users.some((user) => user.email == userInfo.email);
                         if (checkedId) {

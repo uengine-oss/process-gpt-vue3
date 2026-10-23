@@ -1,0 +1,114 @@
+{
+  "mcpGuide": {
+    "title": "연계 표준과 계층",
+    "subtitle": "사내 업무시스템이 MCP 서버를 구현할 때 지켜야 할 것들.",
+    "backToList": "서버 목록",
+    "tabs": {
+      "layers": "계층 개요",
+      "standard": "연계 표준",
+      "check": "적합성 검사"
+    },
+    "criteria": {
+      "title": "한 줄 판별 기준",
+      "processCond": "여러 부서·역할이 관여하고(사람 개입 포함) 오래 지속되는 흐름",
+      "processResult": "→ Process GPT 프로세스",
+      "n8nCond": "단순 작업의 흐름·제어, 기계적 작업",
+      "n8nResult": "→ n8n 워크플로우 (프로세스 한 태스크의 에이전트로 등록)",
+      "toolCond": "단일 호출로 끝나는 능력",
+      "toolResult": "→ MCP Tool",
+      "notePrefix": "가르는 축은 복잡도가 아니라 ",
+      "noteStrong": "조직성",
+      "noteSuffix": "입니다. n8n 워크플로우도 노드가 수십 개일 수 있지만 그것은 여전히 기계적 제어 흐름이고, 부서·역할·승인·대기가 등장하는 순간 계층이 바뀝니다."
+    },
+    "layers": {
+      "processName": "업무 프로세스",
+      "processDesc": "사람과 에이전트가 참여하는 장기 실행 업무 흐름. 승인 · 역할 · 상태 · SLA · 감사를 책임집니다.",
+      "automationName": "작업 자동화",
+      "automationDesc": "한 태스크 안에서 결정적으로 끝나는 시스템 간 연결·변환. n8n 워크플로우가 여기에 해당하며, 에이전트 타입으로 등록됩니다.",
+      "capabilityName": "능력",
+      "capabilityDesc": "상태 없는 단일 호출 단위 도구 — MCP 서버의 Tool.",
+      "containment": "MCP Tool ⊂ n8n 워크플로우 ⊂ Process GPT 프로세스"
+    },
+    "comparison": {
+      "title": "n8n 워크플로우와 프로세스의 차이",
+      "aspect": "관점",
+      "n8n": "n8n 워크플로우",
+      "process": "Process GPT 프로세스",
+      "rows": {
+        "position": {
+          "aspect": "위상",
+          "n8n": "태스크 실행 수단(에이전트 타입)",
+          "process": "업무 오케스트레이션 최상위"
+        },
+        "modeling": {
+          "aspect": "모델링 표준",
+          "n8n": "벤더 고유 노드 그래프",
+          "process": "BPMN 2.0 + DMN"
+        },
+        "lifetime": {
+          "aspect": "실행 수명",
+          "n8n": "초 ~ 분, 단일 실행 컨텍스트",
+          "process": "일 ~ 월, 중단 · 재개 · 대기"
+        },
+        "human": {
+          "aspect": "사람 개입",
+          "n8n": "원칙적으로 없음",
+          "process": "1급 개념 — 워크아이템 · 폼 · 결재 · 반려"
+        },
+        "state": {
+          "aspect": "상태 · 데이터",
+          "n8n": "실행 간 상태 없음",
+          "process": "인스턴스 변수와 상태 머신"
+        },
+        "roles": {
+          "aspect": "역할 · 조직",
+          "n8n": "없음",
+          "process": "참여자 · 역할 바인딩 · 조직도 연동"
+        },
+        "branching": {
+          "aspect": "분기",
+          "n8n": "if / switch 노드",
+          "process": "게이트웨이 + DMN 결정 테이블 + 판단 이력"
+        },
+        "errors": {
+          "aspect": "오류 처리",
+          "n8n": "노드 재시도",
+          "process": "보상 트랜잭션 · 재작업 · 에스컬레이션"
+        },
+        "observability": {
+          "aspect": "관측 단위",
+          "n8n": "워크플로우 실행",
+          "process": "인스턴스 → 태스크 → 에이전트 → MCP/LLM 스팬"
+        },
+        "audit": {
+          "aspect": "감사 · 규정",
+          "n8n": "실행 로그",
+          "process": "승인 이력 · SLA · KPI"
+        },
+        "change": {
+          "aspect": "변경 관리",
+          "n8n": "워크플로우 버전",
+          "process": "프로세스 정의 버전 · 버전 태그"
+        },
+        "examples": {
+          "aspect": "적합한 예",
+          "n8n": "Slack 알림, 스프레드시트→DB 적재",
+          "process": "협력사 온보딩, 휴가 결재, 제안서 검토"
+        }
+      }
+    },
+    "check": {
+      "intro": "구현한 MCP 서버가 표준을 지키는지 등록 전에 확인합니다.",
+      "transport": "전송 방식",
+      "run": "검사",
+      "connected": "연결 성공",
+      "failed": "연결 실패",
+      "toolCount": "툴 {n}개",
+      "violations": "필수 항목 {n}건 위반"
+    },
+    "level": {
+      "required": "필수",
+      "recommended": "권장"
+    }
+  }
+}

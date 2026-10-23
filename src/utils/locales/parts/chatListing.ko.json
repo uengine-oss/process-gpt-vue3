@@ -1,0 +1,7 @@
+{
+  "chatListing": {
+    "justNow": "방금",
+    "minutesAgo": "{n}분 전",
+    "ownAccountIncluded": "- 내 계정은 자동으로 포함됩니다."
+  }
+}

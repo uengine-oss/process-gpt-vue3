@@ -1,0 +1,8 @@
+{
+  "spanWaterfall": {
+    "collapsedWait": "접힌 대기",
+    "collapsedWaitTitle": "{label} 대기 (접힘)",
+    "noTime": "시각 정보 없음",
+    "empty": "표시할 구간이 없습니다."
+  }
+}

@@ -1,3 +1,4 @@
+import { dateLocale } from '@/composables/dateLocale';
 const STATUS_LABELS: Record<string, string> = {
     OPEN: '검토 대기',
     CHANGES_REQUESTED: '변경 요청됨',
@@ -85,13 +86,13 @@ export function formatRelativeTime(ts: string | null | undefined): string {
     if (day < 1) return `${h}시간 전`;
     if (day === 1) return '어제';
     if (day < 7) return `${day}일 전`;
-    return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString(dateLocale(), { month: 'short', day: 'numeric' });
 }
 
 export function formatDate(ts: string | null | undefined): string {
     if (!ts) return '';
     try {
-        return new Date(ts).toLocaleDateString('ko-KR', {
+        return new Date(ts).toLocaleDateString(dateLocale(), {
             month: 'short',
             day: 'numeric',
             hour: '2-digit',

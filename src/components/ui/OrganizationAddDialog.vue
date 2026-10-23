@@ -285,7 +285,11 @@ export default {
                         }
                     };
                 } else {
-                    if (member.agent_type == 'a2a') {
+                    // n8n rides with a2a: both keep what makes them runnable in
+                    // `endpoint` (a remote URL, a workflow id), and the plain
+                    // branch below drops it — which would leave an n8n agent in
+                    // the chart pointing at no workflow.
+                    if (member.agent_type == 'a2a' || member.agent_type == 'n8n') {
                         return {
                             id: member.id,
                             name: member.username,

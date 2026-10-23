@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { dateLocale } from '@/composables/dateLocale';
 // 기업 운영 온톨로지 탐색기 — 애널리틱스 영역에 융합된 뷰.
 // 전략(Strategy/KPI/Initiative) → 프로세스(Process/Task) → 리소스(User/Agent/Team) → 지식(Skill)
 // 4레이어를 계층적(top-down) 스윔레인 그래프로 시각화하고, 각 요소를 원래 편집 화면으로 딥링크한다.
@@ -564,7 +565,7 @@ const lastSyncedText = computed(() => {
     const t = graph.value.last_synced_at;
     if (!t) return '동기화 이력 없음';
     try {
-        return new Date(t).toLocaleString('ko-KR');
+        return new Date(t).toLocaleString(dateLocale());
     } catch {
         return t;
     }

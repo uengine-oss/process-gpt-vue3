@@ -1,0 +1,14 @@
+{
+  "leadTimeBreakdownBar": {
+    "title": "Lead Time Breakdown",
+    "estimatedIncluded": "Includes Estimates",
+    "labels": {
+      "human_work": "Human Decision",
+      "agent_work": "Agent Work",
+      "review_wait": "Review Wait",
+      "queue_wait": "Queue Wait",
+      "rework": "Rework",
+      "idle_gap": "Idle"
+    }
+  }
+}

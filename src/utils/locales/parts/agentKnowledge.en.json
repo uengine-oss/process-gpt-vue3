@@ -1,0 +1,18 @@
+{
+  "agentKnowledge": {
+    "content": "Content",
+    "hash": "Hash",
+    "role": "Role",
+    "type": "Type",
+    "agentId": "Agent ID",
+    "createdAt": "Created",
+    "actions": "Actions",
+    "delete": "Delete"
+  },
+  "workItem": {
+    "similarCases": "Similar cases"
+  },
+  "todoList": {
+    "sortByUpdatedAt": "Recently worked on"
+  }
+}

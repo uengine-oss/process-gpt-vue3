@@ -77,6 +77,16 @@
                         :dialogReset="dialogReset"
                     />
                 </v-window-item>
+
+                <v-window-item v-if="!gs" value="n8n">
+                    <AgentField
+                        v-model="newAgent"
+                        class="agent-field-dialog-contents"
+                        :nameRules="nameRules"
+                        :type="agentSubTab"
+                        :dialogReset="dialogReset"
+                    />
+                </v-window-item>
             </v-window>
         </v-card-text>
 
@@ -86,17 +96,26 @@
                 {{ $t('organizationChartDefinition.save') }}
             </v-btn>
         </v-row>
+
+        <N8nStudioDialog
+            v-model="studioOpen"
+            :workflowId="studioAgent?.endpoint || ''"
+            :agentName="studioAgent?.name || ''"
+        />
     </v-card>
 </template>
 
 <script>
 import AgentField from './field/AgentField.vue';
+import N8nStudioDialog from './N8nStudioDialog.vue';
 import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
+import { createWorkflow } from '@/utils/n8nApi';
 
 export default {
     name: 'AgentCreateDialog',
     components: {
-        AgentField
+        AgentField,
+        N8nStudioDialog
     },
     mixins: [AgentCrudMixin],
     props: {
@@ -115,6 +134,8 @@ export default {
     data: () => ({
         assignToTeam: false,
         selectedTeamId: null,
+        studioOpen: false,
+        studioAgent: null,
         agentSubTab: 'agent',
         agentSubTabItems: [
             {
@@ -128,6 +149,10 @@ export default {
             {
                 text: 'organizationChartDefinition.addNewPGAgent',
                 value: 'pgagent'
+            },
+            {
+                text: 'organizationChartDefinition.addNewN8n',
+                value: 'n8n'
             }
         ],
         newAgent: {
@@ -182,7 +207,28 @@ export default {
             if (assignToTeam && teamId) {
                 agentToSave.pid = teamId;
             }
+            if (this.agentSubTab === 'n8n' && !agentToSave.endpoint) {
+                // The workflow is created here rather than in the studio,
+                // because the agent row needs its id: an n8n agent with no
+                // workflow behind it is an activity that fails at run time
+                // with nothing to point the author at.
+                try {
+                    const workflow = await createWorkflow(agentToSave.name);
+                    agentToSave.endpoint = String(workflow.id);
+                } catch (error) {
+                    console.error('n8n 워크플로우 생성 실패:', error);
+                    this.$toast?.error(this.$t('n8nStudio.createFailed'));
+                    return;
+                }
+            }
+
             const ok = await this.addAgent(agentToSave);
+            if (ok && this.agentSubTab === 'n8n' && agentToSave.endpoint) {
+                // Straight onto the canvas: registering an n8n agent and
+                // drawing its workflow are one act, not two.
+                this.studioAgent = agentToSave;
+                this.studioOpen = true;
+            }
             if (ok && assignToTeam && teamId) {
                 // 차트에 팀원으로 추가 + 영속화는 부모(OrganizationChartChat)가 처리
                 this.$emit('assignToTeam', { agent: agentToSave, teamId });

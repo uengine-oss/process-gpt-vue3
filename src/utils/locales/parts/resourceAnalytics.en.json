@@ -1,0 +1,44 @@
+{
+  "resourceAnalytics": {
+    "title": "Resource Analytics",
+    "subtitle": "Which agents and assignees carry the most work, rework, and lead time in which processes",
+    "reload": "Reload",
+    "filter": "Filters",
+    "clearAll": "Clear All ({n})",
+    "rowDim": "Row (Subject)",
+    "colDim": "Column (Comparison)",
+    "measure": "Measure",
+    "total": "Total",
+    "noData": "No data matches the current conditions.",
+    "valueCol": "Value",
+    "unknown": "(Unknown)",
+    "topTitle": "Assignee & Agent Overview",
+    "reworkTitle": "Combinations with Rework or Retries",
+    "noRework": "No rework or retry records.",
+    "durationWarning": "{zeroed} of the {total} tasks with a recorded duration ({pct}%) are 0 seconds. The source end-time column is corrupted, so negative values were clamped to 0 — treat \"Avg Duration\" as indicative only and use the \"Human Decision (sec)\" and \"Agent Work (sec)\" segment measures for lead time.",
+    "loadFailed": "Could not load: {message}",
+    "coverage": {
+      "tasks": "Tasks",
+      "withResource": "Assignee Set",
+      "withDepartment": "Linked to Department",
+      "withSegments": "Segments Measured",
+      "count": "{n} tasks"
+    },
+    "topHeaders": {
+      "resource": "Assignee / Agent",
+      "actorKind": "Type",
+      "department": "Department",
+      "tasks": "Tasks",
+      "reworkTasks": "Rework",
+      "reworkRate": "Rework Rate",
+      "retries": "Retries",
+      "processes": "Processes"
+    },
+    "reworkHeaders": {
+      "resource": "Assignee / Agent",
+      "process": "Process",
+      "reworkTasks": "Rework",
+      "retries": "Retries"
+    }
+  }
+}

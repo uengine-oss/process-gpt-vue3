@@ -1,0 +1,17 @@
+{
+  "agentMonitor": {
+    "loadingInProgress": "Working on it...",
+    "loadingFeedback": "Regenerating the draft with your feedback..."
+  },
+  "unifiedChatInput": {
+    "knowledgeBase": "Knowledge base",
+    "folderUpload": "Upload folder"
+  },
+  "chatRoomPage": {
+    "selectConversation": "Select a conversation",
+    "selectConversationHint": "Pick a conversation from the list on the left, or start a new one."
+  },
+  "chat": {
+    "voiceOneToOneOnly": "Available only in a one-to-one conversation with an agent"
+  }
+}

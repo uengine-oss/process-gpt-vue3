@@ -1,0 +1,21 @@
+{
+  "mcpGallery": {
+    "title": "MCP 갤러리",
+    "subtitle": "검증된 서버를 골라 바로 등록합니다.",
+    "backToList": "서버 목록",
+    "tabs": {
+      "curated": "큐레이션",
+      "registry": "공식 레지스트리"
+    },
+    "searchLabel": "레지스트리 검색",
+    "search": "검색",
+    "noDescription": "설명이 없습니다.",
+    "docs": "문서",
+    "install": "설치",
+    "installTitle": "{name} 설치",
+    "serverName": "서버 이름",
+    "department": "제공 부서",
+    "cancel": "취소",
+    "installed": "등록 완료 — 툴 {n}개를 찾았습니다."
+  }
+}

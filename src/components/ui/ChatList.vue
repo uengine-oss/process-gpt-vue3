@@ -76,7 +76,7 @@
                             <v-tooltip activator="parent" location="right">
                                 {{ room.name || $t('chatListing.newChat') }}
                             </v-tooltip>
-                            {{ room.name || '새 대화' }}
+                            {{ room.name || $t('chatListing.newChat') }}
                         </v-list-item-title>
                         <v-list-item-subtitle class="chat-room-subtitle">
                             {{ truncateMessage(room.message?.msg) }}
@@ -168,7 +168,7 @@
                         </v-list-item>
                     </template>
                 </v-autocomplete>
-                <div class="text-caption text-grey mt-2">- 내 계정은 자동으로 포함됩니다.</div>
+                <div class="text-caption text-grey mt-2">{{ $t('chatListing.ownAccountIncluded') }}</div>
             </v-card-text>
             <v-row class="ma-0 pa-0">
                 <v-spacer></v-spacer>
@@ -378,7 +378,7 @@ export default {
 
                 const roomId = this.uuid();
                 const now = Date.now();
-                const roomName = (this.createObj?.name || '').toString().trim().substring(0, 50) || '새 대화';
+                const roomName = (this.createObj?.name || '').toString().trim().substring(0, 50) || this.$t('chatListing.newChat');
 
                 const agentIds = participants
                     .map((p) => p?.id)
@@ -632,7 +632,7 @@ export default {
         },
         truncateMessage(msg) {
             if (!msg) return '';
-            if (msg === 'NEW') return '새 대화';
+            if (msg === 'NEW') return this.$t('chatListing.newChat');
             const maxLength = 30;
             return msg.length > maxLength ? msg.substring(0, maxLength) + '...' : msg;
         },
@@ -643,15 +643,15 @@ export default {
             const date = new Date(timestamp);
             const now = new Date();
             const diff = now - date;
-            if (diff < 60 * 1000) return '방금';
+            if (diff < 60 * 1000) return this.$t('chatListing.justNow');
             if (diff < 60 * 60 * 1000) {
                 const minutes = Math.floor(diff / (60 * 1000));
-                return `${minutes}분 전`;
+                return this.$t('chatListing.minutesAgo', { n: minutes });
             }
             if (diff < 24 * 60 * 60 * 1000) {
-                return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                return date.toLocaleTimeString(this.$i18n.locale === 'ko' ? 'ko-KR' : 'en-US', { hour: '2-digit', minute: '2-digit' });
             }
-            return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+            return date.toLocaleDateString(this.$i18n.locale === 'ko' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric' });
         }
     }
 };

@@ -1,0 +1,18 @@
+{
+  "agentKnowledge": {
+    "content": "내용",
+    "hash": "해시",
+    "role": "역할",
+    "type": "타입",
+    "agentId": "에이전트 ID",
+    "createdAt": "생성일",
+    "actions": "액션",
+    "delete": "삭제"
+  },
+  "workItem": {
+    "similarCases": "유사 사례"
+  },
+  "todoList": {
+    "sortByUpdatedAt": "최근 작업 순"
+  }
+}

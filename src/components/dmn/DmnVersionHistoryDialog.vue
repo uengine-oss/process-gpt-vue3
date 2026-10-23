@@ -343,6 +343,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import DmnModeler from '../DmnModeler.vue';
 import KeyValueDiffTable from '@/components/dmn/KeyValueDiffTable.vue';
 import DecisionTableDiff from '@/components/dmn/DecisionTableDiff.vue';
@@ -517,7 +518,7 @@ export default {
         formatTime(ts) {
             if (!ts) return '';
             try {
-                return new Date(ts).toLocaleString('ko-KR', {
+                return new Date(ts).toLocaleString(dateLocale(), {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',

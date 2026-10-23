@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { dateLocale } from '@/composables/dateLocale';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { differenceInDays } from 'date-fns';
@@ -218,7 +219,7 @@ function formatTime(dateStr: string): string {
     if (!dateStr) return '';
     try {
         const d = new Date(dateStr);
-        return d.toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleString(dateLocale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     } catch {
         return dateStr;
     }

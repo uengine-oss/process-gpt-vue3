@@ -1,0 +1,83 @@
+{
+  "mcpServerDetail": {
+    "refreshTools": "툴 다시 읽기",
+    "save": "저장",
+    "state": {
+      "healthy": "정상",
+      "degraded": "지연",
+      "unhealthy": "장애",
+      "unknown": "미확인"
+    },
+    "tabs": {
+      "overview": "개요",
+      "tools": "툴 ({n})",
+      "versions": "버전 ({n})",
+      "permissions": "권한",
+      "health": "헬스",
+      "calls": "호출 이력"
+    },
+    "overview": {
+      "transport": "전송 방식",
+      "currentVersion": "현재 버전",
+      "owner": "담당자",
+      "source": "출처",
+      "healthState": "연결 상태",
+      "latency": "지연",
+      "availability24h": "24h 가용성",
+      "consecutiveFailures": "연속 실패"
+    },
+    "tools": {
+      "gone": "사라짐",
+      "empty": "아직 툴을 읽어오지 못했습니다. \"툴 다시 읽기\"를 눌러 보세요."
+    },
+    "refreshOk": "툴 {n}개를 확인했습니다.",
+    "refreshFailed": "읽어오지 못했습니다: {error}",
+    "versions": {
+      "current": "현재",
+      "activate": "이 버전으로",
+      "activated": "v{version} 로 되돌렸습니다.",
+      "headers": {
+        "version": "버전",
+        "transport": "전송",
+        "target": "대상",
+        "note": "메모",
+        "created": "생성"
+      }
+    },
+    "permissions": {
+      "help": "권한 행이 하나도 없으면 테넌트 전체가 사용할 수 있습니다. 한 행이라도 추가하면 그 조건을 만족하는 주체만 사용할 수 있습니다.",
+      "all": "전체",
+      "addRow": "행 추가",
+      "saved": "권한을 저장했습니다. 에이전트에 즉시 반영됩니다.",
+      "saveFailed": "저장하지 못했습니다: {error}",
+      "headers": {
+        "principalType": "주체 유형",
+        "principal": "주체",
+        "permission": "권한",
+        "allowedTools": "허용 툴",
+        "deniedTools": "차단 툴"
+      }
+    },
+    "health": {
+      "noData": "헬스 기록이 없습니다.",
+      "headers": {
+        "checkedAt": "시각",
+        "state": "상태",
+        "latencyMs": "지연(ms)",
+        "toolCount": "툴 수",
+        "error": "오류"
+      }
+    },
+    "calls": {
+      "noData": "이 서버로의 호출 기록이 없습니다.",
+      "headers": {
+        "startedAt": "시각",
+        "tool": "툴",
+        "status": "상태",
+        "durationMs": "ms",
+        "engine": "엔진",
+        "process": "프로세스"
+      }
+    }
+  }
+}

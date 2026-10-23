@@ -3,7 +3,7 @@
         <!-- 편집 모드가 아니고 A2A, PGAGENT 타입이 아닐 때만 생성 기능 표시 -->
         <UserInputGenerator
             class="agent-field-User-input-generator pb-2"
-            v-if="!isEdit && type !== 'a2a' && type !== 'pgagent'"
+            v-if="!isEdit && type !== 'a2a' && type !== 'pgagent' && type !== 'n8n'"
             :teamInfo="teamInfo"
             :type="type"
             :reset="resetGenerator"
@@ -14,7 +14,7 @@
         />
 
         <!-- 생성 중일 때 스켈레톤 표시 (A2A, PGAGENT 타입이 아닐 때만) -->
-        <div v-if="isGenerating && !isEdit && type !== 'a2a' && type !== 'pgagent'" class="agent-field-skeleton">
+        <div v-if="isGenerating && !isEdit && type !== 'a2a' && type !== 'pgagent' && type !== 'n8n'" class="agent-field-skeleton">
             <v-skeleton-loader type="image" class="mx-auto"></v-skeleton-loader>
         </div>
 
@@ -58,6 +58,32 @@
                 ></v-text-field>
                 <v-textarea v-model="agent.description" :label="$t('agentField.agentDescription')" class="mb-2" rows="3"></v-textarea>
                 <v-textarea v-model="agent.skills" :label="$t('agentField.agentSkills')" class="mb-2" rows="3"></v-textarea>
+            </div>
+
+            <div v-else-if="type === 'n8n'">
+                <v-text-field v-model="agent.name" :label="$t('agentField.agentName')" :rules="nameRules" class="mb-2"></v-text-field>
+                <v-text-field v-model="agent.role" :label="$t('agentField.agentRole')" class="mb-2"></v-text-field>
+                <v-textarea v-model="agent.description" :label="$t('agentField.agentDescription')" class="mb-2" rows="3"></v-textarea>
+
+                <!-- Before the agent exists there is no workflow to open, and
+                     saying so is better than an "편집" button that errors. -->
+                <div v-if="agent.endpoint" class="n8n-workflow-row">
+                    <div class="n8n-workflow-row__meta">
+                        <div class="n8n-workflow-row__id">{{ $t('agentField.n8nWorkflowId') }}: {{ agent.endpoint }}</div>
+                        <div v-if="workflowSummary" class="n8n-workflow-row__nodes">{{ workflowSummary }}</div>
+                    </div>
+                    <v-btn size="small" variant="tonal" color="primary" @click="studioOpen = true">
+                        {{ $t('agentField.n8nEditWorkflow') }}
+                    </v-btn>
+                </div>
+                <div v-else class="n8n-workflow-hint">{{ $t('agentField.n8nWillCreate') }}</div>
+
+                <N8nStudioDialog
+                    v-model="studioOpen"
+                    :workflowId="agent.endpoint || ''"
+                    :agentName="agent.name || ''"
+                    @saved="loadWorkflowSummary"
+                />
             </div>
 
             <div v-else>
@@ -150,12 +176,15 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import ProfileField from '@/components/ui/field/ProfileField.vue';
 import UserInputGenerator from '@/components/ui/UserInputGenerator.vue';
+import N8nStudioDialog from '@/components/ui/N8nStudioDialog.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
+import { fetchWorkflow, summarize } from '@/utils/n8nApi';
 
 export default {
     components: {
         ProfileField,
-        UserInputGenerator
+        UserInputGenerator,
+        N8nStudioDialog
     },
     props: {
         modelValue: {
@@ -206,6 +235,8 @@ export default {
     data() {
         return {
             backend: null,
+            studioOpen: false,
+            workflowSummary: '',
             agent: {
                 id: '',
                 name: '',
@@ -324,7 +355,7 @@ export default {
             return items;
         },
         showDetailFields() {
-            if (this.type === 'a2a' || this.type === 'pgagent') {
+            if (this.type === 'a2a' || this.type === 'pgagent' || this.type === 'n8n') {
                 return true;
             }
             return (this.isEdit || this.isDataGenerated) && !this.isGenerating;
@@ -414,6 +445,7 @@ export default {
             await this.getTools();
             await this.getSkills();
         }
+        if (this.type === 'n8n') await this.loadWorkflowSummary();
         if (this.gs) {
             this.selectedProvider = 'openai';
             this.selectedModel = 'gpt-4.1';
@@ -425,6 +457,30 @@ export default {
         }
     },
     methods: {
+        /**
+         * Show what the workflow actually does, next to the agent's name.
+         *
+         * Without this an n8n agent is a name and an opaque id, and there is no
+         * way to tell two of them apart in the organisation chart.
+         */
+        async loadWorkflowSummary() {
+            if (!this.agent.endpoint) {
+                this.workflowSummary = '';
+                return;
+            }
+            try {
+                const workflow = await fetchWorkflow(this.agent.endpoint);
+                this.workflowSummary = workflow
+                    ? summarize(workflow)
+                    : this.$t('agentField.n8nWorkflowMissing');
+            } catch (error) {
+                // A studio that is down should not block editing the agent's
+                // name; the summary is the only thing lost.
+                console.warn('n8n 워크플로우 요약을 불러오지 못했습니다:', error);
+                this.workflowSummary = '';
+            }
+        },
+
         onGenerationStarted() {
             this.isGenerating = true;
         },
@@ -449,7 +505,7 @@ export default {
                     if (generatedData.tools) {
                         this.selectedTools = generatedData.tools.split(',').map((tool) => tool.trim());
                     }
-                } else if (this.type === 'a2a' || this.type === 'pgagent') {
+                } else if (this.type === 'a2a' || this.type === 'pgagent' || this.type === 'n8n') {
                     if (generatedData.id) this.agent.id = generatedData.id;
                     if (generatedData.name) this.agent.name = generatedData.name;
                     if (generatedData.alias) this.agent.alias = generatedData.alias;
@@ -562,3 +618,40 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.n8n-workflow-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--cds-border);
+    border-radius: 8px;
+}
+
+.n8n-workflow-row__meta {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.n8n-workflow-row__id {
+    font-size: 12px;
+    color: var(--cds-text-secondary);
+}
+
+.n8n-workflow-row__nodes {
+    font-size: 13px;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.n8n-workflow-hint {
+    font-size: 12px;
+    color: var(--cds-text-secondary);
+    padding: 10px 12px;
+    border: 1px dashed var(--cds-border);
+    border-radius: 8px;
+}
+</style>

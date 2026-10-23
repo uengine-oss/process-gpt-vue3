@@ -524,6 +524,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import FormDefinition from '@/components/FormDefinition.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 // import ProcessDefinition from '@/components/ProcessDefinition.vue';
@@ -1007,7 +1008,7 @@ export default {
 
                 // 유사 과거 사례(인스턴스 자동분류) 탭 — 인스턴스가 있을 때만
                 if (this.procInstId && !tabs.find((t) => t.value === 'similar')) {
-                    tabs.push({ value: 'similar', label: '유사 사례' });
+                    tabs.push({ value: 'similar', label: this.$t('workItem.similarCases') });
                 }
 
                 return tabs;
@@ -1534,6 +1535,7 @@ export default {
                     'deep-research-custom',
                     'deepagents',
                     'cliagents',
+                    'n8n',
                     'crewai-action',
                     'openai-deep-research',
                     'langchain-react',
@@ -1782,7 +1784,7 @@ export default {
             });
 
             // 현재 날짜 정보 추가
-            const currentDate = new Date().toLocaleDateString('ko-KR', {
+            const currentDate = new Date().toLocaleDateString(dateLocale(), {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',

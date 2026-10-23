@@ -247,6 +247,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import BackendFactory from './api/BackendFactory';
 import SkillPrDetail from './SkillPrDetail.vue';
 import { prStatusLabel as _prStatusLabel, prAccentClass as _prAccentClass, prBadgeClass as _prBadgeClass, getInitial, getAvatarColor, shortBranch as _shortBranch, formatRelativeTime } from '@/composables/usePrUtils';
@@ -624,13 +625,13 @@ export default {
         },
         formatDateHeader(d) {
             if (!d) return this.$t('SkillGitHistory.noDate');
-            const locale = this.$i18n.locale === 'ko' ? 'ko-KR' : 'en-US';
+            const locale = this.$i18n.locale === 'ko' ? dateLocale() : 'en-US';
             try { return new Date(d).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' }); }
             catch { return d; }
         },
         formatTime(d) {
             if (!d) return '';
-            const locale = this.$i18n.locale === 'ko' ? 'ko-KR' : 'en-US';
+            const locale = this.$i18n.locale === 'ko' ? dateLocale() : 'en-US';
             try { return new Date(d).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }); }
             catch { return ''; }
         },

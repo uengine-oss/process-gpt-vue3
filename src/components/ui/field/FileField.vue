@@ -15,15 +15,16 @@
             </p>
             <img :src="imgBaseUrl" alt="Selected Image" style="width: 350px; max-height: auto" />
         </div>
-        <!-- hwpx: 값이 채워지면 제출 전(작성 중)에도 다운로드/미리보기/편집을 표시한다. -->
-        <div v-if="isHwpx && hwpxFileUrl" class="hwpx-panel">
+        <!-- hwpx(이음오피스 편집기가 켜져 있으면 docx·xlsx·pptx·pdf 등 문서 전부): 값이 채워지면
+             제출 전(작성 중)에도 다운로드/미리보기/편집을 표시한다. -->
+        <div v-if="hasDocPanel && hwpxFileUrl" class="hwpx-panel">
             <div class="file-link-card d-flex align-center" @click="downloadHwpx">
                 <div class="file-link-icon">
                     <v-icon size="18">mdi-file-download-outline</v-icon>
                 </div>
                 <div class="file-link-text">
                     <div class="file-link-name">{{ hwpxName }}</div>
-                    <div class="file-link-sub">다운로드</div>
+                    <div class="file-link-sub">{{ isEditedCopy ? '편집본 · 다운로드' : '다운로드' }}</div>
                 </div>
             </div>
             <div class="hwpx-actions">
@@ -42,8 +43,8 @@
             </div>
         </div>
 
-        <!-- 비-hwpx 파일: 제출 후(readonly)만 다운로드 카드 표시 -->
-        <div v-if="(localReadonly || localDisabled) && !isHwpx">
+        <!-- 그 밖의 파일: 제출 후(readonly)만 다운로드 카드 표시 -->
+        <div v-if="(localReadonly || localDisabled) && !hasDocPanel">
             <div v-for="file in selectedFiles" :key="file.name">
                 <div class="file-link-card d-flex align-center" @click="downloadFile(file)">
                     <div class="file-link-icon">
@@ -58,12 +59,13 @@
         </div>
 
         <HwpxEditorDialog
-            v-if="isHwpx"
+            v-if="hasDocPanel"
             v-model="hwpxDialog"
             :htmlUrl="hwpxHtmlUrl"
             :fileUrl="hwpxFileUrl"
             :name="hwpxName"
             :readOnly="hwpxReadOnly"
+            :context="officeContext"
             @updated="onHwpxUpdated"
         />
     </div>
@@ -73,9 +75,12 @@
 import { commonSettingInfos } from './CommonSettingInfos.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import HwpxEditorDialog from './HwpxEditorDialog.vue';
+import { canOpenInOfficeEditor } from '@/utils/officeEditor';
 
 export default {
     components: { HwpxEditorDialog },
+    // 업무 화면(FormWorkItem)이 내려 주는 맥락: 문서 편집기 AI 가 요청을 해석하는 기준이 된다
+    inject: { officeWorkContext: { default: null } },
     props: {
         // UI 관련 설정 props 시작
         hideDetails: {
@@ -140,8 +145,23 @@ export default {
             const p = (this.hwpxFileUrl || '').toLowerCase().split('?')[0];
             return !!this.hwpxHtmlUrl || n.endsWith('.hwpx') || p.endsWith('.hwpx');
         },
+        // 이음오피스 편집기로 원본을 열 수 있는 문서(VITE_OFFICE_WEB_URL 이 있을 때)
+        isOfficeDoc() {
+            return !!this.hwpxFileUrl && canOpenInOfficeEditor(this.hwpxName || this.hwpxFileUrl);
+        },
+        hasDocPanel() {
+            return this.isHwpx || this.isOfficeDoc;
+        },
+        officeContext() {
+            return typeof this.officeWorkContext === 'function' ? this.officeWorkContext() : null;
+        },
+        // 문서 편집기는 저장할 때 원본 옆에 edited-… 로 올린다(원본은 그대로)
+        isEditedCopy() {
+            return /\/edited-[^/]*$/.test((this.hwpxFileUrl || '').split('?')[0]);
+        },
         canPreview() {
-            // 미리보기·편집 모두 변환된 html_url 이 있어야 렌더 가능(없으면 다운로드만).
+            // 편집기는 원본을 바로 연다. 기존 뷰어는 변환된 html_url 이 있어야 렌더 가능(없으면 다운로드만).
+            if (this.isOfficeDoc) return true;
             return this.isHwpx && !!this.hwpxHtmlUrl;
         }
     },
@@ -224,7 +244,7 @@ export default {
                 this.hwpxFileUrl = value.path || value.fullPath || value.file_path || '';
                 this.hwpxName = value.name || this.guessNameFromPath(this.hwpxFileUrl);
             } else if (typeof value === 'string') {
-                if (value.split('?')[0].toLowerCase().endsWith('.hwpx')) {
+                if (value.split('?')[0].toLowerCase().endsWith('.hwpx') || canOpenInOfficeEditor(value)) {
                     this.hwpxFileUrl = value;
                     this.hwpxName = this.guessNameFromPath(value);
                 }
@@ -254,13 +274,18 @@ export default {
         onHwpxUpdated({ fileUrl, htmlUrl, name } = {}) {
             // 편집본으로 폼 값 갱신(재저장 시 편집본이 반영되도록).
             if (fileUrl) this.hwpxFileUrl = fileUrl;
-            if (htmlUrl) this.hwpxHtmlUrl = htmlUrl;
+            // 편집기 저장본은 html_url 을 비워 보낸다(예전 HTML 투영본을 남기지 않음)
+            if (htmlUrl !== undefined) this.hwpxHtmlUrl = htmlUrl;
             if (name) this.hwpxName = name;
+            const ext = (this.hwpxName || this.hwpxFileUrl || '')
+                .split('?')[0]
+                .match(/\.[^./]+$/)?.[0]
+                ?.toLowerCase();
             this.$emit('update:modelValue', {
                 path: this.hwpxFileUrl,
                 name: this.hwpxName,
                 html_url: this.hwpxHtmlUrl,
-                ext: '.hwpx'
+                ext: ext || '.hwpx'
             });
         },
         async applyModelValue(value) {

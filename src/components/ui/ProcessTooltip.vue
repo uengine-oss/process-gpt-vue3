@@ -64,6 +64,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 export default {
     name: 'ProcessTooltip',
     props: {
@@ -182,7 +183,7 @@ export default {
                     return `${diffDays}${this.$t('processTooltip.daysAgo') || '일 전'}`;
                 }
                 // 그 외: 날짜 표시
-                return date.toLocaleDateString('ko-KR', {
+                return date.toLocaleDateString(dateLocale(), {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric'

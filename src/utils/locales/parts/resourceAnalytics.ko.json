@@ -1,0 +1,44 @@
+{
+  "resourceAnalytics": {
+    "title": "리소스 분석",
+    "subtitle": "어떤 에이전트·담당자가 어느 프로세스에서 작업량·재작업·리드타임이 높은지",
+    "reload": "다시 읽기",
+    "filter": "필터",
+    "clearAll": "전체 해제 ({n})",
+    "rowDim": "행 (분석 대상)",
+    "colDim": "열 (비교 축)",
+    "measure": "측정값",
+    "total": "합계",
+    "noData": "조건에 맞는 데이터가 없습니다.",
+    "valueCol": "값",
+    "unknown": "(미상)",
+    "topTitle": "담당자·에이전트별 현황",
+    "reworkTitle": "재작업·재시도가 있는 조합",
+    "noRework": "재작업·재시도 기록이 없습니다.",
+    "durationWarning": "소요시간이 기록된 {total}건 중 {zeroed}건({pct}%)이 0초입니다. 원본 종료시각 컬럼이 깨져 음수가 0으로 눌린 결과라, '평균 소요'는 참고용으로만 보고 리드타임은 '사람 판단(초)'·'에이전트 수행(초)' 구간 측정값을 쓰십시오.",
+    "loadFailed": "불러오지 못했습니다: {message}",
+    "coverage": {
+      "tasks": "태스크",
+      "withResource": "담당자 배정",
+      "withDepartment": "부서 귀속",
+      "withSegments": "구간 계측",
+      "count": "{n}건"
+    },
+    "topHeaders": {
+      "resource": "담당자/에이전트",
+      "actorKind": "구분",
+      "department": "부서",
+      "tasks": "작업",
+      "reworkTasks": "재작업",
+      "reworkRate": "재작업률",
+      "retries": "재시도",
+      "processes": "프로세스"
+    },
+    "reworkHeaders": {
+      "resource": "담당자/에이전트",
+      "process": "프로세스",
+      "reworkTasks": "재작업",
+      "retries": "재시도"
+    }
+  }
+}

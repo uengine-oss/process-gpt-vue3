@@ -1,0 +1,42 @@
+{
+  "instanceProfiler": {
+    "title": "실행 프로파일",
+    "refresh": "새로고침",
+    "spansSection": "실행 구간",
+    "axis": {
+      "wall": "실시간 축",
+      "work": "작업시간 축"
+    },
+    "drillHint": "막대를 클릭하면 아래로 파고듭니다",
+    "backToSpans": "스팬 목록으로",
+    "spanDetail": "스팬 상세",
+    "loading": "불러오는 중…",
+    "noSpans": "이 태스크에는 기록된 LLM·툴 호출이 없습니다.",
+    "stats": {
+      "spans": "구간 {n}",
+      "tokens": "토큰 {v}",
+      "cost": "비용 {v}"
+    },
+    "spanHint": "막대를 클릭하면 프롬프트·인자를 봅니다.",
+    "unassigned": "(미지정)",
+    "estimated": "추정",
+    "segments": {
+      "human_work": "사람 판단",
+      "agent_work": "에이전트 수행",
+      "review_wait": "검토 대기",
+      "queue_wait": "큐 대기",
+      "rework": "재작업",
+      "idle_gap": "유휴"
+    },
+    "kpi": {
+      "totalDuration": "총 소요",
+      "activities": "액티비티",
+      "tasks": "태스크",
+      "errors": "오류",
+      "tokens": "토큰",
+      "cost": "비용"
+    },
+    "spanLoadFailed": "스팬을 불러오지 못했습니다: {message}",
+    "loadFailed": "불러오지 못했습니다: {message}"
+  }
+}

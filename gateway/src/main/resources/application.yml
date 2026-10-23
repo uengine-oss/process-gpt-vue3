@@ -202,6 +202,15 @@ spring:
                       - RewritePath=/api/analytics/?(?<segment>.*), /api/$\{segment}
                   order: 44
 
+                # MCP 허브 (서버 등록·카탈로그·헬스·관측)
+                - id: mcp-hub
+                  uri: http://mcp-hub:8500
+                  predicates:
+                      - Path=/api/mcp-hub/**
+                  filters:
+                      - RewritePath=/api/mcp-hub/?(?<segment>.*), /$\{segment}
+                  order: 45
+
                 # Agent Router 서비스 (agent pod warmup/proxy, SSE 지원)
                 - id: agent-router
                   uri: http://agent-router:8001

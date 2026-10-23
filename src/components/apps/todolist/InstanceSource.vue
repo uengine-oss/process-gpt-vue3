@@ -89,6 +89,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
@@ -387,7 +388,7 @@ export default {
 
         formatDate(date) {
             if (!date) return '-';
-            return new Date(date).toLocaleString('ko-KR');
+            return new Date(date).toLocaleString(dateLocale());
         },
 
         downloadFile(file) {

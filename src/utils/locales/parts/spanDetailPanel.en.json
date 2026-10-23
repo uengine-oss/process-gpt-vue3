@@ -1,0 +1,32 @@
+{
+  "spanDetailPanel": {
+    "duration": "Duration",
+    "model": "Model",
+    "tokens": "Tokens",
+    "tokenIo": "(input {input} · output {output})",
+    "cost": "Cost",
+    "finishReason": "Finish Reason",
+    "server": "Server",
+    "tool": "Tool",
+    "size": "Size",
+    "sizeIo": "input {input}B · output {output}B",
+    "engine": "Engine",
+    "truncated": "The payload was too large, so only part of it was stored (original {bytes}B).",
+    "tabs": {
+      "prompt": "Prompt",
+      "completion": "Response",
+      "tool": "Tool Arguments",
+      "params": "Parameters"
+    },
+    "noBody": "(no content)",
+    "requestedTools": "Tools requested by the model",
+    "input": "Input",
+    "output": "Output",
+    "maskedNote": "Values such as tokens and passwords are stored masked as {mask}.",
+    "reasons": {
+      "engineUnsupported": "This engine does not keep payloads.",
+      "expired": "The payload was cleaned up after the retention period.",
+      "notStored": "No payload was stored for this call. Turn on detailed tracing to capture it from the next run."
+    }
+  }
+}

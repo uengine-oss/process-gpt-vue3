@@ -53,7 +53,7 @@ const useHistoryItem = (item: { question: string }) => {
 };
 
 const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 };
 </script>
 

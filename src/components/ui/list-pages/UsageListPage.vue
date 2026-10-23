@@ -30,7 +30,7 @@
                             <div style="font-size: 15px; font-weight: bold; width: 15%; text-align: right">
                                 {{
                                     new Date(item.usageStartAt)
-                                        .toLocaleString('ko-KR', {
+                                        .toLocaleString(dateLocale(), {
                                             year: 'numeric',
                                             month: '2-digit',
                                             day: '2-digit',
@@ -54,6 +54,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import ListPage from '@/components/ui/common/ListPage.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';

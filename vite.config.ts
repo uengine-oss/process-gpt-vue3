@@ -78,11 +78,25 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api\/analytics\/?/, '/api/')
             },
+            // MCP 허브. gateway 의 mcp-hub 라우트와 동일하게
+            // /api/mcp-hub/** 의 prefix 를 떼고 넘긴다.
+            // (gateway application.yml: RewritePath=/api/mcp-hub/?(?<segment>.*), /${segment})
+            '/api/mcp-hub': {
+                target: 'http://127.0.0.1:8500',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/api\/mcp-hub\/?/, '/')
+            },
             // 인스턴스 실행 등 /completion/* 호출.
             // docker-infra 구조(nginx 게이트웨이 없음)에서는 completion 서비스
             // published 포트로 직접 프록시하고, nginx가 하던 prefix strip을
             // 여기서 대신한다 (/completion/langchain-chat/x -> /langchain-chat/x).
             // (반드시 아래 '/complete' 보다 먼저 매칭되도록 최상단에 둔다.)
+            // 인계 마이닝(프로세스/조직 도출) 서비스
+            '/process-miner/': {
+                target: 'http://127.0.0.1:8014',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/process-miner/, '')
+            },
             '/completion/': {
                 target: 'http://127.0.0.1:8099',
                 changeOrigin: true,
@@ -193,6 +207,20 @@ export default defineConfig({
                 timeout: 0,
                 proxyTimeout: 0,
                 rewrite: (path) => path.replace(/^\/process-gpt-cli-agent/, '')
+            },
+            // n8n backend + the forked editor UI. The agent registration tab
+            // creates workflows through it and the studio iframe loads from it.
+            // In a deployed environment the gateway does this (see
+            // services/n8n-agent/deploy/nginx.conf); dev needs it here.
+            '/process-gpt-n8n': {
+                target: process.env.VITE_N8N_URL || 'http://127.0.0.1:5678',
+                changeOrigin: true,
+                // The editor holds a websocket open for push updates; without
+                // this the canvas stops reflecting saves.
+                ws: true,
+                timeout: 0,
+                proxyTimeout: 0,
+                rewrite: (path) => path.replace(/^\/process-gpt-n8n/, '')
             },
             '/process-gpt-deepagents/skills': {
                 target: 'http://127.0.0.1:8765',

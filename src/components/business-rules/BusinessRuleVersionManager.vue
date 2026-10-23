@@ -198,6 +198,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import BackendFactory from '@/components/api/BackendFactory';
 import { parseDmnXml } from '@/utils/dmnParser';
 import DmnDiffView from '@/components/dmn/DmnDiffView.vue';
@@ -476,7 +477,7 @@ export default {
             const now = new Date();
             const diffMs = now.getTime() - date.getTime();
             if (diffMs < 0) {
-                return date.toLocaleString('ko-KR');
+                return date.toLocaleString(dateLocale());
             }
             const diffSec = Math.floor(diffMs / 1000);
             const diffMin = Math.floor(diffSec / 60);
@@ -484,7 +485,7 @@ export default {
             if (diffHour < 24) {
                 return this.$t('businessRuleVersionManager.hoursAgo', { hours: diffHour });
             }
-            return date.toLocaleDateString('ko-KR', {
+            return date.toLocaleDateString(dateLocale(), {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',

@@ -219,6 +219,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import axios from 'axios';
 import KnowledgeTreeNode from './KnowledgeTreeNode.vue';
 import { mimeIcon } from '@/utils/fileIcon';
@@ -474,7 +475,7 @@ export default {
             if (diffMs < 7 * day) return `${Math.floor(diffMs / day)}일 전`;
             if (diffMs < 30 * day) return `${Math.floor(diffMs / (7 * day))}주 전`;
             if (diffMs < 365 * day) return `${Math.floor(diffMs / (30 * day))}개월 전`;
-            return d.toLocaleDateString('ko-KR');
+            return d.toLocaleDateString(dateLocale());
         },
         statusLabel(s) {
             return (

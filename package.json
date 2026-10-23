@@ -18,7 +18,8 @@
         "test:e2e:instance-progress": "playwright test --config=playwright.instance-progress.config.mjs",
         "demo:instance-progress-journal": "node e2e/instance-progress/record-journal-demo.mjs",
         "test:e2e:call-activity": "playwright test --config=playwright.call-activity.config.mjs playwright/e2e/gateway/call-activity-processgpt.spec.ts",
-        "test:e2e:gateway:deterministic:ci": "node playwright/e2e/gateway/run-gateway-deterministic-ci.cjs"
+        "test:e2e:gateway:deterministic:ci": "node playwright/e2e/gateway/run-gateway-deterministic-ci.cjs",
+        "demo:handover": "node e2e/handover/record-handover-demo.mjs"
     },
     "bin": "server.js",
     "pkg": {

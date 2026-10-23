@@ -1,0 +1,9 @@
+{
+  "agentMonitor": {
+    "crewaiAction": "CrewAI Action",
+    "crewaiDeepResearch": "CrewAI Deep Research",
+    "langchainReact": "LangChain ReAct",
+    "openaiDeepResearch": "OpenAI Deep Research"
+  },
+  "feedback": "피드백"
+}

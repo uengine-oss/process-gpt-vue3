@@ -252,6 +252,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
@@ -498,7 +499,7 @@ export default {
             if (!dateString) return '';
             try {
                 const date = new Date(dateString);
-                return date.toLocaleString('ko-KR');
+                return date.toLocaleString(dateLocale());
             } catch (e) {
                 return dateString;
             }

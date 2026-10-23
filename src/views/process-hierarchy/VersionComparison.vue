@@ -431,6 +431,7 @@
 </template>
 
 <script>
+import { dateLocale } from '@/composables/dateLocale';
 import BackendFactory from '@/components/api/BackendFactory';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import ProcessHierarchyTree from './ProcessHierarchyTree.vue';
@@ -978,7 +979,7 @@ export default {
         formatDate(ts) {
             if (!ts) return '';
             try {
-                return new Date(ts).toLocaleString('ko-KR', {
+                return new Date(ts).toLocaleString(dateLocale(), {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',

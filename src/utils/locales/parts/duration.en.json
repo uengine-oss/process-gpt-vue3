@@ -1,0 +1,11 @@
+{
+  "duration": {
+    "sec": "{n}s",
+    "minSec": "{m}m {s}s",
+    "hourMin": "{h}h {m}m",
+    "dayHour": "{d}d {h}h",
+    "day": "{d}d",
+    "hour": "{h}h",
+    "min": "{m}m"
+  }
+}

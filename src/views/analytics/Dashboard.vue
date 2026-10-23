@@ -21,7 +21,9 @@ import {
 import { Doughnut, Line, Bar } from 'vue-chartjs';
 import dayjs from 'dayjs';
 import BackendFactory from '@/components/api/BackendFactory';
+import { useRouter } from 'vue-router';
 import { olapApi, syncDepartmentsFromOrgChart } from '@/services/analyticsApi';
+import { useI18n } from 'vue-i18n';
 
 const backend = BackendFactory.createBackend();
 const loading = ref(false);
@@ -30,7 +32,17 @@ const syncing = ref(false);
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Filler);
 
 const store = useOlapStore();
+
+// 인스턴스 행에서 실행 프로파일러로 들어간다.
+// (지금까지 분석 화면은 어디도 클릭할 수 없었다.)
+const router = useRouter();
+function openProfiler(instance) {
+    const id = instance?.proc_inst_id || instance?.id;
+    if (!id) return;
+    router.push(`/analytics/instances/${encodeURIComponent(id)}`);
+}
 const { proxy } = getCurrentInstance();
+const { t } = useI18n();
 const chartsReady = ref(false);
 
 // Chart data - shallowRef 사용 (vue-chartjs 권장)
@@ -47,7 +59,7 @@ const taskDistributionData = shallowRef({
 });
 
 const monthlyTrendData = shallowRef({
-    labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
+    labels: ['jan', 'feb', 'mar', 'apr', 'may', 'jun'].map((m) => t(`analyticsDashboard.months.${m}`)),
     datasets: [
         {
             label: 'Tasks',
@@ -677,11 +689,11 @@ function getBarWidth(count) {
 // 초를 시간 포맷으로 변환
 function formatDuration(seconds) {
     if (!seconds || seconds === 0) return '-';
-    if (seconds < 60) return `${Math.round(seconds)}초`;
-    if (seconds < 3600) return `${Math.round(seconds / 60)}분`;
+    if (seconds < 60) return t('analyticsDashboard.durationSec', { n: Math.round(seconds) });
+    if (seconds < 3600) return t('analyticsDashboard.durationMin', { n: Math.round(seconds / 60) });
     const hours = Math.floor(seconds / 3600);
     const mins = Math.round((seconds % 3600) / 60);
-    return mins > 0 ? `${hours}시간 ${mins}분` : `${hours}시간`;
+    return mins > 0 ? t('analyticsDashboard.durationHourMin', { h: hours, m: mins }) : t('analyticsDashboard.durationHour', { h: hours });
 }
 
 // 완료율 계산
@@ -871,7 +883,7 @@ async function syncDepartments() {
                     <v-card variant="outlined" class="rounded-lg">
                         <v-card-text class="pa-5">
                             <div class="d-flex justify-space-between align-center mb-4">
-                                <h3 class="text-h6 font-weight-semibold text-textPrimary">Domain별 Sub Process</h3>
+                                <h3 class="text-h6 font-weight-semibold text-textPrimary">{{ $t('analyticsDashboard.domainSubProcess') }}</h3>
                                 <v-chip size="small" color="primary" variant="tonal">
                                     {{
                                         $t('analyticsDashboard.totalCount', {
@@ -1167,8 +1179,16 @@ async function syncDepartments() {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="instance in store.instances" :key="instance.id" class="month-item">
-                                <td class="text-body-2 font-weight-medium text-textPrimary">{{ instance.id?.slice(0, 8) }}...</td>
+                            <tr
+                                v-for="instance in store.instances"
+                                :key="instance.id"
+                                class="month-item drillable"
+                                @click="openProfiler(instance)"
+                            >
+                                <td class="text-body-2 font-weight-medium text-textPrimary">
+                                    {{ instance.id?.slice(0, 8) }}...
+                                    <v-icon size="14" class="ml-1 drill-icon">mdi-chevron-right</v-icon>
+                                </td>
                                 <td class="text-body-2 text-grey100">{{ instance.process_name || 'Unnamed Process' }}</td>
                                 <td>
                                     <v-chip size="small" :color="instance.status === 'completed' ? 'success' : 'warning'" variant="tonal">
@@ -1449,4 +1469,7 @@ async function syncDepartments() {
     background: linear-gradient(90deg, hsl(var(--accent-brand)), hsl(var(--accent-brand)));
     transition: width 0.3s ease;
 }
+.drillable { cursor: pointer; }
+.drill-icon { opacity: 0; transition: opacity 0.15s; }
+.drillable:hover .drill-icon { opacity: 0.5; }
 </style>

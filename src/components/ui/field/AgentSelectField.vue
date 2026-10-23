@@ -391,6 +391,22 @@ export default {
                     }
                 },
                 {
+                    titleKey: 'AgentSelectInfo.orchestration.n8n.title',
+                    value: 'n8n',
+                    icon: 'flowchart',
+                    descKey: 'AgentSelectInfo.orchestration.n8n.description',
+                    costKey: 'AgentSelectInfo.cost.low',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.n8n.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.n8n.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.n8n.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.n8n.detailDesc.details.2.title' },
+                            { title: 'AgentSelectInfo.orchestration.n8n.detailDesc.details.3.title' }
+                        ]
+                    }
+                },
+                {
                     titleKey: 'AgentSelectInfo.orchestration.deepResearchCustom.title',
                     value: 'deep-research-custom',
                     icon: 'playoff',
@@ -525,6 +541,12 @@ export default {
                 if (newVal === 'cliagents') {
                     this.loadCliAgents();
                     this.activity.agentConfig = { ...this.cliAgentConfig };
+                } else if (newVal === 'n8n') {
+                    // The workflow *is* the agent, so an n8n activity always
+                    // names one; there is no toolset for the engine to pick
+                    // from the way a model-driven orchestration has.
+                    this.activity.usePresetAgent = true;
+                    this.syncN8nWorkflow();
                 } else if (this.activity.agentConfig) {
                     // 다른 오케스트레이션으로 바꾸면 CLI 설정은 남기지 않는다.
                     // 남아 있으면 나중에 되돌렸을 때 지운 줄 알았던 값이 살아난다.
@@ -571,11 +593,19 @@ export default {
                     this.activity.agentAssignedFrom = 'manual';
                 }
                 if (newVal && newVal.length > 0) {
+                    // Picking an n8n agent settles the orchestration: its
+                    // workflow can only be run by the n8n engine, and leaving
+                    // the activity on another orchestration would hand the work
+                    // item to a service that cannot run it.
+                    if (newVal.some((a) => a.agentType === 'n8n')) {
+                        this.activity.orchestration = 'n8n';
+                        this.activity.usePresetAgent = true;
+                    }
                     let agentIds = [];
                     newVal.forEach((agent) => {
                         this.agentType = agent.agentType;
                         this.agentAlias = agent.alias;
-                        if (this.isSingleAgentType && this.activity.orchestration !== 'a2a') {
+                        if (this.isSingleAgentType && !['a2a', 'n8n'].includes(this.activity.orchestration)) {
                             // 단일 에이전트 타입에서는 멀티 오케스트레이션 및 도구/스킬 사용을 비활성화한다.
                             this.activity.orchestration = this.isSubAgentProfile ? 'deepagents' : null;
                             this.activity.tools = [];
@@ -584,6 +614,7 @@ export default {
                         agentIds.push(agent.id);
                     });
                     this.activity.agent = agentIds.join(',');
+                    this.syncN8nWorkflow();
                 } else {
                     this.agentType = null;
                     this.agentAlias = null;
@@ -694,6 +725,21 @@ export default {
         });
     },
     methods: {
+        /**
+         * Carry the chosen agent's workflow id into the activity's config.
+         *
+         * The runtime reads `agent_config.workflow_id`, not the agent row, so
+         * without this the work item reaches the n8n service naming no
+         * workflow and fails with nothing to point the author at. The agent's
+         * `endpoint` column is where the n8n registration tab put it.
+         */
+        syncN8nWorkflow() {
+            if (this.activity.orchestration !== 'n8n') return;
+            const agent = (this.selectedAgent || []).find((a) => a.agentType === 'n8n');
+            const workflowId = agent?.endpoint || '';
+            this.activity.agentConfig = workflowId ? { workflow_id: String(workflowId) } : null;
+        },
+
         async loadCliAgents() {
             if (this.cliAgentsLoading || this.cliAgentItems.length) return;
             this.cliAgentsLoading = true;

@@ -1,0 +1,11 @@
+{
+  "sidebarExt": {
+    "mcpServers": "MCP Servers",
+    "mcpGallery": "MCP Gallery",
+    "mcpObservability": "MCP Observability",
+    "integrationStandard": "Integration Standard",
+    "agentToolObservability": "Agent / Tool Observability",
+    "requestTopList": "Top Requests",
+    "mcpHub": "MCP Hub"
+  }
+}
