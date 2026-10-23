@@ -303,10 +303,42 @@ export default {
         isInitialized: false,
         fileFieldNames: [],
         /** DynamicForm text-field 중 type="number" 인 필드 name 목록 (formData 값은 대부분 문자열이라 타입 추론용) */
-        numberFieldNames: []
+        numberFieldNames: [],
+        /** 이 활동의 정의(이름·설명·지시) — 문서 편집기 AI 에 업무 맥락으로 넘긴다 */
+        activityContext: null
         // activeTab: 'direct-input', // 'direct-input' 또는 'chat'
     }),
+    // 폼 안의 문서 편집기(FileField → 문서 편집 대화 상자)가 업무 맥락을 받아 가는 통로
+    provide() {
+        return { officeWorkContext: () => this.officeWorkContext };
+    },
     computed: {
+        officeWorkContext() {
+            const a = this.activityContext || {};
+            const inputs = [];
+            for (const { formValue } of this.inputFields || []) {
+                const values = formValue && typeof formValue === 'object' ? formValue : {};
+                for (const [key, value] of Object.entries(values)) {
+                    const text =
+                        typeof value === 'string'
+                            ? value
+                            : value && typeof value === 'object'
+                            ? value.name || ''
+                            : value == null
+                            ? ''
+                            : String(value);
+                    if (text) inputs.push({ label: key, value: text.slice(0, 1500) });
+                }
+            }
+            if (!a.activity && !inputs.length) return null;
+            return {
+                process: a.process || '',
+                activity: a.activity || '',
+                description: a.description || '',
+                instruction: a.instruction || '',
+                inputs
+            };
+        },
         simulate() {
             return this.isSimulate === 'true' || this.isSimulate === 'false' ? this.isSimulate === 'true' : this.isSimulate;
         },
@@ -1112,6 +1144,12 @@ export default {
             if (!activity) {
                 return;
             }
+            me.activityContext = {
+                process: definition.processDefinitionName || process.name || '',
+                activity: activity.name || '',
+                description: activity.description || '',
+                instruction: activity.instruction || ''
+            };
 
             let inputFields = {};
             if (activity.inputData && activity.inputData.length > 0) {
