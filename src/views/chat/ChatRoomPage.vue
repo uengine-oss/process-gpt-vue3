@@ -6792,12 +6792,16 @@ export default {
                     this.handleHwpxSectionEdit(panelId, payload);
                 } else if (action === 'download') {
                     this.handleHwpxDownload(panelId, payload);
+                } else if (action === 'office-saved') {
+                    this.handleOfficeSaved(panelId, payload);
                 }
             } else if (type === 'docx') {
                 if (action === 'page-edit-request') {
                     this.handleDocxSectionEdit(panelId, payload);
                 } else if (action === 'download') {
                     this.handleDocxDownload(panelId, payload);
+                } else if (action === 'office-saved') {
+                    this.handleOfficeSaved(panelId, payload);
                 }
             } else if (type === 'process') {
                 if (action === 'preview-bpmn') {
@@ -8223,6 +8227,20 @@ export default {
                 }
             } catch (e) {
                 callMethod('showEditNotice', '페이지 수정 중 오류가 발생했습니다.', 'error');
+            }
+        },
+
+        /** 문서 편집기(Process GPT 오피스)에서 저장한 편집본을 그 메시지의 첨부로 삼는다(다시 열거나 받을 때 편집본) */
+        handleOfficeSaved(panelId, payload) {
+            const url = payload?.url || '';
+            const panel = this.artifactPanels.find((p) => p.id === panelId);
+            const messageId = panel?.data?.messageId;
+            const msg = messageId ? (this.messages || []).find((m) => m?.uuid === messageId) : null;
+            if (!url || !msg) return;
+            if (msg.hwpxFileUrl) msg.hwpxFileUrl = url;
+            // 문서 카드만 바꾼다(같은 자리에 PDF 미리보기 카드가 올 수도 있다)
+            if (msg.pdfFile && /\.(docx|hwpx)$/i.test(msg.pdfFile.name || msg.pdfFile.fileName || '')) {
+                msg.pdfFile = { ...msg.pdfFile, url, fileUrl: url };
             }
         },
 
