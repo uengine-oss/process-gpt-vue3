@@ -11,6 +11,10 @@ const env = loadEnv('development', process.cwd(), '');
 const require = createRequire(import.meta.url);
 const monacoEditorPlugin = require('vite-plugin-monaco-editor').default || require('vite-plugin-monaco-editor');
 const uengineGatewayTarget = env.VITE_UENGINE_GATEWAY_URL || 'http://127.0.0.1:8088';
+// 백엔드 주소를 바꿔 같은 머신에 두 벌을 띄울 수 있게 한다 (기본값은 로컬 개발 포트)
+const completionTarget = env.VITE_COMPLETION_URL || 'http://127.0.0.1:8099';
+const deepagentsTarget = env.VITE_DEEPAGENTS_URL || 'http://127.0.0.1:8888';
+const mementoTarget = env.VITE_MEMENTO_URL || 'http://localhost:8005';
 
 function spaFallbackPlugin() {
     return {
@@ -98,7 +102,7 @@ export default defineConfig({
                 rewrite: (path) => path.replace(/^\/process-miner/, '')
             },
             '/completion/': {
-                target: 'http://127.0.0.1:8099',
+                target: completionTarget,
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/completion/, '')
             },
@@ -120,54 +124,54 @@ export default defineConfig({
                 rewrite: (path) => path.replace(/^\/strategy-service/, '')
             },
             '/query': {
-                target: 'http://localhost:8005',
+                target: mementoTarget,
                 changeOrigin: true
             },
             '/retrieve': {
-                target: 'http://localhost:8005',
+                target: mementoTarget,
                 changeOrigin: true
             },
             '/memento/': {
-                target: 'http://localhost:8005',
+                target: mementoTarget,
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/memento/, '')
             },
             '/complete': {
                 // Windows에서 localhost가 IPv6(::1)로 붙으면서 WSL/Docker 리스너로 가는 경우가 있어 IPv4로 고정
-                target: 'http://127.0.0.1:8099',
+                target: completionTarget,
                 changeOrigin: true
             },
             // 임시저장(draft) 프로세스 실엔진 검증 + LLM 자동개선 (completion)
             '/validate-and-improve': {
-                target: 'http://127.0.0.1:8099',
+                target: completionTarget,
                 changeOrigin: true,
                 timeout: 0,
                 proxyTimeout: 0
             },
             '/vision-complete': {
-                target: 'http://127.0.0.1:8099',
+                target: completionTarget,
                 changeOrigin: true
             },
             '/process-db-schema': {
-                target: 'http://127.0.0.1:8099',
+                target: completionTarget,
                 changeOrigin: true
             },
             '/drop-process-table': {
-                target: 'http://127.0.0.1:8099',
+                target: completionTarget,
                 changeOrigin: true
             },
             '/process-search': {
-                target: 'http://127.0.0.1:8099',
+                target: completionTarget,
                 changeOrigin: true
             },
             '/vision-process-search': {
-                target: 'http://127.0.0.1:8099',
+                target: completionTarget,
                 changeOrigin: true
             },
             '/langchain-chat': {
                 // completion 로컬 실행 포트. 호스트 :8000 은 다른 프로젝트가 쓰고
                 // 있어(troubleshooting #16) 이 저장소에서는 :8021 로 띄운다.
-                target: 'http://127.0.0.1:8099',
+                target: completionTarget,
                 changeOrigin: true
             },
             // Work Assistant Agent API
@@ -244,7 +248,7 @@ export default defineConfig({
             },
             // DeepAgents Router API
             '/process-gpt-deepagents/': {
-                target: 'http://127.0.0.1:8888',
+                target: deepagentsTarget,
                 changeOrigin: true,
                 timeout: 0,
                 proxyTimeout: 0,
