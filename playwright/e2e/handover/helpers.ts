@@ -18,7 +18,8 @@ export type Person = { key: string; email: string; password: string; name: strin
 
 export const PEOPLE: Record<string, Person> = {
     hong: { key: 'hong', email: 'ohsy818@uengine.org', password: 'dbdpswls', name: '홍길동' },
-    lee: { key: 'lee', email: 'lee.handover@localhost.dev', password: 'handover-test-1', name: '이팀장' },
+    // 로컬에서 비밀번호를 바꿨으면 LEE_PASSWORD 로 넘긴다
+    lee: { key: 'lee', email: 'lee.handover@localhost.dev', password: process.env.LEE_PASSWORD || 'handover-test-1', name: '이팀장' },
     park: { key: 'park', email: 'park.handover@localhost.dev', password: 'handover-test-1', name: '박대리' }
 };
 
@@ -32,7 +33,46 @@ export async function rest(path: string): Promise<any[]> {
     return res.json();
 }
 
-export async function waitUntil<T>(fn: () => Promise<T>, label: string, timeout = 120_000, interval = 2_000): Promise<T> {
+/** 서비스 키로 지운다(테스트가 만든 데이터 정리 전용). */
+export async function restDelete(path: string): Promise<void> {
+    if (!SB_KEY) throw new Error('SB_SERVICE_KEY 가 필요합니다');
+    const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+        method: 'DELETE',
+        headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, Prefer: 'return=minimal' }
+    });
+    if (!res.ok) throw new Error(`${path} 삭제 실패: ${res.status} ${await res.text()}`);
+}
+
+/** 이 실행에서 createRoom 으로 만든 방. 인계 스레드는 모두 이 방들에서 시작한다. */
+const createdRooms = new Set<string>();
+
+/**
+ * 이 실행에서 만든 방과 그 방에서 시작된 인계 스레드 전체(받은 방·대화·인계 기록·할 일)를 지운다.
+ * 테스트가 남긴 방과 업무가 대화 목록과 식별 화면에 쌓여 다음 테스트와 실제 화면을 흐리지 않게 한다.
+ * test.afterEach(cleanupCreated) 로 쓴다.
+ */
+export async function cleanupCreated(): Promise<void> {
+    const origins = [...createdRooms];
+    createdRooms.clear();
+    if (!origins.length || !SB_KEY) return;
+    const inList = (ids: string[]) => `in.(${ids.map((x) => `"${x}"`).join(',')})`;
+    const rows = await rest(`handover_events?origin_room_id=${inList(origins)}&select=from_room_id,to_room_id,to_task_id`);
+    const rooms = new Set<string>(origins);
+    const tasks = new Set<string>();
+    for (const r of rows) {
+        if (r.from_room_id) rooms.add(r.from_room_id);
+        if (r.to_room_id) rooms.add(r.to_room_id);
+        if (r.to_task_id) tasks.add(r.to_task_id);
+    }
+    const roomIds = [...rooms];
+    if (tasks.size) await restDelete(`todolist?id=${inList([...tasks])}`);
+    await restDelete(`handover_events?origin_room_id=${inList(origins)}`);
+    await restDelete(`chat_attachments?chat_room_id=${inList(roomIds)}`);
+    await restDelete(`chats?id=${inList(roomIds)}`);
+    await restDelete(`chat_rooms?id=${inList(roomIds)}`);
+}
+
+export async function waitUntil<T>(fn: () => Promise<T>, label: string, timeout = 60_000, interval = 2_000): Promise<T> {
     const start = Date.now();
     let last: any;
     while (Date.now() - start < timeout) {
@@ -77,7 +117,13 @@ export async function createRoom(page: Page, name: string, withAgent = false): P
                 { id: uid, email: localStorage.getItem('email'), username: localStorage.getItem('userName'), is_agent: null }
             ];
             if (withAgent) {
-                participants.push({ id: 'process-gpt-agent', email: null, username: 'Process GPT Agent', is_agent: true, agent_type: 'agent' });
+                participants.push({
+                    id: 'process-gpt-agent',
+                    email: null,
+                    username: 'Process GPT Agent',
+                    is_agent: true,
+                    agent_type: 'agent'
+                });
             }
             const { error } = await (window as any).$supabase.from('chat_rooms').insert({
                 id,
@@ -91,6 +137,7 @@ export async function createRoom(page: Page, name: string, withAgent = false): P
         },
         { name, withAgent }
     );
+    createdRooms.add(id);
     return id;
 }
 
@@ -167,19 +214,17 @@ export async function handover(page: Page, roomId: string, h: HandoverInput): Pr
     await dlg.getByLabel('다음에 할 일').fill(h.next);
     if (h.instruction) await dlg.getByLabel('지시사항').fill(h.instruction);
     if (h.tab) await dlg.getByRole('tab', { name: new RegExp(h.tab) }).click();
-    await dlg.getByPlaceholder(/검색|Search/).first().fill(h.to);
+    await dlg
+        .getByPlaceholder(/검색|Search/)
+        .first()
+        .fill(h.to);
     await dlg.locator('.e2e-assignee-item', { hasText: h.to }).first().click();
     await dlg.getByRole('button', { name: /^인계하기$/ }).click();
     await expect(dlg).toBeHidden({ timeout: 120_000 });
-    const rows = await waitUntil(
-        async () => {
-            const r = await rest(
-                `handover_events?source=eq.chat_handover&from_room_id=eq.${roomId}&select=*&order=occurred_at.desc`
-            );
-            return r.length > before.length ? r : null;
-        },
-        '인계 기록'
-    );
+    const rows = await waitUntil(async () => {
+        const r = await rest(`handover_events?source=eq.chat_handover&from_room_id=eq.${roomId}&select=*&order=occurred_at.desc`);
+        return r.length > before.length ? r : null;
+    }, '인계 기록');
     return rows[0];
 }
 
@@ -218,4 +263,50 @@ export async function taskStatus(taskId: string): Promise<string> {
 
 export async function shot(page: Page, name: string) {
     await page.screenshot({ path: `playwright/handover-e2e/${name}.png`, fullPage: false });
+}
+
+export type Receiver = { to: string; tab?: '사람' | '에이전트'; next: string };
+
+/** 인계 창에서 여러 명을 골라 한 번에 넘긴다. 같은 묶음으로 만들어진 인계 행을 돌려준다. */
+export async function handoverMany(page: Page, roomId: string, done: string, instruction: string, receivers: Receiver[]): Promise<any[]> {
+    await openHandover(page);
+    const dlg = page.locator('.handover-dialog');
+    await dlg.getByLabel('지금까지 한 일').fill(done);
+    await dlg.getByLabel('지시사항').fill(instruction);
+    for (const r of receivers) {
+        await dlg.getByRole('tab', { name: new RegExp(r.tab || '사람') }).click();
+        const search = dlg.getByPlaceholder(/검색|Search/).first();
+        await search.fill(r.to);
+        await dlg.locator('.e2e-assignee-item', { hasText: r.to }).first().click();
+        await search.fill('');
+    }
+    const rows = dlg.locator('.e2e-selected-receiver');
+    await expect(rows).toHaveCount(receivers.length);
+    // 두 명 이상이면 사람마다 '다음에 할 일' 을 따로 적는다
+    for (let i = 0; i < receivers.length; i++) {
+        await rows.nth(i).locator('.e2e-receiver-next input').fill(receivers[i].next);
+    }
+    await dlg.getByRole('button', { name: /^인계하기$/ }).click();
+    await expect(dlg).toBeHidden({ timeout: 120_000 });
+    return waitUntil(async () => {
+        const r = await rest(`handover_events?source=eq.chat_handover&from_room_id=eq.${roomId}&group_id=not.is.null&select=*`);
+        return r.length >= receivers.length ? r : null;
+    }, '묶음 인계 기록');
+}
+
+/** 기존 산출물 버튼으로 오른쪽 패널을 열고 '작업 흐름' 탭을 골라, 카드 목록을 읽는다. */
+export async function flowNodes(page: Page) {
+    const tab = page.locator('.artifact-panel__tab', { hasText: '작업 흐름' });
+    if (!(await tab.isVisible())) await page.getByRole('button', { name: '산출물' }).first().click();
+    await tab.click();
+    const card = page.locator('.e2e-handover-flow');
+    await expect(card).toBeVisible({ timeout: 30_000 });
+    const nodes = card.locator('.e2e-handover-flow-node');
+    await expect(nodes.first()).toBeVisible({ timeout: 30_000 });
+    const out: { room: string | null; status: string | null; text: string }[] = [];
+    for (let i = 0; i < (await nodes.count()); i++) {
+        const n = nodes.nth(i);
+        out.push({ room: await n.getAttribute('data-room-id'), status: await n.getAttribute('data-status'), text: await n.innerText() });
+    }
+    return out;
 }

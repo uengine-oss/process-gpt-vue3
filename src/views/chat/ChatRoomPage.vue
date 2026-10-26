@@ -95,8 +95,8 @@
                                         제목 한 줄 + 오른쪽 단추). 단추는 새로 만들지 않고 앱바로 옮겨 간다.
                                     -->
                                     <Teleport to="#pg-m-appbar-actions" :disabled="!phoneShell">
-                                    <!-- 다음 담당자(사람 또는 에이전트)에게 업무를 넘긴다. -->
-                                    <v-tooltip :text="$t('Handover.title')" location="bottom">
+                                    <!-- 다음 담당자(사람 또는 에이전트)에게 업무를 넘긴다. 참여하지 않은 방(읽기 전용)에서는 넘길 수 없다. -->
+                                    <v-tooltip v-if="!isViewOnlyRoom" :text="$t('Handover.title')" location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <v-btn
                                                 v-bind="props"
@@ -123,7 +123,12 @@
                                     >
                                         <v-icon size="18">mdi-file-document-outline</v-icon>
                                     </v-btn>
-                                    <v-menu v-model="settingsMenu" location="bottom end" :close-on-content-click="true">
+                                    <v-menu
+                                        v-if="!isViewOnlyRoom"
+                                        v-model="settingsMenu"
+                                        location="bottom end"
+                                        :close-on-content-click="true"
+                                    >
                                         <template v-slot:activator="{ props }">
                                             <v-btn v-bind="props" icon variant="text" density="comfortable" size="small">
                                                 <v-icon size="18">mdi-cog-outline</v-icon>
@@ -183,7 +188,7 @@
                                 :currentChatRoom="currentChatRoom"
                                 :chatRoomId="roomId || ''"
                                 type="chats"
-                                :disableChat="false"
+                                :disableChat="isViewOnlyRoom"
                                 :markdownEnabled="false"
                                 :chatRoomMode="true"
                                 :hideInput="true"
@@ -204,7 +209,12 @@
                                 @human-feedback-submit="handleHumanFeedbackSubmit"
                                 @human-feedback-skip="handleHumanFeedbackSkip"
                                 @sendMessage="handleSendMessage"
-                            />
+                            >
+                                <!-- 인계받은 방이면 이 업무가 거쳐 온 앞선 방들의 대화를 읽기 전용으로 먼저 보여 준다 -->
+                                <template #custom-content>
+                                    <HandoverHistory :room="currentChatRoom" />
+                                </template>
+                            </Chat>
                         </div>
 
                         <!-- 입력 영역 -->
@@ -234,6 +244,7 @@
                                 </v-btn>
                             </div>
                             <UnifiedChatInput
+                                v-if="!isViewOnlyRoom"
                                 ref="composer"
                                 variant="inline"
                                 :showExamples="false"
@@ -250,6 +261,11 @@
                                 @desktop-voice-toggle="toggleDesktopVoice"
                             >
                             </UnifiedChatInput>
+                            <!-- 인계로 넘어온 앞선 방처럼 내가 참여하지 않은 방은 읽기만 한다 -->
+                            <div v-else class="view-only-bar e2e-view-only">
+                                <v-icon size="16" class="mr-2">mdi-eye-outline</v-icon>
+                                {{ $t('Handover.viewOnly') }}
+                            </div>
                         </div>
                     </div>
 
@@ -870,6 +886,7 @@ import BPMNXmlGenerator from '@/components/BPMNXmlGenerator.vue';
 import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import ArtifactPanel from '@/components/ArtifactPanel.vue';
 import HandoverDialog from '@/components/chat/HandoverDialog.vue';
+import HandoverHistory from '@/components/chat/HandoverHistory.vue';
 import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/processArtifactPanel.js';
 import { buildHitlPanel, shouldRestoreFromAssistantContent } from '@/shared/hitl/index.js';
 import { shouldSteerInsteadOfNewTurn } from '@/shared/steering/index.js';
@@ -945,7 +962,8 @@ export default {
         OntologyGraphViewer,
         VoiceAgentDesktopMode,
         ArtifactPanel,
-        HandoverDialog
+        HandoverDialog,
+        HandoverHistory
     },
     data() {
         return {
@@ -1233,6 +1251,17 @@ export default {
         },
         hasArtifactPanel() {
             return this.artifactPanels.length > 0;
+        },
+        /**
+         * 내가 참여자가 아닌 방 — 인계받은 방의 '이전 대화'·작업 흐름에서 앞선 방을 열었을 때다.
+         * 읽기만 한다(메시지·인계·설정 변경·삭제·파일 편집 없음). 참여자 목록이 빈 예전 방은 제외한다.
+         */
+        isViewOnlyRoom() {
+            const parts = Array.isArray(this.currentChatRoom?.participants) ? this.currentChatRoom.participants : [];
+            if (!this.roomId || !this.currentChatRoom?.id || parts.length === 0) return false;
+            const me = this.normalizeParticipant(this.userInfo);
+            if (!me || (!me.id && !me.email)) return false;
+            return !parts.some((p) => this.participantMatches(this.normalizeParticipant(p), me));
         },
         /** 인계 다이얼로그의 AI 제안에 넘길 최근 대화 */
         handoverRecentMessages() {
@@ -1665,6 +1694,7 @@ export default {
     },
     methods: {
         handleOpenUiStateUpdate(payload) {
+            if (this.isViewOnlyRoom) return;
             try {
                 // payload: { messageUuid, state }
                 const messageUuid = payload?.messageUuid || null;
@@ -1690,6 +1720,7 @@ export default {
             }
         },
         async handleOpenUiAction(payload) {
+            if (this.blockIfViewOnly()) return;
             try {
                 // payload: { messageUuid, action, state }
                 const messageUuid = payload?.messageUuid || null;
@@ -1817,6 +1848,7 @@ export default {
             }
         },
         handleBeforeReply(message) {
+            if (this.blockIfViewOnly()) return;
             try {
                 this.$refs.composer?.setReply?.(message);
             } catch (e) {}
@@ -2516,6 +2548,12 @@ export default {
                 is_agent: p?.is_agent ?? p?.isAgent ?? null
             };
         },
+        /** 읽기 전용 방에서 바꾸는 동작을 막는다. 막았으면 true. */
+        blockIfViewOnly() {
+            if (!this.isViewOnlyRoom) return false;
+            if (this.$toast?.info) this.$toast.info(this.$t('Handover.viewOnly'));
+            return true;
+        },
         participantMatches(a, b) {
             if (!a || !b) return false;
             if (a.email && b.email && a.email === b.email) return true;
@@ -3206,6 +3244,7 @@ export default {
             await this.checkExistingPdf2BpmnTask(roomId);
             this.processLoadedHwpxMessages();
             this.checkExistingArtifactPanels();
+            await this.ensureHandoverFlowTab(roomId);
             this.$nextTick(() => this.scrollToBottomSafe());
         },
 
@@ -3798,6 +3837,7 @@ export default {
             this.messages.push(this.normalizeAssistantMessageForDisplay(message));
         },
         openRenameDialog() {
+            if (this.blockIfViewOnly()) return;
             this.settingsMenu = false;
             this.renameDraft = (
                 this.currentChatRoom?.id ? this.currentChatRoom?.name || '' : this.draftName || this.$t('chatListing.newChat')
@@ -3846,6 +3886,7 @@ export default {
             this.participantsDialog = true;
         },
         async saveParticipants() {
+            if (this.blockIfViewOnly()) return;
             try {
                 const me = this.normalizeParticipant(this.userInfo);
                 const normalized = (this.participantsDraft || []).map(this.normalizeParticipant).filter(Boolean);
@@ -3904,6 +3945,7 @@ export default {
          * 지운다(남으면 loadRoom 이 그 스냅샷으로 방을 되살린다).
          */
         async confirmDelete() {
+            if (this.blockIfViewOnly()) return;
             const id = this.currentChatRoom?.id || this.roomId;
             this.deleteDialog = false;
             if (!id) return;
@@ -3911,6 +3953,22 @@ export default {
             // 1) 이 방으로 가는 작업을 먼저 멈춘다 — 삭제 뒤에 깨어나 행을 되살리지 못하게.
             this.stopAgentsInRoom(id);
             this.cancelRoomPersistTimers(id);
+
+            // 인계 스레드에 속한 방은 지우지 않고 내 목록에서만 뺀다 — 다음 사람이 이 방 대화를 방 id 로 읽는다.
+            // 방은 남으므로 쓰기 차단·캐시 삭제를 하지 않는다.
+            try {
+                if (await backend.isHandoverThreadRoom(id)) {
+                    await backend.removeChatRoom(id);
+                    this.EventBus.emit('chat-rooms-updated');
+                    this.EventBus.emit('chat-room-unselected');
+                    await this.$router.replace({ path: '/chat' });
+                    return;
+                }
+            } catch (e) {
+                console.error('[ChatRoomPage] 인계 방 숨기기 실패:', e);
+                if (this.$toast?.error) this.$toast.error(`채팅방을 목록에서 빼지 못했습니다: ${(e && (e.message || e.toString())) || '알 수 없는 오류'}`);
+                return;
+            }
 
             // 2) 쓰기 차단 + 로컬 캐시 정리. 삭제가 실패하면 되돌린다(아래 catch).
             markChatRoomDeleted(id);
@@ -4750,6 +4808,7 @@ export default {
         },
 
         handleHumanFeedbackSkip(messageOrFeedback) {
+            if (this.blockIfViewOnly()) return;
             const message = messageOrFeedback && messageOrFeedback.__humanFeedback ? messageOrFeedback : this.pendingHumanFeedbackMessage;
             const feedback = messageOrFeedback && !messageOrFeedback.__humanFeedback ? messageOrFeedback : message?.__humanFeedback;
 
@@ -4802,6 +4861,7 @@ export default {
         },
 
         async handleHumanFeedbackSubmit(messageOrFeedback, feedbackResult) {
+            if (this.blockIfViewOnly()) return;
             // Chat.vue에서 emit한 경우: (humanFeedback, feedbackResult)
             // 기존 호출(로컬 패널) 대비 호환: (message, feedbackResult)
             if (!feedbackResult && messageOrFeedback && messageOrFeedback.type) {
@@ -5151,6 +5211,7 @@ export default {
         },
 
         async handleSendMessage(payload) {
+            if (this.blockIfViewOnly()) return;
             const fileMeta = this.getPayloadFileSummary(payload);
             const rawFiles = this.getPayloadRawFiles(payload);
             const fallbackRawFileInfos = this.mapRawFilesToDisplayInfos(rawFiles);
@@ -5471,6 +5532,7 @@ export default {
         },
 
         async handleInviteAgent(_payload) {
+            if (this.blockIfViewOnly()) return;
             try {
                 if (!this.currentChatRoom?.id) return;
                 const roomId = this.currentChatRoom.id;
@@ -6292,6 +6354,25 @@ export default {
             this.artifactSidebarVisible = true;
         },
 
+        /**
+         * 인계 스레드에 속한 방이면 산출물 패널에 '작업 흐름' 탭을 넣어 둔다. 패널을 열지는 않는다 —
+         * 기존 산출물 버튼으로 패널을 열면 다른 산출물 탭과 함께 보인다.
+         */
+        async ensureHandoverFlowTab(roomId) {
+            if (!roomId || this.artifactPanels.some((p) => p.type === 'handoverFlow')) return;
+            try {
+                const { originRoomId } = await backend.resolveOriginRoomId(roomId);
+                const rows = (await backend.getHandoverThread(originRoomId)).filter((r) => r.source === 'chat_handover');
+                const here = this.currentChatRoom?.id || this.roomId;
+                if (!rows.length || here !== roomId || this.artifactPanels.some((p) => p.type === 'handoverFlow')) return;
+                const id = `handoverFlow-${this.uuid()}`;
+                this.artifactPanels.push({ id, type: 'handoverFlow', label: this.$t('Handover.flow'), data: { roomId } });
+                if (!this.activeArtifactId) this.activeArtifactId = id;
+            } catch (e) {
+                console.warn('[handover] 작업 흐름 탭을 넣지 못함:', e);
+            }
+        },
+
         /** 파일 경로에서 프로세스 그룹 키(process-<uuid> 폴더명) 추출. 없으면 'default'. */
         _processGroupKey(path) {
             const m = (path || '').replace(/\\/g, '/').match(/\/(process-[^/]+)\//);
@@ -6549,34 +6630,14 @@ export default {
                 });
             }
 
-            // 4) 대화 요약 — 산출물이 파일로 남지 않은 경우에도 맥락은 넘어가야 한다.
-            const transcript = this.buildHandoverTranscript();
-            if (transcript) {
-                candidates.push({
-                    type: 'chat_summary',
-                    ref: `chat:${this.currentChatRoom?.id || this.roomId}`,
-                    name: '대화 기록.md',
-                    content: transcript
-                });
-            }
-
+            // 대화는 파일로 복사해 넘기지 않는다. 받은 쪽(사람은 '이전 대화', 에이전트는 deepagents)이
+            // 받은 방 id 로 인계 체인을 따라 원래 대화를 읽는다. 예전 '대화 기록.md' 는 화면에 불러온
+            // 메시지만 담겨 대화 전체가 아니었고, 단계마다 이름만 다른 사본이 쌓였다.
             return candidates;
         },
 
-        /** 최근 대화를 마크다운으로 직렬화 (인계 산출물 / AI 제안 입력용) */
-        buildHandoverTranscript(limit = 30) {
-            const list = Array.isArray(this.messages) ? this.messages.slice(-limit) : [];
-            const lines = [];
-            for (const m of list) {
-                const content = (m?.content || '').toString().trim();
-                if (!content) continue;
-                const who = m?.name || m?.agentName || m?.email || m?.role || 'unknown';
-                lines.push(`**${who}**: ${content}`);
-            }
-            return lines.length ? lines.join('\n\n') : '';
-        },
-
         async openHandoverDialog() {
+            if (this.blockIfViewOnly()) return;
             const roomId = this.currentChatRoom?.id || this.roomId;
             if (!roomId) return;
             this.handoverArtifactCandidates = this.collectHandoverArtifacts();
@@ -6602,16 +6663,39 @@ export default {
                         /* 들고 있던 주소로 시도한다 */
                     }
                 }
-                const result = await backend.createChatHandover(payload);
+                // 받는 사람마다 한 건씩 넘긴다. 한 번에 여러 명에게 나눠 주면 같은 묶음으로 기록해,
+                // 식별 화면이 그 단계를 병렬(다른 일) 또는 다중 인스턴스(같은 일)로 도출하게 한다.
+                const receivers = Array.isArray(payload.receivers) && payload.receivers.length
+                    ? payload.receivers
+                    : [{ toUser: payload.toUser, nextActivityLabel: payload.nextActivityLabel }];
+                const groupId = receivers.length > 1 ? await backend.uuid() : null;
+                const results = [];
+                for (const r of receivers) {
+                    const result = await backend.createChatHandover({
+                        ...payload,
+                        toUser: r.toUser,
+                        nextActivityLabel: r.nextActivityLabel,
+                        groupId
+                    });
+                    results.push({ ...r, result });
+                }
 
                 // 현재 방에도 인계 사실을 남겨 둔다(수신자 방에는 브리핑이 따로 들어간다).
+                const handedTo = results
+                    .map((r) => `**${r.toUser?.name || r.toUser?.id}** 님에게 "${r.nextActivityLabel}"`)
+                    .join(', ');
                 const systemMessage = {
                     role: 'system',
                     name: this.userInfo?.name || localStorage.getItem('userName') || '',
                     email: localStorage.getItem('email') || '',
-                    content: `**${payload.toUser?.name || payload.toUser?.id}** 님에게 "${payload.nextActivityLabel}" 업무를 인계했습니다.`,
+                    content: `${handedTo} 업무를 인계했습니다.`,
                     timeStamp: new Date().toISOString(),
-                    handover: { case_id: result.caseId, to_room_id: result.toRoomId }
+                    handover: {
+                        case_id: results[0].result.caseId,
+                        to_room_id: results[0].result.toRoomId,
+                        to_room_ids: results.map((r) => r.result.toRoomId),
+                        group_id: groupId
+                    }
                 };
                 const msgUuid = await backend.uuid();
                 await backend.putObject(`db://chats/${msgUuid}`, {
@@ -6623,7 +6707,8 @@ export default {
 
                 this.handoverDialog = false;
                 if (this.$toast?.success) {
-                    this.$toast.success(`${payload.toUser?.name || payload.toUser?.id} 님에게 업무를 인계했습니다.`);
+                    const names = results.map((r) => r.toUser?.name || r.toUser?.id).join(', ');
+                    this.$toast.success(`${names} 님에게 업무를 인계했습니다.`);
                 }
             } catch (e) {
                 console.error('[handover] 인계 실패:', e);
@@ -7108,6 +7193,11 @@ export default {
         },
 
         handleArtifactAction({ type, action, panelId, payload }) {
+            // 읽기 전용 방에서는 내려받기·미리보기·이동 같은 보기 동작만 한다
+            if (this.isViewOnlyRoom && !['download', 'preview-bpmn', 'resolve-url', 'navigate-process'].includes(action)) {
+                this.blockIfViewOnly();
+                return;
+            }
             if (type === 'hwpx') {
                 if (action === 'page-edit-request') {
                     this.handleHwpxSectionEdit(panelId, payload);
@@ -7510,6 +7600,9 @@ export default {
                         report = await backend.validateAndImproveDraft(procId, {
                             processName: procName,
                             forms,
+                            // 식별 화면에서 전환한 방은 인계 기록에서 도출한 흐름을 그대로 쓴다. 실제 엔진으로
+                            // 한 번 돌려 보기만 하고(결함은 화면에 보인다) LLM 이 흐름을 고쳐 쓰지 않게 한다.
+                            maxIters: this.currentChatRoom?.context?.identification ? 1 : undefined,
                             // 검증 인스턴스를 현재 사용자에게 귀속 → 완료 인스턴스 목록에서 확인 가능.
                             email: this.userInfo?.email,
                             userUid: this.userInfo?.uid || this.userInfo?.id
@@ -7546,7 +7639,12 @@ export default {
                     this._roomDraftIds = newDraftIds.slice();
                     try {
                         if (this.currentChatRoom) {
-                            this.currentChatRoom.draftProcDefIds = newDraftIds.slice();
+                            // chat_rooms 에는 draftProcDefIds 열이 없다. 방 객체에 바로 붙이면 다음 메시지를
+                            // 보낼 때 방 저장이 400 으로 실패해 메시지가 나가지 않는다 — context(jsonb)에 둔다.
+                            this.currentChatRoom.context = {
+                                ...(this.currentChatRoom.context || {}),
+                                draftProcDefIds: newDraftIds.slice()
+                            };
                         }
                     } catch (re) {
                         /* ignore */
@@ -12510,5 +12608,16 @@ export default {
     content: '·';
     margin-right: 6px;
     color: rgba(0, 0, 0, 0.25);
+}
+
+.view-only-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--cds-text-secondary, rgba(0, 0, 0, 0.6));
+    background: rgba(var(--v-theme-on-surface), 0.03);
+    border-radius: 12px;
 }
 </style>

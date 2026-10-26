@@ -1,229 +1,256 @@
 <template>
-    <v-app>
-        <div class="mining-page">
-            <div class="mining-header">
-                <v-icon size="20" class="mr-2">mdi-source-branch</v-icon>
-                <span class="text-h6 font-weight-bold">프로세스 식별</span>
-                <span class="mining-header__sub">
-                    아직 정의되지 않은 업무를 인계 기록에서 찾아 <b>새 프로세스로 제안</b>합니다
-                    (기존 프로세스 개선은 리뷰 보드에서 다룹니다)
-                </span>
-                <v-spacer />
-                <v-btn
-                    color="primary"
-                    variant="flat"
-                    rounded="pill"
-                    size="small"
-                    prepend-icon="mdi-source-pull"
-                    :loading="proposing"
-                    :disabled="!discovered"
-                    class="e2e-propose-pr"
-                    @click="openProposeDialog"
-                >
-                    새 프로세스로 제안
-                </v-btn>
-                <v-btn
-                    color="success"
-                    variant="flat"
-                    rounded="pill"
-                    size="small"
-                    class="ml-2 e2e-convert-process"
-                    prepend-icon="mdi-rocket-launch-outline"
-                    :loading="converting"
-                    @click="convertToProcess"
-                >
-                    실행 가능한 프로세스로 전환
-                </v-btn>
+    <v-card elevation="10" class="rounded-xl handover-mining">
+        <v-card-text class="pa-4">
+            <!-- Header — 분석 메뉴의 다른 화면과 같은 틀(제목 · 한 줄 설명 · 오른쪽 아이콘 동작) -->
+            <div class="d-flex justify-space-between align-center mb-4">
+                <div>
+                    <h1 class="text-h5 font-weight-bold text-textPrimary">프로세스 식별</h1>
+                    <p class="text-body-2 text-grey100 mb-0 mt-1">인계 기록에서 아직 정의되지 않은 업무를 찾습니다</p>
+                </div>
+                <div class="d-flex align-center">
+                    <v-tooltip text="새로고침" location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" size="small" :loading="loading" @click="load">
+                                <v-icon>mdi-refresh</v-icon>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                    <v-tooltip text="새 프로세스로 제안" location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-btn
+                                v-bind="props"
+                                icon
+                                variant="text"
+                                size="small"
+                                :loading="proposing"
+                                :disabled="!discovered"
+                                class="e2e-propose-pr"
+                                aria-label="새 프로세스로 제안"
+                                @click="openProposeDialog"
+                            >
+                                <v-icon>mdi-source-pull</v-icon>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                    <v-tooltip text="실행 가능한 프로세스로 전환" location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-btn
+                                v-bind="props"
+                                icon
+                                variant="text"
+                                size="small"
+                                :loading="converting"
+                                :disabled="!discovered"
+                                class="e2e-convert-process"
+                                aria-label="실행 가능한 프로세스로 전환"
+                                @click="convertToProcess"
+                            >
+                                <v-icon>mdi-rocket-launch-outline</v-icon>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                </div>
             </div>
 
             <div v-if="loading" class="pa-8 text-center">
                 <v-progress-circular indeterminate color="primary" />
-                <div class="text-caption mt-3 text-medium-emphasis">인계 기록을 분석하는 중…</div>
             </div>
+            <v-alert v-else-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
 
-            <div v-if="!loading && error" class="pa-8">
-                <v-alert type="error" variant="tonal">{{ error }}</v-alert>
-            </div>
-
-            <!-- 업무 묶음: 서로 다른 업무를 한 프로세스의 갈래로 그리지 않도록 묶음마다 따로 도출한다 -->
-            <div v-if="!loading && !error && groups.length" class="mining-groups">
-                <span class="mining-section-sub mr-2">업무</span>
-                <v-chip-group v-model="selectedKey" mandatory selected-class="text-primary" @update:model-value="selectGroup">
-                    <v-chip
-                        v-for="g in groups"
-                        :key="g.process_key"
-                        :value="g.process_key"
-                        size="small"
-                        variant="outlined"
-                        class="e2e-process-group"
-                        :data-key="g.process_key"
-                    >
-                        {{ g.name }}
-                        <span class="ml-1 text-medium-emphasis">{{ g.case_count }}건</span>
-                    </v-chip>
-                </v-chip-group>
-            </div>
-
-            <div v-if="!loading && !error" class="mining-body">
-                <!-- 왼쪽: 인계 스레드 묶음 -->
-                <div class="mining-left">
-                    <div class="mining-section-title">
-                        인계 스레드
-                        <v-chip size="x-small" variant="tonal" class="ml-2 e2e-thread-count">{{ visibleThreads.length }}건</v-chip>
-                        <span class="mining-section-sub">최초 시작된 방 기준 · 방이 바뀌어도 한 묶음</span>
-                    </div>
-
-                    <div class="mining-threads">
-                        <div
-                            v-for="t in visibleThreads"
-                            :key="t.origin_room_id"
-                            class="mining-thread e2e-thread"
-                            :class="{ 'is-open': t.finished === false }"
-                            :data-finished="t.finished === false ? 'false' : 'true'"
+            <template v-if="!loading && !error">
+                <!-- 업무 묶음: 서로 다른 업무를 한 프로세스의 갈래로 그리지 않도록 묶음마다 따로 도출한다 -->
+                <!-- 업무 묶음: 서로 다른 업무를 한 프로세스의 갈래로 그리지 않도록 묶음마다 따로 도출한다.
+                     업무는 계속 늘어나므로 칩으로 다 펼치지 않고 검색되는 선택 상자 하나로 고른다. -->
+                <v-row v-if="groups.length" dense class="mb-2">
+                    <v-col cols="12" md="5">
+                        <v-autocomplete
+                            :model-value="selectedKey"
+                            :items="groupItems"
+                            item-title="name"
+                            item-value="process_key"
+                            label="업무"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            class="e2e-process-select"
+                            @update:model-value="selectGroup"
                         >
-                            <div class="mining-thread__head">
-                                <v-icon size="13" class="mr-1">mdi-source-branch</v-icon>
-                                <span class="mono">{{ t.origin_room_id }}</span>
-                                <v-chip size="x-small" variant="tonal" class="ml-2">{{ t.step_count }}단계</v-chip>
-                                <!-- 마지막으로 받은 할 일이 끝나지 않은 건은 도출에 들어가지 않는다 -->
-                                <v-tooltip v-if="t.finished === false" text="진행 중 — 도출에서 제외" location="top">
-                                    <template v-slot:activator="{ props }">
-                                        <v-icon v-bind="props" size="14" class="ml-1 text-medium-emphasis e2e-thread-open">
-                                            mdi-progress-clock
-                                        </v-icon>
+                            <template v-slot:item="{ props, item }">
+                                <v-list-item
+                                    v-bind="props"
+                                    class="e2e-process-option"
+                                    :class="{ 'text-medium-emphasis': !item.raw.minable }"
+                                    :data-key="item.raw.process_key"
+                                >
+                                    <template v-slot:append>
+                                        <span class="text-caption text-medium-emphasis">{{ item.raw.case_count }}</span>
                                     </template>
-                                </v-tooltip>
-                            </div>
-                            <div class="mining-thread__steps">
-                                <template v-for="(s, i) in t.steps" :key="i">
-                                    <span class="mining-step" :class="{ 'is-agent': s.to_is_agent, 'is-implicit': !s.is_explicit }">
-                                        <v-icon v-if="s.to_is_agent" size="11" class="mr-1">mdi-robot-outline</v-icon>
-                                        {{ shortLabel(s.activity) }}
-                                    </span>
-                                    <v-icon v-if="i < t.steps.length - 1" size="12" class="mx-1 text-medium-emphasis">
-                                        mdi-arrow-right
-                                    </v-icon>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
+                                </v-list-item>
+                            </template>
+                        </v-autocomplete>
+                    </v-col>
+                </v-row>
 
-                    <!-- 조직 마이닝: 누가 이 일을 할 수 있나 -->
-                    <div v-if="organization" class="mining-org mt-2">
-                        <div class="text-caption font-weight-bold mb-2">
-                            조직 마이닝
-                            <span class="mining-section-sub">이 흐름을 실제로 수행해 온 사람과 역할</span>
-                        </div>
-                        <div v-for="e in organization.eligibility.slice(0, 6)" :key="e.activity" class="mining-elig e2e-elig-row">
-                            <div class="mining-elig__act">{{ e.activity }}</div>
-                            <div class="mining-elig__who">
-                                <span v-for="c in e.candidates.slice(0, 2)" :key="c.user_id" class="mining-who-chip" :class="{ 'is-agent': c.is_agent }">
-                                    <v-icon v-if="c.is_agent" size="10" class="mr-1">mdi-robot-outline</v-icon>{{ c.name }}
-                                    <span class="mining-who-ev">{{ c.evidence_count }}건</span>
-                                </span>
-                            </div>
-                            <div class="mining-elig__auto">
-                                <span v-if="e.automation_rate >= 1">자동</span>
-                                <span v-else-if="e.automation_rate > 0">혼합</span>
-                                <span v-else>사람</span>
-                            </div>
-                        </div>
-                    </div>
+                <v-row>
+                    <v-col cols="12" md="4" class="d-flex flex-column ga-4">
+                        <!-- 인계 스레드 — 업무 이름 · 시작한 사람 · 날짜. 누르면 시작한 방이 열린다 -->
+                        <v-card variant="outlined" class="rounded-lg">
+                            <v-card-text class="pa-4">
+                                <div class="d-flex align-center mb-3">
+                                    <h3 class="text-subtitle-1 font-weight-semibold text-textPrimary">인계 스레드</h3>
+                                    <v-chip size="x-small" variant="tonal" class="ml-2 e2e-thread-count">{{
+                                        visibleThreads.length
+                                    }}</v-chip>
+                                </div>
+                                <div class="mining-threads">
+                                    <div
+                                        v-for="t in visibleThreads"
+                                        :key="t.origin_room_id"
+                                        class="mining-thread e2e-thread"
+                                        :class="{ 'is-open': t.finished === false }"
+                                        :data-room-id="t.origin_room_id"
+                                        :data-finished="t.finished === false ? 'false' : 'true'"
+                                        role="button"
+                                        tabindex="0"
+                                        @click="openRoom(t.origin_room_id)"
+                                        @keydown.enter="openRoom(t.origin_room_id)"
+                                    >
+                                        <div class="mining-thread__title">
+                                            <span class="mining-thread__name">{{ threadName(t) }}</span>
+                                            <!-- 마지막으로 받은 할 일이 끝나지 않은 건은 도출에 들어가지 않는다 -->
+                                            <v-tooltip v-if="t.finished === false" text="진행 중 — 도출에서 제외" location="top">
+                                                <template v-slot:activator="{ props }">
+                                                    <v-icon v-bind="props" size="14" class="ml-1 text-medium-emphasis e2e-thread-open">
+                                                        mdi-progress-clock
+                                                    </v-icon>
+                                                </template>
+                                            </v-tooltip>
+                                        </div>
+                                        <div class="text-caption text-medium-emphasis">
+                                            {{ threadStarter(t) }} · {{ formatDate(threadStartedAt(t)) }}
+                                        </div>
+                                    </div>
+                                    <div v-if="!visibleThreads.length" class="text-caption text-medium-emphasis">—</div>
+                                </div>
+                            </v-card-text>
+                        </v-card>
+
+                        <!-- 조직 마이닝: 고른 업무의 단계를 실제로 수행해 온 사람과 에이전트 -->
+                        <v-card v-if="eligibility.length" variant="outlined" class="rounded-lg">
+                            <v-card-text class="pa-4">
+                                <h3 class="text-subtitle-1 font-weight-semibold text-textPrimary mb-3">수행한 사람</h3>
+                                <div v-for="e in eligibility" :key="e.activity" class="mining-elig e2e-elig-row">
+                                    <div class="mining-elig__act">{{ e.activity }}</div>
+                                    <div class="mining-elig__who">
+                                        <span
+                                            v-for="c in e.candidates.slice(0, 2)"
+                                            :key="c.user_id"
+                                            class="mining-who-chip"
+                                            :class="{ 'is-agent': c.is_agent }"
+                                        >
+                                            <v-icon v-if="c.is_agent" size="10" class="mr-1">mdi-robot-outline</v-icon>{{ c.name }}
+                                            <span class="mining-who-ev">{{ c.evidence_count }}</span>
+                                        </span>
+                                    </div>
+                                    <v-tooltip :text="automationText(e.automation_rate)" location="top">
+                                        <template v-slot:activator="{ props }">
+                                            <v-icon v-bind="props" size="16" class="text-medium-emphasis">
+                                                {{ automationIcon(e.automation_rate) }}
+                                            </v-icon>
+                                        </template>
+                                    </v-tooltip>
+                                </div>
+                            </v-card-text>
+                        </v-card>
+                    </v-col>
+
+                    <v-col cols="12" md="8" class="d-flex flex-column ga-4">
+                        <!-- 도출된 프로세스 — 흐름은 여기 한 곳에서만 보인다 -->
+                        <v-card variant="outlined" class="rounded-lg">
+                            <v-card-text class="pa-4">
+                                <div class="d-flex align-center mb-3">
+                                    <h3 class="text-subtitle-1 font-weight-semibold text-textPrimary">도출된 프로세스</h3>
+                                    <v-chip v-if="discovered" size="x-small" variant="tonal" class="ml-2">
+                                        케이스 {{ discovered.stats.case_count }}
+                                    </v-chip>
+                                </div>
+                                <div class="mining-canvas">
+                                    <BpmnUengineViewer
+                                        v-if="bpmnXml"
+                                        :key="bpmnXml.length"
+                                        :bpmn="bpmnXml"
+                                        :disable-auto-orientation="true"
+                                    />
+                                    <div v-else class="pa-6 text-caption text-medium-emphasis e2e-discover-empty">
+                                        도출된 프로세스가 없습니다.
+                                        <div v-if="discoverError" class="mt-1">{{ discoverError }}</div>
+                                    </div>
+                                </div>
+                            </v-card-text>
+                        </v-card>
+
+                        <!-- 식별된 신규 프로세스 제안 -->
+                        <v-card variant="outlined" class="rounded-lg">
+                            <v-card-text class="pa-4">
+                                <div class="d-flex align-center mb-2">
+                                    <h3 class="text-subtitle-1 font-weight-semibold text-textPrimary">제안</h3>
+                                    <v-chip size="x-small" variant="tonal" class="ml-2 e2e-proposal-count">{{ proposals.length }}</v-chip>
+                                </div>
+                                <v-alert v-if="prResult" type="success" variant="tonal" density="compact" class="mb-2 e2e-pr-result">
+                                    {{ prResult.title }}
+                                </v-alert>
+                                <div v-if="!proposals.length" class="text-caption text-medium-emphasis">—</div>
+                                <div v-for="p in proposals" :key="p.id" class="mining-proposal e2e-proposal-row">
+                                    <v-chip size="x-small" :color="p.status === 'OPEN' ? 'success' : 'grey'" variant="flat">
+                                        {{ p.status }}
+                                    </v-chip>
+                                    <span class="ml-2 font-weight-medium">{{ p.title }}</span>
+                                    <v-spacer />
+                                    <span class="text-caption text-medium-emphasis">{{ formatDate(p.created_at) }}</span>
+                                </div>
+                            </v-card-text>
+                        </v-card>
+                    </v-col>
+                </v-row>
+            </template>
+        </v-card-text>
+
+        <!-- 새 프로세스로 제안: 담당자(소유자)를 정한다. 병합함은 소유자를 검토자로 본다 -->
+        <v-dialog v-model="proposeDialog" max-width="520">
+            <v-card class="pa-4 e2e-propose-dialog">
+                <div class="text-subtitle-1 font-weight-bold mb-1">새 프로세스로 제안</div>
+                <div class="text-caption text-medium-emphasis mb-4">
+                    담당자가 병합함에서 검토하고 승인하면 실제 프로세스로 저장됩니다. 본인을 지정해도 됩니다.
                 </div>
-
-                <!-- 오른쪽: 도출된 프로세스 (기존 BPMN 모델러로 렌더) -->
-                <div class="mining-right">
-                    <div class="mining-section-title">
-                        도출된 프로세스
-                        <span class="mining-section-sub">
-                            케이스 {{ discovered?.stats.case_count ?? 0 }}건에서 도출 · 기존 BPMN 모델러로 표시
-                        </span>
-                    </div>
-
-                    <div class="mining-canvas">
-                        <BpmnUengineViewer v-if="bpmnXml" :key="bpmnXml.length" :bpmn="bpmnXml" :disable-auto-orientation="true" />
-                        <div v-else class="pa-6 text-caption text-medium-emphasis e2e-discover-empty">
-                            도출된 프로세스가 없습니다.
-                            <div v-if="discoverError" class="mt-1">{{ discoverError }}</div>
-                        </div>
-                    </div>
-
-                    <div v-if="discovered" class="mining-variants">
-                        <div class="text-caption font-weight-bold mb-1">관측된 흐름</div>
-                        <div v-for="(v, i) in discovered.stats.variants" :key="i" class="text-caption mining-variant">
-                            <span class="mining-variant__count">{{ v.count }}건</span>
-                            {{ v.trace.join(' → ') }}
-                        </div>
-                        <div v-if="agentActivities.length" class="text-caption mt-2">
-                            <v-icon size="13" class="mr-1">mdi-robot-outline</v-icon>
-                            자동 수행 단계:
-                            <span class="font-weight-bold">{{ agentActivities.join(', ') }}</span>
-                        </div>
-                    </div>
-
-                    <v-alert v-if="prResult" type="success" variant="tonal" density="compact" class="mt-3 e2e-pr-result mining-pr-result">
-                        새 프로세스 제안이 등록되었습니다 — {{ prResult.title }}
-                        <div class="text-caption mt-1">아래 목록에서 검토·승인할 수 있습니다.</div>
-                    </v-alert>
-
-                    <!-- 식별된 신규 프로세스 제안이 모이는 곳 -->
-                    <div class="mining-proposals mt-3">
-                        <div class="text-caption font-weight-bold mb-2 d-flex align-center">
-                            식별된 신규 프로세스 제안
-                            <v-chip size="x-small" variant="tonal" class="ml-2 e2e-proposal-count">{{ proposals.length }}건</v-chip>
-                            <span class="mining-section-sub">승인 전까지 실제 프로세스 정의는 바뀌지 않습니다</span>
-                        </div>
-                        <div v-if="!proposals.length" class="text-caption text-medium-emphasis">
-                            아직 제안이 없습니다. 위 [새 프로세스로 제안]을 눌러 등록하세요.
-                        </div>
-                        <div v-for="p in proposals" :key="p.id" class="mining-proposal e2e-proposal-row">
-                            <v-chip size="x-small" :color="p.status === 'OPEN' ? 'success' : 'grey'" variant="flat">
-                                {{ p.status }}
-                            </v-chip>
-                            <span class="ml-2 font-weight-medium">{{ p.title }}</span>
-                            <span class="ml-2 text-caption text-medium-emphasis mono">{{ p.branch_name }}</span>
-                            <v-spacer />
-                            <span class="text-caption text-medium-emphasis">{{ formatDate(p.created_at) }}</span>
-                        </div>
-                    </div>
+                <v-text-field v-model="proposeTitle" label="제목" variant="outlined" density="compact" class="mb-2" />
+                <v-autocomplete
+                    v-model="proposeOwnerId"
+                    :items="people"
+                    item-title="label"
+                    item-value="id"
+                    label="이 프로세스의 담당자(검토자)"
+                    variant="outlined"
+                    density="compact"
+                    class="e2e-propose-owner"
+                    @focus="selectOwnerText"
+                />
+                <div v-if="proposeError" class="text-caption text-error mb-2">{{ proposeError }}</div>
+                <div class="d-flex justify-end">
+                    <v-btn variant="text" @click="proposeDialog = false">취소</v-btn>
+                    <v-btn
+                        color="primary"
+                        variant="flat"
+                        class="ml-2 e2e-propose-submit"
+                        :loading="proposing"
+                        :disabled="!proposeOwnerId || !proposeTitle"
+                        @click="proposePr"
+                    >
+                        제안
+                    </v-btn>
                 </div>
-            </div>
-            <!-- 새 프로세스로 제안: 담당자(소유자)를 정한다. 병합함은 소유자를 검토자로 본다 -->
-            <v-dialog v-model="proposeDialog" max-width="520">
-                <v-card class="pa-4 e2e-propose-dialog">
-                    <div class="text-subtitle-1 font-weight-bold mb-1">새 프로세스로 제안</div>
-                    <div class="text-caption text-medium-emphasis mb-4">
-                        담당자가 병합함에서 검토하고 승인하면 실제 프로세스로 저장됩니다. 본인을 지정해도 됩니다.
-                    </div>
-                    <v-text-field v-model="proposeTitle" label="제목" variant="outlined" density="compact" class="mb-2" />
-                    <v-autocomplete
-                        v-model="proposeOwnerId"
-                        :items="people"
-                        item-title="label"
-                        item-value="id"
-                        label="이 프로세스의 담당자(검토자)"
-                        variant="outlined"
-                        density="compact"
-                        class="e2e-propose-owner"
-                    />
-                    <div v-if="proposeError" class="text-caption text-error mb-2">{{ proposeError }}</div>
-                    <div class="d-flex justify-end">
-                        <v-btn variant="text" @click="proposeDialog = false">취소</v-btn>
-                        <v-btn
-                            color="primary"
-                            variant="flat"
-                            class="ml-2 e2e-propose-submit"
-                            :loading="proposing"
-                            :disabled="!proposeOwnerId || !proposeTitle"
-                            @click="proposePr"
-                        >
-                            제안
-                        </v-btn>
-                    </div>
-                </v-card>
-            </v-dialog>
-        </div>
-    </v-app>
+            </v-card>
+        </v-dialog>
+    </v-card>
 </template>
 
 <script>
@@ -265,7 +292,9 @@ export default {
             proposeOwnerId: null,
             proposeError: '',
             people: [],
-            organization: null
+            organization: null,
+            // 스레드를 시작한 방의 이름(업무 이름) — 방 id 대신 보인다
+            roomNames: {}
         };
     },
     computed: {
@@ -277,17 +306,65 @@ export default {
             if (!this.selectedKey) return this.threads;
             return this.threads.filter((t) => t.process_key === this.selectedKey);
         },
-        agentActivities() {
-            return (this.discovered?.definition?.activities || []).filter((a) => a.agent).map((a) => a.name);
+        /** 선택 상자 항목 — 도출할 수 있는 업무 먼저, 케이스가 많은 순 */
+        groupItems() {
+            return [...this.groups].sort((a, b) => Number(!!b.minable) - Number(!!a.minable) || (b.case_count || 0) - (a.case_count || 0));
+        },
+        selectedGroup() {
+            return this.groups.find((g) => g.process_key === this.selectedKey) || null;
+        },
+        /** 고른 업무의 단계만. 다른 업무의 단계와 담당자는 보이지 않는다. */
+        eligibility() {
+            const rows = this.organization?.eligibility || [];
+            const acts = new Set(this.selectedGroup?.activities || []);
+            if (!acts.size) return [];
+            return rows.filter((e) => acts.has(e.activity));
         }
     },
     async created() {
         await this.load();
     },
     methods: {
-        shortLabel(s) {
-            const t = String(s || '').trim();
-            return t.length > 22 ? `${t.slice(0, 22)}…` : t;
+        threadName(t) {
+            return this.roomNames[t.origin_room_id] || t.steps?.[0]?.activity || '—';
+        },
+        threadStarter(t) {
+            const first = t.steps?.[0];
+            return (first && (first.source === 'start' ? first.to : first.from)) || '';
+        },
+        threadStartedAt(t) {
+            return t.steps?.[0]?.occurred_at || '';
+        },
+        openRoom(roomId) {
+            if (roomId) this.$router.push({ path: '/chat', query: { roomId } });
+        },
+        automationIcon(rate) {
+            if (rate >= 1) return 'mdi-robot-outline';
+            if (rate > 0) return 'mdi-account-cog-outline';
+            return 'mdi-account-outline';
+        },
+        automationText(rate) {
+            if (rate >= 1) return '에이전트가 수행';
+            if (rate > 0) return '사람과 에이전트가 함께 수행';
+            return '사람이 수행';
+        },
+        /** 담당자 칸에 들어갈 때 기존 이름을 선택해 둔다 — 바로 다른 사람 이름을 치면 바뀐다. */
+        selectOwnerText(e) {
+            const el = e?.target;
+            if (el && typeof el.select === 'function') requestAnimationFrame(() => el.select());
+        },
+        /** 스레드를 시작한 방 이름을 한 번에 읽는다. */
+        async loadRoomNames() {
+            const ids = Array.from(new Set(this.threads.map((t) => t.origin_room_id).filter(Boolean)));
+            const names = {};
+            for (let i = 0; i < ids.length; i += 100) {
+                const { data } = await window.$supabase
+                    .from('chat_rooms')
+                    .select('id, name')
+                    .in('id', ids.slice(i, i + 100));
+                for (const r of data || []) if (r.name) names[r.id] = r.name;
+            }
+            this.roomNames = names;
         },
         async load() {
             this.loading = true;
@@ -301,6 +378,7 @@ export default {
                 ]);
                 this.threads = th.threads || [];
                 this.groups = pg.processes || [];
+                await this.loadRoomNames().catch((e) => console.warn('[mining] 방 이름 조회 실패:', e));
                 const first = this.groups.find((g) => g.minable) || this.groups[0];
                 this.selectedKey = first ? first.process_key : null;
                 await this.loadDiscovered();
@@ -320,7 +398,7 @@ export default {
                 return null;
             });
             this.discovered = dc;
-            this.bpmnXml = dc ? this.toBpmn(dc.definition) : '';
+            this.bpmnXml = dc ? this.markMultiInstance(this.toBpmn(dc.definition), dc) : '';
             this.proposals = [];
             if (dc) await this.loadProposals(dc.definition?.processDefinitionId);
         },
@@ -384,12 +462,16 @@ export default {
                     duration: a.duration || 1
                 })
             );
+            // 생성기는 elements[] 가 이미 있으면 자체 변환(transformJsonModel)을 건너뛰고 gateWayType 만 읽는다.
+            // 비어 있으면 모든 게이트웨이가 배타(X)로 그려져, 병렬 분기가 선택처럼 보였다.
+            const GW_XML = { parallelGateway: 'bpmn:parallelGateway', inclusiveGateway: 'bpmn:inclusiveGateway' };
             (d.gateways || []).forEach((g) =>
                 elements.push({
                     elementType: 'Gateway',
                     id: g.id,
                     name: g.name || '',
                     type: GW[g.type] || 'ExclusiveGateway',
+                    gateWayType: GW_XML[g.type] || 'bpmn:exclusiveGateway',
                     role: g.role || prevRole(g.id),
                     description: g.description || ''
                 })
@@ -414,6 +496,31 @@ export default {
                 elements,
                 subProcesses: []
             };
+        },
+        /**
+         * 같은 일을 한 번에 여러 명에게 준 단계(다중 인스턴스)에 BPMN 표준 표시를 붙인다.
+         * 병렬 다중 인스턴스(multiInstanceLoopCharacteristics, isSequential 기본 false)라 모델러가
+         * 표준 ||| 표시로 그린다. 정의 JSON 에는 이 속성이 없어 XML 에만 붙인다.
+         */
+        markMultiInstance(xml, dc) {
+            const names = new Set(dc?.stats?.multi_instance_activities || []);
+            if (!xml || !names.size) return xml;
+            try {
+                const ids = new Set((dc.definition?.activities || []).filter((a) => names.has(a.name)).map((a) => a.id));
+                const doc = new DOMParser().parseFromString(xml, 'application/xml');
+                const NS = 'http://www.omg.org/spec/BPMN/20100524/MODEL';
+                let marked = 0;
+                for (const el of Array.from(doc.getElementsByTagNameNS(NS, '*'))) {
+                    if (!/Task$/.test(el.localName) || !ids.has(el.getAttribute('id'))) continue;
+                    if (el.getElementsByTagNameNS(NS, 'multiInstanceLoopCharacteristics').length) continue;
+                    el.appendChild(doc.createElementNS(NS, `${el.prefix ? el.prefix + ':' : ''}multiInstanceLoopCharacteristics`));
+                    marked += 1;
+                }
+                return marked ? new XMLSerializer().serializeToString(doc) : xml;
+            } catch (e) {
+                console.warn('[mining] 다중 인스턴스 표시 실패:', e);
+                return xml;
+            }
         },
         /** 도출된 정의 JSON → BPMN XML (기존 모델러가 그대로 읽는 형식) */
         toBpmn(definition) {
@@ -486,12 +593,15 @@ export default {
                         }
                     ],
                     message: { msg: 'NEW', type: 'text', createdAt: new Date().toISOString() },
-                    // 어디서 온 전환인지 남긴다
+                    // 도출된 정의를 그대로 싣는다. 생성 에이전트는 이 정의를 작업 폴더에 받아
+                    // 흐름(단계·담당자·순서·분기)은 두고 폼·스킬·에이전트만 보강한다.
                     context: {
                         identification: {
                             source: 'handover-mining',
                             process_definition_id: d.processDefinitionId,
-                            case_count: this.discovered.stats.case_count
+                            process_key: this.selectedKey || null,
+                            case_count: this.discovered.stats.case_count,
+                            definition: d
                         }
                     }
                 });
@@ -528,6 +638,7 @@ export default {
             const tags = this.conditionalActivityTags(d);
             const lines = [
                 `인계 기록에서 식별된 업무 흐름입니다. 이대로 실행 가능한 프로세스로 만들어 주세요.`,
+                `흐름은 프로세스 폴더의 process-definition.json 에 이미 있습니다. 흐름은 바꾸지 말고 폼·스킬·에이전트만 보강해 주세요.`,
                 ``,
                 `[${d.processDefinitionName}]`
             ];
@@ -549,9 +660,9 @@ export default {
          * 반복 판정 게이트웨이 뒤의 필수 단계(예: 고객 발송)까지 '건너뜀'으로 읽힌다.
          */
         conditionalActivityTags(d) {
-            const roleOf = (g) => {
+            const roleOf = (n) => {
                 try {
-                    return JSON.parse(g.properties || '{}').minedRole || '';
+                    return JSON.parse(n.properties || '{}').minedRole || '';
                 } catch (e) {
                     return '';
                 }
@@ -569,7 +680,8 @@ export default {
                 if (role === 'choice') {
                     const hasSkip = seqs.some((x) => x.source === s.source && gwRole[x.target] === 'skip');
                     out[target.name] = hasSkip ? '조건에 따라 건너뜀' : '조건에 따라 택일';
-                } else if (role === 'loop_exit' && s.condition) {
+                } else if (role === 'loop_exit' && roleOf(s) === 'redo') {
+                    // 반복 판정에서 빠져나가는 선에도 선택값('완료')이 붙으므로 선의 자리로 가른다
                     out[target.name] = '반려 시 반복';
                 }
             });
@@ -632,152 +744,56 @@ export default {
 </script>
 
 <style scoped>
-.mining-page {
-    height: 100vh;
+.mining-threads {
+    max-height: 420px;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    background: #f4f2f8;
+    gap: 2px;
 }
-.mining-header {
-    display: flex;
-    align-items: center;
-    padding: 12px 20px;
-    background: #2d1b45;
-    color: #fff;
+.mining-thread {
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
 }
-/* 테마의 .text-h6 글자색이 어두운 머리 줄 위에서 묻히지 않게 한다 */
-.mining-header .text-h6 {
-    color: inherit;
-}
-.mining-header__sub {
-    margin-left: 14px;
-    font-size: 12px;
-    opacity: 0.7;
-}
-.mining-body {
-    flex: 1;
-    display: flex;
-    gap: 12px;
-    padding: 12px;
-    overflow: hidden;
-}
-.mining-left {
-    flex: 0 0 40%;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-.mining-right {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-.mining-section-title {
-    font-weight: 700;
-    font-size: 14px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-}
-.mining-section-sub {
-    margin-left: 10px;
-    font-size: 12px;
-    font-weight: 400;
-    color: #7a7a8c;
-}
-.mining-groups {
-    display: flex;
-    align-items: center;
-    padding: 6px 20px 0;
-    flex-wrap: wrap;
+.mining-thread:hover,
+.mining-thread:focus-visible {
+    background: rgba(var(--v-theme-on-surface), 0.04);
+    outline: none;
 }
 .mining-thread.is-open {
     opacity: 0.6;
 }
-.mining-threads {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-.mining-thread {
-    background: #fff;
-    border-radius: 10px;
-    padding: 8px 10px;
-}
-.mining-thread__head {
+.mining-thread__title {
     display: flex;
     align-items: center;
-    font-size: 11px;
-    color: #68369a;
-    margin-bottom: 5px;
+    font-size: 14px;
+    font-weight: 600;
 }
-.mono {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.mining-thread__steps {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    row-gap: 4px;
-}
-.mining-step {
-    display: inline-flex;
-    align-items: center;
-    font-size: 11.5px;
-    background: #f0edf7;
-    border-radius: 20px;
-    padding: 3px 9px;
-}
-.mining-step.is-agent {
-    background: #e6efff;
-    color: #1c4ea8;
-}
-.mining-step.is-implicit {
-    border: 1px dashed #b9a8d6;
-}
-/* 세로 flex 안에서 알림이 남는 높이를 차지해 도면을 밀어내지 않게 한다 */
-.mining-pr-result {
-    flex: 0 0 auto;
+.mining-thread__name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .mining-canvas {
-    flex: 1;
-    background: #fff;
-    border-radius: 10px;
+    height: 460px;
+    border-radius: 8px;
     overflow: hidden;
-    min-height: 260px;
-}
-.mining-variants {
-    background: #fff;
-    border-radius: 10px;
-    padding: 10px 12px;
-    margin-top: 10px;
-}
-.mining-variant {
-    line-height: 1.75;
-}
-.mining-org {
-    background: #fff;
-    border-radius: 10px;
-    padding: 10px 12px;
-    max-height: 220px;
-    overflow-y: auto;
 }
 .mining-elig {
     display: flex;
     align-items: center;
-    font-size: 12px;
-    padding: 5px 2px;
-    border-bottom: 1px solid #f4f2f8;
+    gap: 8px;
+    font-size: 13px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 .mining-elig:last-child {
     border-bottom: none;
 }
 .mining-elig__act {
-    flex: 0 0 36%;
+    flex: 0 0 38%;
     font-weight: 600;
 }
 .mining-elig__who {
@@ -789,43 +805,28 @@ export default {
 .mining-who-chip {
     display: inline-flex;
     align-items: center;
-    background: #f0edf7;
+    font-size: 12px;
+    background: rgba(var(--v-theme-on-surface), 0.05);
     border-radius: 20px;
     padding: 2px 8px;
 }
 .mining-who-chip.is-agent {
-    background: #e6efff;
-    color: #1c4ea8;
+    background: rgba(var(--v-theme-primary), 0.08);
+    color: rgb(var(--v-theme-primary));
 }
 .mining-who-ev {
     margin-left: 4px;
     opacity: 0.6;
     font-size: 11px;
 }
-.mining-elig__auto {
-    flex: 0 0 44px;
-    text-align: right;
-    color: #7a7a8c;
-}
-.mining-proposals {
-    background: #fff;
-    border-radius: 10px;
-    padding: 10px 12px;
-}
 .mining-proposal {
     display: flex;
     align-items: center;
-    font-size: 12.5px;
-    padding: 6px 4px;
-    border-bottom: 1px solid #f0eef5;
+    font-size: 13px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 .mining-proposal:last-child {
     border-bottom: none;
-}
-.mining-variant__count {
-    display: inline-block;
-    min-width: 34px;
-    font-weight: 700;
-    color: #68369a;
 }
 </style>

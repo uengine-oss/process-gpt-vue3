@@ -136,3 +136,39 @@ connected threads form one group (single linkage). Rework variants (0.75) and ap
 variants (0.5) stay together; businesses that share no step split. The group id is the
 same deterministic id as the proposed definition, so re-proposing a business versions one
 definition. Threads in progress are attached to the closest group for display only.
+
+## Receiving room shows the earlier conversation (2026-10-23)
+
+The receiving room is still a new room, but its top shows the conversations of the rooms this
+work came through, read-only, from the room where it started to the room just before. Each room
+is cut at the moment it handed over; what was said there afterwards is not this work's context.
+The chain is walked through `handover_events.to_room_id → from_room_id`. Copying the conversation
+into `대화 기록 (n).md` files stays, because an agent recipient reads its context from the workspace.
+
+Inviting the receiver into the existing room was rejected: with parallel handover the branches'
+work and the agents' workspace folders would mix in one room, and the miner could no longer tell
+which branch a message belongs to.
+
+## Parallel handover (2026-10-23)
+
+One handover can go to several people or agents. Each receiver gets one row and one new room;
+rows from the same handover share `group_id` (null for a single receiver).
+
+| in one group | derived as |
+|---|---|
+| different next activities | parallel (AND) |
+| same next activity | one activity marked multi-instance |
+
+No join is configured. A grouped thread is finished when every branch leaf (a row whose
+receiving room did not hand over again) is finished, by the same per-row rule as before.
+
+Discovery stays trace-based. A time-ordered trace interleaves branches, so for grouped cases the
+event log is rebuilt along the room tree and emitted once per branch rotation (each branch comes
+first once, so every branch has a start and an end), and activity pairs from different branches
+are passed to the DFG as both-direction edges so the parallel cut is found. Optionality is judged
+by "present in every trace", so several traces per case do not change it. Threads without
+`group_id` keep the old trace and the old end rule — their results are unchanged.
+
+ProcessGPT definitions have no multi-instance property on a regular activity, so it is not
+invented in the definition JSON. The miner reports `multi_instance_activities`; the identification
+screen adds the standard `multiInstanceLoopCharacteristics` to the rendered BPMN XML only.

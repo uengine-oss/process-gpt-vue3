@@ -5762,6 +5762,17 @@
         "branch": "branch {branch}"
     },
     "Handover": {
+        "viewOnly": "You're not a participant of this room — read only",
+        "refresh": "Refresh",
+        "legendCard": "Card = task",
+        "legendLine": "Line = handover",
+        "legendLabel": "Label = assignment reason",
+        "status_waiting": "Waiting",
+        "flow": "Work flow",
+        "status_progress": "In progress",
+        "status_done": "Done",
+        "history": "Earlier conversation",
+        "openRoom": "Open original room",
         "title": "Hand Over Work",
         "button": "Hand over",
         "artifacts": "Artifacts to hand over",

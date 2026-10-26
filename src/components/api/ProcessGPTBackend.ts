@@ -62,6 +62,7 @@ import { formatRequesterName } from '@/composables/usePrUtils';
 import { describeBpmnChanges } from '@/composables/usePrChanges';
 import { normalizeFormRowLayout, extractFields } from '@/utils/formHtml';
 import { roomWorkspaceKey, roomWorkspacePath, uniqueHandoverNames } from '@/utils/handoverFiles';
+import { processGptAgent } from '@/constants/processGptAgent';
 
 enum ErrorCode {
     TableNotFound = '42P01'
@@ -9317,6 +9318,51 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * 인계 스레드에 속한 방인가(이 방에서 넘겼거나 이 방으로 받았다).
+     * 다음 사람(사람의 '이전 대화', 에이전트의 앞선 대화)이 이 방 대화를 방 id 로 읽으므로 지우면 맥락이 사라진다.
+     */
+    async isHandoverThreadRoom(roomId: string): Promise<boolean> {
+        if (!roomId) return false;
+        const { data, error } = await window.$supabase
+            .from('handover_events')
+            .select('id')
+            .eq('tenant_id', window.$tenantName)
+            .eq('source', 'chat_handover')
+            .or(`from_room_id.eq.${roomId},to_room_id.eq.${roomId}`)
+            .limit(1);
+        if (error) throw error;
+        return Array.isArray(data) && data.length > 0;
+    }
+
+    /**
+     * 방을 내 대화목록에서 없앤다. 인계 스레드에 속한 방은 지우지 않고 참여자에서 나만 뺀다
+     * (목록은 내가 참여자인 방만 보인다). 그 밖의 방은 예전처럼 대화와 함께 지운다.
+     * 스레드 여부를 확인하지 못하면 지우지 않고 오류를 낸다 — 스레드 방을 잘못 지우면 되돌릴 수 없다.
+     */
+    async removeChatRoom(roomId: string): Promise<'hidden' | 'deleted'> {
+        if (!roomId) throw new Error('roomId is required');
+        if (await this.isHandoverThreadRoom(roomId)) {
+            const uid = localStorage.getItem('uid');
+            const email = localStorage.getItem('email');
+            const { data: room, error: readError } = await window.$supabase
+                .from('chat_rooms')
+                .select('participants')
+                .eq('id', roomId)
+                .maybeSingle();
+            if (readError) throw readError;
+            const participants = (Array.isArray(room?.participants) ? room.participants : []).filter(
+                (p: any) => !((uid && p?.id === uid) || (email && p?.email === email))
+            );
+            const { error } = await window.$supabase.from('chat_rooms').update({ participants }).eq('id', roomId);
+            if (error) throw error;
+            return 'hidden';
+        }
+        await this.delete(`db://chats/${roomId}`, { key: 'id' });
+        await this.delete(`db://chat_rooms/${roomId}`, { key: 'id' });
+        return 'deleted';
+    }
+
     /** 한 케이스의 인계 체인을 시간순으로 반환 */
     async getHandoverChain(caseId: string): Promise<any[]> {
         if (!caseId) return [];
@@ -9391,6 +9437,8 @@ class ProcessGPTBackend implements Backend {
         artifacts?: Array<{ type: string; ref?: string; name?: string; storagePath?: string; content?: string }>;
         carryAgents?: boolean;
         sourceRoom?: any;
+        // 한 번의 인계로 여러 명에게 넘길 때 그 행들을 묶는 값. 한 사람에게 넘기면 없다.
+        groupId?: string | null;
     }): Promise<{ caseId: string; toRoomId: string; toTaskId: string; eventId: string }> {
         const tenantId = window.$tenantName;
         const fromUserId = localStorage.getItem('uid') || localStorage.getItem('email') || '';
@@ -9442,6 +9490,11 @@ class ProcessGPTBackend implements Backend {
             { id: toUserId, name: payload.toUser?.name || '', email: payload.toUser?.email || '', isAgent: !!payload.toUser?.isAgent },
             ...carriedAgents.filter((a: any) => a?.id !== toUserId)
         ];
+        // 사람에게 넘긴 방에 에이전트가 하나도 없으면 기본 Process GPT Agent 를 함께 넣는다. 새 방은 받는 사람이
+        // 에이전트와 이어서 일하는 대화방이고, 참가자가 받는 사람 하나뿐인 방은 대화 목록에 보이지 않는다.
+        if (!participants.some((p: any) => p?.isAgent || p?.is_agent)) {
+            participants.push({ ...processGptAgent, name: processGptAgent.username, isAgent: true } as any);
+        }
         // 에이전트에게 넘기면 넘긴 사람도 방에 남는다. 에이전트는 다음 담당자에게 스스로
         // 인계하지 못하므로, 결과를 받아 이어 넘길 사람이 없으면 스레드가 거기서 끊긴다.
         if (payload.toUser?.isAgent && fromUserId && fromUserId !== toUserId) {
@@ -9450,28 +9503,6 @@ class ProcessGPTBackend implements Backend {
         // 받는 방 이름에 이 업무가 시작된 방 이름을 붙인다. '다음 할 일' 만으로 지으면
         // 받는 사람 목록에 '견적 검토' 가 건마다 쌓여 어느 건인지 구분할 수 없다.
         const originRoomName = await this.resolveOriginRoomName(originRoomId, payload.fromRoomId, payload.sourceRoom);
-        const newRoom = {
-            id: toRoomId,
-            tenant_id: tenantId,
-            name: originRoomName ? `${payload.nextActivityLabel} · ${originRoomName}` : payload.nextActivityLabel,
-            participants,
-            primary_agent_id: payload.toUser?.isAgent ? toUserId : payload.sourceRoom?.primary_agent_id || null,
-            message: { msg: 'NEW', type: 'handover', createdAt: new Date().toISOString() },
-            context: {
-                handover: {
-                    // 이메일의 References 헤더처럼 스레드 뿌리를 그대로 물려준다.
-                    // 다음 인계 때 이 값이 조회 없이 바로 승계된다.
-                    origin_room_id: originRoomId,
-                    origin_room_name: originRoomName || null,
-                    case_id: caseId,
-                    from_room_id: payload.fromRoomId,
-                    from_user_id: fromUserId,
-                    from_user_name: fromUserName,
-                    artifact_refs: artifactRefs
-                }
-            }
-        };
-        await storage.putObject('chat_rooms', newRoom, { onConflict: 'id' });
 
         // 3) 브리핑 메시지 — 수신자가 방에 들어오자마자 맥락을 잡을 수 있게
         const briefing = this.buildHandoverBriefing({
@@ -9482,6 +9513,36 @@ class ProcessGPTBackend implements Backend {
             reason: payload.reason,
             artifactRefs
         });
+        // 받는 사람에게는 읽지 않은 방으로 보이게 하고, 방을 열면 읽음으로 바뀌게 한다.
+        // 예전에는 미리보기를 'NEW' 로 두었는데, 목록은 'NEW' 를 읽음 여부와 상관없이
+        // 안 읽음으로 칠하고 브리핑은 chats 에만 쓰여 미리보기가 바뀌지 않아, 열어도 계속 안 읽음이었다.
+        for (const p of participants) {
+            if (!p.isAgent && p.id !== fromUserId) p.isExistUnReadMessage = true;
+        }
+        const newRoom = {
+            id: toRoomId,
+            tenant_id: tenantId,
+            name: originRoomName ? `${payload.nextActivityLabel} · ${originRoomName}` : payload.nextActivityLabel,
+            participants,
+            primary_agent_id: payload.toUser?.isAgent ? toUserId : payload.sourceRoom?.primary_agent_id || null,
+            message: { msg: briefing.replace(/\s+/g, ' ').trim().substring(0, 50), type: 'handover', createdAt: new Date().toISOString() },
+            context: {
+                handover: {
+                    // 이메일의 References 헤더처럼 스레드 뿌리를 그대로 물려준다.
+                    // 다음 인계 때 이 값이 조회 없이 바로 승계된다.
+                    origin_room_id: originRoomId,
+                    origin_room_name: originRoomName || null,
+                    case_id: caseId,
+                    from_room_id: payload.fromRoomId,
+                    from_user_id: fromUserId,
+                    from_user_name: fromUserName,
+                    group_id: payload.groupId || null,
+                    artifact_refs: artifactRefs
+                }
+            }
+        };
+        await storage.putObject('chat_rooms', newRoom, { onConflict: 'id' });
+
         // 넘긴 파일을 브리핑에 작업 폴더 항목으로 싣는다. 방을 열면 작업 폴더에 뜨고,
         // 다음 인계 때 후보로 다시 잡힌다.
         const workspaceFiles = artifactRefs
@@ -9516,7 +9577,7 @@ class ProcessGPTBackend implements Backend {
                     email: localStorage.getItem('email') || '',
                     content: briefing,
                     timeStamp: new Date().toISOString(),
-                    handover: { origin_room_id: originRoomId, case_id: caseId, from_room_id: payload.fromRoomId },
+                    handover: { origin_room_id: originRoomId, case_id: caseId, from_room_id: payload.fromRoomId, group_id: payload.groupId || null },
                     ...(workspaceFiles.length ? { workspaceFiles } : {})
                 }
             });
@@ -9607,6 +9668,7 @@ class ProcessGPTBackend implements Backend {
             artifact_refs: artifactRefs,
             participant_agents: carriedAgents.map((a: any) => ({ id: a?.id, name: a?.name })),
             handover_latency_sec: latency,
+            group_id: payload.groupId || null,
             occurred_at: new Date().toISOString()
         });
 

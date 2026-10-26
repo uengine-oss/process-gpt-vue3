@@ -701,6 +701,13 @@ const allRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/analytics/PiFlagBoard.vue')
     },
     {
+        // 다른 분석 화면과 같은 앱 레이아웃(사이드바·머리) 안에 둔다. 예전에는 최상위 공개 라우트라
+        // 레이아웃 밖 전용 화면으로 보였다.
+        name: 'Handover Mining',
+        path: '/mining/handover',
+        component: () => import('@/views/mining/HandoverMining.vue')
+    },
+    {
         name: 'Strategy Board',
         path: '/strategy-board',
         component: () => import('@/views/strategy/StrategyBoard.vue')

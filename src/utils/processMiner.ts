@@ -60,6 +60,8 @@ export interface DiscoveredProcess {
         process_count?: number;
         delegation_count?: number;
         variants: { trace: string[]; count: number }[];
+        // 한 번의 인계로 같은 일을 여러 명에게 준 단계(다중 인스턴스)
+        multi_instance_activities?: string[];
         handover_matrix: { from: string; to: string; count: number }[];
     };
     tree: string;
@@ -88,7 +90,8 @@ export interface IdentifiedProposal {
 
 export const processMiner = {
     health: () => get<{ status: string }>('/health'),
-    threads: (tenantId?: string, limit = 50) => get<{ count: number; threads: HandoverThread[] }>('/threads', { tenant_id: tenantId, limit }),
+    // 식별 화면은 업무별로 스레드를 거른다. 50건에서 자르면 업무의 케이스 수와 스레드 수가 맞지 않았다.
+    threads: (tenantId?: string, limit = 1000) => get<{ count: number; threads: HandoverThread[] }>('/threads', { tenant_id: tenantId, limit }),
     network: (tenantId?: string) =>
         get<{ edges: { from: string; to: string; count: number }[]; automation: Record<string, any> }>('/network', {
             tenant_id: tenantId

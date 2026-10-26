@@ -93,21 +93,40 @@
                 <v-card-text class="pa-4">
                     <div class="text-subtitle-2 font-weight-bold mb-2">{{ $t('Handover.assignee') }}</div>
 
-                    <div v-if="selectedUser" class="d-flex align-center mb-3 pa-2 rounded selected-assignee">
+                    <!--
+                        여러 명을 고르면 한 번의 인계로 나눠 준다(병렬 인계). 두 명 이상이면 사람마다
+                        '다음에 할 일' 을 따로 적을 수 있고, 비워 두면 위의 '다음에 할 일' 을 쓴다.
+                    -->
+                    <div
+                        v-for="(r, i) in selectedUsers"
+                        :key="r.user.id"
+                        class="d-flex align-center mb-2 pa-2 rounded selected-assignee e2e-selected-receiver"
+                    >
                         <v-avatar size="36">
-                            <v-img :src="selectedUser.profile || '/images/defaultUser.png'" />
+                            <v-img :src="r.user.profile || '/images/defaultUser.png'" />
                         </v-avatar>
-                        <div class="ml-3">
+                        <div class="ml-3 selected-assignee__who">
                             <div class="font-weight-medium d-flex align-center">
-                                {{ displayName(selectedUser) }}
-                                <v-chip v-if="selectedUser.is_agent" color="primary" size="x-small" variant="tonal" class="ml-2">
+                                {{ displayName(r.user) }}
+                                <v-chip v-if="r.user.is_agent" color="primary" size="x-small" variant="tonal" class="ml-2">
                                     {{ $t('Handover.agentBadge') }}
                                 </v-chip>
                             </div>
-                            <div class="text-caption text-medium-emphasis">{{ subLabel(selectedUser) }}</div>
+                            <div class="text-caption text-medium-emphasis">{{ subLabel(r.user) }}</div>
                         </div>
-                        <v-spacer></v-spacer>
-                        <v-btn variant="text" density="compact" icon size="small" @click="selectedUser = null">
+                        <v-text-field
+                            v-if="isParallel"
+                            v-model="r.next"
+                            :label="$t('Handover.nextActivityLabel')"
+                            :placeholder="nextActivityLabel"
+                            persistent-placeholder
+                            variant="outlined"
+                            density="compact"
+                            hide-details
+                            class="ml-3 e2e-receiver-next"
+                        ></v-text-field>
+                        <v-spacer v-else></v-spacer>
+                        <v-btn variant="text" density="compact" icon size="small" class="ml-1" @click="selectedUsers.splice(i, 1)">
                             <v-icon size="18">mdi-close</v-icon>
                         </v-btn>
                     </div>
@@ -138,8 +157,8 @@
                             v-for="u in filteredUsers"
                             :key="u.id"
                             class="e2e-assignee-item"
-                            :active="selectedUser && selectedUser.id === u.id"
-                            @click="selectedUser = u"
+                            :active="isSelected(u)"
+                            @click="toggleUser(u)"
                         >
                             <template v-slot:prepend>
                                 <v-avatar size="28">
@@ -301,7 +320,8 @@ export default {
             reason: '',
             dueDate: null,
             carryAgents: true,
-            selectedUser: null,
+            // [{ user, next }] — next 는 이 사람에게만 줄 '다음에 할 일'(비우면 공통 값)
+            selectedUsers: [],
             searchText: '',
             resourceFilter: 'all',
             userList: [],
@@ -346,9 +366,15 @@ export default {
                 // 자격 보유자를 위로 올린다
                 .sort((a, b) => Number(b.__eligible) - Number(a.__eligible));
         },
+        isParallel() {
+            return this.selectedUsers.length > 1;
+        },
         validationMessage() {
-            if (!this.nextActivityLabel || !this.nextActivityLabel.trim()) return this.$t('Handover.validationActivity');
-            if (!this.selectedUser) return this.$t('Handover.validationAssignee');
+            if (this.selectedUsers.length === 0) {
+                if (!this.nextActivityLabel || !this.nextActivityLabel.trim()) return this.$t('Handover.validationActivity');
+                return this.$t('Handover.validationAssignee');
+            }
+            if (this.selectedUsers.some((r) => !this.nextFor(r))) return this.$t('Handover.validationActivity');
             return null;
         }
     },
@@ -360,6 +386,29 @@ export default {
     methods: {
         close() {
             this.$emit('close');
+        },
+        isSelected(u) {
+            return this.selectedUsers.some((r) => r.user.id === u.id);
+        },
+        toggleUser(u) {
+            const i = this.selectedUsers.findIndex((r) => r.user.id === u.id);
+            if (i >= 0) this.selectedUsers.splice(i, 1);
+            else this.selectedUsers.push({ user: u, next: '' });
+        },
+        /** 이 사람에게 줄 '다음에 할 일'. 따로 적지 않았으면 공통 값을 쓴다. */
+        nextFor(r) {
+            return ((this.isParallel && r.next && r.next.trim()) || this.nextActivityLabel || '').trim();
+        },
+        toUserOf(u) {
+            return {
+                id: u.id,
+                name: this.displayName(u),
+                email: u.email,
+                isAgent: !!u.is_agent,
+                agentOrch: this.defaultOrchestration || 'deepagents',
+                agentMode: 'COMPLETE',
+                role: u.role || null
+            };
         },
         artifactKey(a, i) {
             return `${a.type}:${a.ref || a.name || ''}:${i}`;
@@ -469,10 +518,10 @@ export default {
                 // 자격 보유자를 함께 표시해 왜 이 사람이 후보인지 드러낸다.
                 const candidates = Array.isArray(data.candidateAssignees) ? data.candidateAssignees : [];
                 if (data.nextActivityLabel) await this.loadEligibility(data.nextActivityLabel);
-                if (!this.selectedUser && candidates.length > 0) {
+                if (this.selectedUsers.length === 0 && candidates.length > 0) {
                     const first = candidates[0];
                     const matched = this.userList.find((u) => u.id === first.id || (first.email && u.email === first.email));
-                    if (matched) this.selectedUser = matched;
+                    if (matched) this.selectedUsers.push({ user: matched, next: '' });
                 }
             } catch (e) {
                 this.suggestError = e?.response?.data?.detail || e?.message || this.$t('Handover.suggestFailed');
@@ -482,21 +531,15 @@ export default {
         },
         submit() {
             if (this.validationMessage) return;
-            const u = this.selectedUser;
+            // 받는 사람마다 한 건씩 넘긴다. 둘 이상이면 받는 쪽(ChatRoomPage)이 같은 묶음으로 기록한다.
+            const receivers = this.selectedUsers.map((r) => ({ toUser: this.toUserOf(r.user), nextActivityLabel: this.nextFor(r) }));
             this.$emit('submit', {
                 fromRoomId: this.roomId,
                 caseId: this.caseId,
-                toUser: {
-                    id: u.id,
-                    name: this.displayName(u),
-                    email: u.email,
-                    isAgent: !!u.is_agent,
-                    agentOrch: this.defaultOrchestration || 'deepagents',
-                    agentMode: 'COMPLETE',
-                    role: u.role || null
-                },
+                toUser: receivers[0].toUser,
+                receivers,
                 doneLabel: this.doneLabel?.trim() || null,
-                nextActivityLabel: this.nextActivityLabel.trim(),
+                nextActivityLabel: receivers[0].nextActivityLabel,
                 instruction: this.instruction?.trim() || null,
                 reason: this.reason?.trim() || null,
                 dueDate: this.dueDate || null,
@@ -516,6 +559,11 @@ export default {
 }
 .selected-assignee {
     background: rgba(var(--v-theme-primary), 0.06);
+}
+.selected-assignee__who {
+    min-width: 0;
+    flex-shrink: 0;
+    max-width: 45%;
 }
 .handover-dialog__body {
     max-height: calc(100vh - 220px);

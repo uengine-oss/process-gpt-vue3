@@ -54,11 +54,6 @@ export const router = createRouter({
             path: '/external-forms/:formId',
             component: () => retryDynamicImport(() => import('@/components/ui/ExternalForms.vue'))
         },
-        {
-            name: 'Handover Mining',
-            path: '/mining/handover',
-            component: () => retryDynamicImport(() => import('@/views/mining/HandoverMining.vue'))
-        },
         ...(devRoutesEnabled
             ? [
                   {

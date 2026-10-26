@@ -763,8 +763,11 @@ export default {
             // 에이전트 대화모드와 동일하게: 탭 닫기=채팅방 삭제(드래프트는 제외)
             if (deletingRoomId) {
                 try {
-                    await backend.delete(`db://chats/${deletingRoomId}`, { key: 'id' });
-                    await backend.delete(`db://chat_rooms/${deletingRoomId}`, { key: 'id' });
+                    // 인계 스레드 방은 지우지 않고 내 목록에서만 뺀다(이 함수가 없는 백엔드면 예전처럼 지운다)
+                    if (!(await backend.removeChatRoom(deletingRoomId))) {
+                        await backend.delete(`db://chats/${deletingRoomId}`, { key: 'id' });
+                        await backend.delete(`db://chat_rooms/${deletingRoomId}`, { key: 'id' });
+                    }
                     this.chatRooms = this.chatRooms.filter((r) => r.id !== deletingRoomId);
                     this.EventBus.emit('chat-rooms-updated');
                 } catch (e) {
@@ -777,8 +780,11 @@ export default {
             const idx = this.tabs.findIndex((t) => t.roomId === roomId);
             // 헤더의 삭제 버튼은 "현재 방 삭제"이므로, 탭이 1개여도 삭제가 가능해야 함
             try {
-                await backend.delete(`db://chats/${roomId}`, { key: 'id' });
-                await backend.delete(`db://chat_rooms/${roomId}`, { key: 'id' });
+                // 인계 스레드 방은 지우지 않고 내 목록에서만 뺀다(이 함수가 없는 백엔드면 예전처럼 지운다)
+                if (!(await backend.removeChatRoom(roomId))) {
+                    await backend.delete(`db://chats/${roomId}`, { key: 'id' });
+                    await backend.delete(`db://chat_rooms/${roomId}`, { key: 'id' });
+                }
             } catch (e) {
                 // ignore
             }
