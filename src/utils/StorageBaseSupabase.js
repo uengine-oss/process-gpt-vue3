@@ -509,7 +509,9 @@ export default class StorageBaseSupabase {
                 }
             }
 
-            return await window.$supabase.auth.signOut();
+            // 기본값(global)은 이 계정의 모든 기기 세션을 지워, 한 곳에서 로그아웃하면
+            // 다른 브라우저·기기까지 로그인이 풀린다. 이 브라우저 세션만 끝낸다.
+            return await window.$supabase.auth.signOut({ scope: 'local' });
         } catch (e) {
             throw new StorageBaseError('error in signOut', e, arguments);
         }

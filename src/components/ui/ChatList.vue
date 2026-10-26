@@ -561,9 +561,11 @@ export default {
         },
         isUnreadRoom(room) {
             if (!room) return false;
-            if (room?.message?.msg === 'NEW') return true;
+            // 읽음 기록이 있으면 그것을 따른다. 'NEW'(아직 메시지가 없는 방)는 기록이 없을 때만
+            // 안 읽음으로 본다 — 그러지 않으면 열어 읽어도 메시지가 쌓이기 전까지 계속 안 읽음이다.
             const me = this.getMyParticipant(room);
-            return !!me?.isExistUnReadMessage;
+            if (me && typeof me.isExistUnReadMessage === 'boolean') return me.isExistUnReadMessage;
+            return room?.message?.msg === 'NEW';
         },
         async markRoomRead(room) {
             try {
@@ -571,9 +573,16 @@ export default {
                 // 지운 방은 되살리지 않는다 — putObject 는 upsert 다.
                 if (isChatRoomDeleted(room.id)) return;
                 const me = this.getMyParticipant(room);
-                if (me && me.isExistUnReadMessage) {
-                    me.isExistUnReadMessage = false;
-                    await backend.putObject('db://chat_rooms', room);
+                if (me) me.isExistUnReadMessage = false;
+                // 목록의 방 사본은 오래됐을 수 있어 행 전체를 되쓰지 않는다. DB 의 참가자 목록을
+                // 다시 읽어 내 읽음 값만 바꾼다. 기록이 없는 방도 false 를 남긴다 —
+                // 'NEW' 방(아직 메시지가 없는 방)은 이 기록이 있어야 읽음으로 보인다.
+                const { data } = await window.$supabase.from('chat_rooms').select('participants').eq('id', room.id).maybeSingle();
+                const parts = Array.isArray(data?.participants) ? data.participants : null;
+                const dbMe = parts ? this.getMyParticipant({ participants: parts }) : null;
+                if (dbMe && dbMe.isExistUnReadMessage !== false) {
+                    dbMe.isExistUnReadMessage = false;
+                    await window.$supabase.from('chat_rooms').update({ participants: parts }).eq('id', room.id);
                 }
                 window.dispatchEvent(
                     new CustomEvent('update-notification-badge', {
