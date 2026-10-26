@@ -84,6 +84,17 @@
 
 - [x] 9.10 서로 다른 업무를 묶음으로 갈라 묶음마다 도출(`grouping.py`, `/processes`, 식별 화면 업무 선택) — 한 프로세스의 갈래로 그리지 않음
 
+## 10. Conversion keeps the discovered flow (2026-10-21)
+- [x] 10.1 마이너가 배타 분기·반복 판정의 모든 선에 실행 때 고를 값을 붙인다(갈래 첫 단계 이름 · `건너뜀` · `<수정 단계> 필요`/`완료`), 선의 자리(`minedRole`)도 남긴다
+- [x] 10.2 전환 방 `context.identification.definition` 에 도출 정의를 싣는다
+- [x] 10.3 deepagents 가 첫 턴 전에 도출 정의를 프로세스 폴더에 깐다(`core/skills/identified.py`)
+- [x] 10.4 검증·통합 때 구조를 도출 정의로 되돌리고 보강 필드(폼·입출력·스킬·판단 필드)만 남긴다. LLM 교정 끔. 되돌린 이유를 채팅에 보인다
+- [x] 10.5 사람 단계에 붙인 스킬·에이전트는 초안 모드(담당자는 그대로)
+- [x] 10.6 생성 스킬 `references/13-identified-process.md` — 컨설팅·초안 승인 없이 보강만
+- [x] 10.7 저장 전 실엔진 검증은 전환 방에서 1회만(자동 개선 없음)
+- [x] 10.8 실행 엔진이 프로세스 없는 인계 할 일(SUBMITTED)을 잡지 않는다
+- [x] 10.9 e2e `playwright/e2e/handover/handover-conversion.spec.ts` — 전환 → 저장 → 담당자별 실행 → 재전환
+
 ## 7. Follow-ups (not in this change)
 - [ ] 7.1 활동명 LLM 정규화 → 암묵 위임을 제어 흐름에 복귀
 - [ ] 7.2 업무 키(견적번호 등) 기반 상관 + 장기 방의 케이스 분할 (업무 종류별 분리는 9.10)
