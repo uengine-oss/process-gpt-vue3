@@ -54,7 +54,8 @@ const createdRooms = new Set<string>();
 export async function cleanupCreated(): Promise<void> {
     const origins = [...createdRooms];
     createdRooms.clear();
-    if (!origins.length || !SB_KEY) return;
+    // 화면에서 다시 볼 시험 데이터를 남길 때: KEEP_E2E_DATA=1
+    if (!origins.length || !SB_KEY || process.env.KEEP_E2E_DATA) return;
     const inList = (ids: string[]) => `in.(${ids.map((x) => `"${x}"`).join(',')})`;
     const rows = await rest(`handover_events?origin_room_id=${inList(origins)}&select=from_room_id,to_room_id,to_task_id`);
     const rooms = new Set<string>(origins);
@@ -168,7 +169,10 @@ export async function chat(page: Page, roomId: string, text: string, timeout = 6
 
 export async function chatMessages(roomId: string): Promise<any[]> {
     const rows = await rest(`chats?id=eq.${roomId}&select=uuid,messages`);
-    return rows.map((r) => ({ ...r.messages, rowUuid: r.uuid }));
+    // 조회 순서는 시간순이 아니다. 마지막 답을 집는 쪽(chat)이 엉뚱한 답을 받지 않게 시각으로 정렬한다.
+    return rows
+        .map((r) => ({ ...r.messages, rowUuid: r.uuid }))
+        .sort((a, b) => new Date(a.timeStamp || 0).getTime() - new Date(b.timeStamp || 0).getTime());
 }
 
 export async function assistantMessages(roomId: string): Promise<any[]> {
