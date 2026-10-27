@@ -21,43 +21,49 @@
         </div>
 
         <div v-show="open">
-            <section
-                v-for="s in sections"
-                :key="s.roomId"
-                class="handover-history__room e2e-handover-history-room"
-                :data-room-id="s.roomId"
-            >
-                <div class="handover-history__room-head">
-                    <span class="handover-history__room-name">{{ s.roomName }}</span>
-                    <span v-if="s.handedTo" class="handover-history__route text-medium-emphasis">
-                        {{ s.handedBy }} <v-icon size="12">mdi-arrow-right</v-icon> {{ s.handedTo }}
-                    </span>
-                    <v-tooltip :text="$t('Handover.openRoom')" location="bottom">
-                        <template v-slot:activator="{ props }">
-                            <v-btn
-                                v-bind="props"
-                                icon
-                                variant="text"
-                                density="compact"
-                                size="small"
-                                class="ml-auto e2e-handover-history-open"
-                                @click="openRoom(s.roomId)"
-                            >
-                                <v-icon size="16">mdi-open-in-new</v-icon>
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
+            <template v-for="s in sections" :key="s.roomId">
+                <div v-if="s.branchStart" class="handover-history__branch-head e2e-handover-history-branch">
+                    <v-icon size="14">mdi-source-branch</v-icon>
+                    <span>{{ s.branch }}</span>
                 </div>
-
-                <div v-for="m in s.messages" :key="m.key" class="handover-history__msg" :class="`is-${m.role}`">
-                    <div class="handover-history__meta">
-                        <span class="handover-history__sender">{{ m.sender }}</span>
-                        <span class="text-medium-emphasis">{{ m.time }}</span>
+                <section
+                    class="handover-history__room e2e-handover-history-room"
+                    :class="{ 'is-branch': !!s.branch }"
+                    :data-room-id="s.roomId"
+                    :data-branch="s.branch || null"
+                >
+                    <div class="handover-history__room-head">
+                        <span class="handover-history__room-name">{{ s.roomName }}</span>
+                        <span v-if="s.handedTo" class="handover-history__route text-medium-emphasis">
+                            {{ s.handedBy }} <v-icon size="12">mdi-arrow-right</v-icon> {{ s.handedTo }}
+                        </span>
+                        <v-tooltip :text="$t('Handover.openRoom')" location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn
+                                    v-bind="props"
+                                    icon
+                                    variant="text"
+                                    density="compact"
+                                    size="small"
+                                    class="ml-auto e2e-handover-history-open"
+                                    @click="openRoom(s.roomId)"
+                                >
+                                    <v-icon size="16">mdi-open-in-new</v-icon>
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
                     </div>
-                    <div class="handover-history__body" v-html="m.html"></div>
-                </div>
-                <div v-if="!s.messages.length" class="handover-history__empty text-medium-emphasis">—</div>
-            </section>
+
+                    <div v-for="m in s.messages" :key="m.key" class="handover-history__msg" :class="`is-${m.role}`">
+                        <div class="handover-history__meta">
+                            <span class="handover-history__sender">{{ m.sender }}</span>
+                            <span class="text-medium-emphasis">{{ m.time }}</span>
+                        </div>
+                        <div class="handover-history__body" v-html="m.html"></div>
+                    </div>
+                    <div v-if="!s.messages.length" class="handover-history__empty text-medium-emphasis">—</div>
+                </section>
+            </template>
         </div>
 
         <div class="handover-history__divider">
@@ -69,9 +75,8 @@
 <script>
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { resolveHandoverChain } from '@/utils/handoverChain.js';
 
-// 인계 체인이 순환하거나 비정상적으로 길어도 화면이 멈추지 않게 거슬러 오를 단계 수를 제한한다.
-const MAX_DEPTH = 20;
 // 넘긴 방에서 인계 직후에 남는 "~님에게 인계했습니다" 알림까지 함께 보이도록 인계 시각 뒤로 약간 여유를 둔다.
 const AFTER_HANDOVER_MS = 10 * 1000;
 
@@ -81,6 +86,7 @@ const AFTER_HANDOVER_MS = 10 * 1000;
  * 인계받은 사람은 새 방에서 일하지만, 무엇을 넘겨받았는지는 앞선 방의 대화에 있다.
  * 대화를 파일로 옮겨 받는 대신 원래 대화를 그대로 보여 준다. 각 방은 그 방에서 다음 방으로
  * 인계된 시각까지만 보인다 — 인계 뒤 그 방에서 이어진 다른 일은 이 업무의 맥락이 아니다.
+ * 갈래를 모은(합류) 인계로 받은 방이면 나눠 준 갈래들의 대화도 갈래별로 보인다(utils/handoverChain).
  */
 export default {
     name: 'HandoverHistory',
@@ -110,6 +116,11 @@ export default {
                 const sections = [];
                 for (const link of chain) {
                     sections.push(await this.buildSection(link));
+                    for (const b of link.branches) {
+                        for (const [i, r] of b.rooms.entries()) {
+                            sections.push({ ...(await this.buildSection(r)), branch: b.label || '—', branchStart: i === 0 });
+                        }
+                    }
                 }
                 if (this.loadedFor === roomId) this.sections = sections;
             } catch (e) {
@@ -117,35 +128,26 @@ export default {
             }
         },
 
-        /** 이 방에서 거슬러 올라가 시작 방까지, 시작 방 → 바로 앞 방 순서로 인계 고리를 돌려준다. */
+        /** 이 방에서 거슬러 올라가 시작 방까지, 시작 방 → 바로 앞 방 순서로 인계 고리를 돌려준다. 합류면 갈래 포함. */
         async resolveChain(roomId, room) {
             const sb = window.$supabase;
-            const chain = [];
-            const seen = new Set([roomId]);
-            let toRoomId = roomId;
-            let fallbackFrom = room?.context?.handover?.from_room_id || null;
-            for (let i = 0; i < MAX_DEPTH; i++) {
-                const { data } = await sb
-                    .from('handover_events')
-                    .select('from_room_id, to_room_id, occurred_at, from_user_name, to_user_name')
-                    .eq('tenant_id', window.$tenantName)
-                    .eq('to_room_id', toRoomId)
-                    .order('occurred_at', { ascending: true })
-                    .limit(1);
-                const ev = Array.isArray(data) && data.length ? data[0] : null;
-                const fromRoomId = ev?.from_room_id || fallbackFrom;
-                if (!fromRoomId || seen.has(fromRoomId)) break;
-                seen.add(fromRoomId);
-                chain.unshift({
-                    roomId: fromRoomId,
-                    until: ev?.occurred_at || null,
-                    handedBy: ev?.from_user_name || '',
-                    handedTo: ev?.to_user_name || ''
-                });
-                toRoomId = fromRoomId;
-                fallbackFrom = null;
-            }
-            return chain;
+            const cache = new Map();
+            const events = (col, id) => {
+                const key = `${col}:${id}`;
+                if (!cache.has(key)) {
+                    cache.set(
+                        key,
+                        sb
+                            .from('handover_events')
+                            .select('from_room_id, to_room_id, occurred_at, from_user_name, to_user_name, group_id, next_activity_label')
+                            .eq('tenant_id', window.$tenantName)
+                            .eq(col, id)
+                            .then(({ data }) => (Array.isArray(data) ? data : []))
+                    );
+                }
+                return cache.get(key);
+            };
+            return resolveHandoverChain(events, roomId, room?.context?.handover?.from_room_id || null);
         },
 
         async buildSection(link) {
@@ -220,6 +222,18 @@ export default {
     border-radius: 8px;
     border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
     background: rgba(var(--v-theme-on-surface), 0.02);
+}
+.handover-history__branch-head {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 10px 0 0 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cds-text-secondary);
+}
+.handover-history__room.is-branch {
+    margin-left: 12px;
 }
 .handover-history__room-head {
     display: flex;
