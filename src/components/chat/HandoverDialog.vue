@@ -22,20 +22,31 @@
                     <div v-if="artifactCandidates.length === 0" class="text-caption text-medium-emphasis">
                         {{ $t('Handover.noArtifacts') }}
                     </div>
-                    <v-checkbox
-                        v-for="(a, i) in artifactCandidates"
-                        :key="artifactKey(a, i)"
-                        v-model="selectedArtifactKeys"
-                        :value="artifactKey(a, i)"
-                        density="compact"
-                        hide-details
-                    >
-                        <template v-slot:label>
-                            <v-icon size="16" class="mr-2">{{ artifactIcon(a.type) }}</v-icon>
-                            <span class="text-body-2">{{ a.name || a.ref || a.type }}</span>
-                            <v-chip size="x-small" variant="tonal" class="ml-2">{{ $t('Handover.artifactType_' + a.type) }}</v-chip>
-                        </template>
-                    </v-checkbox>
+                    <template v-for="(a, i) in artifactCandidates" :key="artifactKey(a, i)">
+                        <v-checkbox v-model="selectedArtifactKeys" :value="artifactKey(a, i)" density="compact" hide-details>
+                            <template v-slot:label>
+                                <v-icon size="16" class="mr-2">{{ artifactIcon(a.type) }}</v-icon>
+                                <span class="text-body-2">{{ a.type === 'branch_file' ? a.ref : a.name || a.ref || a.type }}</span>
+                                <v-chip size="x-small" variant="tonal" class="ml-2">{{ $t('Handover.artifactType_' + a.type) }}</v-chip>
+                                <v-tooltip v-if="conflictOf(a)" location="top" :text="$t('Handover.conflict')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-icon v-bind="props" size="16" color="warning" class="ml-2">mdi-source-merge</v-icon>
+                                    </template>
+                                </v-tooltip>
+                            </template>
+                        </v-checkbox>
+                        <v-chip-group
+                            v-if="conflictOf(a)"
+                            v-model="mergeChoices[a.ref]"
+                            class="ml-8 e2e-handover-conflict"
+                            selected-class="text-primary"
+                            column
+                        >
+                            <v-chip v-for="side in conflictOf(a).sides" :key="side.key" :value="side.key" size="small" variant="outlined" filter>
+                                {{ side.label || $t('Handover.mineSide') }}
+                            </v-chip>
+                        </v-chip-group>
+                    </template>
                 </v-card-text>
             </v-card>
 
@@ -299,6 +310,8 @@ export default {
         // ChatRoomPage 가 모아 준 산출물 후보
         // [{ type, ref, name, content?, storagePath? }]
         artifactCandidates: { type: Array, default: () => [] },
+        // 합류 인계면 갈래 병합 결과(getHandoverMerge). 충돌 경로마다 쓸 갈래를 고른다.
+        merge: { type: Object, default: null },
         // 최근 대화 (AI 제안 입력용)
         recentMessages: { type: Array, default: () => [] },
         // 에이전트에게 인계할 때 쓸 오케스트레이션.
@@ -314,6 +327,8 @@ export default {
     data() {
         return {
             selectedArtifactKeys: [],
+            // 합류 충돌: 경로 → 쓸 갈래(방 id)
+            mergeChoices: {},
             doneLabel: '',
             nextActivityLabel: '',
             instruction: '',
@@ -370,6 +385,8 @@ export default {
             return this.selectedUsers.length > 1;
         },
         validationMessage() {
+            const conflicts = this.merge?.conflicts || [];
+            if (conflicts.some((c) => !this.mergeChoices[c.path])) return this.$t('Handover.validationConflict');
             if (this.selectedUsers.length === 0) {
                 if (!this.nextActivityLabel || !this.nextActivityLabel.trim()) return this.$t('Handover.validationActivity');
                 return this.$t('Handover.validationAssignee');
@@ -416,11 +433,16 @@ export default {
         artifactIcon(type) {
             const map = {
                 workspace_file: 'mdi-file-document-outline',
+                branch_file: 'mdi-file-document-outline',
                 attachment: 'mdi-paperclip',
                 knowledge: 'mdi-bookshelf',
                 chat_summary: 'mdi-message-text-outline'
             };
             return map[type] || 'mdi-file-outline';
+        },
+        conflictOf(a) {
+            if (a?.type !== 'branch_file') return null;
+            return (this.merge?.conflicts || []).find((c) => c.path === a.ref) || null;
         },
         toggleAllArtifacts() {
             this.selectedArtifactKeys = this.allArtifactsSelected ? [] : this.artifactCandidates.map((a, i) => this.artifactKey(a, i));
@@ -544,6 +566,7 @@ export default {
                 reason: this.reason?.trim() || null,
                 dueDate: this.dueDate || null,
                 artifacts: this.selectedArtifacts(),
+                mergeChoices: { ...this.mergeChoices },
                 carryAgents: this.carryAgents,
                 sourceRoom: this.sourceRoom
             });

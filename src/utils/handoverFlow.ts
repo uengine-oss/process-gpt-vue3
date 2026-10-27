@@ -60,6 +60,13 @@ export interface FlowNode {
     status: FlowStatus;
     history: FlowHistoryItem[];
     receivedAt: string;
+    /** 그 단계 브랜치가 받은 뒤 추가·변경한 산출물(인계 워크트리 방만). */
+    artifacts?: FlowArtifact[];
+}
+
+export interface FlowArtifact {
+    path: string;
+    op: 'create' | 'edit';
 }
 
 export interface FlowEdge {
@@ -236,6 +243,7 @@ export function cardHeight(n: FlowNode): number {
     if (n.instruction) h += 46;
     if (n.result) h += 30;
     if (n.history.length) h += 24 + n.history.length * 20;
+    if (n.artifacts?.length) h += 8 + n.artifacts.length * 20;
     return h;
 }
 

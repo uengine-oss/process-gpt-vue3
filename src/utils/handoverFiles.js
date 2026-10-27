@@ -50,6 +50,10 @@ export function encodeStorageKeyPath(rel) {
         .join('/');
 }
 
+export function decodeStorageKeyPath(rel) {
+    return String(rel).split('/').map(decodeStorageKeySegment).join('/');
+}
+
 /** 파일 이름에서 폴더 구분자를 걷어 낸다. 넘기는 파일은 받는 방 작업 폴더 바로 아래에 둔다. */
 export function handoverFileName(name) {
     const base = String(name || '')
@@ -80,4 +84,15 @@ export function uniqueHandoverNames(names) {
         const dot = name.lastIndexOf('.');
         return dot > 0 ? `${name.slice(0, dot)} (${n + 1})${name.slice(dot)}` : `${name} (${n + 1})`;
     });
+}
+
+/**
+ * 방 작업 폴더 기준 상대 경로. 화면의 작업 파일 경로(`/workspace/.bpmn/{방}/...`)에서 방 부분을 뗀다.
+ * 그 꼴이 아니면 파일 이름만 쓴다.
+ */
+export function workspaceRelPath(roomId, ref, name) {
+    const raw = String(ref || '').replace(/\\/g, '/');
+    const prefix = `/workspace/.bpmn/${roomId}/`;
+    if (roomId && raw.startsWith(prefix) && raw.length > prefix.length) return raw.slice(prefix.length);
+    return handoverFileName(name || ref);
 }

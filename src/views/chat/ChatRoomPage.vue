@@ -739,6 +739,7 @@
                 :roomId="currentChatRoom?.id || roomId"
                 :sourceRoom="currentChatRoom"
                 :artifactCandidates="handoverArtifactCandidates"
+                :merge="handoverMerge"
                 :recentMessages="handoverRecentMessages"
                 :defaultOrchestration="handoverDefaultOrchestration"
                 :isSubmitting="handoverSubmitting"
@@ -886,6 +887,8 @@ import BPMNXmlGenerator from '@/components/BPMNXmlGenerator.vue';
 import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import ArtifactPanel from '@/components/ArtifactPanel.vue';
 import HandoverDialog from '@/components/chat/HandoverDialog.vue';
+import { branchFilesForPanel, fileVersions } from '@/utils/artifactBranchFiles.js';
+import { isTextEntry, treePathOf } from '@/utils/artifactWorktree.js';
 import HandoverHistory from '@/components/chat/HandoverHistory.vue';
 import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/processArtifactPanel.js';
 import { buildHitlPanel, shouldRestoreFromAssistantContent } from '@/shared/hitl/index.js';
@@ -1066,6 +1069,7 @@ export default {
             handoverDialogKey: 0,
             handoverSubmitting: false,
             handoverArtifactCandidates: [],
+            handoverMerge: null, // 합류 인계면 갈래 병합 결과(충돌 고르기)
             // 에이전트에게 넘긴 방에서 업무 종료를 할 수 있는가
             handoverCanClose: false,
             // 인계 다이얼로그를 열 때 확정한다(computed 로 두면 방 전환 시 흔들린다).
@@ -1656,6 +1660,7 @@ export default {
         }
     },
     async beforeUnmount() {
+        this.flushEditCommits();
         if (this._phoneTapListener) document.removeEventListener('pointerdown', this._phoneTapListener, true);
         this.stopChatAccessHeartbeat();
         this.EventBus.emit('chat-room-unselected');
@@ -3245,6 +3250,7 @@ export default {
             this.processLoadedHwpxMessages();
             this.checkExistingArtifactPanels();
             await this.ensureHandoverFlowTab(roomId);
+            await this.ensureBranchFilesTab(roomId);
             this.$nextTick(() => this.scrollToBottomSafe());
         },
 
@@ -6373,6 +6379,47 @@ export default {
             }
         },
 
+        /**
+         * 인계 워크트리 방이면 '갈래 산출물' 탭을 넣는다. 이 스레드의 방 브랜치마다 head 파일을 묶어
+         * 읽기 전용으로 보인다. 넘긴 사람은 받은 쪽이 고치거나 새로 만든 파일을 여기서 연다.
+         */
+        async ensureBranchFilesTab(roomId) {
+            try {
+                const info = await backend.getRoomArtifactBranches(roomId);
+                const here = this.currentChatRoom?.id || this.roomId;
+                if (!info || here !== roomId) return;
+                await this.syncRoomFilesFromBranch(roomId, info);
+                if (info.branches.length < 2) return;
+                const files = await branchFilesForPanel(info, (entry) => backend.artifactObjectUrl(entry), {
+                    mine: this.$t('Handover.mineSide')
+                });
+                const loadVersions = async (file) => {
+                    const branch = info.branches.find((b) => b.roomId === file.groupRoomId);
+                    const commits = await backend.getRoomArtifactCommits(file.groupRoomId);
+                    // 다 넘겨받아 시작한 방은 첫 버전이 넘긴 방의 커밋(기준)에 있다.
+                    if (branch?.baseCommitId && !commits.some((c) => c.id === branch.baseCommitId)) {
+                        const base = await backend.getArtifactCommit(branch.baseCommitId);
+                        if (base) commits.push(base);
+                    }
+                    const versions = fileVersions(commits, file.name);
+                    for (const v of versions) v.url = await backend.artifactObjectUrl(v.entry);
+                    return versions;
+                };
+                const data = {
+                    files,
+                    readOnly: true,
+                    title: this.$t('Handover.branchFiles'),
+                    messageId: `branches:${roomId}`,
+                    loadVersions
+                };
+                const existing = this.artifactPanels.find((p) => p.type === 'files' && p.data?.messageId === data.messageId);
+                if (existing) existing.data = data;
+                else this.artifactPanels.push({ id: `branches-${this.uuid()}`, type: 'files', label: this.$t('Handover.branchFiles'), data });
+            } catch (e) {
+                console.warn('[handover] 갈래 산출물 탭을 넣지 못함:', e);
+            }
+        },
+
         /** 파일 경로에서 프로세스 그룹 키(process-<uuid> 폴더명) 추출. 없으면 'default'. */
         _processGroupKey(path) {
             const m = (path || '').replace(/\\/g, '/').match(/\/(process-[^/]+)\//);
@@ -6573,13 +6620,23 @@ export default {
         // 인계 행위는 handover_events 로 남아 프로세스/조직 마이닝의 원자료가 된다.
         // ------------------------------------------------------------------
 
-        /** 이 방이 지금 들고 있는 산출물 후보를 모은다. */
-        collectHandoverArtifacts() {
+        /**
+         * 이 방이 지금 들고 있는 산출물 후보를 모은다.
+         * branchPaths 가 있으면(인계 워크트리 방) 방 브랜치 head(합류면 병합 결과)의 경로가 후보다.
+         * 없으면(예전 방) 화면에 뜬 작업 파일을 후보로 하고, 넘길 때 이 방 첫 커밋에 담는다.
+         */
+        collectHandoverArtifacts(branchPaths = null) {
             const candidates = [];
+
+            for (const path of branchPaths || []) {
+                const base = path.split('/').pop() || '';
+                if (base.startsWith('.') || base === 'manifest.json') continue;
+                candidates.push({ type: 'branch_file', ref: path, name: base, content: '' });
+            }
 
             // 1) 에이전트 워크스페이스 파일 — 샌드박스에만 있으므로 본문을 함께 넘겨
             //    백엔드가 스토리지에 영속화하게 한다.
-            const groups = this.roomWorkspaceFilesByGroup || {};
+            const groups = branchPaths ? {} : this.roomWorkspaceFilesByGroup || {};
             for (const group of Object.keys(groups)) {
                 const files = Array.isArray(groups[group]) ? groups[group] : [];
                 for (const f of files) {
@@ -6640,7 +6697,15 @@ export default {
             if (this.blockIfViewOnly()) return;
             const roomId = this.currentChatRoom?.id || this.roomId;
             if (!roomId) return;
-            this.handoverArtifactCandidates = this.collectHandoverArtifacts();
+            // 방 브랜치가 있으면 그 파일이 후보다. 이 방이 나눠 준 갈래를 모으는 합류면 병합 결과가 후보다.
+            const [branches, merge] = await Promise.all([
+                backend.getRoomArtifactBranches(roomId).catch(() => null),
+                backend.getHandoverMerge(roomId).catch(() => null)
+            ]);
+            const mineTree = branches?.branches?.find((b) => b.mine)?.tree || null;
+            const tree = merge ? { ...merge.tree, ...Object.fromEntries(merge.conflicts.map((c) => [c.path, true])) } : mineTree;
+            this.handoverMerge = merge;
+            this.handoverArtifactCandidates = this.collectHandoverArtifacts(tree ? Object.keys(tree).sort() : null);
             this.handoverCanClose = (await backend.getHandoverCloseState(roomId)).canClose;
             // 에이전트에게 넘길 경우 지금 방이 쓰는 런타임을 그대로 물려준다.
             this.handoverDefaultOrchestration = (this.getRoomOrchestration() || 'deepagents').toString();
@@ -6669,13 +6734,17 @@ export default {
                     ? payload.receivers
                     : [{ toUser: payload.toUser, nextActivityLabel: payload.nextActivityLabel }];
                 const groupId = receivers.length > 1 ? await backend.uuid() : null;
+                // 넘기는 방 커밋은 한 번만 만든다. 받는 방 브랜치는 받는 사람마다 이 커밋에서 시작한다.
+                const merge = this.handoverMerge ? await backend.resolveHandoverMerge(this.handoverMerge, payload.mergeChoices) : undefined;
+                const snapshot = await backend.prepareHandoverSnapshot(payload.fromRoomId, payload.artifacts || [], { merge });
                 const results = [];
                 for (const r of receivers) {
                     const result = await backend.createChatHandover({
                         ...payload,
                         toUser: r.toUser,
                         nextActivityLabel: r.nextActivityLabel,
-                        groupId
+                        groupId,
+                        snapshot
                     });
                     results.push({ ...r, result });
                 }
@@ -7409,6 +7478,8 @@ export default {
             } else {
                 const content = (payload?.content ?? '').toString();
                 f.content = content; // 편집 내용 반영
+                // 인계 워크트리 방이면 고친 파일을 이 방 브랜치에 바로 커밋한다(입력이 멈춘 뒤 한 번).
+                this.scheduleEditCommit(path, content);
                 // process-definition.json 을 직접 고쳤으면 같은 그룹 .bpmn 재파생.
                 if (/process-definition\.json$/.test(path.replace(/\\/g, '/'))) {
                     try {
@@ -7427,6 +7498,56 @@ export default {
                 }
             }
             if (panel?.data?.saveState) panel.data.saveState.saved = false;
+        },
+
+        /** 화면에서 고친 작업 파일을 방 브랜치에 커밋하도록 예약한다. 같은 파일은 입력이 멈춘 뒤 한 번만 커밋한다. */
+        scheduleEditCommit(path, content) {
+            const roomId = this.currentChatRoom?.id || this.roomId;
+            if (!roomId || !treePathOf(path, roomId)) return;
+            if (!this._editCommits) this._editCommits = new Map();
+            const key = `${roomId}:${path}`;
+            const prev = this._editCommits.get(key);
+            if (prev) clearTimeout(prev.timer);
+            const run = () => {
+                this._editCommits.delete(key);
+                return backend.commitEditedArtifact(roomId, path, content).catch((e) => {
+                    console.warn('[handover] 편집 커밋 실패:', e);
+                    if (this.$toast?.error) this.$toast.error(`${this.$t('Handover.editCommitFailed')}: ${e?.message || e}`);
+                });
+            };
+            this._editCommits.set(key, { run, timer: setTimeout(run, 1200) });
+        },
+
+        /** 예약된 편집 커밋을 바로 보낸다(방을 떠날 때). */
+        flushEditCommits() {
+            for (const { run, timer } of this._editCommits?.values() || []) {
+                clearTimeout(timer);
+                run();
+            }
+        },
+
+        /**
+         * 이 방 작업 파일을 브랜치 최신 내용으로 맞춘다. 패널은 에이전트 실행 기록으로 다시 그려져서,
+         * 사람이 고쳐 커밋한 내용이 새로 고침 뒤에 옛 내용으로 보이지 않게 한다.
+         */
+        async syncRoomFilesFromBranch(roomId, info) {
+            const mine = (info?.branches || []).find((b) => b.mine);
+            if (!mine) return;
+            for (const files of Object.values(this.roomWorkspaceFilesByGroup || {})) {
+                for (const f of files || []) {
+                    const treePath = treePathOf(f.path, roomId);
+                    const entry = treePath && mine.tree?.[treePath];
+                    if (!entry || !isTextEntry(treePath, entry) || (entry.size || 0) > 512 * 1024) continue;
+                    try {
+                        const res = await fetch(await backend.artifactObjectUrl(entry));
+                        if (!res.ok) continue;
+                        const text = await res.text();
+                        if (text !== f.content) f.content = text;
+                    } catch (e) {
+                        /* 못 읽으면 기록의 내용을 그대로 둔다 */
+                    }
+                }
+            }
         },
 
         /**

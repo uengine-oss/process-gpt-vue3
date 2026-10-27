@@ -72,6 +72,14 @@
                     </div>
                     <div v-if="n.instruction" class="handover-flow-diagram__quote">“{{ n.instruction }}”</div>
                     <div v-if="n.result" class="handover-flow-diagram__result e2e-handover-flow-result">{{ n.result }}</div>
+                    <div v-if="n.artifacts && n.artifacts.length" class="handover-flow-diagram__artifacts e2e-handover-flow-artifacts">
+                        <div v-for="a in n.artifacts" :key="a.path" class="handover-flow-diagram__artifact" :title="a.path">
+                            <v-icon size="13" :title="$t('Handover.' + (a.op === 'edit' ? 'modified' : 'added'))">
+                                {{ a.op === 'edit' ? 'mdi-file-edit-outline' : 'mdi-file-plus-outline' }}
+                            </v-icon>
+                            <span>{{ a.path.split('/').pop() }}</span>
+                        </div>
+                    </div>
                     <div v-if="n.history.length" class="handover-flow-diagram__history">
                         <div v-for="(h, i) in n.history" :key="i" class="handover-flow-diagram__history-item">
                             <span class="handover-flow-diagram__dot"></span>
@@ -209,6 +217,18 @@ export default {
                     }
                 }
                 const flow = buildFlow(originRoomId, rows, { tasks, unread, departments, lastMessage });
+                // 인계 워크트리 방: 카드마다 그 단계가 받은 뒤 추가·변경한 산출물을 붙인다.
+                try {
+                    const info = await backend.getRoomArtifactBranches(roomId);
+                    const byRoom = {};
+                    for (const b of info?.branches || []) byRoom[b.roomId] = b.changes;
+                    for (const n of flow.nodes) {
+                        const c = byRoom[n.roomId];
+                        if (c) n.artifacts = [...c.added.map((path) => ({ path, op: 'create' })), ...c.modified.map((path) => ({ path, op: 'edit' }))];
+                    }
+                } catch (e) {
+                    /* 산출물 없이 그린다 */
+                }
                 if (this.loadedFor !== roomId) return;
                 this.nodes = flow.nodes;
                 this.edges = flow.edges;
@@ -453,5 +473,18 @@ export default {
     border-radius: 8px;
     background: rgb(var(--v-theme-primary));
     color: rgb(var(--v-theme-on-primary));
+}
+.handover-flow-diagram__artifacts {
+    margin-top: 6px;
+}
+.handover-flow-diagram__artifact {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 20px;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 </style>

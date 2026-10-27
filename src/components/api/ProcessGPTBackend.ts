@@ -61,7 +61,17 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { formatRequesterName } from '@/composables/usePrUtils';
 import { describeBpmnChanges } from '@/composables/usePrChanges';
 import { normalizeFormRowLayout, extractFields } from '@/utils/formHtml';
-import { roomWorkspaceKey, roomWorkspacePath, uniqueHandoverNames } from '@/utils/handoverFiles';
+import { handoverFileName, workspaceRelPath } from '@/utils/handoverFiles';
+import * as worktree from '@/utils/artifactWorktree.js';
+
+/** 넘기는 방의 인계 커밋과 받는 방에 넘길 tree(고른 경로만). */
+type HandoverSnapshot = {
+    originRoomId: string;
+    repoId: string;
+    baseCommitId: string;
+    baseTree: Record<string, any>;
+    selectedTree: Record<string, any>;
+};
 import { processGptAgent } from '@/constants/processGptAgent';
 
 enum ErrorCode {
@@ -3019,6 +3029,8 @@ class ProcessGPTBackend implements Backend {
 
             // Task 실행 속성은 DB 트리거(todolist INSERT/UPDATE)에서 자동 처리됨
             const result = await me.executeInstance(input);
+            // 인계받은 할 일이면 그 방 작업 상태를 커밋한다.
+            if (workItem?.adhoc) await me.commitReceivedTaskState(taskId);
 
             return result;
         } catch (error) {
@@ -9439,6 +9451,8 @@ class ProcessGPTBackend implements Backend {
         sourceRoom?: any;
         // 한 번의 인계로 여러 명에게 넘길 때 그 행들을 묶는 값. 한 사람에게 넘기면 없다.
         groupId?: string | null;
+        // 넘기는 방의 인계 커밋(prepareHandoverSnapshot). 병렬 인계는 한 번 만들어 받는 사람마다 쓴다.
+        snapshot?: HandoverSnapshot;
     }): Promise<{ caseId: string; toRoomId: string; toTaskId: string; eventId: string }> {
         const tenantId = window.$tenantName;
         const fromUserId = localStorage.getItem('uid') || localStorage.getItem('email') || '';
@@ -9455,33 +9469,11 @@ class ProcessGPTBackend implements Backend {
         const toTaskId = this.uuid();
         const artifacts = Array.isArray(payload.artifacts) ? payload.artifacts : [];
 
-        // 1) 산출물을 받는 방의 작업 폴더에 놓는다 — 받는 쪽 에이전트는 첫 턴에 그 폴더를
-        //    내려받고, 받는 사람은 방의 작업 폴더에서 파일을 보고 다시 다음 사람에게 넘긴다.
-        const artifactRefs: any[] = [];
-        const names = uniqueHandoverNames(artifacts.map((a) => a.name || a.ref || a.type || 'artifact'));
-        for (let i = 0; i < artifacts.length; i++) {
-            const a: any = artifacts[i];
-            const name = names[i];
-            const ref: any = { type: a.type, ref: a.ref || null, name, storage_path: a.storagePath || null };
-            try {
-                const blob = await this.readHandoverArtifact(a);
-                if (blob) {
-                    const key = roomWorkspaceKey(tenantId, toRoomId, name);
-                    const { error } = await window.$supabase.storage
-                        .from('files')
-                        .upload(key, blob, { contentType: blob.type || 'application/octet-stream' });
-                    if (error) throw error;
-                    ref.storage_path = key;
-                    ref.url = window.$supabase.storage.from('files').getPublicUrl(key)?.data?.publicUrl || null;
-                    ref.workspace_path = roomWorkspacePath(toRoomId, name);
-                    ref.is_text = typeof a.content === 'string' && a.content.length > 0;
-                    ref.size_bytes = blob.size;
-                }
-            } catch (e) {
-                console.warn('[handover] 산출물을 받는 방 작업 폴더에 놓지 못함, 참조만 기록:', name, e);
-            }
-            artifactRefs.push(ref);
-        }
+        // 1) 넘기는 방 작업 상태를 커밋하고(병렬 인계면 이미 한 번 만들어 왔다), 고른 산출물을 정한다.
+        //    받는 방에는 파일을 올리지 않는다. 받는 방 브랜치가 그 커밋에서 시작하고, 받는 쪽 에이전트는
+        //    첫 턴에 브랜치를 작업 폴더로 펼친다.
+        const snapshot = payload.snapshot || (await this.prepareHandoverSnapshot(payload.fromRoomId, artifacts));
+        const artifactRefs: any[] = await this.handoverArtifactRefs(snapshot, toRoomId);
 
         // 2) 수신자 방 생성 — 현재 방의 에이전트를 함께 넘길 수 있다.
         const sourceParticipants: any[] = Array.isArray(payload.sourceRoom?.participants) ? payload.sourceRoom.participants : [];
@@ -9537,16 +9529,26 @@ class ProcessGPTBackend implements Backend {
                     from_user_id: fromUserId,
                     from_user_name: fromUserName,
                     group_id: payload.groupId || null,
-                    artifact_refs: artifactRefs
+                    base_commit_id: snapshot.baseCommitId,
+                    artifact_refs: artifactRefs.map(({ content, ...r }) => r)
                 }
             }
         };
         await storage.putObject('chat_rooms', newRoom, { onConflict: 'id' });
 
+        // 받는 방 브랜치: 넘기는 방의 인계 커밋에서, 고른 산출물만 담아 시작한다.
+        await worktree.createBranchFrom(window.$supabase, {
+            repoId: snapshot.repoId,
+            roomId: toRoomId,
+            baseCommitId: snapshot.baseCommitId,
+            tree: snapshot.selectedTree,
+            authorId: fromUserId
+        });
+
         // 넘긴 파일을 브리핑에 작업 폴더 항목으로 싣는다. 방을 열면 작업 폴더에 뜨고,
         // 다음 인계 때 후보로 다시 잡힌다.
         const workspaceFiles = artifactRefs
-            .map((r, i) => ({ r, content: r.is_text ? (artifacts[i] as any)?.content || '' : '' }))
+            .map((r) => ({ r, content: r.is_text ? r.content || '' : '' }))
             .filter(({ r }) => r.workspace_path)
             .map(({ r, content }) => {
                 const entry: any = {
@@ -9585,30 +9587,13 @@ class ProcessGPTBackend implements Backend {
             console.warn('[handover] 브리핑 메시지 저장 실패:', e);
         }
 
-        // 4) 산출물을 수신자 방 첨부로 연결
-        for (const ref of artifactRefs) {
-            if (!ref.storage_path) continue;
-            try {
-                await storage.putObject('chat_attachments', {
-                    id: this.uuid(),
-                    file_name: ref.name || String(ref.storage_path).split('/').pop(),
-                    file_path: ref.storage_path,
-                    chat_room_id: toRoomId,
-                    user_name: fromUserName,
-                    tenant_id: tenantId
-                });
-            } catch (e) {
-                console.warn('[handover] 첨부 연결 실패:', ref.name, e);
-            }
-        }
-
         // 5) ad-hoc 작업 생성 — 수신자의 할일에 뜨고, 에이전트면 폴러가 바로 집어간다.
         const queryLines = [
             `[Handover] ${fromUserName || fromUserId} 님이 넘긴 업무`,
             payload.doneLabel ? `[Done] ${payload.doneLabel}` : '',
             `[Instruction]\n${payload.instruction || payload.nextActivityLabel}`,
             workspaceFiles.length ? `[Files]\n넘겨받은 파일은 작업 폴더에 있습니다.\n${workspaceFiles.map((f: any) => `- ${f.path}`).join('\n')}` : '',
-            artifactRefs.length ? `[InputData]\n${JSON.stringify(artifactRefs)}` : '',
+            artifactRefs.length ? `[InputData]\n${JSON.stringify(artifactRefs.map(({ content, ...r }) => r))}` : '',
             `[ChatRoom] ${toRoomId}`
         ].filter(Boolean);
         // 항상 TODO 로 만든다. putWorklist 는 IN_PROGRESS 일 때 bpm_proc_inst 를
@@ -9665,7 +9650,8 @@ class ProcessGPTBackend implements Backend {
             next_activity_label: payload.nextActivityLabel,
             instruction: payload.instruction || null,
             reason: payload.reason || null,
-            artifact_refs: artifactRefs,
+            artifact_refs: artifactRefs.map(({ content, ...r }) => r),
+            base_commit_id: snapshot.baseCommitId,
             participant_agents: carriedAgents.map((a: any) => ({ id: a?.id, name: a?.name })),
             handover_latency_sec: latency,
             group_id: payload.groupId || null,
@@ -9707,6 +9693,266 @@ class ProcessGPTBackend implements Backend {
         return res.ok ? await res.blob() : null;
     }
 
+    /**
+     * 인계 순간 넘기는 방 작업 상태를 커밋하고, 받는 방에 넘길 tree(고른 경로만)를 정한다.
+     * 병렬 인계는 이것을 한 번 만들어 받는 사람마다 쓴다(넘기는 방 커밋은 한 번).
+     *
+     * - 브랜치 파일(type 'branch_file')은 경로 그대로 고른다.
+     * - 화면에만 있던 작업 폴더 파일(브랜치가 없는 예전 방)은 넘기는 방 커밋에 넣는다.
+     * - 첨부·지식 문서는 내용을 객체로 올려 받는 방 tree 에만 넣는다.
+     * 브랜치가 없는 방(스레드 시작 방·예전 방)은 그 방 작업 폴더로 저장소·브랜치를 만든다.
+     * merge 를 주면(합류) 병합 tree 를 parents 와 함께 넘기는 방에 커밋한다.
+     */
+    async prepareHandoverSnapshot(
+        fromRoomId: string,
+        artifacts: any[] = [],
+        opts: { merge?: { parents: string[]; tree: Record<string, any> } } = {}
+    ): Promise<HandoverSnapshot> {
+        const sb = window.$supabase;
+        const tenantId = window.$tenantName;
+        const authorId = localStorage.getItem('uid') || localStorage.getItem('email') || null;
+        const { originRoomId } = await this.resolveOriginRoomId(fromRoomId);
+
+        const selectedPaths: string[] = [];
+        const workFiles: Record<string, any> = {};
+        const extras: Record<string, any> = {};
+        for (const a of artifacts || []) {
+            if (a?.type === 'branch_file') {
+                selectedPaths.push(a.ref);
+                continue;
+            }
+            try {
+                const blob = await this.readHandoverArtifact(a);
+                if (!blob) continue;
+                const isWork = a.type === 'workspace_file';
+                const path = isWork ? workspaceRelPath(fromRoomId, a.ref, a.name) : handoverFileName(a.name || a.ref);
+                const entry = await worktree.putObject(sb, tenantId, blob, path);
+                (isWork ? workFiles : extras)[path] = entry;
+                selectedPaths.push(path);
+            } catch (e) {
+                console.warn('[handover] 산출물을 담지 못함:', a?.name || a?.ref, e);
+            }
+        }
+
+        let branch = await worktree.getBranch(sb, fromRoomId);
+        let baseCommitId: string;
+        let baseTree: Record<string, any>;
+        if (!branch) {
+            branch = await worktree.ensureRoomBranch(sb, {
+                tenantId,
+                originRoomId,
+                roomId: fromRoomId,
+                authorId,
+                initialTree: async () => ({ ...(await worktree.roomFolderEntries(sb, tenantId, fromRoomId)), ...workFiles })
+            });
+            const head = await worktree.getCommit(sb, branch.head_commit_id);
+            baseCommitId = head.id;
+            baseTree = head.tree || {};
+        } else {
+            const merge = opts.merge;
+            const res = await worktree.commitRoom(sb, {
+                roomId: fromRoomId,
+                reason: merge ? 'merge' : 'handover',
+                authorId,
+                parents: merge ? merge.parents : null,
+                change: async (tree: any, current: any) =>
+                    merge
+                        ? { ...merge.tree, ...workFiles }
+                        : {
+                              ...tree,
+                              ...(await worktree.roomFolderEntries(sb, tenantId, fromRoomId, current.head?.created_at)),
+                              ...workFiles
+                          }
+            });
+            baseCommitId = res.commitId;
+            baseTree = res.tree;
+        }
+
+        // 첨부·지식 문서 이름이 브랜치 파일과 겹치면 번호를 붙인다.
+        const selectedTree: Record<string, any> = worktree.pickTree(baseTree, selectedPaths);
+        for (const [path, entry] of Object.entries(extras)) {
+            let p = path;
+            for (let n = 2; selectedTree[p] && selectedTree[p].sha256 !== entry.sha256; n++) {
+                const dot = path.lastIndexOf('.');
+                p = dot > 0 ? `${path.slice(0, dot)} (${n})${path.slice(dot)}` : `${path} (${n})`;
+            }
+            selectedTree[p] = entry;
+        }
+        return { originRoomId, repoId: branch.repo_id, baseCommitId, baseTree, selectedTree };
+    }
+
+    /**
+     * 합류 판정. 이 방에서 마지막으로 넘긴 인계가 여러 명에게 나눠 준 묶음이면, 이번 인계는 그 갈래들을
+     * 모으는 합류다(작업 흐름 그림의 합류 규칙과 같다). 기준은 묶음을 나눈 커밋이고, 이 방 head 와 갈래
+     * 브랜치 head 들을 3-way 로 비교한다. 합류가 아니거나 예전(복사) 인계면 null.
+     */
+    async getHandoverMerge(roomId: string): Promise<any | null> {
+        const sb = window.$supabase;
+        const { data: events } = await sb
+            .from('handover_events')
+            .select('to_room_id, to_user_name, next_activity_label, group_id, base_commit_id, occurred_at')
+            .eq('tenant_id', window.$tenantName)
+            .eq('source', 'chat_handover')
+            .eq('from_room_id', roomId)
+            .order('occurred_at', { ascending: false });
+        const latest = (events || [])[0];
+        if (!latest?.group_id || !latest.base_commit_id) return null;
+        const group = (events || []).filter((e: any) => e.group_id === latest.group_id);
+        const [mine, base] = await Promise.all([worktree.getBranchHead(sb, roomId), worktree.getCommit(sb, latest.base_commit_id)]);
+        if (!mine || !base) return null;
+        const baseTree = base.tree || {};
+        const sides: any[] = [{ key: roomId, label: '', mine: true, tree: mine.tree }];
+        const parents: string[] = [];
+        for (const e of group.reverse()) {
+            const branch = await worktree.getBranchHead(sb, e.to_room_id);
+            if (!branch) continue;
+            // 갈래가 시작한 tree: 고른 것만 넘겼으면 기준 커밋을 부모로 그 방에 만든 분기 커밋, 다 넘겼으면 기준 커밋.
+            const commits = await worktree.listRoomCommits(sb, e.to_room_id);
+            const start =
+                commits.find((c: any) => c.reason === 'handover' && (c.parents || [])[0] === base.id) ||
+                (branch.branch.base_commit_id === base.id ? base : null);
+            if (!start) continue;
+            sides.push({
+                key: e.to_room_id,
+                label: [e.to_user_name, e.next_activity_label].filter(Boolean).join(' · '),
+                tree: worktree.sideTree(baseTree, start.tree, branch.tree)
+            });
+            parents.push(branch.branch.head_commit_id);
+        }
+        if (!parents.length) return null;
+        const { tree, conflicts } = worktree.mergeTrees(baseTree, sides);
+        return { groupId: latest.group_id, baseCommitId: base.id, baseTree, sides, parents, tree, conflicts };
+    }
+
+    /** 합류 선택(경로 → 갈래 방 id)을 반영한 병합 tree. 고르지 않은 충돌이 남으면 오류. */
+    resolveHandoverMerge(merge: any, choices: Record<string, string> = {}): { parents: string[]; tree: Record<string, any> } {
+        const { tree, conflicts } = worktree.mergeTrees(merge.baseTree, merge.sides, choices);
+        if (conflicts.length) throw new Error(`충돌 파일을 골라 주세요: ${conflicts.map((c: any) => c.path).join(', ')}`);
+        return { parents: merge.parents, tree };
+    }
+
+    /** 받는 방에 넘긴 산출물. 받는 방 작업 폴더 경로와 내용 객체 주소, 글이면 내용을 함께 싣는다. */
+    private async handoverArtifactRefs(snapshot: HandoverSnapshot, toRoomId: string): Promise<any[]> {
+        const sb = window.$supabase;
+        const tenantId = window.$tenantName;
+        const refs: any[] = [];
+        for (const [path, entry] of Object.entries(snapshot.selectedTree || {})) {
+            const isText = worktree.isTextEntry(path, entry);
+            let content = '';
+            if (isText && (entry as any).size <= 512 * 1024) {
+                try {
+                    content = (await (await worktree.readObject(sb, tenantId, entry))?.text()) || '';
+                } catch (e) {
+                    /* 내용 없이 경로만 싣는다 */
+                }
+            }
+            refs.push({
+                type: 'branch_file',
+                ref: path,
+                name: path.split('/').pop(),
+                sha256: (entry as any).sha256,
+                size_bytes: (entry as any).size,
+                url: worktree.objectUrl(sb, tenantId, entry),
+                workspace_path: `/workspace/.bpmn/${toRoomId}/${path}`,
+                is_text: isText,
+                content
+            });
+        }
+        return refs;
+    }
+
+    /** 방 브랜치 산출물: 이 방 head 파일과, 같은 스레드 다른 방 브랜치들(읽기 전용). 브랜치가 없으면 null. */
+    async getRoomArtifactBranches(roomId: string): Promise<any | null> {
+        const sb = window.$supabase;
+        const mine = await worktree.getBranch(sb, roomId);
+        if (!mine) return null;
+        const heads = await worktree.listBranchHeads(sb, mine.repo_id);
+        const roomIds = heads.map((h: any) => h.branch.room_id);
+        const { data: rooms } = await sb.from('chat_rooms').select('id, name, participants').in('id', roomIds);
+        const roomName: Record<string, string> = {};
+        for (const r of rooms || []) roomName[r.id] = r.name || '';
+        const { data: events } = await sb
+            .from('handover_events')
+            .select('to_room_id, to_user_name, next_activity_label, from_room_id, group_id, occurred_at')
+            .eq('tenant_id', window.$tenantName)
+            .eq('source', 'chat_handover')
+            .in('to_room_id', roomIds);
+        const eventByRoom: Record<string, any> = {};
+        for (const e of events || []) eventByRoom[e.to_room_id] = e;
+        return {
+            repoId: mine.repo_id,
+            roomId,
+            branches: heads.map((h: any) => ({
+                roomId: h.branch.room_id,
+                roomName: roomName[h.branch.room_id] || '',
+                event: eventByRoom[h.branch.room_id] || null,
+                mine: h.branch.room_id === roomId,
+                headCommitId: h.branch.head_commit_id,
+                baseCommitId: h.branch.base_commit_id,
+                headAt: h.head?.created_at || null,
+                tree: h.head?.tree || {},
+                changes: worktree.branchChanges(h)
+            }))
+        };
+    }
+
+    /** 방 브랜치 커밋 이력(최신 먼저). */
+    async getRoomArtifactCommits(roomId: string): Promise<any[]> {
+        return worktree.listRoomCommits(window.$supabase, roomId);
+    }
+
+    async getArtifactCommit(commitId: string): Promise<any | null> {
+        return worktree.getCommit(window.$supabase, commitId);
+    }
+
+    /** 내용 객체 주소. */
+    artifactObjectUrl(entry: any): string {
+        return worktree.objectUrl(window.$supabase, window.$tenantName, entry);
+    }
+
+    /** 받은 할 일을 완료하면 그 방 작업 상태를 커밋한다(바뀐 것이 없으면 커밋하지 않는다). */
+    async commitReceivedTaskState(taskId: string): Promise<void> {
+        try {
+            if (!taskId) return;
+            const { data } = await window.$supabase
+                .from('handover_events')
+                .select('to_room_id')
+                .eq('tenant_id', window.$tenantName)
+                .eq('source', 'chat_handover')
+                .eq('to_task_id', taskId)
+                .maybeSingle();
+            if (!data?.to_room_id) return;
+            await this.commitRoomTaskDone(data.to_room_id);
+        } catch (e) {
+            console.warn('[handover] 할 일 완료 커밋 실패:', e);
+        }
+    }
+
+    private async commitRoomTaskDone(roomId: string): Promise<void> {
+        await worktree.commitRoomWorkState(window.$supabase, {
+            tenantId: window.$tenantName,
+            roomId,
+            reason: 'task_done',
+            authorId: localStorage.getItem('uid') || localStorage.getItem('email') || null
+        });
+    }
+
+    /**
+     * 화면에서 고친 작업 파일을 그 방 브랜치에 바로 커밋한다. 방 폴더 밖 경로나 브랜치 없는 방은 null.
+     * path 는 화면의 작업 파일 경로(`/workspace/.bpmn/{방}/…`)다.
+     */
+    async commitEditedArtifact(roomId: string, path: string, content: string): Promise<any | null> {
+        const treePath = worktree.treePathOf(path, roomId);
+        if (!treePath) return null;
+        return worktree.commitEditedFile(window.$supabase, {
+            tenantId: window.$tenantName,
+            roomId,
+            path: treePath,
+            content,
+            authorId: localStorage.getItem('uid') || localStorage.getItem('email') || null
+        });
+    }
+
     /** 이 방으로 내가 받은 인계 할 일을 끝낸다. 에이전트가 받은 할 일은 에이전트가 끝낸다. */
     async completeReceivedHandoverTask(roomId: string, userId: string): Promise<void> {
         try {
@@ -9719,10 +9965,11 @@ class ProcessGPTBackend implements Backend {
                 .eq('to_room_id', roomId)
                 .eq('to_user_id', userId)
                 .eq('to_is_agent', false);
-            for (const row of Array.isArray(data) ? data : []) {
-                if (!row?.to_task_id) continue;
+            const rows = (Array.isArray(data) ? data : []).filter((row: any) => row?.to_task_id);
+            for (const row of rows) {
                 await this.putWorkItem(row.to_task_id, { status: 'DONE', end_date: new Date().toISOString() });
             }
+            if (rows.length) await this.commitRoomTaskDone(roomId);
         } catch (e) {
             console.warn('[handover] 받은 할 일 완료 처리 실패:', e);
         }
