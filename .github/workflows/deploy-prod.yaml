@@ -21,11 +21,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          # semgrep-core crashed (exit -11) with the unpinned latest on Python 3.15; pinned like
+          # scripts/security/scan.sh (semgrep/semgrep:1.177.0)
+          python-version: '3.12'
 
       # SAST scanner installation (Semgrep OSS).
       - name: Install Semgrep
-        run: pip install semgrep
+        run: pip install semgrep==1.177.0
       
       - name: Remove node_modules
         run: rm -rf node_modules
@@ -42,6 +44,9 @@ jobs:
       # - ESLint report for src/**/*.(vue|js|ts)
       # - vue-tsc typecheck report
       - name: Run Vue SAST report
+        # vue-tsc runs out of the default heap, like the build below
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: npm run sast:vue:report
 
       # Keep SAST evidence even when later steps fail.
