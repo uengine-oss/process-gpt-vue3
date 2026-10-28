@@ -30,7 +30,7 @@
                 <button
                     v-if="childTeamList.length"
                     class="org-node__chevron"
-                    :aria-label="isExpanded ? '접기' : '펼치기'"
+                    :aria-label="isExpanded ? $t('OrgTreeNode.collapse') : $t('OrgTreeNode.expand')"
                     @click.stop="emitAction('toggle')"
                 >
                     <v-icon size="16">{{ isExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
@@ -78,18 +78,18 @@
                 </div>
 
                 <button v-if="hiddenMemberCount > 0" class="org-node__more" @click.stop="emitAction('select-team')">
-                    +{{ hiddenMemberCount }}명 더보기
+                    {{ $t('OrgTreeNode.showMore', { n: hiddenMemberCount }) }}
                 </button>
             </div>
 
-            <div v-else-if="showMembers && depth > 0" class="org-node__empty">구성원 없음</div>
+            <div v-else-if="showMembers && depth > 0" class="org-node__empty">{{ $t('OrgTreeNode.noMembers') }}</div>
 
             <!-- 액션 -->
             <div v-if="editable" class="org-node__actions" @click.stop>
-                <v-btn icon size="x-small" variant="text" density="comfortable" :title="'하위 부서 추가'" @click.stop="emitAction('add-team')">
+                <v-btn icon size="x-small" variant="text" density="comfortable" :title="$t('OrgTreeNode.addSubTeam')" @click.stop="emitAction('add-team')">
                     <v-icon size="15">mdi-plus-box-outline</v-icon>
                 </v-btn>
-                <v-btn icon size="x-small" variant="text" density="comfortable" :title="'구성원 추가'" @click.stop="emitAction('add-member')">
+                <v-btn icon size="x-small" variant="text" density="comfortable" :title="$t('OrgTreeNode.addMember')" @click.stop="emitAction('add-member')">
                     <v-icon size="15">mdi-account-plus-outline</v-icon>
                 </v-btn>
                 <v-btn
@@ -98,7 +98,7 @@
                     size="x-small"
                     variant="text"
                     density="comfortable"
-                    :title="'부서 삭제'"
+                    :title="$t('OrgTreeNode.deleteTeam')"
                     @click.stop="emitAction('remove-team')"
                 >
                     <v-icon size="15">mdi-trash-can-outline</v-icon>

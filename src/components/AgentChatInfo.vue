@@ -39,7 +39,7 @@
                         :size="24"
                         icon
                         class="rounded-pill flex-shrink-0 mr-1"
-                        :title="agentInfo?.is_draft ? '저장' : '수정'"
+                        :title="agentInfo?.is_draft ? $t('AgentChatInfo.save') : $t('AgentChatInfo.edit')"
                         :loading="promotingDraft"
                     >
                         <v-icon v-if="agentInfo?.is_draft" :size="16">mdi-content-save-outline</v-icon>
@@ -593,9 +593,9 @@ export default {
                 await this.backend.promoteDraftAgent(this.agentInfo.id);
                 if (this.agentInfo) this.agentInfo.is_draft = false;
                 this.$emit('agentUpdated');
-                if (this.$toast?.success) this.$toast.success('에이전트를 저장했습니다.');
+                if (this.$toast?.success) this.$toast.success(this.$t('AgentChatInfo.agentSaved'));
             } catch (e) {
-                if (this.$toast?.error) this.$toast.error('에이전트 저장에 실패했습니다.');
+                if (this.$toast?.error) this.$toast.error(this.$t('AgentChatInfo.agentSaveFailed'));
                 console.error('[AgentChatInfo] draft 승격 실패:', e);
             } finally {
                 this.promotingDraft = false;

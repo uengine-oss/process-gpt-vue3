@@ -17,7 +17,7 @@
                     </v-chip>
                     <v-chip v-if="card.doc_type" size="small" variant="outlined">{{ card.doc_type }}</v-chip>
                     <v-chip v-if="doc.index_status && doc.index_status !== 'indexed'" size="small" :color="indexMeta.color" variant="tonal">
-                        처리 {{ indexMeta.label }}
+                        {{ $t('KbDocDrawer.indexStatus', { label: indexMeta.label }) }}
                     </v-chip>
                 </div>
 
@@ -25,59 +25,59 @@
                     {{ doc.index_error }}
                 </v-alert>
                 <v-alert v-else-if="isHintError" type="warning" variant="tonal" density="compact" class="mt-3 text-body-2">
-                    의미 검색 힌트를 만들지 못했습니다. 카드와 본문으로는 찾을 수 있습니다.
+                    {{ $t('KbDocDrawer.hintError') }}
                     <div class="text-caption mt-1">{{ doc.index_error.slice(7) }}</div>
                 </v-alert>
 
                 <template v-if="hasCard">
                     <section class="kdd__sec">
-                        <h4>요약</h4>
+                        <h4>{{ $t('KbDocDrawer.summary') }}</h4>
                         <p>{{ card.summary }}</p>
                     </section>
                     <section v-if="card.distinguishers && card.distinguishers.length" class="kdd__sec">
-                        <h4>이 문서만의 사실</h4>
+                        <h4>{{ $t('KbDocDrawer.distinguishers') }}</h4>
                         <div class="kdd__tags"><span v-for="x in card.distinguishers" :key="x" class="kdd__tag kdd__tag--accent">{{ x }}</span></div>
                     </section>
                     <section v-if="card.answers_questions && card.answers_questions.length" class="kdd__sec">
-                        <h4>이 문서가 답하는 질문</h4>
+                        <h4>{{ $t('KbDocDrawer.answersQuestions') }}</h4>
                         <ul class="kdd__list"><li v-for="q in card.answers_questions" :key="q">{{ q }}</li></ul>
                     </section>
                     <section v-if="card.topics && card.topics.length" class="kdd__sec">
-                        <h4>주제</h4>
+                        <h4>{{ $t('KbDocDrawer.topics') }}</h4>
                         <div class="kdd__tags"><span v-for="x in card.topics" :key="x" class="kdd__tag">{{ x }}</span></div>
                     </section>
                     <section v-if="card.coverage" class="kdd__sec kdd__sec--muted">
-                        카드 근거: {{ card.coverage.whole_document ? '문서 전체를 읽음' : `문서의 ${coveragePct}% 를 읽음` }}
-                        <template v-if="card.coverage.windows_failed"> · 조각 {{ card.coverage.windows_failed }}개 실패</template>
+                        {{ card.coverage.whole_document ? $t('KbDocDrawer.coverageWhole') : $t('KbDocDrawer.coveragePartial', { pct: coveragePct }) }}
+                        <template v-if="card.coverage.windows_failed"> · {{ $t('KbDocDrawer.chunksFailed', { n: Number(card.coverage.windows_failed) }) }}</template>
                     </section>
                 </template>
                 <section v-else-if="state === 'pending'" class="kdd__sec kdd__sec--muted">
-                    <v-progress-circular indeterminate size="14" width="2" class="mr-2" />문서 카드를 만드는 중입니다. 본문은 이미 읽을 수 있습니다.
+                    <v-progress-circular indeterminate size="14" width="2" class="mr-2" />{{ $t('KbDocDrawer.buildingCard') }}
                 </section>
                 <section v-else-if="state === 'no_text'" class="kdd__sec kdd__sec--muted">
-                    텍스트 레이어가 없어 읽을 수 없는 문서입니다(스캔본 등). 에이전트에게는 "자료에 없음"이 아니라 "읽을 수 없음"으로 보입니다.
+                    {{ $t('KbDocDrawer.noText') }}
                 </section>
                 <section v-else-if="state === 'failed'" class="kdd__sec kdd__sec--muted">
-                    문서 카드 생성에 실패했습니다. 본문이 저장돼 있으면 카드만 다시 만들 수 있습니다.
+                    {{ $t('KbDocDrawer.cardFailed') }}
                 </section>
 
                 <section class="kdd__sec kdd__meta">
-                    <div><span>크기</span><b>{{ formatBytes(doc.size_bytes) }}</b></div>
-                    <div v-if="doc.n_pages"><span>페이지</span><b>{{ doc.n_pages }}</b></div>
-                    <div><span>올린 사람</span><b>{{ doc.uploaded_by_name || '-' }}</b></div>
-                    <div><span>올린 시각</span><b>{{ formatDate(doc.modified_time) }}</b></div>
-                    <div><span>경로</span><b class="kdd__path">{{ doc.path }}</b></div>
+                    <div><span>{{ $t('KbDocDrawer.size') }}</span><b>{{ formatBytes(doc.size_bytes) }}</b></div>
+                    <div v-if="doc.n_pages"><span>{{ $t('KbDocDrawer.pages') }}</span><b>{{ doc.n_pages }}</b></div>
+                    <div><span>{{ $t('KbDocDrawer.uploadedBy') }}</span><b>{{ doc.uploaded_by_name || '-' }}</b></div>
+                    <div><span>{{ $t('KbDocDrawer.uploadedAt') }}</span><b>{{ formatDate(doc.modified_time) }}</b></div>
+                    <div><span>{{ $t('KbDocDrawer.path') }}</span><b class="kdd__path">{{ doc.path }}</b></div>
                 </section>
             </div>
 
             <div class="kdd__actions">
-                <v-btn size="small" variant="tonal" prepend-icon="mdi-download-outline" :loading="busy.download" @click="download">원문</v-btn>
-                <v-btn size="small" variant="tonal" prepend-icon="mdi-file-search-outline" :disabled="!canPreview" :loading="busy.preview" @click="preview">저장된 본문</v-btn>
-                <v-btn v-if="canManage" size="small" variant="tonal" color="primary" prepend-icon="mdi-card-text-outline" :loading="busy.card" @click="rebuild">카드 다시 만들기</v-btn>
-                <v-btn v-if="canManage" size="small" variant="text" prepend-icon="mdi-refresh" :loading="busy.reindex" @click="reindex">전체 재처리</v-btn>
+                <v-btn size="small" variant="tonal" prepend-icon="mdi-download-outline" :loading="busy.download" @click="download">{{ $t('KbDocDrawer.original') }}</v-btn>
+                <v-btn size="small" variant="tonal" prepend-icon="mdi-file-search-outline" :disabled="!canPreview" :loading="busy.preview" @click="preview">{{ $t('KbDocDrawer.storedText') }}</v-btn>
+                <v-btn v-if="canManage" size="small" variant="tonal" color="primary" prepend-icon="mdi-card-text-outline" :loading="busy.card" @click="rebuild">{{ $t('KbDocDrawer.rebuildCard') }}</v-btn>
+                <v-btn v-if="canManage" size="small" variant="text" prepend-icon="mdi-refresh" :loading="busy.reindex" @click="reindex">{{ $t('KbDocDrawer.reindexAll') }}</v-btn>
                 <v-spacer />
-                <v-btn v-if="canManage" size="small" variant="text" color="error" prepend-icon="mdi-delete-outline" @click="$emit('delete', doc)">삭제</v-btn>
-                <v-tooltip v-else text="본인이 올린 파일만 관리할 수 있습니다" location="top">
+                <v-btn v-if="canManage" size="small" variant="text" color="error" prepend-icon="mdi-delete-outline" @click="$emit('delete', doc)">{{ $t('KbDocDrawer.delete') }}</v-btn>
+                <v-tooltip v-else :text="$t('KbDocDrawer.ownerOnly')" location="top">
                     <template v-slot:activator="{ props }"><v-icon v-bind="props" size="16" color="grey">mdi-lock-outline</v-icon></template>
                 </v-tooltip>
             </div>
@@ -86,7 +86,7 @@
         <v-dialog v-model="previewDialog" max-width="1100" scrollable>
             <v-card>
                 <v-card-title class="d-flex align-center text-subtitle-1">
-                    저장된 본문 — 에이전트가 읽는 그대로
+                    {{ $t('KbDocDrawer.previewTitle') }}
                     <v-spacer />
                     <v-btn icon variant="text" size="small" @click="previewDialog = false"><v-icon>mdi-close</v-icon></v-btn>
                 </v-card-title>
@@ -166,9 +166,9 @@ export default {
             try {
                 const url = await fileUrl(this.doc);
                 if (url) window.open(url, '_blank', 'noopener');
-                else this.$emit('notify', { text: '다운로드 URL을 가져오지 못했습니다', color: 'error' });
+                else this.$emit('notify', { text: this.$t('KbDocDrawer.noDownloadUrl'), color: 'error' });
             } catch (e) {
-                this.$emit('notify', { text: errorText(e, '다운로드 실패'), color: 'error' });
+                this.$emit('notify', { text: errorText(e, this.$t('KbDocDrawer.downloadFailed')), color: 'error' });
             } finally {
                 this.busy.download = false;
             }
@@ -179,9 +179,9 @@ export default {
             this.previewError = '';
             try {
                 this.pages = await storedPages(this.doc);
-                if (!this.pages.length) this.previewError = '저장된 본문이 없습니다.';
+                if (!this.pages.length) this.previewError = this.$t('KbDocDrawer.noStoredText');
             } catch (e) {
-                this.previewError = errorText(e, '본문을 불러오지 못했습니다');
+                this.previewError = errorText(e, this.$t('KbDocDrawer.loadTextFailed'));
             } finally {
                 this.busy.preview = false;
             }
@@ -191,12 +191,14 @@ export default {
             try {
                 const res = await rebuildCard(this.doc);
                 this.$emit('notify', {
-                    text: res?.summarized ? '문서 카드를 다시 만들었습니다' : `카드 생성 결과: ${res?.card_status || '실패'}`,
+                    text: res?.summarized
+                        ? this.$t('KbDocDrawer.cardRebuilt')
+                        : this.$t('KbDocDrawer.cardResult', { status: res?.card_status || this.$t('KbDocDrawer.failed') }),
                     color: res?.summarized ? 'success' : 'warning'
                 });
                 this.$emit('changed');
             } catch (e) {
-                this.$emit('notify', { text: errorText(e, '카드 재생성 실패'), color: 'error' });
+                this.$emit('notify', { text: errorText(e, this.$t('KbDocDrawer.cardRebuildFailed')), color: 'error' });
             } finally {
                 this.busy.card = false;
             }
@@ -205,10 +207,10 @@ export default {
             this.busy.reindex = true;
             try {
                 await reindexFile(this.doc);
-                this.$emit('notify', { text: '재처리를 접수했습니다. 상태가 갱신될 때까지 잠시 걸립니다.', color: 'success' });
+                this.$emit('notify', { text: this.$t('KbDocDrawer.reindexQueued'), color: 'success' });
                 this.$emit('changed');
             } catch (e) {
-                this.$emit('notify', { text: errorText(e, '재처리 실패'), color: 'error' });
+                this.$emit('notify', { text: errorText(e, this.$t('KbDocDrawer.reindexFailed')), color: 'error' });
             } finally {
                 this.busy.reindex = false;
             }

@@ -83,20 +83,25 @@
                         <v-list density="compact" min-width="200">
                             <template v-if="phoneShell">
                                 <div class="pg-plus-sheet__handle" aria-hidden="true"></div>
-                                <div class="pg-plus-sheet__title">추가</div>
+                                <div class="pg-plus-sheet__title">{{ $t('UnifiedChatInput.add') }}</div>
                             </template>
-                            <v-list-item @click="pickFile" prepend-icon="mdi-paperclip" title="파일 첨부"></v-list-item>
+                            <v-list-item @click="pickFile" prepend-icon="mdi-paperclip" :title="$t('UnifiedChatInput.attachFile')"></v-list-item>
                             <v-list-item
                                 v-if="enableKnowledgeBase"
                                 @click="openKnowledgePicker"
                                 prepend-icon="mdi-bookshelf"
-                                title="지식 베이스"
+                                :title="$t('UnifiedChatInput.knowledgeBase')"
                             >
                                 <template v-if="knowledgeSelectionCount > 0" v-slot:append>
                                     <span class="text-caption text-medium-emphasis">{{ knowledgeSelectionCount }}</span>
                                 </template>
                             </v-list-item>
-                            <v-list-item v-if="enableKnowledgeBase" @click="uploadFolder" prepend-icon="mdi-folder-upload-outline" title="폴더 업로드">
+                            <v-list-item
+                                v-if="enableKnowledgeBase"
+                                @click="uploadFolder"
+                                prepend-icon="mdi-folder-upload-outline"
+                                :title="$t('UnifiedChatInput.uploadFolder')"
+                            >
                                 <template v-if="folderBadgeCount > 0" v-slot:append>
                                     <span class="text-caption text-medium-emphasis">{{ folderBadgeCount }}</span>
                                 </template>
@@ -111,22 +116,29 @@
             <input ref="codexFolderInput" type="file" class="d-none" webkitdirectory directory multiple @change="onCodexFolderPicked" />
         </div>
         <!-- 클로드 모바일의 입력창 아래 한 줄. 답을 그대로 믿지 말라는 안내는 늘 보이는 곳에 둔다. -->
-        <div v-if="phoneShell" class="pg-composer-note">Process GPT는 AI이므로 실수를 할 수 있습니다.</div>
+        <div v-if="phoneShell" class="pg-composer-note">{{ $t('UnifiedChatInput.aiDisclaimer') }}</div>
 
         <!-- 대기/진행/결과 (codex 원본 폴더) -->
         <div v-if="folderBadgeCount > 0 || folderUploading" class="codex-folder-status">
             <v-icon size="14" class="mr-1" color="primary">mdi-folder-open-outline</v-icon>
-            <template v-if="folderUploading">
-                폴더 올리는 중 <strong>{{ folderProgress.sent }}</strong> / {{ folderProgress.total }} — 다 올라간 뒤에 답변이 시작됩니다
-            </template>
-            <template v-else-if="pendingFolderCount > 0">
-                <strong>{{ pendingFolderName || '폴더' }}</strong>
-                ({{ pendingFolderCount }}개) 준비됨 — 메시지를 보내면 이 대화로 함께 올라갑니다
-            </template>
-            <template v-else>
-                이 대화에 폴더 <strong>{{ codexFolderFileCount }}</strong
-                >개 파일이 올라가 있습니다 — codex가 직접 열어봅니다
-            </template>
+            <!-- 굵은 숫자·이름이 문장 가운데 들어가므로 i18n-t 슬롯으로 끼운다(언어마다 어순이 다르다). -->
+            <i18n-t v-if="folderUploading" scope="global" keypath="UnifiedChatInput.folderUploading" tag="span">
+                <template #sent><strong>{{ folderProgress.sent }}</strong></template>
+                <template #total>{{ folderProgress.total }}</template>
+            </i18n-t>
+            <i18n-t
+                v-else-if="pendingFolderCount > 0"
+                scope="global"
+                keypath="UnifiedChatInput.folderPending"
+                :plural="pendingFolderCount"
+                tag="span"
+            >
+                <template #name><strong>{{ pendingFolderName || $t('UnifiedChatInput.folderDefaultName') }}</strong></template>
+                <template #count>{{ pendingFolderCount }}</template>
+            </i18n-t>
+            <i18n-t v-else scope="global" keypath="UnifiedChatInput.folderInChat" :plural="codexFolderFileCount" tag="span">
+                <template #count><strong>{{ codexFolderFileCount }}</strong></template>
+            </i18n-t>
         </div>
 
         <KnowledgeSpacePicker
@@ -398,9 +410,9 @@ export default {
                 // 막지 않고 들고 있다가, 대화가 열리면 그 방으로 올린다.
                 this.folderStore.setPending(files);
                 this.notify(
-                    `폴더를 준비했습니다 — 파일 ${files.length}개`,
+                    this.$tc('UnifiedChatInput.folderPrepared', files.length, { count: files.length }),
                     'success',
-                    '메시지를 보내 대화가 열리면 이 폴더가 함께 올라갑니다'
+                    this.$t('UnifiedChatInput.folderPreparedDetail')
                 );
                 return;
             }
@@ -420,13 +432,14 @@ export default {
                 const result = await task;
                 this.folderSummary = result;
                 const skipped = Array.isArray(result.skipped) ? result.skipped.length : 0;
+                const uploaded = Number(result.files ?? result.sent) || 0;
                 this.notify(
-                    `폴더를 올렸습니다 — 파일 ${result.files ?? result.sent}개`,
+                    this.$tc('UnifiedChatInput.folderUploaded', uploaded, { count: uploaded }),
                     'success',
-                    skipped ? `제외 ${skipped}개 (.git·node_modules 등 기본 제외)` : null
+                    skipped ? this.$t('UnifiedChatInput.folderSkipped', { count: skipped }) : null
                 );
             } catch (e) {
-                this.notify('폴더 업로드 실패', 'error', e?.message || String(e));
+                this.notify(this.$t('UnifiedChatInput.folderUploadFailed'), 'error', e?.message || String(e));
             } finally {
                 this.folderUploading = false;
             }

@@ -1,6 +1,7 @@
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import { create as createElement } from 'diagram-js/lib/model';
 import { registerDrilldownHistory } from './drilldownHistory';
+import { t } from '@/composables/i18nText';
 
 const HISTORY_KEY = 'caDrilldown';
 const TARGET_TYPES = new Set(['bpmn:CallActivity', 'bpmn:StartEvent', 'bpmn:EndEvent']);
@@ -96,7 +97,7 @@ export default class CallActivityDrilldown {
         if (this._wrapper) return;
         const wrapper = document.createElement('div');
         wrapper.className = 'ca-drilldown-breadcrumbs';
-        wrapper.setAttribute('aria-label', '호출 프로세스 탐색');
+        wrapper.setAttribute('aria-label', t('CallActivityDrilldown.breadcrumbsLabel'));
         const trail = document.createElement('div');
         trail.className = 'ca-drilldown-breadcrumbs__trail';
         const actions = document.createElement('div');
@@ -104,7 +105,7 @@ export default class CallActivityDrilldown {
         const back = document.createElement('button');
         back.type = 'button';
         back.className = 'ca-drilldown-btn';
-        back.textContent = '← 돌아가기';
+        back.textContent = t('CallActivityDrilldown.back');
         back.addEventListener('click', () => {
             if (this._busy || this._trail.length <= 1) return;
             this._busy = true;
@@ -114,7 +115,7 @@ export default class CallActivityDrilldown {
         const edit = document.createElement('button');
         edit.type = 'button';
         edit.className = 'ca-drilldown-btn';
-        edit.textContent = '편집하기 ↗';
+        edit.textContent = t('CallActivityDrilldown.edit');
         edit.addEventListener('click', () => this._openCurrentInNew());
         actions.append(back, edit);
         wrapper.append(trail, actions);
@@ -145,7 +146,7 @@ export default class CallActivityDrilldown {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'bjs-drilldown ca-drilldown';
-        button.title = this._config.isViewMode ? '호출 프로세스 펼쳐보기' : '호출 프로세스 새 탭에서 편집';
+        button.title = this._config.isViewMode ? t('CallActivityDrilldown.expandCalled') : t('CallActivityDrilldown.editCalledInNewTab');
         button.setAttribute('aria-label', button.title);
         const icon = document.createElement('span');
         icon.className = 'ca-drilldown__icon';
@@ -200,7 +201,7 @@ export default class CallActivityDrilldown {
         if (typeof xml !== 'string' || !xml.trim()) {
             // 도면을 못 얻는 원인은 "정의 미존재" 와 "공개 범위 밖(proc_def SELECT RLS 차단)" 두 가지인데
             // 클라이언트에서는 구분되지 않는다(둘 다 0행). 호출부가 통합 안내를 띄우도록 코드를 붙인다.
-            const unavailable = new Error(`참조 프로세스 도면을 찾을 수 없습니다: ${definitionId}`);
+            const unavailable = new Error(t('CallActivityDrilldown.linkedProcessUnavailable', { id: definitionId }));
             unavailable.code = 'LINKED_PROCESS_UNAVAILABLE';
             throw unavailable;
         }
@@ -314,7 +315,7 @@ export default class CallActivityDrilldown {
             this._trail = [
                 {
                     root: parentRoot,
-                    label: this._config.rootLabel || parentRoot.businessObject?.name || '프로세스',
+                    label: this._config.rootLabel || parentRoot.businessObject?.name || t('CallActivityDrilldown.process'),
                     viewbox: { ...this._canvas.viewbox() }
                 }
             ];

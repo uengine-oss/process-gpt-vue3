@@ -2,7 +2,7 @@
     <div class="kfp">
         <div class="kfp__crumb">
             <v-icon size="15" class="mr-1">mdi-map-outline</v-icon>
-            <button type="button" class="kfp__crumb-item" :class="{ 'is-current': !folderPath }" @click="$emit('select', '')">지식베이스</button>
+            <button type="button" class="kfp__crumb-item" :class="{ 'is-current': !folderPath }" @click="$emit('select', '')">{{ $t('KbFolderPanel.crumbRoot') }}</button>
             <template v-for="(seg, i) in crumbs" :key="seg.path">
                 <v-icon size="14" class="kfp__crumb-sep">mdi-chevron-right</v-icon>
                 <button type="button" class="kfp__crumb-item" :class="{ 'is-current': i === crumbs.length - 1 }" @click="$emit('select', seg.path)">
@@ -16,11 +16,10 @@
             <div class="kfp__card kfp__card--root">
                 <div class="kfp__card-head">
                     <v-icon size="18" color="primary">mdi-map-search-outline</v-icon>
-                    <span class="kfp__card-title">지식 지도</span>
+                    <span class="kfp__card-title">{{ $t('KbFolderPanel.mapTitle') }}</span>
                 </div>
                 <p class="kfp__lead">
-                    폴더마다 무엇이 있고 무엇부터 읽어야 하는지가 카드로 정리됩니다. 채팅에서 폴더를 고르면 에이전트가 이 지도를 보고
-                    문서를 찾아 들어갑니다.
+                    {{ $t('KbFolderPanel.mapLead') }}
                 </p>
                 <KbReadiness :readiness="overallReadiness" />
                 <div v-if="roots.length" class="kfp__grid mt-3">
@@ -31,10 +30,10 @@
                             <span class="kfp__sub-count">{{ f.nTotal }}</span>
                         </div>
                         <div v-if="f.card && f.card.summary" class="kfp__sub-summary">{{ f.card.summary }}</div>
-                        <div v-else class="kfp__sub-summary kfp__sub-summary--empty">아직 폴더 카드가 없습니다</div>
+                        <div v-else class="kfp__sub-summary kfp__sub-summary--empty">{{ $t('KbFolderPanel.noFolderCard') }}</div>
                     </button>
                 </div>
-                <div v-else class="kfp__empty">폴더를 통째로 올리면 여기에 지도가 생깁니다.</div>
+                <div v-else class="kfp__empty">{{ $t('KbFolderPanel.rootEmpty') }}</div>
             </div>
 
             <KbUploadZone folder-path="" class="mt-3" @uploaded="$emit('uploaded', $event)" @notify="$emit('notify', $event)" />
@@ -47,9 +46,9 @@
                     <v-icon size="18" color="primary">mdi-card-text-outline</v-icon>
                     <span class="kfp__card-title">{{ leaf }}</span>
                     <v-chip v-if="cardState === 'pending'" size="x-small" color="grey" variant="tonal">
-                        <v-progress-circular indeterminate size="10" width="2" class="mr-1" />카드 만드는 중
+                        <v-progress-circular indeterminate size="10" width="2" class="mr-1" />{{ $t('KbFolderPanel.cardBuilding') }}
                     </v-chip>
-                    <v-chip v-else-if="card && card.built_at" size="x-small" variant="text" class="text-medium-emphasis">{{ formatDate(card.built_at) }} 기준</v-chip>
+                    <v-chip v-else-if="card && card.built_at" size="x-small" variant="text" class="text-medium-emphasis">{{ $t('KbFolderPanel.builtAt', { date: formatDate(card.built_at) }) }}</v-chip>
                     <v-spacer />
                     <v-btn
                         v-if="canManage && node && node.nTotal"
@@ -59,7 +58,7 @@
                         :loading="rebuilding"
                         @click="$emit('rebuild-card')"
                     >
-                        카드 다시 만들기
+                        {{ $t('KbFolderPanel.rebuildCard') }}
                     </v-btn>
                 </div>
 
@@ -69,13 +68,13 @@
                         <span v-for="t in card.topics" :key="t" class="kfp__tag">{{ t }}</span>
                     </div>
                     <div v-if="card.reading_guide && card.reading_guide.length" class="kfp__guide">
-                        <div class="kfp__guide-title"><v-icon size="14" class="mr-1">mdi-sign-direction</v-icon>어떻게 읽나</div>
+                        <div class="kfp__guide-title"><v-icon size="14" class="mr-1">mdi-sign-direction</v-icon>{{ $t('KbFolderPanel.howToRead') }}</div>
                         <ul>
                             <li v-for="g in card.reading_guide" :key="g">{{ g }}</li>
                         </ul>
                     </div>
                     <div v-if="card.start_with && card.start_with.length" class="kfp__start">
-                        <span class="kfp__start-label">먼저 열 문서</span>
+                        <span class="kfp__start-label">{{ $t('KbFolderPanel.startWith') }}</span>
                         <button
                             v-for="name in card.start_with"
                             :key="name"
@@ -89,13 +88,13 @@
                     </div>
                 </template>
                 <p v-else-if="cardState === 'pending'" class="kfp__lead kfp__lead--muted">
-                    문서 카드가 준비되는 대로 폴더 카드를 만듭니다. 그동안에도 본문은 읽을 수 있습니다.
+                    {{ $t('KbFolderPanel.pendingLead') }}
                 </p>
                 <p v-else-if="node && node.nTotal" class="kfp__lead kfp__lead--muted">
-                    아직 이 폴더의 카드가 없습니다.
-                    <a v-if="canManage" href="#" @click.prevent="$emit('rebuild-card')">지금 만들기</a>
+                    {{ $t('KbFolderPanel.noCardLead') }}
+                    <a v-if="canManage" href="#" @click.prevent="$emit('rebuild-card')">{{ $t('KbFolderPanel.buildNow') }}</a>
                 </p>
-                <p v-else class="kfp__lead kfp__lead--muted">빈 폴더입니다. 문서를 올리면 카드가 만들어집니다.</p>
+                <p v-else class="kfp__lead kfp__lead--muted">{{ $t('KbFolderPanel.emptyFolder') }}</p>
 
                 <KbReadiness v-if="node && node.nTotal" :readiness="node.readiness" class="mt-3" />
             </div>
@@ -109,7 +108,7 @@
                         <span class="kfp__sub-count">{{ f.n_docs_total }}</span>
                     </div>
                     <div v-if="f.card && f.card.summary" class="kfp__sub-summary">{{ f.card.summary }}</div>
-                    <div v-else class="kfp__sub-summary kfp__sub-summary--empty">아직 폴더 카드가 없습니다</div>
+                    <div v-else class="kfp__sub-summary kfp__sub-summary--empty">{{ $t('KbFolderPanel.noFolderCard') }}</div>
                 </button>
             </div>
 
@@ -117,7 +116,7 @@
 
             <div class="kfp__docs">
                 <div class="kfp__docs-head">
-                    <span class="kfp__docs-title">문서</span>
+                    <span class="kfp__docs-title">{{ $t('KbFolderPanel.docs') }}</span>
                     <span class="kfp__docs-count">{{ nDirect }}</span>
                 </div>
                 <KbDocList :docs="docs" :loading="loading" :overflow="overflow" :n-direct="nDirect" @open="$emit('open-doc', $event)" @query="$emit('query', $event)" />

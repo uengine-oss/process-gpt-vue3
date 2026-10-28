@@ -182,7 +182,7 @@
                                                     {{
                                                         getCurrentMultiGroup(message).label ||
                                                         message.__humanFeedback.question ||
-                                                        '아래 항목에 응답해 주세요.'
+                                                        $t('Chat.hitlRespondBelow')
                                                     }}
                                                 </span>
                                                 <v-chip size="x-small" variant="tonal" color="primary" class="ml-2">
@@ -218,7 +218,7 @@
                                                     <HumanFeedbackPanel
                                                         :ref="(el) => registerMultiPanelRef(message.uuid, entry.idx, el)"
                                                         :feedbackType="entry.q.feedback_type || 'select_items'"
-                                                        :question="entry.q.prompt || '선택해 주세요.'"
+                                                        :question="entry.q.prompt || $t('Chat.hitlPleaseSelect')"
                                                         :context="entry.q.context || ''"
                                                         :items="getHitlQuestionItems(entry.q)"
                                                         :suggestions="
@@ -263,7 +263,7 @@
                                                     @click="prevMultiStep(message)"
                                                 >
                                                     <v-icon size="16" start>mdi-chevron-left</v-icon>
-                                                    이전
+                                                    {{ $t('Chat.prev') }}
                                                 </v-btn>
                                                 <v-spacer />
                                                 <v-btn
@@ -273,7 +273,7 @@
                                                     variant="tonal"
                                                     @click="goNextMultiStep(message)"
                                                 >
-                                                    다음
+                                                    {{ $t('Chat.next') }}
                                                     <v-icon size="16" end>mdi-chevron-right</v-icon>
                                                 </v-btn>
                                                 <v-btn
@@ -283,7 +283,7 @@
                                                     variant="flat"
                                                     @click="submitMultiHumanFeedback(message)"
                                                 >
-                                                    응답 제출
+                                                    {{ $t('Chat.submitResponse') }}
                                                 </v-btn>
                                             </div>
                                             <div v-else class="hitl-multi-actions">
@@ -294,12 +294,12 @@
                                                     @click="prevMultiStep(message)"
                                                 >
                                                     <v-icon size="16" start>mdi-chevron-left</v-icon>
-                                                    이전
+                                                    {{ $t('Chat.prev') }}
                                                 </v-btn>
                                                 <v-spacer />
                                                 <div class="hitl-multi-submitted">
                                                     <v-icon size="14" color="success">mdi-check-circle</v-icon>
-                                                    <span>{{ message.__humanFeedback.__submittedText || '응답 완료' }}</span>
+                                                    <span>{{ multiSubmittedLabel(message) }}</span>
                                                 </div>
                                                 <v-spacer />
                                                 <v-btn
@@ -308,7 +308,7 @@
                                                     :disabled="isLastMultiStep(message)"
                                                     @click="setMultiCurrentStep(message, getMultiCurrentStep(message) + 1)"
                                                 >
-                                                    다음
+                                                    {{ $t('Chat.next') }}
                                                     <v-icon size="16" end>mdi-chevron-right</v-icon>
                                                 </v-btn>
                                             </div>
@@ -322,7 +322,7 @@
                                                     message.__humanFeedback.user_request_type ||
                                                     'approve_reject_with_edit'
                                                 "
-                                                :question="message.__humanFeedback.question || '확인이 필요합니다.'"
+                                                :question="message.__humanFeedback.question || $t('Chat.hitlNeedsConfirm')"
                                                 :context="message.__humanFeedback.context || ''"
                                                 :items="getHitlQuestionItems(message.__humanFeedback)"
                                                 :suggestions="message.__humanFeedback.suggestions || []"
@@ -333,14 +333,14 @@
                                                 :allowSkip="message.__humanFeedback.allow_skip || false"
                                                 :allowOther="!!message.__humanFeedback.allow_other"
                                                 :submitted="!!message.__humanFeedback.__submitted"
-                                                :submittedText="message.__humanFeedback.__submittedText || '응답 완료'"
+                                                :submittedText="message.__humanFeedback.__submittedText || undefined"
                                                 :initialSelectedIds="message.__humanFeedback.__selectedIds || []"
                                                 :initialSelectedSuggestion="message.__humanFeedback.__selectedSuggestion || null"
                                                 :initialDecision="message.__humanFeedback.__decision || ''"
                                                 :initialFreeText="message.__humanFeedback.__freeText || ''"
                                                 :initialCustomText="message.__humanFeedback.__customText || ''"
                                                 :headerIcon="'mdi-comment-question-outline'"
-                                                :submitLabel="'응답 제출'"
+                                                :submitLabel="$t('Chat.submitResponse')"
                                                 @submit="(fb) => emitHumanFeedbackSubmit(fb, message)"
                                                 @skip="emitHumanFeedbackSkip"
                                             />
@@ -1511,7 +1511,7 @@
                                                                                                             `${index}-${tcIdx}`
                                                                                                         ]
                                                                                                 "
-                                                                                                >내용</span
+                                                                                                >{{ $t('Chat.toolOutputContent') }}</span
                                                                                             >
                                                                                         </div>
                                                                                         <pre
@@ -1746,7 +1746,7 @@
                                                                                         >mdi-check-circle</v-icon
                                                                                     >
                                                                                     <span class="text-caption font-weight-bold">
-                                                                                        BPMN 프로세스 생성 결과
+                                                                                        {{ $t('Chat.pdf2bpmnResultTitle') }}
                                                                                     </span>
                                                                                     <v-spacer />
                                                                                     <v-btn
@@ -1761,7 +1761,7 @@
                                                                                         "
                                                                                     >
                                                                                         <v-icon start size="14">mdi-graph-outline</v-icon>
-                                                                                        전체 그래프
+                                                                                        {{ $t('Chat.fullGraph') }}
                                                                                     </v-btn>
                                                                                     <!-- 저장: 시스템이 자동 저장하지 않고, 사용자가 확인 후 클릭하면 저장 -->
                                                                                     <v-btn
@@ -1778,7 +1778,7 @@
                                                                                         @click.stop="emitSaveGeneratedProcess(message)"
                                                                                     >
                                                                                         <v-icon start size="14">mdi-content-save</v-icon>
-                                                                                        저장
+                                                                                        {{ $t('Chat.save') }}
                                                                                     </v-btn>
                                                                                     <v-chip
                                                                                         v-else-if="
@@ -1791,7 +1791,7 @@
                                                                                         class="ml-1"
                                                                                     >
                                                                                         <v-icon start size="14">mdi-check</v-icon>
-                                                                                        저장됨
+                                                                                        {{ $t('Chat.saved') }}
                                                                                     </v-chip>
                                                                                 </div>
                                                                                 <div
@@ -1802,7 +1802,7 @@
                                                                                     class="text-caption mb-2"
                                                                                     style="color: rgb(var(--v-theme-error))"
                                                                                 >
-                                                                                    ⚠️ 저장 실패: {{ message.pdf2bpmnResult.__saveError }}
+                                                                                    ⚠️ {{ $t('Chat.saveFailed', { error: message.pdf2bpmnResult.__saveError }) }}
                                                                                 </div>
                                                                                 <div
                                                                                     v-if="
@@ -1811,9 +1811,11 @@
                                                                                     "
                                                                                     class="text-caption font-weight-bold mb-1"
                                                                                 >
-                                                                                    생성된 BPMN 프로세스 ({{
-                                                                                        getPdf2bpmnBpmns(message).length
-                                                                                    }}개)
+                                                                                    {{
+                                                                                        $tc('Chat.generatedBpmns', getPdf2bpmnBpmns(message).length, {
+                                                                                            n: getPdf2bpmnBpmns(message).length
+                                                                                        })
+                                                                                    }}
                                                                                 </div>
                                                                                 <div
                                                                                     v-if="
@@ -1855,9 +1857,11 @@
                                                                                     v-if="getPdf2bpmnSavedSkills(message).length > 0"
                                                                                     class="text-caption font-weight-bold mt-3 mb-1"
                                                                                 >
-                                                                                    생성된 스킬 ({{
-                                                                                        getPdf2bpmnSavedSkills(message).length
-                                                                                    }}개)
+                                                                                    {{
+                                                                                        $tc('Chat.generatedSkills', getPdf2bpmnSavedSkills(message).length, {
+                                                                                            n: getPdf2bpmnSavedSkills(message).length
+                                                                                        })
+                                                                                    }}
                                                                                 </div>
                                                                                 <div
                                                                                     v-if="getPdf2bpmnSavedSkills(message).length > 0"
@@ -1899,9 +1903,11 @@
                                                                                     v-if="getPdf2bpmnSavedAgents(message).length > 0"
                                                                                     class="text-caption font-weight-bold mt-3 mb-1"
                                                                                 >
-                                                                                    생성된 에이전트 ({{
-                                                                                        getPdf2bpmnSavedAgents(message).length
-                                                                                    }}개)
+                                                                                    {{
+                                                                                        $tc('Chat.generatedAgents', getPdf2bpmnSavedAgents(message).length, {
+                                                                                            n: getPdf2bpmnSavedAgents(message).length
+                                                                                        })
+                                                                                    }}
                                                                                 </div>
                                                                                 <div
                                                                                     v-if="getPdf2bpmnSavedAgents(message).length > 0"
@@ -3580,6 +3586,7 @@ import { getTenantId } from '@/utils/tenant';
 import { normalizeOrchestration } from '@/utils/orchestration';
 // 첨부 이미지·파일 주소는 비공개 버킷의 서명 URL 이라 그릴 때 만들어야 한다.
 import { storageUrlMixin } from '@/utils/storageUrl';
+import { currentLocale } from '@/composables/i18nText';
 const backend = BackendFactory.createBackend();
 
 // getToolCallList()의 도구 결과 가공(JSON.parse/정규식/문자열 치환) 캐시.
@@ -4717,18 +4724,34 @@ export default {
             return r && r.customText ? String(r.customText) : '';
         },
         getMultiSectionSubmittedText(message, qIdx) {
+            const answered = this.$t('Chat.hitlAnswered');
             const responses = message?.__humanFeedback?.__responses;
-            if (!Array.isArray(responses)) return '응답 완료';
+            if (!Array.isArray(responses)) return answered;
             const r = responses[qIdx];
-            if (!r) return '응답 완료';
+            if (!r) return answered;
             const items = r.selectedItems || [];
             const labels = items.map((it) => it?.label).filter(Boolean);
-            let summary = labels.length > 0 ? `선택됨: ${labels.join(', ')}` : '응답 완료';
+            let summary = labels.length > 0 ? this.$t('Chat.hitlSelectedSummary', { items: labels.join(', ') }) : answered;
             if (r.customText) {
                 const preview = r.customText.length > 30 ? r.customText.slice(0, 30) + '…' : r.customText;
-                summary = summary === '응답 완료' ? `직접 입력: "${preview}"` : `${summary} · 직접 입력: "${preview}"`;
+                const custom = this.$t('Chat.hitlCustomSummary', { text: preview });
+                summary = summary === answered ? custom : `${summary} · ${custom}`;
             }
             return summary;
+        },
+        /**
+         * 여러 질문을 한 번에 낸 뒤의 요약 한 줄.
+         * 저장된 `__submittedText` 는 한국어 틀('2/3개 응답 완료')이라, 함께 저장된 응답 목록에서
+         * 현재 언어로 다시 만든다. 응답 목록이 없으면 저장된 문구를 그대로 쓴다.
+         */
+        multiSubmittedLabel(message) {
+            const fb = message?.__humanFeedback || {};
+            const responses = fb.__responses;
+            if (Array.isArray(responses) && responses.length > 0) {
+                const answered = responses.filter((r) => r && !r.skipped).length;
+                return this.$t('Chat.hitlAnsweredOfTotal', { answered, total: responses.length });
+            }
+            return fb.__submittedText || this.$t('Chat.hitlAnswered');
         },
         submitMultiHumanFeedback(message) {
             if (!message || message.__humanFeedback?.__submitted) return;
@@ -4854,10 +4877,10 @@ export default {
          */
         toolSummaryLabel(message) {
             const list = this.getToolCallList(message);
-            if (!this.phoneShell) return `실행 상세 ${list.length}건`;
+            if (!this.phoneShell) return this.$t('Chat.runDetails', { n: list.length });
             const failed = list.filter((tc) => tc && tc.status === 'error').length;
-            const head = `도구 ${list.length}개 실행함`;
-            return failed > 0 ? `${head} · ${failed}개 실패` : head;
+            const head = this.$tc('Chat.toolsRun', list.length, { n: list.length });
+            return failed > 0 ? `${head} · ${this.$t('Chat.toolsFailed', { n: failed })}` : head;
         },
         getToolCallList(message) {
             if (!message || typeof message !== 'object') return [];
@@ -5208,12 +5231,23 @@ export default {
             return '';
         },
         getDisplayMessageContent(message, index) {
+            // 화면이 직접 남긴 안내(예: 산출물 저장 완료)는 본문(content)을 한국어로 저장하고
+            // 번역 키(contentI18nKey)를 함께 둔다. 보여 줄 때만 현재 언어로 바꾼다 — 지난 대화도 마찬가지.
+            // 숫자가 들어가는 문구는 contentI18nParams 에 값을 함께 둔다({ n } 이면 복수형도 고른다).
+            if (message?.contentI18nKey) {
+                const params = message.contentI18nParams && typeof message.contentI18nParams === 'object' ? message.contentI18nParams : {};
+                const translated =
+                    typeof params.n === 'number'
+                        ? this.$tc(message.contentI18nKey, params.n, params)
+                        : this.$t(message.contentI18nKey, params);
+                if (translated && translated !== message.contentI18nKey) return translated;
+            }
             const original = String(message?.content || '');
             if (!this.isProcessJsonMessage(message, index)) return original;
             const jsonBlock = this._extractProcessJsonBlock(original);
             if (!jsonBlock) return original;
             const stripped = original.replace(jsonBlock, '').trim();
-            return stripped || '프로세스가 생성되었습니다.';
+            return stripped || this.$t('Chat.processCreated');
         },
         _extractProcessDefinitionFromText(text) {
             const source = String(text || '').trim();
@@ -6461,6 +6495,10 @@ export default {
         },
         formatTime(timeStamp) {
             var date = new Date(timeStamp);
+            // 영어 화면은 '9:44 PM', 한국어 화면은 지금처럼 24시간 'HH:mm'.
+            if (currentLocale() === 'en-US') {
+                return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            }
             var dateString = date.toString();
             var timeString = dateString.split(' ')[4].substring(0, 5);
             return timeString;

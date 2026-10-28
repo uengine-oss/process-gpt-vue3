@@ -2,7 +2,7 @@
     <div class="human-feedback-panel" :class="{ 'is-submitted': submitted }">
         <div class="human-feedback-panel__header">
             <v-icon size="18" class="human-feedback-panel__icon">{{ headerIcon }}</v-icon>
-            <span class="human-feedback-panel__title">{{ question }}</span>
+            <span class="human-feedback-panel__title">{{ displayQuestion }}</span>
         </div>
 
         <!-- 설명/컨텍스트 -->
@@ -11,14 +11,14 @@
         </div>
 
         <div v-if="impactPreview && impactPreview.length" class="human-feedback-panel__meta">
-            <div class="human-feedback-panel__meta-title">예상 반영 결과</div>
+            <div class="human-feedback-panel__meta-title">{{ $t('HumanFeedbackPanel.impactPreview') }}</div>
             <ul class="human-feedback-panel__meta-list">
                 <li v-for="(line, idx) in impactPreview" :key="`impact-${idx}`">{{ line }}</li>
             </ul>
         </div>
 
         <div v-if="evidenceSpans && evidenceSpans.length" class="human-feedback-panel__meta">
-            <div class="human-feedback-panel__meta-title">근거 문장</div>
+            <div class="human-feedback-panel__meta-title">{{ $t('HumanFeedbackPanel.evidence') }}</div>
             <ul class="human-feedback-panel__meta-list">
                 <li v-for="(line, idx) in evidenceSpans" :key="`evi-${idx}`">{{ line }}</li>
             </ul>
@@ -82,7 +82,7 @@
             사용자는 옵션 선택 + 자유 의견 추가 또는 자유 의견만 단독 제출 가능.
         -->
         <div v-if="allowOther && (feedbackType === 'select_items' || feedbackType === 'suggestions')" class="human-feedback-panel__other">
-            <div class="human-feedback-panel__other-label">직접 입력 (선택)</div>
+            <div class="human-feedback-panel__other-label">{{ $t('HumanFeedbackPanel.otherLabel') }}</div>
             <v-textarea
                 v-model="customText"
                 :disabled="submitted"
@@ -91,7 +91,7 @@
                 rows="2"
                 auto-grow
                 hide-details
-                placeholder="원하시는 내용을 자유롭게 입력하세요"
+                :placeholder="$t('HumanFeedbackPanel.otherPlaceholder')"
                 class="human-feedback-panel__other-input"
             />
         </div>
@@ -106,7 +106,7 @@
                     :disabled="submitted"
                     @click="!submitted && setDecision('approve')"
                 >
-                    승인
+                    {{ $t('HumanFeedbackPanel.approve') }}
                 </v-btn>
                 <v-btn
                     size="small"
@@ -115,7 +115,7 @@
                     :disabled="submitted"
                     @click="!submitted && setDecision('reject')"
                 >
-                    반려
+                    {{ $t('HumanFeedbackPanel.reject') }}
                 </v-btn>
             </div>
 
@@ -141,7 +141,7 @@
                 rows="2"
                 auto-grow
                 hide-details
-                placeholder="판단 근거나 수정 의견을 입력하세요 (선택)"
+                :placeholder="$t('HumanFeedbackPanel.reasonPlaceholder')"
                 class="mt-2"
             />
         </div>
@@ -149,19 +149,19 @@
         <!-- 확인/전송 영역 (multi-question 컨테이너에 들어가 hideSubmit=true 면 숨김) -->
         <div v-if="!submitted && !hideSubmit" class="human-feedback-panel__actions">
             <span v-if="feedbackType === 'select_items' && selectedIds.size > 0" class="human-feedback-panel__count">
-                {{ selectedIds.size }}개 선택됨
+                {{ $t('HumanFeedbackPanel.selectedCount', { n: selectedIds.size }) }}
             </span>
             <v-spacer />
-            <v-btn v-if="allowSkip" variant="text" size="small" @click="handleSkip"> 건너뛰기 </v-btn>
+            <v-btn v-if="allowSkip" variant="text" size="small" @click="handleSkip"> {{ $t('HumanFeedbackPanel.skip') }} </v-btn>
             <v-btn color="primary" size="small" variant="flat" :disabled="!canSubmit" @click="handleSubmit">
-                {{ submitLabel }}
+                {{ displaySubmitLabel }}
             </v-btn>
         </div>
 
         <!-- 제출 완료 표시 (hideSubmit=true 면 숨김 — multi-step 에서 체크박스 유지) -->
         <div v-else-if="submitted" class="human-feedback-panel__submitted">
             <v-icon size="14" color="success">mdi-check-circle</v-icon>
-            <span>{{ submittedText }}</span>
+            <span>{{ displaySubmittedText }}</span>
         </div>
     </div>
 </template>
@@ -175,10 +175,10 @@ export default {
             type: String,
             default: 'select_items'
         },
-        /** 사용자에게 보여줄 질문/안내 */
+        /** 사용자에게 보여줄 질문/안내. 주지 않으면 현재 언어의 기본 안내를 쓴다(displayQuestion). */
         question: {
             type: String,
-            default: '선택해 주세요.'
+            default: undefined
         },
         /** 추가 설명 텍스트 */
         context: {
@@ -218,10 +218,10 @@ export default {
             type: Boolean,
             default: false
         },
-        /** 제출 버튼 텍스트 */
+        /** 제출 버튼 텍스트. 주지 않으면 현재 언어의 '확인'(displaySubmitLabel). */
         submitLabel: {
             type: String,
-            default: '확인'
+            default: undefined
         },
         /** 헤더 아이콘 */
         headerIcon: {
@@ -233,10 +233,10 @@ export default {
             type: Boolean,
             default: false
         },
-        /** 제출 후 표시 텍스트 */
+        /** 제출 후 표시 텍스트. 주지 않으면 현재 언어의 '응답 완료'(displaySubmittedText). */
         submittedText: {
             type: String,
-            default: '응답 완료'
+            default: undefined
         },
         /**
          * 초기 선택 상태 (제출 완료 후 readonly 표시할 때 사용).
@@ -325,6 +325,23 @@ export default {
         }
     },
     computed: {
+        displayQuestion() {
+            return this.question === undefined ? this.$t('HumanFeedbackPanel.defaultQuestion') : this.question;
+        },
+        /**
+         * 부모가 넘기는 버튼 문구는 아직 한국어 고정값('응답 제출'·'확인')이다.
+         * 그 두 값은 여기서 현재 언어로 바꿔 보여 주고, 그 밖의 문구는 그대로 쓴다.
+         */
+        displaySubmitLabel() {
+            const label = this.submitLabel;
+            if (label === undefined || label === '확인') return this.$t('HumanFeedbackPanel.confirm');
+            if (label === '응답 제출') return this.$t('HumanFeedbackPanel.submitResponse');
+            return label;
+        },
+        displaySubmittedText() {
+            if (this.submittedText === undefined) return this.$t('HumanFeedbackPanel.answered');
+            return this.localizeSubmittedText(this.submittedText);
+        },
         canSubmit() {
             // allowOther + customText 가 있으면 옵션 미선택 상태에서도 제출 가능
             const hasCustom = this.allowOther && (this.customText || '').trim().length > 0;
@@ -348,6 +365,48 @@ export default {
         }
     },
     methods: {
+        /**
+         * 제출 요약 문구를 현재 언어로 보여 준다.
+         *
+         * 요약(`__submittedText`)은 부모(ChatRoomPage·Chat)가 한국어 틀로 만들어 메시지에 담고,
+         * 지난 대화에는 그 한국어가 그대로 저장돼 있다. 알려진 틀만 읽어 바꾸고, 모르는 문구는
+         * 건드리지 않는다 — 사용자가 고른 이름·적은 의견은 그대로 둔다.
+         */
+        localizeSubmittedText(raw) {
+            const text = (raw ?? '').toString();
+            if (!text) return text;
+            const CUSTOM = '직접 입력: "';
+            let main = text;
+            let custom = null;
+            const ci = text.lastIndexOf(CUSTOM);
+            if (ci >= 0 && text.endsWith('"') && (ci === 0 || text.slice(0, ci).endsWith(' · '))) {
+                custom = text.slice(ci + CUSTOM.length, -1);
+                main = ci === 0 ? '' : text.slice(0, ci - ' · '.length);
+            }
+            const parts = [];
+            if (main) parts.push(this.localizeSummaryHead(main));
+            if (custom !== null) parts.push(this.$t('HumanFeedbackPanel.customSummary', { text: custom }));
+            return parts.join(' · ');
+        },
+        localizeSummaryHead(text) {
+            if (text === '응답 완료') return this.$t('HumanFeedbackPanel.answered');
+            if (text === '건너뜀') return this.$t('HumanFeedbackPanel.skipped');
+            if (text === '승인') return this.$t('HumanFeedbackPanel.approved');
+            if (text === '반려') return this.$t('HumanFeedbackPanel.rejected');
+            let m = text.match(/^승인 - ([\s\S]*)$/);
+            if (m) return this.$t('HumanFeedbackPanel.approvedWithReason', { reason: m[1] });
+            m = text.match(/^반려 - ([\s\S]*)$/);
+            if (m) return this.$t('HumanFeedbackPanel.rejectedWithReason', { reason: m[1] });
+            m = text.match(/^의견: ([\s\S]*)$/);
+            if (m) return this.$t('HumanFeedbackPanel.commentSummary', { text: m[1] });
+            m = text.match(/^선택됨: ([\s\S]*)$/);
+            if (m) return this.$t('HumanFeedbackPanel.selectedSummary', { items: m[1] });
+            m = text.match(/^(\d+)개 선택됨$/);
+            if (m) return this.$t('HumanFeedbackPanel.selectedCount', { n: Number(m[1]) });
+            m = text.match(/^(\d+)\/(\d+)개 응답 완료$/);
+            if (m) return this.$t('HumanFeedbackPanel.answeredOfTotal', { answered: Number(m[1]), total: Number(m[2]) });
+            return text;
+        },
         notifySelectionChange() {
             if (this.submitted) return;
             if (this._selectionNotifyTimer) {

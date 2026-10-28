@@ -202,6 +202,7 @@ import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useCustomizerStore } from '@/stores/customizer';
 import { usePhoneShell } from '@/shared/phoneShell';
 import { processGptAgent } from '@/constants/processGptAgent';
+import { currentLocale } from '@/composables/i18nText';
 
 const backend = BackendFactory.createBackend();
 
@@ -752,15 +753,17 @@ export default {
             const date = new Date(timestamp);
             const now = new Date();
             const diff = now - date;
-            if (diff < 60 * 1000) return '방금';
+            if (diff < 60 * 1000) return this.$t('ChatList.justNow');
             if (diff < 60 * 60 * 1000) {
                 const minutes = Math.floor(diff / (60 * 1000));
-                return `${minutes}분 전`;
+                return this.$t('ChatList.minutesAgo', { n: minutes });
             }
+            // 화면 언어를 따른다 — 한국어 '오후 09:44', 영어 '9:44 PM'.
+            const locale = currentLocale();
             if (diff < 24 * 60 * 60 * 1000) {
-                return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                return date.toLocaleTimeString(locale, { hour: locale === 'en-US' ? 'numeric' : '2-digit', minute: '2-digit' });
             }
-            return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+            return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
         }
     }
 };

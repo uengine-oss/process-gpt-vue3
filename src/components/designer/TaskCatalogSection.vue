@@ -34,7 +34,7 @@
                     <Icons :icon="'magnifer-linear'" :size="20" />
                     <v-text-field
                         v-model="searchQuery"
-                        placeholder="검색..."
+                        :placeholder="$t('TaskCatalogSection.search')"
                         variant="plain"
                         density="compact"
                         class="position-relative pt-0 ml-3 custom-placeholer-color"
@@ -81,7 +81,7 @@
                         />
                     </div>
                     <v-btn v-if="activeFilterCount > 0" variant="text" size="x-small" color="grey" @click="clearFilters" class="clear-btn">
-                        필터 초기화
+                        {{ $t('TaskCatalogSection.resetFilter') }}
                     </v-btn>
                 </div>
             </v-expand-transition>
@@ -90,12 +90,12 @@
             <div class="catalog-items" ref="catalogItemsRef">
                 <div v-if="loading" class="loading-state">
                     <v-progress-circular size="24" indeterminate color="primary" />
-                    <span>불러오는 중...</span>
+                    <span>{{ $t('TaskCatalogSection.loading') }}</span>
                 </div>
 
                 <div v-else-if="filteredItems.length === 0" class="empty-state">
                     <v-icon size="40" color="grey-lighten-1">mdi-folder-open-outline</v-icon>
-                    <span>등록된 Task가 없습니다</span>
+                    <span>{{ $t('TaskCatalogSection.empty') }}</span>
                 </div>
 
                 <div

@@ -7,7 +7,7 @@
             <span v-for="k in keys" :key="k" class="kbr__item" :class="`is-${k}`">
                 <i class="kbr__swatch" />{{ DOC_STATES[k].label }} {{ r[k] }}
             </span>
-            <span class="kbr__total">문서 {{ total }}</span>
+            <span class="kbr__total">{{ $t('KbReadiness.total', { n: total }) }}</span>
         </div>
     </div>
 </template>

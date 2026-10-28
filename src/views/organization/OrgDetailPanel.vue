@@ -1,9 +1,9 @@
 <template>
     <aside class="org-panel">
         <v-tabs v-model="tab" density="compact" color="primary" class="org-panel__tabs" grow>
-            <v-tab value="team" class="text-none">부서 정보</v-tab>
-            <v-tab value="members" class="text-none">구성원</v-tab>
-            <v-tab value="roles" class="text-none">권한 관리</v-tab>
+            <v-tab value="team" class="text-none">{{ $t('OrgDetailPanel.teamTab') }}</v-tab>
+            <v-tab value="members" class="text-none">{{ $t('OrgDetailPanel.membersTab') }}</v-tab>
+            <v-tab value="roles" class="text-none">{{ $t('OrgDetailPanel.rolesTab') }}</v-tab>
         </v-tabs>
 
         <v-window v-model="tab" class="org-panel__body">
@@ -11,7 +11,7 @@
             <v-window-item value="team" class="org-panel__pane">
                 <div v-if="!team" class="org-panel__empty">
                     <v-icon size="34">mdi-file-tree-outline</v-icon>
-                    <p>조직도에서 부서를 선택하세요.</p>
+                    <p>{{ $t('OrgDetailPanel.selectTeam') }}</p>
                 </div>
 
                 <template v-else>
@@ -19,7 +19,7 @@
 
                     <v-text-field
                         v-model="form.name"
-                        label="부서명"
+                        :label="$t('OrgDetailPanel.teamName')"
                         variant="outlined"
                         density="compact"
                         hide-details="auto"
@@ -32,7 +32,7 @@
 
                     <v-textarea
                         v-model="form.description"
-                        label="설명"
+                        :label="$t('OrgDetailPanel.description')"
                         variant="outlined"
                         density="compact"
                         rows="2"
@@ -48,7 +48,7 @@
                         :items="leaderItems"
                         item-title="title"
                         item-value="value"
-                        label="부서장"
+                        :label="$t('OrgDetailPanel.leader')"
                         variant="outlined"
                         density="compact"
                         hide-details="auto"
@@ -64,7 +64,7 @@
                         :items="parentItems"
                         item-title="title"
                         item-value="value"
-                        label="상위 부서"
+                        :label="$t('OrgDetailPanel.parentTeam')"
                         variant="outlined"
                         density="compact"
                         hide-details="auto"
@@ -76,15 +76,15 @@
                     <div class="org-stats">
                         <div class="org-stats__cell">
                             <span class="org-stats__value">{{ directMembers.length }}</span>
-                            <span class="org-stats__label">직속 구성원</span>
+                            <span class="org-stats__label">{{ $t('OrgDetailPanel.directMembers') }}</span>
                         </div>
                         <div class="org-stats__cell">
                             <span class="org-stats__value">{{ allMembers.length }}</span>
-                            <span class="org-stats__label">전체 구성원</span>
+                            <span class="org-stats__label">{{ $t('OrgDetailPanel.allMembers') }}</span>
                         </div>
                         <div class="org-stats__cell">
                             <span class="org-stats__value">{{ subTeams.length }}</span>
-                            <span class="org-stats__label">하위 부서</span>
+                            <span class="org-stats__label">{{ $t('OrgDetailPanel.subTeams') }}</span>
                         </div>
                     </div>
 
@@ -96,7 +96,7 @@
                             prepend-icon="mdi-plus-box-outline"
                             @click="$emit('add-team', team)"
                         >
-                            하위 부서 추가
+                            {{ $t('OrgDetailPanel.addSubTeam') }}
                         </v-btn>
                         <v-btn
                             v-if="!isRootTeam"
@@ -106,7 +106,7 @@
                             prepend-icon="mdi-trash-can-outline"
                             @click="$emit('remove-team', team)"
                         >
-                            부서 삭제
+                            {{ $t('OrgDetailPanel.deleteTeam') }}
                         </v-btn>
                     </div>
                 </template>
@@ -116,13 +116,13 @@
             <v-window-item value="members" class="org-panel__pane">
                 <div v-if="!team" class="org-panel__empty">
                     <v-icon size="34">mdi-account-multiple-outline</v-icon>
-                    <p>부서를 선택하면 구성원을 관리할 수 있습니다.</p>
+                    <p>{{ $t('OrgDetailPanel.selectTeamForMembers') }}</p>
                 </div>
 
                 <template v-else>
                     <div class="org-panel__section-head">
                         <span class="org-panel__section-title">{{ teamName }}</span>
-                        <span class="org-panel__count">{{ directMembers.length }}명</span>
+                        <span class="org-panel__count">{{ $t('OrgDetailPanel.memberCount', { n: directMembers.length }) }}</span>
                     </div>
 
                     <div v-if="editable" class="mb-3">
@@ -131,8 +131,8 @@
                             :items="assignableUsers"
                             item-title="label"
                             item-value="id"
-                            label="구성원 추가"
-                            placeholder="이름 또는 이메일로 검색"
+                            :label="$t('OrgDetailPanel.addMember')"
+                            :placeholder="$t('OrgDetailPanel.searchByNameOrEmail')"
                             variant="outlined"
                             density="compact"
                             multiple
@@ -151,7 +151,7 @@
                                     </template>
                                     <template #append>
                                         <span v-if="item.raw.teamLabel" class="org-hint">{{ item.raw.teamLabel }}</span>
-                                        <span v-else class="org-hint org-hint--warn">미배치</span>
+                                        <span v-else class="org-hint org-hint--warn">{{ $t('OrgDetailPanel.unassigned') }}</span>
                                     </template>
                                 </v-list-item>
                             </template>
@@ -166,7 +166,7 @@
                                 :disabled="!pendingMemberIds.length"
                                 @click="commitAddMembers"
                             >
-                                {{ pendingMemberIds.length ? `${pendingMemberIds.length}명 추가` : '추가' }}
+                                {{ pendingMemberIds.length ? $t('OrgDetailPanel.addCount', { n: pendingMemberIds.length }) : $t('OrgDetailPanel.add') }}
                             </v-btn>
                             <v-btn
                                 size="small"
@@ -175,17 +175,17 @@
                                 prepend-icon="mdi-robot-outline"
                                 @click="$emit('create-agent', team)"
                             >
-                                에이전트
+                                {{ $t('OrgDetailPanel.agent') }}
                             </v-btn>
                         </div>
                         <label class="org-toggle mt-2">
                             <input v-model="includeAssigned" type="checkbox" />
-                            <span>이미 다른 부서에 배치된 인원도 선택 목록에 표시</span>
+                            <span>{{ $t('OrgDetailPanel.includeAssigned') }}</span>
                         </label>
                     </div>
 
                     <div v-if="!directMembers.length" class="org-panel__empty org-panel__empty--sm">
-                        <p>이 부서에 배치된 구성원이 없습니다.</p>
+                        <p>{{ $t('OrgDetailPanel.noMembers') }}</p>
                     </div>
 
                     <ul class="org-member-list">
@@ -208,9 +208,9 @@
                                         mdi-star-four-points
                                     </v-icon>
                                     <span v-if="memberIsAgent(member)" class="org-tag">AGENT</span>
-                                    <span v-if="memberPending(member)" class="org-tag org-tag--pending">가입 대기</span>
+                                    <span v-if="memberPending(member)" class="org-tag org-tag--pending">{{ $t('OrgDetailPanel.pendingSignup') }}</span>
                                 </div>
-                                <div class="org-member-row__sub">{{ memberEmail(member) || '이메일 없음' }}</div>
+                                <div class="org-member-row__sub">{{ memberEmail(member) || $t('OrgDetailPanel.noEmail') }}</div>
                             </div>
 
                             <div class="org-member-row__role" @click.stop>
@@ -239,27 +239,27 @@
                                 </template>
                                 <v-list density="compact">
                                     <v-list-item
-                                        :title="member.id === team.data?.leaderId ? '부서장 해제' : '부서장으로 지정'"
+                                        :title="member.id === team.data?.leaderId ? $t('OrgDetailPanel.unsetLeader') : $t('OrgDetailPanel.setLeader')"
                                         prepend-icon="mdi-star-four-points"
                                         @click="
                                             $emit('set-leader', { team, memberId: member.id === team.data?.leaderId ? null : member.id })
                                         "
                                     />
-                                    <v-list-item title="다른 부서로 이동" prepend-icon="mdi-swap-horizontal" @click="startMove(member)" />
+                                    <v-list-item :title="$t('OrgDetailPanel.moveToOtherTeam')" prepend-icon="mdi-swap-horizontal" @click="startMove(member)" />
                                     <template v-if="memberIsAgent(member)">
                                         <v-divider class="my-1" />
                                         <v-list-item
-                                            title="에이전트 상세"
+                                            :title="$t('OrgDetailPanel.agentDetail')"
                                             prepend-icon="mdi-information-outline"
                                             @click="$emit('show-agent', member)"
                                         />
                                         <v-list-item
-                                            title="에이전트 수정"
+                                            :title="$t('OrgDetailPanel.editAgent')"
                                             prepend-icon="mdi-pencil-outline"
                                             @click="$emit('edit-agent', member)"
                                         />
                                         <v-list-item
-                                            title="에이전트 삭제"
+                                            :title="$t('OrgDetailPanel.deleteAgent')"
                                             prepend-icon="mdi-robot-off-outline"
                                             base-color="error"
                                             @click="$emit('delete-agent', member)"
@@ -267,7 +267,7 @@
                                         <v-divider class="my-1" />
                                     </template>
                                     <v-list-item
-                                        title="부서에서 제외"
+                                        :title="$t('OrgDetailPanel.removeFromTeam')"
                                         prepend-icon="mdi-account-remove-outline"
                                         base-color="error"
                                         @click="$emit('remove-member', { team, member })"
@@ -278,7 +278,7 @@
                     </ul>
 
                     <div v-if="nestedMembers.length" class="org-panel__nested">
-                        <span>하위 부서 구성원 {{ nestedMembers.length }}명</span>
+                        <span>{{ $t('OrgDetailPanel.nestedMembers', { n: nestedMembers.length }) }}</span>
                     </div>
                 </template>
             </v-window-item>
@@ -287,7 +287,7 @@
             <v-window-item value="roles" class="org-panel__pane">
                 <v-text-field
                     v-model="roleSearch"
-                    placeholder="이름 · 이메일 검색"
+                    :placeholder="$t('OrgDetailPanel.searchNameEmail')"
                     variant="outlined"
                     density="compact"
                     hide-details
@@ -303,7 +303,7 @@
                         size="x-small"
                         @click="roleFilter = 'all'"
                     >
-                        전체 {{ manageableUsers.length }}
+                        {{ $t('OrgDetailPanel.filterAll', { n: manageableUsers.length }) }}
                     </v-chip>
                     <v-chip
                         v-for="role in roleItems"
@@ -321,31 +321,31 @@
                         size="x-small"
                         @click="roleFilter = 'unassigned'"
                     >
-                        미배치 {{ unassignedCount }}
+                        {{ $t('OrgDetailPanel.filterUnassigned', { n: unassignedCount }) }}
                     </v-chip>
                 </div>
 
                 <div v-if="canManageRoles && selectedUserIds.length" class="org-bulk">
-                    <span class="org-bulk__label">{{ selectedUserIds.length }}명 선택</span>
+                    <span class="org-bulk__label">{{ $t('OrgDetailPanel.selectedCount', { n: selectedUserIds.length }) }}</span>
                     <v-select
                         v-model="bulkRole"
                         :items="roleItems"
                         item-title="title"
                         item-value="value"
-                        placeholder="역할 일괄 적용"
+                        :placeholder="$t('OrgDetailPanel.bulkRolePlaceholder')"
                         variant="outlined"
                         density="compact"
                         hide-details
                         class="org-bulk__select"
                     />
                     <v-btn size="small" color="primary" variant="flat" class="text-none" :disabled="!bulkRole" @click="commitBulkRole">
-                        적용
+                        {{ $t('OrgDetailPanel.apply') }}
                     </v-btn>
-                    <v-btn size="small" variant="text" class="text-none" @click="selectedUserIds = []">해제</v-btn>
+                    <v-btn size="small" variant="text" class="text-none" @click="selectedUserIds = []">{{ $t('OrgDetailPanel.clear') }}</v-btn>
                 </div>
 
                 <div v-if="!filteredRoleUsers.length" class="org-panel__empty org-panel__empty--sm">
-                    <p>조건에 맞는 사용자가 없습니다.</p>
+                    <p>{{ $t('OrgDetailPanel.noMatchingUsers') }}</p>
                 </div>
 
                 <ul class="org-member-list">
@@ -361,13 +361,13 @@
                         <div class="org-member-row__info">
                             <div class="org-member-row__name">
                                 <span class="org-member-row__label">{{ user.label }}</span>
-                                <span v-if="user.id === currentUserId" class="org-tag org-tag--me">나</span>
+                                <span v-if="user.id === currentUserId" class="org-tag org-tag--me">{{ $t('OrgDetailPanel.me') }}</span>
                                 <span v-if="user.is_agent" class="org-tag">AGENT</span>
-                                <span v-if="user.pending" class="org-tag org-tag--pending">가입 대기</span>
+                                <span v-if="user.pending" class="org-tag org-tag--pending">{{ $t('OrgDetailPanel.pendingSignup') }}</span>
                             </div>
-                            <div class="org-member-row__sub" :title="user.teamLabel || '미배치'">
+                            <div class="org-member-row__sub" :title="user.teamLabel || $t('OrgDetailPanel.unassigned')">
                                 <span v-if="user.teamLabel">{{ user.teamLabel }}</span>
-                                <span v-else class="org-hint--warn">미배치</span>
+                                <span v-else class="org-hint--warn">{{ $t('OrgDetailPanel.unassigned') }}</span>
                             </div>
                         </div>
 
@@ -405,15 +405,15 @@
         <!-- 구성원 이동 -->
         <v-dialog v-model="moveDialog" max-width="420">
             <v-card class="pa-4">
-                <v-card-title class="pa-0 pb-3 text-h6">구성원 이동</v-card-title>
+                <v-card-title class="pa-0 pb-3 text-h6">{{ $t('OrgDetailPanel.moveMember') }}</v-card-title>
                 <v-card-text class="pa-0">
-                    <p class="mb-3 org-hint">{{ moveTarget ? memberName(moveTarget) : '' }} 님을 이동할 부서를 선택하세요.</p>
+                    <p class="mb-3 org-hint">{{ $t('OrgDetailPanel.moveMemberHint', { name: moveTarget ? memberName(moveTarget) : '' }) }}</p>
                     <v-select
                         v-model="moveTargetTeamId"
                         :items="parentItems"
                         item-title="title"
                         item-value="value"
-                        label="이동할 부서"
+                        :label="$t('OrgDetailPanel.targetTeam')"
                         variant="outlined"
                         density="compact"
                         hide-details
@@ -421,8 +421,8 @@
                 </v-card-text>
                 <v-card-actions class="pa-0 pt-4">
                     <v-spacer />
-                    <v-btn variant="text" class="text-none" @click="moveDialog = false">취소</v-btn>
-                    <v-btn color="primary" variant="flat" class="text-none" :disabled="!moveTargetTeamId" @click="commitMove">이동</v-btn>
+                    <v-btn variant="text" class="text-none" @click="moveDialog = false">{{ $t('OrgDetailPanel.cancel') }}</v-btn>
+                    <v-btn color="primary" variant="flat" class="text-none" :disabled="!moveTargetTeamId" @click="commitMove">{{ $t('OrgDetailPanel.move') }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -434,7 +434,7 @@ export default { name: 'OrgDetailPanel' };
 </script>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, getCurrentInstance, ref, watch } from 'vue';
 import { ROLE_HIERARCHY, ROLE_META } from '@/utils/roles';
 import {
     childMembers,
@@ -447,6 +447,9 @@ import {
     pathLabel
 } from './orgChartModel';
 import { maskEmail } from '@/utils/piiMasking';
+
+const instance = getCurrentInstance();
+const t = (key, params) => instance?.proxy?.$t(key, params) ?? key;
 
 const props = defineProps({
     root: { type: Object, default: null },
@@ -555,7 +558,7 @@ function roleOf(userId) {
 function roleLabel(userId) {
     const role = roleOf(userId);
     if (!role) return '-';
-    if (role === 'superAdmin') return '최고관리자';
+    if (role === 'superAdmin') return t('OrgDetailPanel.superAdmin');
     return ROLE_META[role]?.label || role;
 }
 function roleColor(userId) {
@@ -673,8 +676,8 @@ const leaderItems = computed(() => directMembers.value.map((member) => ({ value:
 const nameError = computed(() => {
     if (!props.team || !props.editable) return '';
     const name = (form.value.name || '').trim();
-    if (!name) return '부서명을 입력하세요.';
-    if (isDuplicateTeamName(props.root, name, props.team.id)) return '이미 같은 이름의 부서가 있습니다.';
+    if (!name) return t('OrgDetailPanel.teamNameRequired');
+    if (isDuplicateTeamName(props.root, name, props.team.id)) return t('OrgDetailPanel.duplicateTeamName');
     return '';
 });
 

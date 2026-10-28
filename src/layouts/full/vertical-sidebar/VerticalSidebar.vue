@@ -1010,7 +1010,7 @@ export default {
                     disable: false
                 },
                 {
-                    title: '요청 Top List',
+                    title: 'VerticalSidebar.requestTopList',
                     icon: 'chart-square-linear',
                     BgColor: 'primary',
                     to: '/instance-toplist',

@@ -2,7 +2,7 @@
     <div class="agent-message-panel">
         <div class="agent-message-panel-header">
             <v-icon size="18" color="primary" class="mr-1">mdi-robot-outline</v-icon>
-            <span class="text-subtitle-2 font-weight-bold">에이전트 메시지</span>
+            <span class="text-subtitle-2 font-weight-bold">{{ $t('AgentMessagePanel.title') }}</span>
             <v-chip size="x-small" color="primary" variant="tonal" class="ml-2">
                 {{ messages.length }}
             </v-chip>
@@ -26,7 +26,7 @@
                     <div class="message-bubble-wrap message-bubble-wrap--other">
                         <v-sheet class="other-message rounded-md pa-0 agent-panel-bubble">
                             <div class="pa-3 pb-2">
-                                <div class="text-body-2 font-weight-bold mb-1">적절한 담당자를 초대해볼까요?</div>
+                                <div class="text-body-2 font-weight-bold mb-1">{{ $t('AgentMessagePanel.inviteQuestion') }}</div>
                                 <div
                                     v-if="(message?.__agentInviteRecommendation?.reason || '').toString().trim()"
                                     class="text-caption text-medium-emphasis mb-2"
@@ -69,12 +69,16 @@
                                         :disabled="isRecommendationInvited(message, agent.id)"
                                         @click="inviteAgentFromRecommendation(message, agent)"
                                     >
-                                        {{ isRecommendationInvited(message, agent.id) ? '초대됨' : '초대' }}
+                                        {{
+                                            isRecommendationInvited(message, agent.id)
+                                                ? $t('AgentMessagePanel.invited')
+                                                : $t('AgentMessagePanel.invite')
+                                        }}
                                     </v-btn>
                                 </div>
 
                                 <div class="text-caption text-medium-emphasis mt-1">
-                                    초대하면 에이전트가 준비된 뒤 방금 요청을 자동으로 처리합니다.
+                                    {{ $t('AgentMessagePanel.inviteHint') }}
                                 </div>
                             </div>
                         </v-sheet>
@@ -164,7 +168,7 @@
                                         <div v-if="hasPdf2bpmnResultSections(message)" class="pdf2bpmn-result-container mt-3">
                                             <div class="d-flex align-center mb-2">
                                                 <v-icon size="16" color="success" class="mr-1">mdi-check-circle</v-icon>
-                                                <span class="text-caption font-weight-bold">BPMN 프로세스 생성 결과</span>
+                                                <span class="text-caption font-weight-bold">{{ $t('AgentMessagePanel.pdf2bpmnResultTitle') }}</span>
                                             </div>
                                             <div
                                                 v-if="
@@ -173,7 +177,11 @@
                                                 "
                                                 class="text-caption font-weight-bold mb-1"
                                             >
-                                                생성된 BPMN 프로세스 ({{ message.pdf2bpmnResult.generatedBpmns.length }}개)
+                                                {{
+                                                    $tc('AgentMessagePanel.generatedBpmns', message.pdf2bpmnResult.generatedBpmns.length, {
+                                                        n: message.pdf2bpmnResult.generatedBpmns.length
+                                                    })
+                                                }}
                                             </div>
                                             <div
                                                 v-if="
@@ -206,7 +214,11 @@
                                                 v-if="getPdf2bpmnSavedSkills(message).length > 0"
                                                 class="text-caption font-weight-bold mt-3 mb-1"
                                             >
-                                                생성된 스킬 ({{ getPdf2bpmnSavedSkills(message).length }}개)
+                                                {{
+                                                    $tc('AgentMessagePanel.generatedSkills', getPdf2bpmnSavedSkills(message).length, {
+                                                        n: getPdf2bpmnSavedSkills(message).length
+                                                    })
+                                                }}
                                             </div>
                                             <div
                                                 v-if="getPdf2bpmnSavedSkills(message).length > 0"
@@ -237,7 +249,11 @@
                                                 v-if="getPdf2bpmnSavedAgents(message).length > 0"
                                                 class="text-caption font-weight-bold mt-3 mb-1"
                                             >
-                                                생성된 에이전트 ({{ getPdf2bpmnSavedAgents(message).length }}개)
+                                                {{
+                                                    $tc('AgentMessagePanel.generatedAgents', getPdf2bpmnSavedAgents(message).length, {
+                                                        n: getPdf2bpmnSavedAgents(message).length
+                                                    })
+                                                }}
                                             </div>
                                             <div
                                                 v-if="getPdf2bpmnSavedAgents(message).length > 0"
@@ -409,7 +425,7 @@ export default {
             }
         },
         getLoadingLabel(message) {
-            return message?.content || '생각 중...';
+            return message?.content || this.$t('AgentMessagePanel.thinking');
         },
         hasValidInviteRecommendation(message) {
             try {
@@ -437,17 +453,18 @@ export default {
             if (!name) return '';
             const raw = name.toString();
             const key = raw.split('__').pop();
-            const toolNameMap = {
-                get_process_list: '프로세스 목록 조회',
-                get_process_detail: '프로세스 상세 조회',
-                get_form_fields: '폼 필드 조회',
-                execute_process: '프로세스 실행',
-                get_instance_list: '인스턴스 목록 조회',
-                get_todolist: '할일 목록 조회',
-                get_organization: '조직도 조회',
-                start_process_consulting: '프로세스 컨설팅 시작'
-            };
-            return toolNameMap[key] || key;
+            // 알려진 도구만 사람 말로 바꾼다. 모르는 도구는 이름 그대로 보인다.
+            const knownTools = [
+                'get_process_list',
+                'get_process_detail',
+                'get_form_fields',
+                'execute_process',
+                'get_instance_list',
+                'get_todolist',
+                'get_organization',
+                'start_process_consulting'
+            ];
+            return knownTools.includes(key) ? this.$t(`AgentMessagePanel.toolNames.${key}`) : key;
         },
         hasPdf2bpmnResultSections(message) {
             const result = message?.pdf2bpmnResult || {};
