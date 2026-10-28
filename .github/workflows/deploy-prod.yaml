@@ -44,9 +44,9 @@ jobs:
       # - ESLint report for src/**/*.(vue|js|ts)
       # - vue-tsc typecheck report
       - name: Run Vue SAST report
-        # vue-tsc runs out of the default heap, like the build below
+        # vue-tsc runs out of the default heap (and of 4096 MB on the runner's Node 22)
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run sast:vue:report
 
       # Keep SAST evidence even when later steps fail.
