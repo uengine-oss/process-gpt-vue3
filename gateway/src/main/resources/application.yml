@@ -121,6 +121,14 @@ spring:
                               - Path=/wms/**
                           filters:
                               - RewritePath=/wms/?(?<segment>.*), /$\{segment}
+                        # Process GPT Lite: the web image (install/docker/pgpt.Dockerfile, VITE_BASE_PATH=/lite/) on 5181
+                        - id: lite-web
+                          uri: http://localhost:5181
+                          predicates:
+                              - Path=/lite/**
+                          filters:
+                              - RewritePath=/lite/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
                         - id: frontend
                           uri: http://localhost:5173
                           predicates:
@@ -523,6 +531,17 @@ spring:
                           filters:
                               - RewritePath=/wms/?(?<segment>.*), /$\{segment}
                           order: 70
+
+                        # Process GPT Lite (process-gpt-lite): the SPA and its /api through the web nginx
+                        # (process-gpt-k8s deployments/process-gpt-lite.yaml). The event stream is SSE.
+                        - id: lite-web
+                          uri: http://process-gpt-lite-web:80
+                          predicates:
+                              - Path=/lite/**
+                          filters:
+                              - RewritePath=/lite/?(?<segment>.*), /$\{segment}
+                              - AddResponseHeader=X-Accel-Buffering, no
+                          order: 71
 
                         # Frontend 서비스 (catch-all)
                         - id: frontend
