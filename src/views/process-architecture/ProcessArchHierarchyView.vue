@@ -1133,15 +1133,15 @@ onBeforeUnmount(() => {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    white-space: nowrap;
     flex-shrink: 0;
 }
 
 .legend-inline {
     display: flex;
+    flex-wrap: wrap; /* 영어처럼 라벨이 긴 언어에서 오른쪽이 잘리지 않게 — 항목 하나는 한 줄 */
     align-items: center;
-    gap: 10px;
-    min-width: max-content;
-    white-space: nowrap;
+    gap: 6px 10px;
 }
 
 .legend-inline__title {

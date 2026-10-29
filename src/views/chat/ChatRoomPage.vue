@@ -10392,10 +10392,16 @@ export default {
                     messages: msg
                 });
 
-                // 채팅방 last message 업데이트
+                // 채팅방 last message 업데이트 — 번역 키가 있는 고정 문구는 본문(한국어) 대신 현재 언어 문구로
                 if (this.currentChatRoom && this.currentChatRoom.id === targetRoomId) {
+                    const params = msg.contentI18nParams && typeof msg.contentI18nParams === 'object' ? msg.contentI18nParams : {};
+                    const preview = !msg.contentI18nKey
+                        ? msg.content
+                        : typeof params.n === 'number'
+                        ? this.$tc(msg.contentI18nKey, params.n, params)
+                        : this.$t(msg.contentI18nKey, params);
                     this.currentChatRoom.message = {
-                        msg: (msg.content || '').toString().substring(0, 50),
+                        msg: (preview || '').toString().replace(/[*#`]/g, '').trim().substring(0, 50),
                         type: 'text',
                         createdAt: msg.timeStamp
                     };

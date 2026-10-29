@@ -127,10 +127,10 @@
                             icon="mdi-information-outline"
                         >
                             <div>
-                                v{{ information.version || '0.0' }} → <b>v{{ newVersion }}</b> (마이너)으로 저장됩니다.
+                                {{ $t('ProcessDefinitionVersionDialog.savedAsMinor', { from: information.version || '0.0', to: newVersion }) }}
                             </div>
                             <div class="text-caption mt-1" style="opacity: 0.7">
-                                메이저 업데이트는 담당자의 승인을 통한 병합으로만 가능합니다.
+                                {{ $t('ProcessDefinitionVersionDialog.majorOnlyByMerge') }}
                             </div>
                         </v-alert>
 
@@ -138,7 +138,7 @@
                         <template v-if="!isNew && information.version_tag !== 'major'">
                             <v-checkbox
                                 v-model="createPr"
-                                label="병합 요청 생성"
+                                :label="$t('ProcessDefinitionVersionDialog.createMergeRequest')"
                                 hide-details
                                 density="compact"
                                 color="primary"
@@ -147,12 +147,12 @@
                             <v-text-field
                                 v-if="createPr"
                                 v-model="prTitle"
-                                label="병합 요청 제목"
+                                :label="$t('ProcessDefinitionVersionDialog.mergeRequestTitle')"
                                 density="compact"
                                 variant="outlined"
                                 hide-details="auto"
                                 class="mb-2"
-                                :placeholder="information.name ? `[병합 요청] ${information.name} 변경` : ''"
+                                :placeholder="information.name ? $t('ProcessDefinitionVersionDialog.mergeRequestPlaceholder', { name: information.name }) : ''"
                             />
                         </template>
                         <div class="position-relative">
@@ -206,15 +206,15 @@
                 <!-- PR 성공 표시 -->
                 <v-card-text v-if="prSuccess" class="pa-4 pt-2 text-center">
                     <v-icon size="48" color="success" class="mb-2">mdi-check-circle</v-icon>
-                    <div class="text-body-1 mb-1">저장 및 병합 요청이 완료되었습니다.</div>
-                    <div class="text-caption text-medium-emphasis">담당자가 승인하면 메이저 버전으로 업데이트됩니다.</div>
+                    <div class="text-body-1 mb-1">{{ $t('ProcessDefinitionVersionDialog.mergeRequestDone') }}</div>
+                    <div class="text-caption text-medium-emphasis">{{ $t('ProcessDefinitionVersionDialog.mergeRequestDoneHint') }}</div>
                 </v-card-text>
 
                 <!-- [BLOCK:dialog.footer.actions.v1] [BLOCK:button.primary.v1] -->
                 <v-card-actions class="d-flex justify-space-between align-center pa-4">
                     <v-spacer />
                     <template v-if="prSuccess">
-                        <v-btn variant="text" @click="close()">닫기</v-btn>
+                        <v-btn variant="text" @click="close()">{{ $t('ProcessDefinitionVersionDialog.close') }}</v-btn>
                     </template>
                     <template v-else>
                         <v-alert v-if="prError" type="error" density="compact" class="mr-auto" closable @click:close="prError = ''">

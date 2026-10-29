@@ -520,7 +520,8 @@
         "sort": "정렬",
         "sortByDueDate": "마감일 가까운 순",
         "sortByStartDate": "시작일 최근 순",
-        "endOfList": "모든 업무를 확인했습니다"
+        "endOfList": "모든 업무를 확인했습니다",
+        "sortByRecent": "최근 작업 순"
     },
     "TodoDialog": {
         "editTask": "할 일 수정",
@@ -1170,7 +1171,22 @@
         "selectProcessToCompare": "비교할 프로세스를 왼쪽 목록에서 선택하세요",
         "selectProcessHint": "프로세스를 선택하면 버전 간 차이를 비교할 수 있습니다",
         "noVersions": "저장된 버전이 없습니다",
-        "syncScroll": "동기 스크롤"
+        "syncScroll": "동기 스크롤",
+        "summaryCategory": {
+            "task": "태스크",
+            "event": "이벤트",
+            "gateway": "게이트웨이",
+            "subProcess": "서브프로세스",
+            "callActivity": "콜 액티비티",
+            "sequenceFlow": "시퀀스 플로우",
+            "participant": "풀",
+            "lane": "레인"
+        },
+        "summaryItem": "{cat} {n}개",
+        "summaryAdded": "추가",
+        "summaryRemoved": "삭제",
+        "summaryModified": "수정",
+        "summaryGroup": "{items} {type}"
     },
     "toolbarInfo": {
         "savedAgo": "{n}분 전 저장",
@@ -2046,7 +2062,11 @@
         "light": "라이트",
         "dark": "다크",
         "sky": "스카이",
-        "customColor": "직접 선택"
+        "customColor": "직접 선택",
+        "simpleUiTitle": "화면 간소화",
+        "simpleUiDesc": "정의 체계도와 인스턴스 화면을 목록 · 대화 · 산출물 세 칸으로만 보여 줍니다. 칸반 · 간트 · 진행도 같은 화면은 숨고, 필요할 때 버튼으로 엽니다.",
+        "on": "켜짐",
+        "off": "꺼짐"
     },
     "Mashup": {
         "hoverText": "여기에 레이아웃(Container)을 드래그해서 폼 편집을 시작하십시오."
@@ -2085,7 +2105,15 @@
         "helpOptimize": "• 프로세스 정의 최적화: 체크하면 저장 시 AI가 프로세스 정의를 분석하여 각 작업(액티비티)에 필요한 입력 데이터(참조 정보)와 데이터 흐름을 자동으로 보정합니다.\n  - 작업 간 데이터 연결 관계를 점검하고 필요한 변수를 추천\n  - 불필요한 필드나 누락된 필드를 제안하여 정의 품질 향상\n  - 직접 하나씩 수정하기 어려운 반복 작업을 자동화하여 모델링 시간을 단축합니다.",
         "generatingDiff": "변경 내역을 분석 중입니다...",
         "currentVersion": "현재 버전",
-        "nextVersion": "다음 버전"
+        "nextVersion": "다음 버전",
+        "savedAsMinor": "v{from} → v{to} (마이너)으로 저장됩니다.",
+        "majorOnlyByMerge": "메이저 업데이트는 담당자의 승인을 통한 병합으로만 가능합니다.",
+        "createMergeRequest": "병합 요청 생성",
+        "mergeRequestTitle": "병합 요청 제목",
+        "mergeRequestPlaceholder": "[병합 요청] {name} 변경",
+        "mergeRequestDone": "저장 및 병합 요청이 완료되었습니다.",
+        "mergeRequestDoneHint": "담당자가 승인하면 메이저 버전으로 업데이트됩니다.",
+        "close": "닫기"
     },
     "FormDefinitionPanel": {
         "editForm": "폼 속성 수정",
@@ -4334,7 +4362,13 @@
         "settings": "설정",
         "knowledgeSetupPending": "초기 지식 설정 중...",
         "knowledgeSetupSuccess": "초기 지식이 설정되었습니다.",
-        "knowledgeSetupError": "초기 지식 설정에 실패했습니다."
+        "knowledgeSetupError": "초기 지식 설정에 실패했습니다.",
+        "sampleNodes": "1024 노드",
+        "sampleEdges": "3578 연결선",
+        "sampleLevel": "레벨 3 (38%)",
+        "sampleTasks": "🥇 작업완료 x3",
+        "sampleFeedback": "⭐ 우수피드백 x7",
+        "sampleSolutions": "💡 창의적 솔루션 x12"
     },
     "Gantt": {
         "description": "설명",
@@ -6567,5 +6601,23 @@
         "resetFilter": "필터 초기화",
         "loading": "불러오는 중...",
         "empty": "등록된 Task가 없습니다"
+    },
+    "ProcessArchitecture": {
+        "title": "프로세스 체계도",
+        "subtitle": "프로세스 체계도 기반 트리",
+        "restructureMode": "재구성 모드",
+        "restructureModeOn": "재구성 모드 ON",
+        "editMode": "편집 모드",
+        "exitEdit": "편집 종료",
+        "lockedByOther": "님이 체계도를 편집 중입니다. 편집이 완료될 때까지 수정할 수 없습니다.",
+        "editModeNotice": "편집 모드입니다. 체계도를 수정할 수 있습니다.",
+        "manageDomains": "도메인 관리",
+        "sortUncategorized": "미분류 정리 ({n})",
+        "totalProcesses": "전체프로세스",
+        "processCount": "{n}개"
+    },
+    "SimpleSidebarTools": {
+        "newChat": "새 채팅",
+        "menu": "메뉴"
     }
 }

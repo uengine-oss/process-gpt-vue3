@@ -8,6 +8,7 @@ import {
     hexToRgbTriplet,
     inferStageColumnFromCode,
     isDefaultClassification,
+    localizeTerminology,
     matchStageColumn,
     migrateProcMapStageValues,
     normalizeClassification,
@@ -31,6 +32,20 @@ test('용어: 누락·잘못된 색은 기본값으로 채우고, diff 는 바�
     assert.deepEqual(diff, { hierarchy: { domain: '사업부' }, stages: { draft: { label: '기획' } } });
     assert.equal(hexToRgbTriplet('#3B82F6'), '59, 130, 246');
     assert.equal(hexToRgbTriplet('#fff'), '255, 255, 255');
+});
+
+test('용어 화면 언어: 기본값 그대로인 항목만 영어 기본 용어로, 테넌트가 정한 용어는 그대로', () => {
+    const term = { hierarchy: { domain: '사업부' }, stages: { draft: { label: '기획' } } };
+    const en = localizeTerminology(term, 'en');
+    assert.equal(en.hierarchy.domain, '사업부');
+    assert.equal(en.hierarchy.mega, 'Mega Process');
+    assert.equal(en.stages.draft.label, '기획');
+    assert.equal(en.stages.draft.shortLabel, 'Draft');
+    assert.equal(en.stages.published.label, 'Stage 4');
+    assert.equal(en.stages.published.color, '#10B981');
+    // 사전이 없는 언어·한국어는 정규화 결과 그대로
+    assert.deepEqual(localizeTerminology(term, 'ko'), normalizeTerminology(term));
+    assert.deepEqual(localizeTerminology(term, 'ja'), normalizeTerminology(term));
 });
 
 test('분류축: 열이 없으면 기본 5열, key 중복/형식 위반은 라벨에서 재생성, 폴백은 목록 안으로', () => {

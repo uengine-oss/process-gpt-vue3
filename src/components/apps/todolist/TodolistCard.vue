@@ -122,7 +122,7 @@ export default {
         },
         sortOptions() {
             return [
-                { value: 'updatedAt', label: '최근 작업 순' },
+                { value: 'updatedAt', label: this.$t('todoList.sortByRecent') },
                 { value: 'startDate', label: this.$t('todoList.sortByStartDate') },
                 { value: 'dueDate', label: this.$t('todoList.sortByDueDate') }
             ];

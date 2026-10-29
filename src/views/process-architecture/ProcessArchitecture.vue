@@ -3,8 +3,8 @@
         <!-- Header (공통 page-header 패턴) -->
         <div class="page-header pb-0">
             <div class="page-header-left">
-                <h1 class="page-title">프로세스 체계도</h1>
-                <p class="page-subtitle">프로세스 체계도 기반 트리</p>
+                <h1 class="page-title">{{ $t('ProcessArchitecture.title') }}</h1>
+                <p class="page-subtitle">{{ $t('ProcessArchitecture.subtitle') }}</p>
             </div>
             <div class="page-header-right">
                 <!-- 재구성 모드 -->
@@ -17,7 +17,7 @@
                     class="text-none"
                     @click="showRestructureMode = !showRestructureMode"
                 >
-                    {{ showRestructureMode ? '재구성 모드 ON' : '재구성 모드' }}
+                    {{ showRestructureMode ? $t('ProcessArchitecture.restructureModeOn') : $t('ProcessArchitecture.restructureMode') }}
                 </v-btn>
                 <!-- Export Dropdown -->
                 <v-menu v-model="showExportMenu" :close-on-content-click="false" location="bottom end">
@@ -100,7 +100,7 @@
                     :prepend-icon="isEditMode ? 'mdi-pencil-off-outline' : 'mdi-pencil-outline'"
                     @click="isEditMode ? exitEditMode() : enterEditMode()"
                 >
-                    {{ isEditMode ? '편집 종료' : '편집 모드' }}
+                    {{ isEditMode ? $t('ProcessArchitecture.exitEdit') : $t('ProcessArchitecture.editMode') }}
                 </v-btn>
             </div>
         </div>
@@ -130,7 +130,7 @@
                 class="mt-3 mb-0"
                 icon="mdi-lock-outline"
             >
-                <strong>{{ lockDisplayName || editLock.lockedBy }}</strong> 님이 체계도를 편집 중입니다. 편집이 완료될 때까지 수정할 수 없습니다.
+                <strong>{{ lockDisplayName || editLock.lockedBy }}</strong> {{ $t('ProcessArchitecture.lockedByOther') }}
             </v-alert>
 
             <!-- Edit Mode Indicator (내가 편집 중) -->
@@ -144,7 +144,7 @@
                 closable
                 @click:close="exitEditMode()"
             >
-                편집 모드입니다. 체계도를 수정할 수 있습니다.
+                {{ $t('ProcessArchitecture.editModeNotice') }}
             </v-alert>
 
             <!-- View Toggle + Search + Domain Filter -->
@@ -286,7 +286,7 @@
                             clickable
                             @click="openDomainManageDialog"
                         >
-                            도메인 관리
+                            {{ $t('ProcessArchitecture.manageDomains') }}
                         </v-chip>
                         <!-- 미분류 정리 (도메인 미지정 메이저 일괄 배정) -->
                         <v-chip
@@ -298,7 +298,7 @@
                             clickable
                             @click="openUncategorizedDialog"
                         >
-                            미분류 정리 ({{ unassignedMajors.length }})
+                            {{ $t('ProcessArchitecture.sortUncategorized', { n: unassignedMajors.length }) }}
                         </v-chip>
                     </div>
                 </div>
@@ -307,8 +307,8 @@
             <!-- Stats Bar -->
             <div class="d-flex align-center ga-4 mb-4 stats-bar flex-wrap">
                 <div class="stat-item">
-                    <span class="stat-label">전체프로세스</span>
-                    <span class="stat-value font-weight-bold">{{ stats.subTotal }}개</span>
+                    <span class="stat-label">{{ $t('ProcessArchitecture.totalProcesses') }}</span>
+                    <span class="stat-value font-weight-bold">{{ $t('ProcessArchitecture.processCount', { n: stats.subTotal }) }}</span>
                 </div>
                 <v-divider vertical class="stat-divider" />
                 <div class="stat-item">

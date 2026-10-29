@@ -8,7 +8,7 @@
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
                 <v-row class="ma-0 pa-0 align-center">
                     <v-col cols="auto" class="ma-0 pa-0 text-left flex-grow-1" style="min-width: 0">
-                        <div class="text-truncate cursor-pointer" @click="goProcess(value.name, 'mega')">{{ value.name }}</div>
+                        <div class="text-truncate cursor-pointer" @click="goProcess(value.name, 'mega')">{{ displayProcessName(value, $t) }}</div>
                     </v-col>
                     <v-col cols="auto" class="ma-0 pa-0">
                         <ProcessMenu
@@ -99,6 +99,7 @@ import ProcessMenu from './ProcessMenu.vue';
 import MajorProcess from './MajorProcess.vue';
 import ProcessDialog from './ProcessDialog.vue';
 import BaseProcess from './BaseProcess.vue';
+import { displayProcessName } from '@/utils/uncategorizedProcess';
 
 export default {
     components: {
@@ -163,6 +164,7 @@ export default {
         window.removeEventListener('closeAllProcessDialogs', this._closeDialogHandler);
     },
     methods: {
+        displayProcessName,
         addProcess(newProcess) {
             // 같은 레벨에 동일한 이름이 있는지 검증
             const isDuplicate = this.value.major_proc_list.some((item) => item.name.toLowerCase() === newProcess.name.toLowerCase());

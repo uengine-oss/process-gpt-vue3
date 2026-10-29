@@ -40,9 +40,10 @@ import TsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 };
 import { createClient } from '@supabase/supabase-js';
 import { createPinia } from 'pinia';
-import { createApp } from 'vue';
+import { createApp, watch } from 'vue';
 import { initAuthClaimsListener } from '@/utils/authClaims';
 import { isIpAddressHost } from '@/utils/domainUtils.js';
+import { setStageLocale } from '@/utils/processStages';
 import VueTablerIcons from 'vue-tabler-icons';
 import VueApexCharts from 'vue3-apexcharts';
 import 'vue3-carousel/dist/carousel.css';
@@ -198,6 +199,8 @@ const i18n = createI18n({
 
 // 국가별언어를 전역으로 .js 파일에서도 사용 가능하게 추가
 (window as any).$i18n = i18n;
+// 진행 단계의 기본 이름(0단계·초안 …)을 화면 언어에 맞춘다 — 테넌트가 바꾼 용어는 그대로
+watch(() => (i18n.global as any).locale, (locale) => setStageLocale(String(locale)), { immediate: true });
 
 // EventBus
 import mitt from 'mitt';

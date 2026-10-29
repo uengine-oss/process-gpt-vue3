@@ -382,31 +382,31 @@ export default {
         diffSummaryText() {
             if (!this.changes || this.changes.length === 0) return '';
 
-            // 엘리먼트 타입을 한국어 카테고리로 매핑
+            // 엘리먼트 타입 → 요약 카테고리 (이름은 versionComparison.summaryCategory.*)
             const categoryMap = {
-                task: '태스크',
-                userTask: '태스크',
-                serviceTask: '태스크',
-                manualTask: '태스크',
-                scriptTask: '태스크',
-                sendTask: '태스크',
-                receiveTask: '태스크',
-                businessRuleTask: '태스크',
-                startEvent: '이벤트',
-                endEvent: '이벤트',
-                intermediateThrowEvent: '이벤트',
-                intermediateCatchEvent: '이벤트',
-                boundaryEvent: '이벤트',
-                exclusiveGateway: '게이트웨이',
-                parallelGateway: '게이트웨이',
-                inclusiveGateway: '게이트웨이',
-                eventBasedGateway: '게이트웨이',
-                complexGateway: '게이트웨이',
-                subProcess: '서브프로세스',
-                callActivity: '콜 액티비티',
-                sequenceFlow: '시퀀스 플로우',
-                participant: '풀',
-                lane: '레인',
+                task: 'task',
+                userTask: 'task',
+                serviceTask: 'task',
+                manualTask: 'task',
+                scriptTask: 'task',
+                sendTask: 'task',
+                receiveTask: 'task',
+                businessRuleTask: 'task',
+                startEvent: 'event',
+                endEvent: 'event',
+                intermediateThrowEvent: 'event',
+                intermediateCatchEvent: 'event',
+                boundaryEvent: 'event',
+                exclusiveGateway: 'gateway',
+                parallelGateway: 'gateway',
+                inclusiveGateway: 'gateway',
+                eventBasedGateway: 'gateway',
+                complexGateway: 'gateway',
+                subProcess: 'subProcess',
+                callActivity: 'callActivity',
+                sequenceFlow: 'sequenceFlow',
+                participant: 'participant',
+                lane: 'lane',
             };
 
             // type + category 별로 카운트 집계
@@ -417,12 +417,14 @@ export default {
                 counts[key] = (counts[key] || 0) + 1;
             });
 
-            // 변경 타입별 한국어 접미사
+            // 변경 타입별 접미사
             const typeLabel = {
-                added: '추가',
-                removed: '삭제',
-                modified: '수정',
+                added: this.$t('versionComparison.summaryAdded'),
+                removed: this.$t('versionComparison.summaryRemoved'),
+                modified: this.$t('versionComparison.summaryModified'),
             };
+            const knownCategories = new Set(Object.values(categoryMap));
+            const catName = (cat, n) => (knownCategories.has(cat) ? this.$tc(`versionComparison.summaryCategory.${cat}`, n) : cat);
 
             // 타입 순서: added -> removed -> modified
             const typeOrder = ['added', 'removed', 'modified'];
@@ -434,11 +436,11 @@ export default {
                 Object.entries(counts).forEach(([key, count]) => {
                     const [t, cat] = key.split('__');
                     if (t === type) {
-                        categoryParts.push(`${cat} ${count}개`);
+                        categoryParts.push(this.$t('versionComparison.summaryItem', { cat: catName(cat, count), n: count }));
                     }
                 });
                 if (categoryParts.length > 0) {
-                    parts.push(`${categoryParts.join(', ')} ${typeLabel[type]}`);
+                    parts.push(this.$t('versionComparison.summaryGroup', { items: categoryParts.join(', '), type: typeLabel[type] }));
                 }
             });
 

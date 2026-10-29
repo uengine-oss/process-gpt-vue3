@@ -171,7 +171,7 @@
                             @blur="confirmRename"
                         />
                     </template>
-                    <span v-else class="tree-node-label">{{ mega.name }}</span>
+                    <span v-else class="tree-node-label">{{ displayProcessName(mega, $t) }}</span>
                     <div class="ml-auto d-flex align-center ga-1">
                         <v-tooltip v-if="isAdmin" location="bottom">
                             <template v-slot:activator="{ props: tp }">
@@ -266,7 +266,7 @@
                                             @blur="confirmRename"
                                         />
                                     </template>
-                                    <span v-else class="tree-node-label">{{ major.name }}</span>
+                                    <span v-else class="tree-node-label">{{ displayProcessName(major, $t) }}</span>
                                     <div class="ml-auto d-flex align-center ga-1">
                                         <v-tooltip v-if="isAdmin" location="bottom">
                                             <template v-slot:activator="{ props: tp }">
@@ -384,6 +384,7 @@
 import { getDomainSortIndex } from '@/views/process-architecture/useProcessArchitecture';
 import { getMajorBusinessDomain } from '@/views/process-architecture/processClassification';
 import { toSafeText } from '@/utils/safeText';
+import { displayProcessName } from '@/utils/uncategorizedProcess';
 
 export default {
     name: 'ProcessHierarchyTree',
@@ -585,6 +586,7 @@ export default {
         },
     },
     methods: {
+        displayProcessName,
         /**
          * 공개 범위 판정. visibleProcessIds 가 주어지지 않으면(비 PAL / 로드 실패) 항상 true.
          * proc_map 의 id 표기와 proc_def.id 표기가 대소문자로 어긋나는 사례가 있어 소문자도 함께 본다.

@@ -25,6 +25,8 @@ import {
     annualFrequencyFactor,
     diffTerminologyFromDefault,
     isDefaultClassification,
+    LOCALE_DEFAULT_TERMS,
+    localizeTerminology,
     normalizeClassification,
     normalizeOperationPolicy,
     normalizeRoleLabels,
@@ -179,10 +181,11 @@ function applyTerminologyToI18n(term: Terminology) {
     const locales: string[] = i18n.availableLocales || [];
 
     for (const locale of locales) {
+        const shown = localizeTerminology(term, locale) as Terminology;
         const merged: Record<string, unknown> = {
             terminology: {
-                hierarchy: { ...term.hierarchy },
-                stages: Object.fromEntries(STAGE_KEYS.map((k) => [k, { label: term.stages[k as StageTermKey].label, shortLabel: term.stages[k as StageTermKey].shortLabel }]))
+                hierarchy: { ...shown.hierarchy },
+                stages: Object.fromEntries(STAGE_KEYS.map((k) => [k, { label: shown.stages[k as StageTermKey].label, shortLabel: shown.stages[k as StageTermKey].shortLabel }]))
             }
         };
 
@@ -371,7 +374,11 @@ export function getTerminology(): Terminology {
 
 /** 계층 레벨 표시명 (도메인/메가/메이저/서브) */
 export function getHierarchyLabel(level: HierarchyLevel): string {
-    return state.terminology.hierarchy[level] || DEFAULT_HIERARCHY_TERMS[level];
+    const value = state.terminology.hierarchy[level] || DEFAULT_HIERARCHY_TERMS[level];
+    if (value !== DEFAULT_HIERARCHY_TERMS[level]) return value;
+    // 바꾸지 않은 기본값은 화면 언어로 (locale 을 읽으므로 computed 안에서 언어 전환을 따라간다)
+    const locale = String(getI18n()?.locale || 'ko');
+    return (LOCALE_DEFAULT_TERMS as Record<string, { hierarchy: Record<string, string> }>)[locale]?.hierarchy[level] || value;
 }
 
 export function getOperationPolicy(): OperationPolicy {

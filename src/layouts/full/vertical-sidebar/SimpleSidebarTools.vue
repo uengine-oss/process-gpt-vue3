@@ -7,7 +7,7 @@
         -->
         <v-menu v-if="row === 'nav'" location="bottom start">
             <template #activator="{ props }">
-                <v-btn v-bind="props" icon variant="text" density="comfortable" class="text-medium-emphasis" aria-label="메뉴">
+                <v-btn v-bind="props" icon variant="text" density="comfortable" class="text-medium-emphasis" :aria-label="$t('SimpleSidebarTools.menu')">
                     <v-icon size="20">mdi-dots-horizontal</v-icon>
                 </v-btn>
             </template>
@@ -175,7 +175,7 @@ export default {
             return items;
         },
         newChatItem() {
-            return { to: '/definition-map', icon: 'write', label: '새 채팅' };
+            return { to: '/definition-map', icon: 'write', label: this.$t('SimpleSidebarTools.newChat') };
         },
         todoItem() {
             return this.navItems.find((i) => i.to === '/todolist');

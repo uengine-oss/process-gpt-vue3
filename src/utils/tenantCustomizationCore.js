@@ -31,6 +31,25 @@ export const DEFAULT_STAGE_TERMS = Object.freeze({
     sunset: { label: '폐기 예정', shortLabel: '폐기 예정', color: '#C62828' }
 });
 
+/**
+ * 화면 언어별 기본 용어. 테넌트가 바꾸지 않은(= 위 한국어 기본값과 같은) 항목은 이 값으로 보여 준다.
+ * 저장·비교의 기준은 여전히 한국어 기본값이다 — 설정 행 포맷은 그대로.
+ */
+export const LOCALE_DEFAULT_TERMS = Object.freeze({
+    en: {
+        hierarchy: { domain: 'Domain', mega: 'Mega Process', major: 'Major Process', sub: 'Sub Process' },
+        stages: {
+            draft: { label: 'Stage 0', shortLabel: 'Draft' },
+            in_review: { label: 'Stage 1', shortLabel: 'Review' },
+            public_feedback: { label: 'Stage 2', shortLabel: 'Public Review' },
+            final_edit: { label: 'Stage 3', shortLabel: 'Final Edit' },
+            published: { label: 'Stage 4', shortLabel: 'Published' },
+            wip: { label: 'WIP', shortLabel: 'WIP' },
+            sunset: { label: 'Sunset', shortLabel: 'Sunset' }
+        }
+    }
+});
+
 const HEX_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 export function isHexColor(value) {
@@ -57,6 +76,28 @@ export function normalizeTerminology(raw) {
             label: text(entry.label) || def.label,
             shortLabel: text(entry.shortLabel) || def.shortLabel,
             color: isHexColor(color) ? color : def.color
+        };
+    }
+    return { hierarchy, stages };
+}
+
+/** 용어를 화면 언어로 — 기본값 그대로인 항목만 그 언어의 기본 용어로 바꾼다(테넌트가 정한 용어는 그대로). */
+export function localizeTerminology(value, locale) {
+    const full = normalizeTerminology(value);
+    const loc = LOCALE_DEFAULT_TERMS[locale];
+    if (!loc) return full;
+    const hierarchy = {};
+    for (const level of HIERARCHY_LEVELS) {
+        hierarchy[level] = full.hierarchy[level] === DEFAULT_HIERARCHY_TERMS[level] ? loc.hierarchy[level] : full.hierarchy[level];
+    }
+    const stages = {};
+    for (const key of STAGE_KEYS) {
+        const def = DEFAULT_STAGE_TERMS[key];
+        const cur = full.stages[key];
+        stages[key] = {
+            label: cur.label === def.label ? loc.stages[key].label : cur.label,
+            shortLabel: cur.shortLabel === def.shortLabel ? loc.stages[key].shortLabel : cur.shortLabel,
+            color: cur.color
         };
     }
     return { hierarchy, stages };
