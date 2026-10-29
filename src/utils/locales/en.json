@@ -6260,7 +6260,8 @@
         "mergeRequestDone": "Saved and merge request created.",
         "mergeRequestDoneHint": "Once the owner approves, it becomes a major version.",
         "close": "Close",
-        "dmnNotFound": "No DMN found with ID '{id}'. Opening a new DMN instead."
+        "dmnNotFound": "No DMN found with ID '{id}'. Opening a new DMN instead.",
+        "modificationsHeading": "Changes:"
     },
     "AgentCrudMixin": {
         "agentAdded": "Agent added.",
@@ -6478,5 +6479,8 @@
         "deleteConfirm": "Delete the selected link{label}?",
         "cancel": "Cancel",
         "delete": "Delete"
+    },
+    "DmnModeler": {
+        "defaultDecisionName": "New Decision"
     }
 }

@@ -3548,6 +3548,7 @@
 </template>
 
 <script>
+import { formatToolName as sharedFormatToolName } from '@/shared/toolNames/index.js';
 import { Icon } from '@iconify/vue';
 import RetrievalBox from '../retrieval/RetrievalBox.vue';
 import partialParse from 'partial-json-parser';
@@ -5246,6 +5247,9 @@ export default {
                 if (translated && translated !== message.contentI18nKey) return translated;
             }
             const original = String(message?.content || '');
+            // 확인 창의 승인·반려는 백엔드와 약속한 값이라 한국어로 보낸다 — 말풍선에는 현재 언어로
+            if (message?.role === 'user' && original === '승인') return this.$t('HumanFeedbackPanel.approved');
+            if (message?.role === 'user' && original === '반려') return this.$t('HumanFeedbackPanel.rejected');
             if (!this.isProcessJsonMessage(message, index)) return original;
             const jsonBlock = this._extractProcessJsonBlock(original);
             if (!jsonBlock) return original;
@@ -6507,24 +6511,8 @@ export default {
             return timeString;
         },
         formatToolName(name) {
-            if (!name) return '';
-            const raw = name.toString();
-            const key = raw.split('__').pop();
-            // WorkAssistantChatPanel의 매핑 일부를 재사용 (없으면 key 그대로)
-            const toolNameMap = {
-                get_process_list: '프로세스 목록 조회',
-                get_process_detail: '프로세스 상세 조회',
-                get_form_fields: '폼 필드 조회',
-                execute_process: '프로세스 실행',
-                get_instance_list: '인스턴스 목록 조회',
-                get_todolist: '할일 목록 조회',
-                get_organization: '조직도 조회',
-                start_process_consulting: '프로세스 컨설팅 시작',
-                generate_process: '프로세스 생성',
-                create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청',
-                get_current_user: '사용자 정보 조회'
-            };
-            return toolNameMap[key] || key;
+            // 표는 shared/toolNames 하나(화면 언어에 따라 한국어/영어)
+            return sharedFormatToolName(name);
         },
         startProcess(messageObj, index) {
             this.$emit('startProcess', messageObj);

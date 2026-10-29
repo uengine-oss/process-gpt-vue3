@@ -19,3 +19,8 @@ test('빈 값', () => {
     assert.equal(formatToolName(''), '');
     assert.equal(formatToolName(null), '');
 });
+
+test('영어 화면이면 영어 이름', () => {
+    assert.equal(formatToolName('work-assistant__get_process_list', 'en'), 'List processes');
+    assert.equal(formatToolName('get_process_list', 'ko'), '프로세스 목록 조회');
+});

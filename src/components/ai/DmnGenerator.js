@@ -239,6 +239,7 @@ ${this.client.prevDmnOutput}
 ${message.text || '(이미지 참조)'}
 
 Please provide modifications to the existing DMN or create a new one based on the request.
+If the previous DMN is still the blank starter (decision id "Decision_1" with a placeholder name and a single empty rule), build a new table and give the decision a meaningful name taken from the request, in the user's language.
 `;
 
         // 이미지가 있는 경우 Vision API 형식으로 변환

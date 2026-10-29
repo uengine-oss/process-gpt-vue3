@@ -6409,7 +6409,8 @@
         "mergeRequestDone": "저장 및 병합 요청이 완료되었습니다.",
         "mergeRequestDoneHint": "담당자가 승인하면 메이저 버전으로 업데이트됩니다.",
         "close": "닫기",
-        "dmnNotFound": "'{id}' ID를 가지는 DMN 정보가 없습니다! 새 DMN 만들기 화면으로 이동됩니다."
+        "dmnNotFound": "'{id}' ID를 가지는 DMN 정보가 없습니다! 새 DMN 만들기 화면으로 이동됩니다.",
+        "modificationsHeading": "수정 내역:"
     },
     "AgentCrudMixin": {
         "agentAdded": "에이전트가 추가되었습니다.",
@@ -6627,5 +6628,8 @@
         "deleteConfirm": "선택한 링크{label}를 삭제하시겠습니까?",
         "cancel": "취소",
         "delete": "삭제"
+    },
+    "DmnModeler": {
+        "defaultDecisionName": "새 결정"
     }
 }

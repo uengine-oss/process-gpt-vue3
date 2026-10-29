@@ -987,7 +987,7 @@ export default {
                 // 수정 내역이 있으면 표시
                 if (parsed.modifications && parsed.modifications.length > 0) {
                     const modDesc = parsed.modifications.map((m) => `- ${m.description}`).join('\n');
-                    messageWriting.content += '\n\n수정 내역:\n' + modDesc;
+                    messageWriting.content += `\n\n${this.$t('DmnChat.modificationsHeading')}\n` + modDesc;
                 }
             } catch (error) {
                 console.error('[DMN] AI 응답 처리 중 오류 발생:', error);

@@ -207,7 +207,7 @@ export default {
              namespace="http://camunda.org/schema/1.0/dmn" 
              exporter="dmn-js (https://demo.bpmn.io/dmn)" 
              exporterVersion="12.1.0">
-  <decision id="Decision_1" name="Decision 1 test">
+  <decision id="Decision_1" name="${this.$t('DmnModeler.defaultDecisionName')}">
     <decisionTable id="DecisionTable_1">
       <input id="Input_1">
         <inputExpression id="InputExpression_1" typeRef="string">
