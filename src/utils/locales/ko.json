@@ -6619,5 +6619,13 @@
     "SimpleSidebarTools": {
         "newChat": "새 채팅",
         "menu": "메뉴"
+    },
+    "ManualLinkField": {
+        "namePlaceholder": "이름 (예: 작업 매뉴얼)",
+        "name": "이름",
+        "deleteTitle": "링크 삭제",
+        "deleteConfirm": "선택한 링크{label}를 삭제하시겠습니까?",
+        "cancel": "취소",
+        "delete": "삭제"
     }
 }

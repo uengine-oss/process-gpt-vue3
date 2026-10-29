@@ -6470,5 +6470,13 @@
     "SimpleSidebarTools": {
         "newChat": "New Chat",
         "menu": "Menu"
+    },
+    "ManualLinkField": {
+        "namePlaceholder": "Name (e.g. Work manual)",
+        "name": "Name",
+        "deleteTitle": "Delete link",
+        "deleteConfirm": "Delete the selected link{label}?",
+        "cancel": "Cancel",
+        "delete": "Delete"
     }
 }
