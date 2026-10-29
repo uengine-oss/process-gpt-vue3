@@ -874,7 +874,7 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
-import { agentStableId, isUuid as isUuidStable, slugToUuid } from '@/utils/agentId.js';
+import { collectWorkspaceAgents, remapAgentRefs, slugToUuid } from '@/utils/agentId.js';
 import axios from 'axios';
 import { isArtifactUrlFresh, usableArtifactUrl } from '@/utils/artifactLinks.js';
 import { isDocumentFile, isTurnArtifactRecord } from '@/shared/workspaceFiles/index.js';
@@ -6863,11 +6863,13 @@ export default {
          * process-definition.json 의 activity.agent(또는 activity.agents[]) 바인딩을 기준으로
          * 해당 에이전트가 담당하는 Activity 들의 skills 를 모아 반환한다.
          * agents/<id>.json 자체에는 skills 필드가 없고(스킬은 activity 단위로 배정됨), 이 매핑이 유일한 출처다.
-         * agentId 는 agentStableId 변환 전 원본 id(process-definition.json 의 activity.agent 와 동일 값)여야 매칭된다.
+         * agentId 는 문자열 하나 또는 배열 — 원본 id(슬러그)와 저장 id(uuid)를 함께 주면 정의가
+         * 어느 쪽으로 적혀 있든 매칭된다(저장 직전에 정의의 슬러그를 저장 id 로 바꾸기 때문).
          */
         _collectAgentSkillNames(definition, agentId) {
             const names = new Set();
-            if (!definition || !agentId) return [];
+            const wanted = (Array.isArray(agentId) ? agentId : [agentId]).map((v) => (v == null ? '' : String(v))).filter(Boolean);
+            if (!definition || !wanted.length) return [];
             const toArr = (v) => {
                 if (Array.isArray(v)) return v.map((s) => String(s).trim()).filter(Boolean);
                 if (typeof v === 'string')
@@ -6879,11 +6881,11 @@ export default {
             };
             const matchesAgent = (act) => {
                 if (!act) return false;
-                if (act.agent && String(act.agent) === String(agentId)) return true;
+                if (act.agent && wanted.includes(String(act.agent))) return true;
                 if (Array.isArray(act.agents)) {
                     return act.agents.some((ag) => {
                         const id = ag && typeof ag === 'object' ? ag.id : ag;
-                        return id && String(id) === String(agentId);
+                        return id && wanted.includes(String(id));
                     });
                 }
                 return false;
@@ -7669,38 +7671,12 @@ export default {
                                     /* draft 에이전트 저장 실패는 흐름을 막지 않는다 */
                                 }
                             };
-                            // (1) 개별 파일 agents/<id>.json — 파일 1개 = 에이전트 1명.
-                            //     id 는 agentStableId(슬러그→결정적 uuid)로 확정 — 편집기(editTarget)와 동일하므로
-                            //     파일을 변형/영속화하지 않아도 reload 후 /agent-chat/{id} 가 같은 에이전트를 로드한다.
-                            const perAgentFiles = files.filter((f) => /\/agents\/[^/]+\.json$/i.test((f.path || '').replace(/\\/g, '/')));
-                            for (const af of perAgentFiles) {
-                                let obj;
-                                try {
-                                    obj = JSON.parse(af.content);
-                                } catch (e) {
-                                    obj = null;
-                                }
-                                if (!obj || typeof obj !== 'object' || Array.isArray(obj)) continue;
-                                const skills = this._collectAgentSkillNames(definition, obj.id);
-                                await saveDraftAgent({ ...obj, id: agentStableId(obj, af.path), skills });
-                            }
-                            // (2) 레거시 agents.json(배열/딕셔너리).
-                            const agFile = files.find(
-                                (f) => (f.name || '').toLowerCase() === 'agents.json' || (f.path || '').endsWith('agents.json')
-                            );
-                            if (agFile) {
-                                let parsed;
-                                try {
-                                    parsed = JSON.parse(agFile.content);
-                                } catch (e) {
-                                    parsed = null;
-                                }
-                                const arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.agents) ? parsed.agents : [];
-                                for (const a of arr) {
-                                    if (!a || typeof a !== 'object') continue;
-                                    const skills = this._collectAgentSkillNames(definition, a.id);
-                                    await saveDraftAgent({ ...a, id: isUuidStable(a.id) ? a.id : agentStableId(a, agFile.path), skills });
-                                }
+                            // 개별 파일 agents/<id>.json(파일 1개 = 에이전트 1명) + 레거시 agents.json(배열/딕셔너리).
+                            // id 는 agentStableId(슬러그→결정적 uuid)로 확정 — 편집기(editTarget)·최종 저장과 동일하므로
+                            // 파일을 변형/영속화하지 않아도 reload 후 /agent-chat/{id} 가 같은 에이전트를 로드한다.
+                            for (const entry of collectWorkspaceAgents(files)) {
+                                const skills = this._collectAgentSkillNames(definition, [entry.sourceId, entry.id]);
+                                await saveDraftAgent({ ...entry.agent, id: entry.id, skills });
                             }
                         }
                     } catch (age) {
@@ -7856,6 +7832,13 @@ export default {
                     throw new Error('process-definition.json 파싱 실패');
                 }
                 if (pd && pd.processDefinition) pd = pd.processDefinition;
+                // 이 탭의 에이전트 산출물과, 각각이 users 에 저장될 id(슬러그 → 결정적 uuid).
+                const workspaceAgents = collectWorkspaceAgents(list);
+                // deepagent 는 activity.agent·roles[].endpoint 에 에이전트 슬러그(agents/<slug>.json)를 적는다.
+                // 실행 엔진은 담당자를 users.id/email 로만 찾으므로 슬러그 그대로 저장하면 에이전트 단계가
+                // 시작되지 않는다 → 저장할 정의에서는 아래 4) 에서 저장할 에이전트 id 로 바꾼다.
+                const remapped = remapAgentRefs(pd, workspaceAgents);
+                pd = remapped.definition;
                 // elements[] 형식이면 flatten, 이미 flattened(activities[]) 면 그대로 저장.
                 const definition = Array.isArray(pd.elements) ? elementsToFlattenedDefinition(pd) : pd;
                 const tenantId = getTenantId();
@@ -7867,7 +7850,12 @@ export default {
                 const bpmnFile = list.find(
                     (f) => (f.ext || '').toLowerCase() === '.bpmn' || (f.name || '').toLowerCase().endsWith('.bpmn')
                 );
-                const bpmnXml = bpmnFile && bpmnFile.content ? bpmnFile.content : this._buildBpmnXmlFromDefinition(definition) || null;
+                // 파생 .bpmn 은 슬러그가 든 원래 정의에서 만든 것이라(레인의 endpoint) 바꾼 정의로 다시 만든다.
+                // 에이전트가 직접 쓴 .bpmn(파생 아님)은 그대로 둔다.
+                const rebuildBpmn = remapped.replaced.length > 0 && (!bpmnFile || bpmnFile.derived);
+                const bpmnXml =
+                    (rebuildBpmn && this._buildBpmnXmlFromDefinition(pd)) ||
+                    (bpmnFile && bpmnFile.content ? bpmnFile.content : this._buildBpmnXmlFromDefinition(definition) || null);
 
                 // 1) proc_def 저장 — 최종 저장(사용자 클릭)이므로 draft 를 승격(is_draft=false)해 목록에 노출.
                 await backend.putObject(
@@ -7922,13 +7910,15 @@ export default {
                 //    개별 파일 agents/<id>.json(단일 객체) + 레거시 agents.json(배열) 모두 처리.
                 const savedAgents = [];
                 if (backend.putAgent) {
-                    const saveFinalAgent = async (a, filePath) => {
+                    const saveFinalAgent = async (entry) => {
+                        const a = entry.agent;
                         if (!a || typeof a !== 'object') return;
-                        // draft 저장·편집기(editTarget)와 동일한 결정적 id(슬러그→uuid)로 승격해야
-                        // 같은 에이전트가 정식 등록된다(랜덤 uuid 금지).
-                        const agentId = isUuidStable(a.id) ? a.id.toString() : agentStableId(a, filePath);
-                        // 스킬은 agents/<id>.json 자체가 아니라 activity.agent 바인딩(원본 id 기준)으로 배정된다.
-                        const skills = this._collectAgentSkillNames(definition, a.id);
+                        // draft 저장·편집기(editTarget)·위의 정의 치환과 동일한 결정적 id(슬러그→uuid)로 승격해야
+                        // 같은 에이전트가 정식 등록되고 정의가 가리키는 담당자와 일치한다(랜덤 uuid 금지).
+                        const agentId = entry.id;
+                        // 스킬은 agents/<id>.json 자체가 아니라 activity.agent 바인딩으로 배정된다.
+                        // 정의의 agent 는 이미 저장 id 로 바뀌었으므로 원본 슬러그와 저장 id 둘 다로 찾는다.
+                        const skills = this._collectAgentSkillNames(definition, [entry.sourceId, agentId]);
                         try {
                             await backend.putAgent({
                                 id: agentId,
@@ -7949,29 +7939,7 @@ export default {
                             console.warn('[SaveWS] 에이전트 저장 실패:', a.name, agErr);
                         }
                     };
-                    // (1) 개별 파일
-                    const perAgentFiles = list.filter((f) => /\/agents\/[^/]+\.json$/i.test((f.path || '').replace(/\\/g, '/')));
-                    for (const af of perAgentFiles) {
-                        let obj;
-                        try {
-                            obj = JSON.parse(af.content);
-                        } catch (e) {
-                            obj = null;
-                        }
-                        if (obj && typeof obj === 'object' && !Array.isArray(obj)) await saveFinalAgent(obj, af.path);
-                    }
-                    // (2) 레거시 agents.json
-                    const agFile = list.find((f) => (f.name || '').toLowerCase() === 'agents.json');
-                    if (agFile) {
-                        let arr = [];
-                        try {
-                            const parsed = JSON.parse(agFile.content);
-                            arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.agents) ? parsed.agents : [];
-                        } catch (e) {
-                            arr = [];
-                        }
-                        for (const a of arr) await saveFinalAgent(a, agFile.path);
-                    }
+                    for (const entry of workspaceAgents) await saveFinalAgent(entry);
                 }
 
                 // 5) proc_map(미분류) 등록 — best-effort
