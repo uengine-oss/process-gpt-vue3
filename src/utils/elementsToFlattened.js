@@ -45,6 +45,36 @@ function asIntDuration(value) {
 }
 
 /**
+ * 요소의 `source`(앞 노드)에는 적혀 있는데 Sequence 요소가 없는 연결선을 만든다.
+ *
+ * 그림(BPMNXmlGenerator.ensureSequenceGuardrails)은 같은 규칙으로 화살표를 채워 그리는데 정의 JSON 은
+ * 그러지 않아 둘이 갈라졌다. 딥 에이전트가 시작 이벤트에서 나가는 Sequence 를 빠뜨리고 첫 액티비티에
+ * source:'start' 만 적으면(VM 녹화 「한빛오피스 대량 주문 견적 승인」), 흐름도에는 시작 → 「견적 요청 접수」
+ * 화살표가 있는데 proc_def.definition 에는 없어 실행 엔진·실행 창이 첫 단계를 건너뛰었다.
+ * 그림과 같은 연결선을 정의에도 넣어, 사용자가 확인한 흐름도대로 실행되게 한다.
+ * (그림 쪽과 달리 source 가 정의에 없는 노드를 가리키면 만들지 않는다 — 시작 지점이 엉뚱해진다.)
+ */
+function sequencesFromSourceHints(elements, sequences) {
+    const nodeIds = new Set(elements.filter((el) => el && el.elementType !== 'Sequence' && el.id).map((el) => el.id));
+    const existing = new Set(sequences.filter((s) => s.source && s.target).map((s) => `${s.source}__${s.target}`));
+    const usedIds = new Set(sequences.map((s) => s.id).filter(Boolean));
+    const added = [];
+    for (const el of elements) {
+        if (!el || typeof el !== 'object' || el.elementType === 'Sequence' || !el.id) continue;
+        const source = typeof el.source === 'string' ? el.source.trim() : '';
+        if (!source || source === 'none' || source === el.id || !nodeIds.has(source)) continue;
+        const key = `${source}__${el.id}`;
+        if (existing.has(key)) continue;
+        existing.add(key);
+        let id = `seq_${source}_${el.id}`;
+        for (let n = 1; usedIds.has(id); n++) id = `seq_${source}_${el.id}_${n}`;
+        usedIds.add(id);
+        added.push({ id, name: '', source, target: el.id, condition: '', properties: '{}' });
+    }
+    return added;
+}
+
+/**
  * @param {object} processDefinition elements[] 형식 processDefinition
  * @returns {object} flattened definition
  */
@@ -118,6 +148,8 @@ export function elementsToFlattenedDefinition(processDefinition) {
             });
         }
     }
+
+    sequences.push(...sequencesFromSourceHints(elements, sequences));
 
     const flat = {
         data: pd.data || [],

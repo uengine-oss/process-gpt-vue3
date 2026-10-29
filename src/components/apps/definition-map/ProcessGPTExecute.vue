@@ -216,7 +216,7 @@ import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import customBpmnModule from '@/components/customBpmn';
 
 import BackendFactory from '@/components/api/BackendFactory';
-import { findStartActivity } from '@/utils/processStart';
+import { findStartActivity, hasDanglingStartEvent } from '@/utils/processStart';
 import { buildStartWorkItem, runsAsAgent } from '@/shared/processStart/index.js';
 const backend = BackendFactory.createBackend();
 
@@ -424,6 +424,11 @@ export default {
         async findStartActivity() {
             const definition = this.processDefinition || {};
             const activities = Array.isArray(definition.activities) ? definition.activities : [];
+            const bpmn = this.effectiveBpmn || definition.bpmn || this.bpmn || '';
+
+            // 정의 JSON 의 시작 이벤트에서 나가는 연결선이 없으면(그림 XML 에는 있음) 엔진도 같은 그래프 규칙으로
+            // 첫 액티비티의 "다음" 단계를 돌려준다 — 이때는 XML·구조로 찾는 로컬 판별을 쓴다.
+            if (hasDanglingStartEvent(definition)) return findStartActivity(definition, { bpmn });
 
             const resolved = await backend.getStartActivity({
                 process_definition_id: this.resolvedDefinitionId || definition.processDefinitionId,
@@ -439,7 +444,7 @@ export default {
                 if (resolved.activity) return resolved.activity;
             }
 
-            return findStartActivity(definition);
+            return findStartActivity(definition, { bpmn });
         },
         async init() {
             var me = this;
