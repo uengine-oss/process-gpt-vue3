@@ -7,6 +7,7 @@
  * 필요한 환경 변수
  *   BASE_URL=http://localhost:8088
  *   SB_SERVICE_KEY=<로컬 supabase service_role 키>   (조회 전용)
+ *   HONG_EMAIL · HONG_PASSWORD=<로컬 관리자 계정>
  */
 import { expect, type Browser, type Page } from '@playwright/test';
 
@@ -17,7 +18,8 @@ const SB_KEY = process.env.SB_SERVICE_KEY || '';
 export type Person = { key: string; email: string; password: string; name: string };
 
 export const PEOPLE: Record<string, Person> = {
-    hong: { key: 'hong', email: 'ohsy818@uengine.org', password: 'dbdpswls', name: '홍길동' },
+    // 로컬 관리자 계정. 저장소에 남기지 않고 HONG_EMAIL · HONG_PASSWORD 로 넘긴다
+    hong: { key: 'hong', email: process.env.HONG_EMAIL || '', password: process.env.HONG_PASSWORD || '', name: '홍길동' },
     // 로컬에서 비밀번호를 바꿨으면 LEE_PASSWORD 로 넘긴다
     lee: { key: 'lee', email: 'lee.handover@localhost.dev', password: process.env.LEE_PASSWORD || 'handover-test-1', name: '이팀장' },
     park: { key: 'park', email: 'park.handover@localhost.dev', password: 'handover-test-1', name: '박대리' }
@@ -89,6 +91,7 @@ export async function waitUntil<T>(fn: () => Promise<T>, label: string, timeout 
 }
 
 export async function login(browser: Browser, who: Person): Promise<Page> {
+    if (!who.email || !who.password) throw new Error(`${who.key} 계정의 이메일·비밀번호 환경 변수가 필요합니다`);
     const ctx = await browser.newContext({ viewport: { width: 1600, height: 950 }, locale: 'ko-KR' });
     const page = await ctx.newPage();
     await page.goto(`${BASE}/auth/login`, { waitUntil: 'domcontentloaded' });
