@@ -16,6 +16,35 @@
  */
 
 /**
+ * 화면에 보일 문구를 현재 언어로 꺼낸다.
+ *
+ * 포털은 main.ts 가 열어 둔 `window.$i18n` 으로 번역한다. 번역기가 없는 곳 — 모바일 앱,
+ * `node --test` — 에서는 한국어 원문을 그대로 쓴다. 키가 아직 없을 때도 원문으로 돌아가
+ * 키 이름이 화면에 새지 않게 한다.
+ *
+ * 모듈을 읽을 때가 아니라 패널을 만들 때 부른다. 그래야 언어를 바꾼 뒤에 만든 패널이
+ * 바뀐 언어로 나온다.
+ *
+ * @param {string} key        `sharedHitl.` 아래의 키
+ * @param {string} fallback   번역기가 없을 때 쓸 한국어 원문 (`{name}` 자리표시 허용)
+ * @param {Record<string, unknown>} [params]
+ */
+function tr(key, fallback, params) {
+    const fullKey = `sharedHitl.${key}`;
+    try {
+        const i18n = typeof window !== 'undefined' ? window.$i18n : null;
+        const g = i18n && i18n.global;
+        if (g && typeof g.t === 'function' && (typeof g.te !== 'function' || g.te(fullKey))) {
+            return params ? g.t(fullKey, params) : g.t(fullKey);
+        }
+    } catch (e) {
+        /* 번역기를 못 쓰면 원문으로 */
+    }
+    if (!params) return fallback;
+    return fallback.replace(/\{(\w+)\}/g, (m, k) => (Object.prototype.hasOwnProperty.call(params, k) ? String(params[k]) : m));
+}
+
+/**
  * 2단계 후보를 가리키는 카테고리.
  *
  * 카테고리가 '있기만' 하면 체크박스로 그리던 과거 로직이 문제였다. 컨설팅 초안이
@@ -128,12 +157,15 @@ export function parseMultiProcessHitl(text) {
     const stage = obj.stage === 'candidates' ? 'candidates' : 'consult';
     const questions = [];
     obj.processes.forEach((p, pi) => {
+        // `process` 는 답을 묶어 에이전트에 돌려줄 때 `[이름]` 으로 그대로 실려 가므로 원문을 지킨다.
+        // 화면 제목(prompt)에만 현재 언어의 이름을 쓴다.
         const name = (p?.name || `프로세스 ${pi + 1}`).toString().trim();
+        const shownName = p?.name ? name : tr('processN', '프로세스 {n}', { n: pi + 1 });
         if (stage === 'consult') {
             questions.push({
                 question_id: `mp-${pi}-consult`,
                 process: name,
-                prompt: `[${name}] 초안 검토`,
+                prompt: tr('draftReview', '[{name}] 초안 검토', { name: shownName }),
                 context: (p?.draft || '').toString(),
                 feedback_type: 'approve_reject_with_edit',
                 target_type: 'consult'
@@ -155,7 +187,7 @@ export function parseMultiProcessHitl(text) {
                 questions.push({
                     question_id: `mp-${pi}-${kind}`,
                     process: name,
-                    prompt: `[${name}] ${label}`,
+                    prompt: `[${shownName}] ${label}`,
                     feedback_type: 'select_items',
                     items,
                     allow_multiple: true,
@@ -164,8 +196,8 @@ export function parseMultiProcessHitl(text) {
                     target_type: kind
                 });
             };
-            addKind('skills', '스킬', p?.skills);
-            addKind('agents', '에이전트', p?.agents);
+            addKind('skills', tr('kindSkills', '스킬'), p?.skills);
+            addKind('agents', tr('kindAgents', '에이전트'), p?.agents);
             addKind('dmn', 'DMN', p?.dmn);
         }
     });
@@ -173,10 +205,13 @@ export function parseMultiProcessHitl(text) {
     return { stage, questions };
 }
 
-const MULTI_PROCESS_TITLE = {
-    consult: '각 프로세스 초안을 검토해 주세요 (다음으로 페이지 이동)',
-    candidates: '각 프로세스에 추가할 스킬·에이전트·DMN을 선택해 주세요 (다음으로 페이지 이동)'
-};
+/** 여러 프로세스를 묻는 패널의 제목. 부를 때마다 현재 언어로 만든다. */
+function multiProcessTitle(stage) {
+    if (stage === 'candidates') {
+        return tr('multiCandidatesTitle', '각 프로세스에 추가할 스킬·에이전트·DMN을 선택해 주세요 (다음으로 페이지 이동)');
+    }
+    return tr('multiConsultTitle', '각 프로세스 초안을 검토해 주세요 (다음으로 페이지 이동)');
+}
 
 /**
  * 무엇을 물을지 정한다. **이 파일의 요점.**
@@ -206,7 +241,7 @@ export function buildHitlPanel({ question, context, options, multiSelect } = {})
         return {
             kind: 'multi_process',
             stage: mp.stage,
-            question: MULTI_PROCESS_TITLE[mp.stage] || MULTI_PROCESS_TITLE.consult,
+            question: multiProcessTitle(mp.stage),
             context: '',
             items: [],
             questions: mp.questions,
@@ -245,7 +280,7 @@ export function buildHitlPanel({ question, context, options, multiSelect } = {})
             kind: 'select_items',
             // 후보가 question 전체에 들어온 경우 headerQ 는 후보까지 포함하므로,
             // 헤더는 첫 줄(제목)인 parsed.question 을 쓴다(후보는 items 로 표시).
-            question: headerQ || parsed.question || '추가할 항목을 골라주세요',
+            question: headerQ || parsed.question || tr('pickItems', '추가할 항목을 골라주세요'),
             context: '',
             items,
             allowMultiple: structuredItems.length ? Boolean(multiSelect) : true,
@@ -257,7 +292,7 @@ export function buildHitlPanel({ question, context, options, multiSelect } = {})
     // 후보 없음 → 승인형. 초안은 패널 본문으로만 보여준다(본문+패널 중복 표시 방지).
     return {
         kind: 'approve_reject_with_edit',
-        question: headerQ || '이대로 진행할까요?',
+        question: headerQ || tr('proceedQuestion', '이대로 진행할까요?'),
         context: combined,
         items: [],
         allowMultiple: false,
@@ -293,8 +328,22 @@ export function shouldRestoreFromAssistantContent(content) {
     const isCandidateRequest = hasCandidateSections && /(선택|골라|추가할|안 고르면|후보)/i.test(text);
     const isConsultingRequest = /(이대로 진행할까요|초안.*(?:승인|진행)|추가하거나 바꿀 단계)/i.test(text);
 
+    // 영어 모드에서는 에이전트가 영어로 묻는다. 같은 두 갈래(후보 고르기·초안 진행)를 영어로도 잡는다.
+    const hasCandidateSectionsEnglish = /\[(?:skills?|agents?|DMN)\]/i.test(text);
+    const isCandidateRequestEnglish =
+        hasCandidateSectionsEnglish && /\b(?:select|choose|pick|add|candidates?)/i.test(text);
+    const isConsultingRequestEnglish =
+        /(?:(?:shall|should) (?:I|we) proceed|proceed with this|anything to add or change|steps? to add or change|\bdraft\b.*\b(?:approv\w*|proceed))/i.test(
+            text
+        );
+
     return (
-        isCandidateRequest || isConsultingRequest || isCandidateRequestUnicode || isConsultingRequestUnicode
+        isCandidateRequest ||
+        isConsultingRequest ||
+        isCandidateRequestUnicode ||
+        isConsultingRequestUnicode ||
+        isCandidateRequestEnglish ||
+        isConsultingRequestEnglish
     );
 }
 

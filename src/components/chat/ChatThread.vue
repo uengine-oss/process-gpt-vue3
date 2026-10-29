@@ -3,12 +3,12 @@
         <div class="chat-messages" ref="messagesContainer">
             <div v-if="isLoadingHistory" class="empty-chat">
                 <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
-                <p class="mt-2 text-grey">{{ loadingHistoryText }}</p>
+                <p class="mt-2 text-grey">{{ loadingHistoryText || $t('ChatThread.loadingHistory') }}</p>
             </div>
 
             <div v-else-if="messages.length === 0" class="empty-chat">
                 <v-icon size="48" color="grey-lighten-1">mdi-robot-outline</v-icon>
-                <p class="mt-2 text-grey">{{ emptyText }}</p>
+                <p class="mt-2 text-grey">{{ emptyText || $t('ChatThread.empty') }}</p>
             </div>
 
             <div
@@ -81,7 +81,7 @@
                                     </div>
                                     <div class="attached-file-card__meta">
                                         <div class="attached-file-card__name">
-                                            {{ msg.pdfFile.name || msg.pdfFile.fileName || '첨부파일' }}
+                                            {{ msg.pdfFile.name || msg.pdfFile.fileName || $t('ChatThread.attachment') }}
                                         </div>
                                         <div class="attached-file-card__sub">
                                             {{ formatAttachmentSub(msg.pdfFile) }}
@@ -125,11 +125,11 @@
                         <summary class="tool-calls__summary">
                             <v-icon size="14" color="primary" class="mr-1">mdi-timeline-check-outline</v-icon>
                             <!-- 휴대폰에서는 채팅방과 같은 클로드식 한 줄(Chat.toolSummaryLabel 참고). -->
-                            {{ phoneShell ? `도구 ${executionDetailCount(msg)}개 실행함` : `실행 상세 ${executionDetailCount(msg)}건` }}
+                            {{ executionSummaryLabel(msg) }}
                         </summary>
                         <div v-for="skill in msg.executionSkills || []" :key="`skill-${skill}`" class="tool-call-item">
                             <v-icon size="14" color="success" class="mr-1">mdi-lightning-bolt-outline</v-icon>
-                            <span class="tool-name">스킬 · {{ skill }}</span>
+                            <span class="tool-name">{{ $t('ChatThread.skillItem', { name: skill }) }}</span>
                         </div>
                         <div v-for="connector in msg.executionConnectors || []" :key="`mcp-${connector}`" class="tool-call-item">
                             <v-icon size="14" color="primary" class="mr-1">mdi-server-network-outline</v-icon>
@@ -144,24 +144,28 @@
                             <pre
                                 v-if="tool.input != null"
                                 class="tool-call-output"
-                            ><strong>입력</strong>{{ '\n' }}{{ formatExecutionValue(tool.input) }}</pre>
+                            ><strong>{{ $t('ChatThread.toolInput') }}</strong>{{ '\n' }}{{ formatExecutionValue(tool.input) }}</pre>
                             <pre
                                 v-if="tool.output != null"
                                 class="tool-call-output"
-                            ><strong>결과</strong>{{ '\n' }}{{ formatExecutionValue(tool.output) }}</pre>
+                            ><strong>{{ $t('ChatThread.toolOutput') }}</strong>{{ '\n' }}{{ formatExecutionValue(tool.output) }}</pre>
                         </details>
                     </details>
 
                     <div v-if="hasPdf2bpmnResultSections(msg)" class="pdf2bpmn-result-container mt-3">
                         <div class="result-header">
                             <v-icon size="18" color="success" class="mr-2">mdi-check-circle</v-icon>
-                            <span class="result-title">BPMN 프로세스 생성 결과</span>
+                            <span class="result-title">{{ $t('ChatThread.pdf2bpmnResultTitle') }}</span>
                         </div>
                         <div
                             v-if="msg.pdf2bpmnResult.generatedBpmns && msg.pdf2bpmnResult.generatedBpmns.length > 0"
                             class="text-caption font-weight-bold mb-1"
                         >
-                            생성된 BPMN 프로세스 ({{ msg.pdf2bpmnResult.generatedBpmns.length }}개)
+                            {{
+                                $tc('ChatThread.generatedBpmns', msg.pdf2bpmnResult.generatedBpmns.length, {
+                                    n: msg.pdf2bpmnResult.generatedBpmns.length
+                                })
+                            }}
                         </div>
                         <div v-if="msg.pdf2bpmnResult.generatedBpmns && msg.pdf2bpmnResult.generatedBpmns.length > 0" class="bpmn-cards">
                             <div
@@ -183,7 +187,7 @@
                             </div>
                         </div>
                         <div v-if="getPdf2bpmnSavedSkills(msg).length > 0" class="text-caption font-weight-bold mt-3 mb-1">
-                            생성된 스킬 ({{ getPdf2bpmnSavedSkills(msg).length }}개)
+                            {{ $tc('ChatThread.generatedSkills', getPdf2bpmnSavedSkills(msg).length, { n: getPdf2bpmnSavedSkills(msg).length }) }}
                         </div>
                         <div v-if="getPdf2bpmnSavedSkills(msg).length > 0" class="bpmn-cards">
                             <div
@@ -204,7 +208,7 @@
                             </div>
                         </div>
                         <div v-if="getPdf2bpmnSavedAgents(msg).length > 0" class="text-caption font-weight-bold mt-3 mb-1">
-                            생성된 에이전트 ({{ getPdf2bpmnSavedAgents(msg).length }}개)
+                            {{ $tc('ChatThread.generatedAgents', getPdf2bpmnSavedAgents(msg).length, { n: getPdf2bpmnSavedAgents(msg).length }) }}
                         </div>
                         <div v-if="getPdf2bpmnSavedAgents(msg).length > 0" class="bpmn-cards">
                             <div
@@ -237,7 +241,7 @@
                 </div>
                 <div class="message-content">
                     <div class="message-header">
-                        <span class="message-sender">BPMN 프로세스 생성</span>
+                        <span class="message-sender">{{ $t('ChatThread.pdf2bpmnSender') }}</span>
                         <v-chip size="x-small" :color="getProgressChipColor(pdf2bpmnProgress.status)" class="ml-2">
                             {{ pdf2bpmnProgress.status }}
                         </v-chip>
@@ -268,7 +272,11 @@
                         <div v-if="pdf2bpmnProgress.generatedBpmns?.length > 0" class="generated-bpmns-scroll mt-3">
                             <div class="bpmn-list-title">
                                 <v-icon size="14" class="mr-1">mdi-sitemap</v-icon>
-                                생성된 프로세스 ({{ pdf2bpmnProgress.generatedBpmns.length }})
+                                {{
+                                    $tc('ChatThread.generatedProcesses', pdf2bpmnProgress.generatedBpmns.length, {
+                                        n: pdf2bpmnProgress.generatedBpmns.length
+                                    })
+                                }}
                             </div>
                             <div class="bpmn-cards-scroll">
                                 <div
@@ -330,8 +338,9 @@ export default {
         isLoading: { type: Boolean, default: false },
         loadingMessage: { type: String, default: '' },
         pdf2bpmnProgress: { type: Object, default: null },
-        loadingHistoryText: { type: String, default: '대화 내역을 불러오는 중...' },
-        emptyText: { type: String, default: '무엇을 도와드릴까요?' }
+        // 비워 두면 현재 언어의 기본 문구를 쓴다(템플릿에서 $t 로 채운다).
+        loadingHistoryText: { type: String, default: '' },
+        emptyText: { type: String, default: '' }
     },
     emits: ['preview-image', 'preview-bpmn', 'open-external-url', 'human-feedback-submit', 'human-feedback-skip'],
     methods: {
@@ -478,7 +487,7 @@ export default {
         },
         assistantLabel(msg) {
             // 기존 WorkAssistantChatPanel 스타일 유지: 기본 라벨은 AI 어시스턴트
-            return msg?.name || msg?.userName || 'AI 어시스턴트';
+            return msg?.name || msg?.userName || this.$t('ChatThread.assistantDefault');
         },
         formatMessage(content) {
             if (!content) return '';
@@ -504,19 +513,20 @@ export default {
         },
         formatToolName(name) {
             if (!name) return '';
-            const toolNameMap = {
-                get_process_list: '프로세스 목록 조회',
-                get_process_detail: '프로세스 상세 조회',
-                get_form_fields: '폼 필드 조회',
-                execute_process: '프로세스 실행',
-                get_instance_list: '인스턴스 목록 조회',
-                get_todolist: '할일 목록 조회',
-                get_organization: '조직도 조회',
-                start_process_consulting: '프로세스 컨설팅 시작',
-                generate_process: '프로세스 생성'
-            };
+            // 알려진 도구만 사람 말로 바꾼다. 모르는 도구는 이름 그대로 보인다.
+            const knownTools = [
+                'get_process_list',
+                'get_process_detail',
+                'get_form_fields',
+                'execute_process',
+                'get_instance_list',
+                'get_todolist',
+                'get_organization',
+                'start_process_consulting',
+                'generate_process'
+            ];
             const toolKey = name.split('__').pop();
-            return toolNameMap[toolKey] || toolKey;
+            return knownTools.includes(toolKey) ? this.$t(`ChatThread.toolNames.${toolKey}`) : toolKey;
         },
         hasExecutionDetails(message) {
             return !!(
@@ -524,6 +534,11 @@ export default {
                 (Array.isArray(message?.executionSkills) && message.executionSkills.length) ||
                 (Array.isArray(message?.executionConnectors) && message.executionConnectors.length)
             );
+        },
+        /** 실행 상세 접이 줄. 휴대폰에서는 채팅방과 같은 클로드식 한 줄(Chat.toolSummaryLabel 참고). */
+        executionSummaryLabel(message) {
+            const n = this.executionDetailCount(message);
+            return this.phoneShell ? this.$tc('ChatThread.toolsRun', n, { n }) : this.$t('ChatThread.runDetails', { n });
         },
         executionDetailCount(message) {
             return (
@@ -537,13 +552,13 @@ export default {
         formatExecutionValue(raw) {
             const sensitive = /(^|_)(authorization|password|passwd|secret|token|jwt|api_?key|access_?key)($|_)/i;
             const redact = (value, depth = 0) => {
-                if (depth > 8) return '[생략]';
+                if (depth > 8) return this.$t('ChatThread.omitted');
                 if (Array.isArray(value)) return value.slice(0, 50).map((v) => redact(v, depth + 1));
                 if (value && typeof value === 'object') {
                     return Object.fromEntries(
                         Object.entries(value)
                             .slice(0, 100)
-                            .map(([key, val]) => [key, sensitive.test(key) ? '[보안상 숨김]' : redact(val, depth + 1)])
+                            .map(([key, val]) => [key, sensitive.test(key) ? this.$t('ChatThread.redacted') : redact(val, depth + 1)])
                     );
                 }
                 return value;
@@ -558,7 +573,7 @@ export default {
                     }
                 }
                 const text = typeof value === 'string' ? value : JSON.stringify(redact(value), null, 2);
-                return text.length > 6000 ? `${text.slice(0, 6000)}\n…(이하 생략)` : text;
+                return text.length > 6000 ? `${text.slice(0, 6000)}\n${this.$t('ChatThread.truncated')}` : text;
             } catch {
                 return String(raw).slice(0, 6000);
             }
@@ -566,7 +581,8 @@ export default {
         formatTime(timestamp) {
             if (!timestamp) return '';
             const date = new Date(timestamp);
-            return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+            const locale = (this.$i18n?.locale || 'ko').toString().startsWith('en') ? 'en-US' : 'ko-KR';
+            return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
         },
         getProgressChipColor(status) {
             if (status === 'completed') return 'success';

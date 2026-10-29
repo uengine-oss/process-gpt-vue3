@@ -300,7 +300,8 @@ export default {
         },
         loadingMessage() {
             const state = this.loadingStates[this.currentRoomId];
-            return state?.message || '생각 중...';
+            const message = state?.message;
+            return message && message !== '생각 중...' ? message : this.$t('AgentMessagePanel.thinking');
         },
         // 현재 채팅방의 PDF2BPMN 진행 상태
         currentPdf2bpmnProgress() {

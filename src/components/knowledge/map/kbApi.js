@@ -1,6 +1,7 @@
 // memento 지식베이스 호출 — 화면은 에이전트가 보는 지도(/folders/*)와 같은 응답을 쓴다.
 import axios from 'axios';
 import { getTenantId } from '@/utils/tenant';
+import { t } from '@/composables/i18nText';
 
 const BASE = '/memento';
 
@@ -192,6 +193,6 @@ export async function sha256(file) {
         .join('');
 }
 
-export function errorText(e, fallback = '요청 실패') {
+export function errorText(e, fallback = t('kbApi.requestFailed')) {
     return e?.response?.data?.detail || e?.message || fallback;
 }

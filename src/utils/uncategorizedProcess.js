@@ -27,3 +27,17 @@ export function isUncategorizedProcess(process, translatedName) {
 
     return names.includes(name) || names.includes(id) || UNCATEGORIZED_IDS.includes(id);
 }
+
+/**
+ * 화면에 보일 이름 — 미분류 노드는 저장된 이름(예: 추출기가 쓴 '미분류') 대신 현재 로케일의 표시명.
+ * 영어 화면에서 정의 체계도 첫 칸이 '미분류' 로 나오던 것을 막는다.
+ * @param {Object} process - mega / major 프로세스 노드
+ * @param {Function} t - i18n 번역 함수 ($t)
+ */
+export function displayProcessName(process, t) {
+    if (!process) return '';
+    if (typeof t === 'function' && isUncategorizedProcess(process, t('processDefinitionMap.uncategorized'))) {
+        return t('processDefinitionMap.uncategorized');
+    }
+    return process.name;
+}

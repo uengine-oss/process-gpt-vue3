@@ -23,7 +23,7 @@
                             style="font-size: 0.9rem"
                             @click="goProcess(parent.name, 'mega')"
                         >
-                            {{ value.name }}
+                            {{ displayProcessName(value, $t) }}
                         </div>
                     </v-col>
                     <v-col cols="auto" class="ma-0 pa-0">
@@ -106,6 +106,7 @@ import ProcessMenu from './ProcessMenu.vue';
 import SubProcess from './SubProcess.vue';
 import ProcessDialog from './ProcessDialog.vue';
 import BaseProcess from './BaseProcess.vue';
+import { displayProcessName } from '@/utils/uncategorizedProcess';
 
 export default {
     components: {
@@ -169,6 +170,7 @@ export default {
         }
     },
     methods: {
+        displayProcessName,
         async addProcess(newProcess) {
             // 같은 레벨에 동일한 이름이 있는지 검증
             const isDuplicate = this.value.sub_proc_list.some((item) => item.name.toLowerCase() === newProcess.name.toLowerCase());

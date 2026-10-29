@@ -44,7 +44,7 @@
                                     </v-btn>
                                     <v-btn v-if="isLoadedDmn" icon size="small" variant="text" @click="openHistoryDialog">
                                         <v-icon size="small">mdi-history</v-icon>
-                                        <v-tooltip activator="parent">버전 이력</v-tooltip>
+                                        <v-tooltip activator="parent">{{ $t('DmnChat.versionHistory') }}</v-tooltip>
                                     </v-btn>
                                     <v-btn v-if="isLoadedDmn" icon size="small" variant="text" color="error" @click="openDeleteDialog">
                                         <v-icon size="small">mdi-delete</v-icon>
@@ -97,7 +97,7 @@
                                     </v-btn>
                                     <v-btn v-if="isLoadedDmn" icon size="small" variant="text" @click="openHistoryDialog">
                                         <v-icon size="small">mdi-history</v-icon>
-                                        <v-tooltip activator="parent">버전 이력</v-tooltip>
+                                        <v-tooltip activator="parent">{{ $t('DmnChat.versionHistory') }}</v-tooltip>
                                     </v-btn>
                                     <v-btn v-if="isLoadedDmn" icon size="small" variant="text" color="error" @click="openDeleteDialog">
                                         <v-icon size="small">mdi-delete</v-icon>
@@ -155,7 +155,7 @@
                                     </v-btn>
                                     <v-btn v-if="isLoadedDmn" icon size="small" variant="text" @click="openHistoryDialog">
                                         <v-icon size="small">mdi-history</v-icon>
-                                        <v-tooltip activator="parent">버전 이력</v-tooltip>
+                                        <v-tooltip activator="parent">{{ $t('DmnChat.versionHistory') }}</v-tooltip>
                                     </v-btn>
                                     <v-btn v-if="isLoadedDmn" icon size="small" variant="text" color="error" @click="openDeleteDialog">
                                         <v-icon size="small">mdi-delete</v-icon>
@@ -218,7 +218,7 @@
                         <v-text-field
                             v-model="dmnNameToSave"
                             :label="$t('ProcessDefinitionVersionDialog.name')"
-                            :rules="[(v) => !!v || 'DMN 이름을 입력하세요']"
+                            :rules="[(v) => !!v || $t('DmnChat.nameRequired')]"
                             required
                             class="pb-2"
                         ></v-text-field>
@@ -245,10 +245,10 @@
                         icon="mdi-information-outline"
                     >
                         <div>
-                            v{{ saveCurrentVersion }} → <b>v{{ saveNewVersion }}</b> (마이너)으로 저장됩니다.
+                            v{{ saveCurrentVersion }} → <b>v{{ saveNewVersion }}</b> {{ $t('DmnChat.savedAsMinor') }}
                         </div>
                         <div class="text-caption mt-1" style="opacity: 0.7">
-                            메이저 업데이트는 담당자의 승인을 통한 병합으로만 가능합니다.
+                            {{ $t('DmnChat.majorNeedsApproval') }}
                         </div>
                     </v-alert>
 
@@ -256,7 +256,7 @@
                     <template v-if="!isNewDmn && saveVersionTag !== 'major'">
                         <v-checkbox
                             v-model="saveCreatePr"
-                            label="병합 요청 생성"
+                            :label="$t('DmnChat.createMergeRequest')"
                             hide-details
                             density="compact"
                             color="primary"
@@ -265,12 +265,12 @@
                         <v-text-field
                             v-if="saveCreatePr"
                             v-model="savePrTitle"
-                            label="병합 요청 제목"
+                            :label="$t('DmnChat.mergeRequestTitle')"
                             density="compact"
                             variant="outlined"
                             hide-details="auto"
                             class="mb-2"
-                            :placeholder="dmnNameToSave ? `[병합 요청] ${dmnNameToSave} 변경` : ''"
+                            :placeholder="dmnNameToSave ? $t('DmnChat.mergeRequestTitlePlaceholder', { name: dmnNameToSave }) : ''"
                         />
                     </template>
 
@@ -285,14 +285,14 @@
                 <!-- PR 성공 표시 -->
                 <v-card-text v-if="savePrSuccess" class="pa-4 pt-2 text-center">
                     <v-icon size="48" color="success" class="mb-2">mdi-check-circle</v-icon>
-                    <div class="text-body-1 mb-1">저장 및 병합 요청이 완료되었습니다.</div>
-                    <div class="text-caption text-medium-emphasis">담당자가 승인하면 메이저 버전으로 업데이트됩니다.</div>
+                    <div class="text-body-1 mb-1">{{ $t('DmnChat.mergeRequestDone') }}</div>
+                    <div class="text-caption text-medium-emphasis">{{ $t('DmnChat.mergeRequestDoneHint') }}</div>
                 </v-card-text>
 
                 <v-card-actions class="d-flex justify-space-between align-center pa-4">
                     <v-spacer />
                     <template v-if="savePrSuccess">
-                        <v-btn variant="text" @click="closeSaveDialog">닫기</v-btn>
+                        <v-btn variant="text" @click="closeSaveDialog">{{ $t('DmnChat.close') }}</v-btn>
                     </template>
                     <template v-else>
                         <v-alert v-if="savePrError" type="error" density="compact" class="mr-auto" closable @click:close="savePrError = ''">
@@ -823,7 +823,7 @@ export default {
                     console.error('DMN 로드 실패:', error);
                     // AgentChat 내 임베디드 모드에서는 라우터 푸시하지 않음
                     if (this.$route.path.startsWith('/dmn/')) {
-                        alert(`'${this.loadDmnId}' ID를 가지는 DMN 정보가 없습니다! 새 DMN 만들기 화면으로 이동됩니다.`);
+                        alert(this.$t('DmnChat.dmnNotFound', { id: this.loadDmnId }));
                         this.$router.push('/dmn/chat');
                     } else {
                         // 임베디드 모드에서는 경고만 출력하고 새 DMN 화면으로
@@ -987,7 +987,7 @@ export default {
                 // 수정 내역이 있으면 표시
                 if (parsed.modifications && parsed.modifications.length > 0) {
                     const modDesc = parsed.modifications.map((m) => `- ${m.description}`).join('\n');
-                    messageWriting.content += '\n\n수정 내역:\n' + modDesc;
+                    messageWriting.content += `\n\n${this.$t('DmnChat.modificationsHeading')}\n` + modDesc;
                 }
             } catch (error) {
                 console.error('[DMN] AI 응답 처리 중 오류 발생:', error);

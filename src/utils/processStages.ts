@@ -6,7 +6,7 @@
  */
 
 import { reactive } from 'vue';
-import { DEFAULT_STAGE_TERMS, hexToRgbTriplet } from '@/utils/tenantCustomizationCore';
+import { DEFAULT_STAGE_TERMS, LOCALE_DEFAULT_TERMS, hexToRgbTriplet } from '@/utils/tenantCustomizationCore';
 
 export type Stage = 'draft' | 'in_review' | 'public_feedback' | 'final_edit' | 'published';
 export type ProcessStatus = Stage | 'none' | 'wip' | 'sunset';
@@ -119,17 +119,36 @@ export interface StageTermOverride {
     color?: string;
 }
 
+let lastStageTerms: Partial<Record<Stage | ExtraStatus, StageTermOverride>> = {};
+let stageLocale = 'ko';
+
 /**
  * 테넌트 용어 설정을 공유 단계 정의에 반영한다(reactive 라 템플릿은 즉시 갱신).
  * 색을 바꾸면 vuetifyColor 도 hex 로 바꿔 v-chip/v-btn 이 같은 색을 쓰게 한다.
- * 값이 기본과 같으면 원본으로 되돌린다(설정 초기화 대응).
+ * 값이 기본과 같으면 원본으로 되돌린다(설정 초기화 대응) — 원본 라벨은 화면 언어의 기본 용어.
  */
 export function applyStageTermOverrides(terms: Partial<Record<Stage | ExtraStatus, StageTermOverride>>) {
+    lastStageTerms = terms || {};
+    refreshStageDefs();
+}
+
+/** 화면 언어가 바뀌면 기본 라벨(0단계·초안 …)을 그 언어로 — 테넌트가 바꾼 라벨은 그대로 */
+export function setStageLocale(locale: string) {
+    if (!locale || locale === stageLocale) return;
+    stageLocale = locale;
+    refreshStageDefs();
+}
+
+function refreshStageDefs() {
+    const terms = lastStageTerms;
+    const loc = (LOCALE_DEFAULT_TERMS as Record<string, { stages: Record<string, { label: string; shortLabel: string }> }>)[stageLocale]?.stages;
+    const pick = (value: string | undefined, korean: string, localized: string | undefined) =>
+        value && value !== korean ? value : localized || korean;
     for (const def of STAGE_DEFS) {
         const base = STAGE_BASE[def.stage];
         const next = terms?.[def.stage] || {};
-        def.label = next.label || base.label;
-        def.shortLabel = next.shortLabel || base.shortLabel;
+        def.label = pick(next.label, base.label, loc?.[def.stage]?.label);
+        def.shortLabel = pick(next.shortLabel, base.shortLabel, loc?.[def.stage]?.shortLabel);
         const color = next.color || base.color;
         def.color = color;
         def.vuetifyColor = color.toLowerCase() === base.color.toLowerCase() ? base.vuetifyColor : color;
@@ -137,7 +156,7 @@ export function applyStageTermOverrides(terms: Partial<Record<Stage | ExtraStatu
     for (const status of ['wip', 'sunset'] as ExtraStatus[]) {
         const def = EXTRA_STATUS_DEFS[status];
         const next = terms?.[status] || {};
-        def.label = next.label || DEFAULT_STAGE_TERMS[status].label;
+        def.label = pick(next.label, DEFAULT_STAGE_TERMS[status].label, loc?.[status]?.label);
         def.color = next.color || DEFAULT_STAGE_TERMS[status].color;
     }
     applyStageCssVariables();

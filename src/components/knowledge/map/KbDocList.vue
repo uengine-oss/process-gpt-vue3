@@ -8,12 +8,12 @@
                 hide-details
                 clearable
                 prepend-inner-icon="mdi-magnify"
-                :placeholder="overflow ? '문서가 많아 질문으로 추립니다 — 찾는 내용을 적고 Enter' : '제목·파일명·구별 사실로 찾기'"
+                :placeholder="overflow ? $t('KbDocList.overflowPlaceholder') : $t('KbDocList.searchPlaceholder')"
                 class="kbd__search"
                 @keyup.enter="overflow ? $emit('query', search) : null"
             />
             <v-btn-toggle v-model="stateFilter" density="compact" variant="outlined" divided class="kbd__filter">
-                <v-btn value="" size="small">전체 {{ docs.length }}</v-btn>
+                <v-btn value="" size="small">{{ $t('KbDocList.all', { n: docs.length }) }}</v-btn>
                 <v-btn v-for="(c, k) in stateCounts" :key="k" :value="k" size="small" :color="DOC_STATES[k].color">
                     {{ DOC_STATES[k].label }} {{ c }}
                 </v-btn>
@@ -21,10 +21,10 @@
         </div>
 
         <div v-if="overflow && !docs.length" class="kbd__empty">
-            이 폴더에는 문서가 <strong>{{ nDirect }}</strong>건 있어 한 번에 나열하지 않습니다. 위에 찾는 내용을 적으면 관련 문서부터 보여 줍니다.
+            <i18n-t keypath="KbDocList.overflowBody" tag="span" scope="global" :plural="nDirect"><template #num><strong>{{ nDirect }}</strong></template></i18n-t>
         </div>
-        <div v-else-if="loading" class="kbd__empty"><v-progress-circular indeterminate size="18" width="2" class="mr-2" /> 불러오는 중…</div>
-        <div v-else-if="!filtered.length" class="kbd__empty">{{ docs.length ? '조건에 맞는 문서가 없습니다.' : '이 폴더에 직접 든 문서가 없습니다.' }}</div>
+        <div v-else-if="loading" class="kbd__empty"><v-progress-circular indeterminate size="18" width="2" class="mr-2" /> {{ $t('KbDocList.loading') }}</div>
+        <div v-else-if="!filtered.length" class="kbd__empty">{{ docs.length ? $t('KbDocList.noMatch') : $t('KbDocList.noDirectDocs') }}</div>
 
         <div v-else class="kbd__rows">
             <button v-for="d in paged" :key="d.source_ref || d.path" type="button" class="kbd__row" @click="$emit('open', d)">
@@ -45,7 +45,7 @@
                         <v-icon size="13">{{ DOC_STATES[stateOf(d)].icon }}</v-icon>
                         {{ stateLabel(d) }}
                     </span>
-                    <span v-if="isHintless(d)" class="kbd__hint" title="의미 검색 힌트를 만들지 못했습니다. 지도(카드·본문)로는 찾을 수 있습니다.">
+                    <span v-if="isHintless(d)" class="kbd__hint" :title="$t('KbDocList.hintless')">
                         <v-icon size="13">mdi-magnify-close</v-icon>
                     </span>
                     <span class="kbd__sub">{{ formatBytes(d.size_bytes) }}<template v-if="d.n_pages"> · {{ d.n_pages }}p</template></span>
@@ -126,7 +126,7 @@ export default {
         },
         stateLabel(d) {
             if (d.index_status && d.index_status !== 'indexed' && INDEX_STATES[d.index_status]) {
-                return d.index_status === 'failed' ? '처리 실패' : INDEX_STATES[d.index_status].label;
+                return d.index_status === 'failed' ? this.$t('KbDocList.indexFailed') : INDEX_STATES[d.index_status].label;
             }
             return DOC_STATES[this.stateOf(d)].label;
         },

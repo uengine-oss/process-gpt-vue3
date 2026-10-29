@@ -1,11 +1,11 @@
 <template>
     <div class="hwpx-viewer">
         <div class="hwpx-viewer__header">
-            <div class="hwpx-viewer__title">미리보기</div>
+            <div class="hwpx-viewer__title">{{ $t('HwpxViewer.preview') }}</div>
             <div class="hwpx-viewer__actions">
                 <v-chip v-if="imgEnhancing" size="small" variant="tonal" color="primary" class="mr-2">
                     <v-progress-circular size="10" width="1" indeterminate class="mr-1" />
-                    이미지 개선 중...
+                    {{ $t('HwpxViewer.improvingImage') }}
                 </v-chip>
                 <v-chip
                     v-if="editNotice.visible"
@@ -18,14 +18,14 @@
                 </v-chip>
                 <!-- BPMN: 미리보기 / XML / JSON(편집) 3-탭 -->
                 <div v-if="mode === 'bpmn'" class="hwpx-viewer__toggle mr-2">
-                    <button :class="{ 'is-on': viewMode === 'preview' }" @click="viewMode = 'preview'">미리보기</button>
+                    <button :class="{ 'is-on': viewMode === 'preview' }" @click="viewMode = 'preview'">{{ $t('HwpxViewer.preview') }}</button>
                     <button :class="{ 'is-on': viewMode === 'xml' }" @click="viewMode = 'xml'">XML</button>
                     <button :class="{ 'is-on': viewMode === 'json' }" @click="viewMode = 'json'">JSON</button>
                 </div>
                 <!-- md/json/html/form: 미리보기 / 코드(원본) 토글 -->
                 <div v-else-if="canToggleCode" class="hwpx-viewer__toggle mr-2">
-                    <button :class="{ 'is-on': viewMode === 'preview' }" @click="viewMode = 'preview'">미리보기</button>
-                    <button :class="{ 'is-on': viewMode === 'code' }" @click="viewMode = 'code'">코드</button>
+                    <button :class="{ 'is-on': viewMode === 'preview' }" @click="viewMode = 'preview'">{{ $t('HwpxViewer.preview') }}</button>
+                    <button :class="{ 'is-on': viewMode === 'code' }" @click="viewMode = 'code'">{{ $t('HwpxViewer.code') }}</button>
                 </div>
                 <!-- AI 편집은 HWP(htmlUrl) 문서에만 제공. 작업폴더 폼(html)·스킬·에이전트 등은 코드탭 직접수정만. -->
                 <v-btn
@@ -38,7 +38,7 @@
                     @click="onHtmlAiEdit"
                 >
                     <v-icon size="16" class="mr-1">mdi-robot-outline</v-icon>
-                    AI 편집
+                    {{ $t('HwpxViewer.aiEdit') }}
                 </v-btn>
                 <!-- HWP(htmlUrl) 전용 WYSIWYG 편집 — 작업폴더 html 은 아래 '편집'(코드탭)으로 처리 -->
                 <v-btn
@@ -49,7 +49,7 @@
                     @click="cancelEdit"
                 >
                     <v-icon size="16" class="mr-1">mdi-close</v-icon>
-                    편집취소
+                    {{ $t('HwpxViewer.cancelEdit') }}
                 </v-btn>
                 <v-btn
                     v-if="mode === 'html' && htmlUrl && viewMode === 'preview' && !isLoading && !hasError && !readOnly"
@@ -59,7 +59,7 @@
                     @click="toggleEditMode"
                 >
                     <v-icon size="16" class="mr-1">{{ isEditing ? 'mdi-check' : 'mdi-pencil-outline' }}</v-icon>
-                    {{ isEditing ? '편집완료' : '편집' }}
+                    {{ isEditing ? $t('HwpxViewer.doneEdit') : $t('HwpxViewer.edit') }}
                 </v-btn>
                 <!-- 편집: 산출물(bpmn/skill/agent)은 내부 편집기로 이동(editTarget), 그 외(작업폴더 html 등)는 코드탭 직접수정. AI편집 없음. -->
                 <v-btn
@@ -74,11 +74,11 @@
                     @click="onManualEdit"
                 >
                     <v-icon size="16" class="mr-1">{{ editTarget || mode === 'bpmn' ? 'mdi-open-in-new' : 'mdi-pencil-outline' }}</v-icon>
-                    편집
+                    {{ $t('HwpxViewer.edit') }}
                 </v-btn>
                 <v-btn v-if="!isLoading && !hasError" variant="text" density="comfortable" size="small" @click="emitDownload">
                     <v-icon size="16" class="mr-1">mdi-download</v-icon>
-                    다운로드
+                    {{ $t('HwpxViewer.download') }}
                 </v-btn>
                 <v-btn icon variant="text" density="comfortable" size="small" @click="$emit('close')">
                     <v-icon size="18">mdi-close</v-icon>
@@ -132,7 +132,7 @@
                     isViewMode="true"
                     isAIGenerated="true"
                 />
-                <div v-else class="hwpx-viewer__state"><span class="text-caption">BPMN 내용이 없습니다.</span></div>
+                <div v-else class="hwpx-viewer__state"><span class="text-caption">{{ $t('HwpxViewer.noBpmn') }}</span></div>
             </div>
             <!-- html 코드(원본) 편집 — viewMode==='code' 면 raw HTML textarea -->
             <textarea
@@ -155,11 +155,11 @@
             <template v-else>
                 <div v-if="isLoading" class="hwpx-viewer__state">
                     <v-progress-circular indeterminate color="primary" :size="22" />
-                    <span class="text-caption ml-2">문서를 불러오는 중...</span>
+                    <span class="text-caption ml-2">{{ $t('HwpxViewer.loadingDoc') }}</span>
                 </div>
                 <div v-else-if="hasError" class="hwpx-viewer__state hwpx-viewer__state--error">
                     <v-icon size="18" color="error">mdi-alert-circle-outline</v-icon>
-                    <span class="text-caption ml-2">문서를 불러올 수 없습니다.</span>
+                    <span class="text-caption ml-2">{{ $t('HwpxViewer.cannotLoadDoc') }}</span>
                 </div>
                 <div v-else class="hwpx-viewer__content" ref="content" @scroll="onContentScroll">
                     <div
@@ -193,7 +193,7 @@
         >
             <v-btn size="x-small" color="primary" variant="flat" rounded :disabled="imgEnhancing" @click.stop="clickEnhanceImage">
                 <v-icon size="13" class="mr-1">mdi-creation</v-icon>
-                AI 개선
+                {{ $t('HwpxViewer.aiImprove') }}
             </v-btn>
         </div>
 
@@ -202,14 +202,14 @@
             <v-card>
                 <v-card-title class="d-flex align-center pa-4 pb-2">
                     <v-icon class="mr-2" color="primary" size="20">mdi-creation</v-icon>
-                    AI 이미지 개선 결과
+                    {{ $t('HwpxViewer.aiImageResult') }}
                     <v-spacer />
                     <v-btn icon variant="text" size="small" @click="cancelEnhance">
                         <v-icon size="18">mdi-close</v-icon>
                     </v-btn>
                 </v-card-title>
                 <v-card-text class="pa-4 pt-2">
-                    <div class="text-caption text-medium-emphasis mb-3">이미지를 드래그하면 이전/이후를 비교할 수 있습니다.</div>
+                    <div class="text-caption text-medium-emphasis mb-3">{{ $t('HwpxViewer.dragToCompare') }}</div>
                     <div
                         class="img-compare"
                         ref="compareRef"
@@ -219,14 +219,14 @@
                         @mouseleave="compareDragging = false"
                     >
                         <!-- 이후 이미지 (기준, 전체 크기) -->
-                        <img :src="imgEnhancedSrc" class="img-compare__after" alt="이후" />
+                        <img :src="imgEnhancedSrc" class="img-compare__after" :alt="$t('HwpxViewer.after')" />
                         <!-- 이전 이미지 (클립으로 덮어씌움) -->
                         <img
                             v-if="imgEnhanceOriginalSrc"
                             :src="imgEnhanceOriginalSrc"
                             class="img-compare__before"
                             :style="{ clipPath: `inset(0 ${100 - imgComparePos}% 0 0)` }"
-                            alt="이전"
+                            :alt="$t('HwpxViewer.before')"
                         />
                         <!-- 구분선 -->
                         <div class="img-compare__divider" :style="{ left: imgComparePos + '%' }">
@@ -235,8 +235,8 @@
                             </div>
                         </div>
                         <!-- 라벨 -->
-                        <span class="img-compare__lbl img-compare__lbl--l">이전</span>
-                        <span class="img-compare__lbl img-compare__lbl--r">이후</span>
+                        <span class="img-compare__lbl img-compare__lbl--l">{{ $t('HwpxViewer.before') }}</span>
+                        <span class="img-compare__lbl img-compare__lbl--r">{{ $t('HwpxViewer.after') }}</span>
                     </div>
                     <!-- 슬라이더 보조 -->
                     <v-slider
@@ -252,10 +252,10 @@
                 </v-card-text>
                 <v-card-actions class="pa-4 pt-0">
                     <v-spacer />
-                    <v-btn variant="text" @click="cancelEnhance">취소</v-btn>
+                    <v-btn variant="text" @click="cancelEnhance">{{ $t('HwpxViewer.cancel') }}</v-btn>
                     <v-btn color="primary" variant="flat" rounded @click="confirmEnhance">
                         <v-icon size="16" class="mr-1">mdi-check</v-icon>
-                        이 이미지로 교체
+                        {{ $t('HwpxViewer.replaceImage') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -264,21 +264,21 @@
         <v-dialog v-model="sectionEditDialog" max-width="520" persistent>
             <v-card class="pa-2" style="border-radius: 16px">
                 <v-card-title class="d-flex align-center pa-3 pb-1">
-                    <div class="text-subtitle-1 font-weight-bold">AI 편집</div>
+                    <div class="text-subtitle-1 font-weight-bold">{{ $t('HwpxViewer.aiEdit') }}</div>
                     <v-spacer></v-spacer>
                     <v-btn icon variant="text" @click="cancelSectionEdit">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-card-title>
                 <v-card-text class="pa-3 pt-2">
-                    <div class="text-caption text-medium-emphasis mb-2">{{ sectionEditPageNumber }}페이지 선택됨</div>
-                    <div v-if="sectionEditTargetText" class="text-caption mb-1">선택 내용: "{{ sectionEditTargetText }}"</div>
+                    <div class="text-caption text-medium-emphasis mb-2">{{ $t('HwpxViewer.pageSelected', { n: sectionEditPageNumber }) }}</div>
+                    <div v-if="sectionEditTargetText" class="text-caption mb-1">{{ $t('HwpxViewer.selectedText', { text: sectionEditTargetText }) }}</div>
                     <div v-if="selectedTargets.length > 1" class="text-caption text-medium-emphasis mb-3">
-                        총 {{ selectedTargets.length }}개 영역 선택
+                        {{ $t('HwpxViewer.areasSelected', { n: selectedTargets.length }) }}
                     </div>
                     <v-textarea
                         v-model="sectionEditInstruction"
-                        label="수정 지시사항"
+                        :label="$t('HwpxViewer.instruction')"
                         rows="3"
                         density="compact"
                         variant="outlined"
@@ -290,8 +290,8 @@
                 </v-card-text>
                 <v-card-actions class="pa-3 pt-0">
                     <v-spacer></v-spacer>
-                    <v-btn variant="text" @click="cancelSectionEdit">취소</v-btn>
-                    <v-btn color="primary" variant="flat" rounded @click="confirmSectionEdit">요청</v-btn>
+                    <v-btn variant="text" @click="cancelSectionEdit">{{ $t('HwpxViewer.cancel') }}</v-btn>
+                    <v-btn color="primary" variant="flat" rounded @click="confirmSectionEdit">{{ $t('HwpxViewer.request') }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -301,15 +301,15 @@
             <v-card class="pa-2" style="border-radius: 16px">
                 <v-card-title class="d-flex align-center pa-3 pb-1">
                     <v-icon class="mr-2" color="primary" size="20">mdi-robot-outline</v-icon>
-                    <div class="text-subtitle-1 font-weight-bold">AI 편집</div>
+                    <div class="text-subtitle-1 font-weight-bold">{{ $t('HwpxViewer.aiEdit') }}</div>
                     <v-spacer />
                     <v-btn icon variant="text" @click="aiEditDialog = false"><v-icon>mdi-close</v-icon></v-btn>
                 </v-card-title>
                 <v-card-text class="pa-3 pt-2">
-                    <div class="text-caption text-medium-emphasis mb-2">이 파일 내용을 어떻게 수정할지 지시해 주세요.</div>
+                    <div class="text-caption text-medium-emphasis mb-2">{{ $t('HwpxViewer.howToEdit') }}</div>
                     <v-textarea
                         v-model="aiEditInstruction"
-                        label="수정 지시사항"
+                        :label="$t('HwpxViewer.instruction')"
                         rows="3"
                         density="compact"
                         variant="outlined"
@@ -319,8 +319,8 @@
                 </v-card-text>
                 <v-card-actions class="pa-3 pt-0">
                     <v-spacer />
-                    <v-btn variant="text" @click="aiEditDialog = false">취소</v-btn>
-                    <v-btn color="primary" variant="flat" rounded :disabled="!aiEditInstruction.trim()" @click="confirmAiEdit">요청</v-btn>
+                    <v-btn variant="text" @click="aiEditDialog = false">{{ $t('HwpxViewer.cancel') }}</v-btn>
+                    <v-btn color="primary" variant="flat" rounded :disabled="!aiEditInstruction.trim()" @click="confirmAiEdit">{{ $t('HwpxViewer.request') }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -335,7 +335,7 @@
         >
             <div class="hwpx-source-tooltip__header">
                 <v-icon size="14" class="mr-1" color="success">mdi-book-open-variant</v-icon>
-                참고 출처 {{ sourceTooltip.sources.length }}개
+                {{ $t('HwpxViewer.sources', { n: sourceTooltip.sources.length }) }}
             </div>
             <div v-for="(src, i) in sourceTooltip.sources" :key="i" class="hwpx-source-tooltip__item">
                 <div class="hwpx-source-tooltip__file">
@@ -358,7 +358,7 @@
                 </div>
                 <div v-if="src.snippet" class="hwpx-source-tooltip__snippet">{{ src.snippet }}</div>
                 <a v-if="src.url" :href="src.url" target="_blank" rel="noopener noreferrer" class="hwpx-source-tooltip__link" @click.stop
-                    >원본 열기 <v-icon size="11">mdi-open-in-new</v-icon></a
+                    >{{ $t('HwpxViewer.openOriginal') }} <v-icon size="11">mdi-open-in-new</v-icon></a
                 >
             </div>
         </div>

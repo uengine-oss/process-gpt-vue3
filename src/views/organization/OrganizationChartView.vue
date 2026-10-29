@@ -3,22 +3,22 @@
         <!-- ───────────── 페이지 헤더 ───────────── -->
         <div class="page-header">
             <div class="page-header-left">
-                <h1 class="page-title">조직도</h1>
-                <p class="page-subtitle">부서 {{ teamCount }} · 구성원 {{ assignedCount }} · 미배치 {{ unassignedUsers.length }}</p>
+                <h1 class="page-title">{{ $t('OrganizationChartView.title') }}</h1>
+                <p class="page-subtitle">{{ $t('OrganizationChartView.subtitle', { teams: teamCount, members: assignedCount, unassigned: unassignedUsers.length }) }}</p>
             </div>
             <div class="page-header-right">
                 <div class="org-status">
                     <template v-if="!editable">
                         <v-icon size="14">mdi-eye-outline</v-icon>
-                        <span>{{ canManageRoles ? '권한만 편집 가능' : '읽기 전용' }}</span>
+                        <span>{{ canManageRoles ? $t('OrganizationChartView.rolesOnly') : $t('OrganizationChartView.readOnly') }}</span>
                     </template>
                     <template v-else-if="saving">
                         <v-progress-circular indeterminate size="12" width="2" />
-                        <span>저장 중</span>
+                        <span>{{ $t('OrganizationChartView.saving') }}</span>
                     </template>
                     <template v-else-if="saveError">
                         <v-icon size="14" color="error">mdi-alert-circle-outline</v-icon>
-                        <span class="text-error">저장 실패</span>
+                        <span class="text-error">{{ $t('OrganizationChartView.saveFailed') }}</span>
                     </template>
                     <template v-else-if="lastSavedLabel">
                         <v-icon size="14" color="success">mdi-check-circle-outline</v-icon>
@@ -29,22 +29,22 @@
         </div>
 
         <v-tabs v-if="canManageRoles" v-model="activeTab" color="primary" class="org-tabs" height="48">
-            <v-tab id="organization-tab" value="organization" class="text-none" aria-controls="organization-panel">조직도</v-tab>
+            <v-tab id="organization-tab" value="organization" class="text-none" aria-controls="organization-panel">{{ $t('OrganizationChartView.title') }}</v-tab>
             <v-tab id="approvals-tab" value="approvals" class="text-none" aria-controls="approvals-panel">
-                가입 및 권한 승인
+                {{ $t('OrganizationChartView.approvalsTab') }}
                 <v-chip v-if="membershipRequests.counts.total" size="x-small" color="primary" class="ml-2">
                     {{ membershipRequests.counts.total }}
                 </v-chip>
             </v-tab>
         </v-tabs>
 
-        <section id="organization-panel" v-show="activeTab === 'organization'" class="org-chart-tab" role="tabpanel" aria-label="조직도">
+        <section id="organization-panel" v-show="activeTab === 'organization'" class="org-chart-tab" role="tabpanel" :aria-label="$t('OrganizationChartView.title')">
             <!-- ───────────── 툴바 ───────────── -->
             <header class="org-toolbar">
                 <div class="org-toolbar__search">
                     <v-text-field
                         v-model="searchQuery"
-                        placeholder="부서 · 이름 · 이메일 검색"
+                        :placeholder="$t('OrganizationChartView.searchPlaceholder')"
                         variant="solo-filled"
                         flat
                         density="compact"
@@ -53,7 +53,7 @@
                         prepend-inner-icon="mdi-magnify"
                         clearable
                     />
-                    <span v-if="searchQuery && matchedIds.size" class="org-toolbar__hits">{{ matchedIds.size }}건</span>
+                    <span v-if="searchQuery && matchedIds.size" class="org-toolbar__hits">{{ $t('OrganizationChartView.hits', { n: matchedIds.size }) }}</span>
                 </div>
 
                 <div class="org-toolbar__actions">
@@ -66,7 +66,7 @@
                         prepend-icon="mdi-plus"
                         @click="openAddTeam(root)"
                     >
-                        부서 추가
+                        {{ $t('OrganizationChartView.addTeam') }}
                     </v-btn>
 
                     <v-btn
@@ -77,22 +77,22 @@
                         prepend-icon="mdi-account-clock-outline"
                         @click="openPreRegister"
                     >
-                        구성원 사전등록
+                        {{ $t('OrganizationChartView.preRegister') }}
                     </v-btn>
 
                     <v-divider vertical class="mx-1" />
 
-                    <v-btn icon size="small" variant="text" title="모두 펼치기" @click="expandAll">
+                    <v-btn icon size="small" variant="text" :title="$t('OrganizationChartView.expandAll')" @click="expandAll">
                         <v-icon size="19">mdi-arrow-expand-vertical</v-icon>
                     </v-btn>
-                    <v-btn icon size="small" variant="text" title="모두 접기" @click="collapseAll">
+                    <v-btn icon size="small" variant="text" :title="$t('OrganizationChartView.collapseAll')" @click="collapseAll">
                         <v-icon size="19">mdi-arrow-collapse-vertical</v-icon>
                     </v-btn>
                     <v-btn
                         icon
                         size="small"
                         variant="text"
-                        :title="showMembers ? '구성원 숨기기' : '구성원 표시'"
+                        :title="showMembers ? $t('OrganizationChartView.hideMembers') : $t('OrganizationChartView.showMembers')"
                         :color="showMembers ? 'primary' : undefined"
                         @click="showMembers = !showMembers"
                     >
@@ -101,14 +101,14 @@
 
                     <v-divider vertical class="mx-1" />
 
-                    <v-btn icon size="small" variant="text" title="축소" @click="zoomBy(-0.1)">
+                    <v-btn icon size="small" variant="text" :title="$t('OrganizationChartView.zoomOut')" @click="zoomBy(-0.1)">
                         <v-icon size="19">mdi-magnify-minus-outline</v-icon>
                     </v-btn>
-                    <button class="org-zoom" title="100%로 초기화" @click="zoom = 1">{{ Math.round(zoom * 100) }}%</button>
-                    <v-btn icon size="small" variant="text" title="확대" @click="zoomBy(0.1)">
+                    <button class="org-zoom" :title="$t('OrganizationChartView.resetZoom')" @click="zoom = 1">{{ Math.round(zoom * 100) }}%</button>
+                    <v-btn icon size="small" variant="text" :title="$t('OrganizationChartView.zoomIn')" @click="zoomBy(0.1)">
                         <v-icon size="19">mdi-magnify-plus-outline</v-icon>
                     </v-btn>
-                    <v-btn icon size="small" variant="text" title="화면에 맞추기" @click="fitToScreen">
+                    <v-btn icon size="small" variant="text" :title="$t('OrganizationChartView.fitToScreen')" @click="fitToScreen">
                         <v-icon size="19">mdi-fit-to-screen-outline</v-icon>
                     </v-btn>
 
@@ -118,7 +118,7 @@
                         icon
                         size="small"
                         variant="text"
-                        :title="panelOpen ? '패널 닫기' : '패널 열기'"
+                        :title="panelOpen ? $t('OrganizationChartView.closePanel') : $t('OrganizationChartView.openPanel')"
                         :color="panelOpen ? 'primary' : undefined"
                         @click="panelOpen = !panelOpen"
                     >
@@ -142,12 +142,12 @@
                     >
                         <div v-if="loading" class="org-canvas__state">
                             <v-progress-circular indeterminate size="28" width="3" color="primary" />
-                            <p>조직도를 불러오는 중…</p>
+                            <p>{{ $t('OrganizationChartView.loading') }}</p>
                         </div>
 
                         <div v-else-if="!hasTeams" class="org-canvas__state">
                             <v-icon size="42" color="primary">mdi-sitemap-outline</v-icon>
-                            <p>아직 등록된 부서가 없습니다.</p>
+                            <p>{{ $t('OrganizationChartView.noTeams') }}</p>
                             <v-btn
                                 v-if="editable"
                                 color="primary"
@@ -156,7 +156,7 @@
                                 prepend-icon="mdi-plus"
                                 @click="openAddTeam(root)"
                             >
-                                첫 부서 만들기
+                                {{ $t('OrganizationChartView.createFirstTeam') }}
                             </v-btn>
                         </div>
 
@@ -182,7 +182,7 @@
                     <div v-if="!loading && unassignedUsers.length" class="org-unassigned" :class="{ 'org-unassigned--open': unassignedOpen }">
                         <button class="org-unassigned__head" @click.stop="unassignedOpen = !unassignedOpen">
                             <v-icon size="16" color="warning">mdi-account-question-outline</v-icon>
-                            <span>미배치 인원 {{ unassignedUsers.length }}명</span>
+                            <span>{{ $t('OrganizationChartView.unassignedCount', { n: unassignedUsers.length }) }}</span>
                             <v-icon size="16">{{ unassignedOpen ? 'mdi-chevron-down' : 'mdi-chevron-up' }}</v-icon>
                         </button>
                         <div v-if="unassignedOpen" class="org-unassigned__list">
@@ -191,7 +191,7 @@
                                 :key="user.id"
                                 class="org-unassigned__chip"
                                 :draggable="editable"
-                                :title="editable ? '부서 카드로 끌어다 놓으면 배치됩니다' : user.email"
+                                :title="editable ? $t('OrganizationChartView.dragToAssign') : user.email"
                                 @dragstart="onUnassignedDragStart($event, user)"
                                 @dragend="resetDrag"
                             >
@@ -250,12 +250,12 @@
         <!-- ───────────── 부서 추가 ───────────── -->
         <v-dialog v-model="addTeamDialog" max-width="420">
             <v-card class="pa-4">
-                <v-card-title class="pa-0 pb-1 text-h6">부서 추가</v-card-title>
-                <p class="org-dialog__hint">{{ addTeamParentLabel }} 아래에 새 부서를 만듭니다.</p>
+                <v-card-title class="pa-0 pb-1 text-h6">{{ $t('OrganizationChartView.addTeam') }}</v-card-title>
+                <p class="org-dialog__hint">{{ $t('OrganizationChartView.addTeamHint', { parent: addTeamParentLabel }) }}</p>
                 <v-card-text class="pa-0 pt-3">
                     <v-text-field
                         v-model="newTeamName"
-                        label="부서명"
+                        :label="$t('OrganizationChartView.teamName')"
                         variant="outlined"
                         density="compact"
                         autofocus
@@ -266,7 +266,7 @@
                 </v-card-text>
                 <v-card-actions class="pa-0 pt-4">
                     <v-spacer />
-                    <v-btn variant="text" class="text-none" @click="addTeamDialog = false">취소</v-btn>
+                    <v-btn variant="text" class="text-none" @click="addTeamDialog = false">{{ $t('OrganizationChartView.cancel') }}</v-btn>
                     <v-btn
                         color="primary"
                         variant="flat"
@@ -274,7 +274,7 @@
                         :disabled="!newTeamName.trim() || !!addTeamError"
                         @click="commitAddTeam"
                     >
-                        추가
+                        {{ $t('OrganizationChartView.add') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -282,12 +282,12 @@
 
         <v-dialog v-model="preRegisterDialog" max-width="460">
             <v-card class="pa-4">
-                <v-card-title class="pa-0 pb-1 text-h6">구성원 사전등록</v-card-title>
-                <p class="org-dialog__hint">가입할 이메일과 배치를 미리 지정합니다. 가입 즉시 자동 적용됩니다.</p>
+                <v-card-title class="pa-0 pb-1 text-h6">{{ $t('OrganizationChartView.preRegister') }}</v-card-title>
+                <p class="org-dialog__hint">{{ $t('OrganizationChartView.preRegisterHint') }}</p>
                 <v-card-text class="pa-0 pt-3 d-flex flex-column ga-3">
                     <v-text-field
                         v-model="preRegister.email"
-                        label="이메일"
+                        :label="$t('OrganizationChartView.email')"
                         type="email"
                         variant="outlined"
                         density="compact"
@@ -298,7 +298,7 @@
                         :items="teamOptions"
                         item-title="name"
                         item-value="id"
-                        label="부서"
+                        :label="$t('OrganizationChartView.team')"
                         variant="outlined"
                         density="compact"
                         hide-details
@@ -308,7 +308,7 @@
                         :items="preRegisterRoleItems"
                         item-title="title"
                         item-value="value"
-                        label="권한"
+                        :label="$t('OrganizationChartView.role')"
                         variant="outlined"
                         density="compact"
                         hide-details
@@ -316,7 +316,7 @@
                 </v-card-text>
                 <v-card-actions class="pa-0 pt-4">
                     <v-spacer />
-                    <v-btn variant="text" class="text-none" @click="preRegisterDialog = false">취소</v-btn>
+                    <v-btn variant="text" class="text-none" @click="preRegisterDialog = false">{{ $t('OrganizationChartView.cancel') }}</v-btn>
                     <v-btn
                         color="primary"
                         variant="flat"
@@ -324,7 +324,7 @@
                         :loading="preRegisterSaving"
                         :disabled="!validPreRegister"
                         @click="commitPreRegister"
-                        >등록</v-btn
+                        >{{ $t('OrganizationChartView.register') }}</v-btn
                     >
                 </v-card-actions>
             </v-card>
@@ -333,20 +333,24 @@
         <!-- ───────────── 부서 삭제 ───────────── -->
         <v-dialog v-model="removeTeamDialog" max-width="440">
             <v-card class="pa-4">
-                <v-card-title class="pa-0 pb-1 text-h6">부서 삭제</v-card-title>
+                <v-card-title class="pa-0 pb-1 text-h6">{{ $t('OrganizationChartView.deleteTeam') }}</v-card-title>
                 <v-card-text class="pa-0 pt-3">
                     <p class="mb-2">
-                        <strong>{{ removeTeamTarget ? nodeName(removeTeamTarget) : '' }}</strong> 부서를 삭제합니다.
+                        <strong>{{ removeTeamTarget ? nodeName(removeTeamTarget) : '' }}</strong> {{ $t('OrganizationChartView.deleteTeamConfirm') }}
                     </p>
                     <p class="org-dialog__hint">
-                        하위 부서 {{ removeTeamStats.teams }}개와 구성원 배치 {{ removeTeamStats.members }}건이 함께 조직도에서 제거됩니다.
-                        사용자 계정 자체는 삭제되지 않으며 미배치 인원으로 남습니다.
+                        {{
+                            $t('OrganizationChartView.deleteTeamHint', {
+                                teams: $tc('OrganizationChartView.subTeamCount', removeTeamStats.teams, { n: removeTeamStats.teams }),
+                                members: $tc('OrganizationChartView.placementCount', removeTeamStats.members, { n: removeTeamStats.members })
+                            })
+                        }}
                     </p>
                 </v-card-text>
                 <v-card-actions class="pa-0 pt-4">
                     <v-spacer />
-                    <v-btn variant="text" class="text-none" @click="removeTeamDialog = false">취소</v-btn>
-                    <v-btn color="error" variant="flat" class="text-none" @click="commitRemoveTeam">삭제</v-btn>
+                    <v-btn variant="text" class="text-none" @click="removeTeamDialog = false">{{ $t('OrganizationChartView.cancel') }}</v-btn>
+                    <v-btn color="error" variant="flat" class="text-none" @click="commitRemoveTeam">{{ $t('OrganizationChartView.delete') }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -426,6 +430,8 @@ const route = useRoute();
 const activeTab = ref('organization');
 const instance = getCurrentInstance();
 const eventBus = instance?.appContext.config.globalProperties.EventBus;
+const t = (key, params) => instance?.proxy?.$t(key, params) ?? key;
+const tc = (key, count, params) => instance?.proxy?.$tc(key, count, params) ?? key;
 
 /* ── 상태 ───────────────────────────────────────────── */
 
@@ -517,7 +523,7 @@ const addTeamParentLabel = computed(() => (addTeamParent.value ? nodeName(addTea
 const addTeamError = computed(() => {
     const name = newTeamName.value.trim();
     if (!name) return '';
-    return isDuplicateTeamName(root.value, name) ? '이미 같은 이름의 부서가 있습니다.' : '';
+    return isDuplicateTeamName(root.value, name) ? t('OrganizationChartView.duplicateTeamName') : '';
 });
 
 const removeTeamStats = computed(() => {
@@ -536,7 +542,7 @@ const removeTeamStats = computed(() => {
 const lastSavedLabel = computed(() => {
     if (!lastSavedAt.value) return '';
     const time = new Date(lastSavedAt.value);
-    return `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')} 저장됨`;
+    return t('OrganizationChartView.savedAt', { time: `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}` });
 });
 
 function nodeName(node) {
@@ -710,7 +716,7 @@ async function persist() {
     } catch (error) {
         console.error('[OrganizationChart] 저장 실패:', error);
         saveError.value = true;
-        toast('조직도 저장에 실패했습니다.', 'error');
+        toast(t('OrganizationChartView.chartSaveFailed'), 'error');
         return false;
     } finally {
         saving.value = false;
@@ -874,7 +880,7 @@ async function handleDrop(targetTeam) {
         if (!moveNode(root.value, payload.id, targetTeam.id)) return;
         expandedIds.add(targetTeam.id);
         scheduleSave();
-        toast(`부서를 ${displayName(targetTeam)} 아래로 이동했습니다.`);
+        toast(t('OrganizationChartView.teamMovedUnder', { target: displayName(targetTeam) }));
         return;
     }
 
@@ -894,7 +900,7 @@ async function handleDrop(targetTeam) {
             comment: '드래그 이동'
         });
         await syncUserDepartments([payload.id]);
-        toast(`${user.username || user.email} 님을 ${displayName(targetTeam)} 에 배치했습니다.`);
+        toast(t('OrganizationChartView.memberAssigned', { name: user.username || user.email, team: displayName(targetTeam) }));
     }
 }
 
@@ -934,7 +940,7 @@ function commitAddTeam() {
     selectTeam(team);
     scheduleSave();
     logOrgActivity({ action: 'org_team_create', target_id: team.id, target_name: name });
-    toast(`'${name}' 부서를 추가했습니다.`);
+    toast(t('OrganizationChartView.teamAdded', { name }));
 }
 
 function confirmRemoveTeam(team) {
@@ -961,14 +967,14 @@ async function commitRemoveTeam() {
     const pendingIds = affected.filter((id) => pendingMembers.value.some((member) => member.id === id));
     if (pendingIds.length) {
         const { error } = await window.$supabase.from('pending_org_members').delete().in('id', pendingIds);
-        if (error) toast('부서의 사전등록 구성원 정리에 실패했습니다.', 'warning');
+        if (error) toast(t('OrganizationChartView.pendingCleanupFailed'), 'warning');
         else {
             pendingMembers.value = pendingMembers.value.filter((member) => !pendingIds.includes(member.id));
             mergeUsers();
         }
     }
     await syncUserDepartments(affected.filter((id) => !pendingIds.includes(id)));
-    toast(`'${displayName(team)}' 부서를 삭제했습니다.`);
+    toast(t('OrganizationChartView.teamDeleted', { name: displayName(team) }));
     removeTeamTarget.value = null;
 }
 
@@ -976,7 +982,7 @@ function onUpdateTeam({ team, patch }) {
     const target = findNode(root.value, team.id);
     if (!target) return;
     if (patch.name && isDuplicateTeamName(root.value, patch.name, target.id)) {
-        toast('이미 같은 이름의 부서가 있습니다.', 'warning');
+        toast(t('OrganizationChartView.duplicateTeamName'), 'warning');
         return;
     }
     // 변경 필드의 이전/이후 값만 추려 로그에 남긴다
@@ -1000,12 +1006,12 @@ function onUpdateTeam({ team, patch }) {
 
 function onMoveTeam({ team, parentId }) {
     if (!moveNode(root.value, team.id, parentId)) {
-        toast('해당 부서로는 이동할 수 없습니다.', 'warning');
+        toast(t('OrganizationChartView.cannotMoveThere'), 'warning');
         return;
     }
     expandedIds.add(parentId);
     scheduleSave();
-    toast('부서를 이동했습니다.');
+    toast(t('OrganizationChartView.teamMoved'));
 }
 
 function onSetLeader({ team, memberId }) {
@@ -1030,21 +1036,21 @@ async function commitPreRegister() {
     const email = preRegister.value.email.trim().toLowerCase();
     const team = findNode(root.value, preRegister.value.teamId);
     try {
-        if (!team) throw new Error('선택한 부서를 찾을 수 없습니다.');
+        if (!team) throw new Error(t('OrganizationChartView.teamNotFound'));
         // 목록의 이메일은 마스킹돼 있을 수 있으므로 클라이언트에서 비교하지 않는다.
         // 존재 여부만 서버가 판정한다(이메일 목록을 내려주지 않는 RPC).
         // 사전등록 쪽 중복은 pending_org_members 의 (tenant_id, lower(email))
         // 유니크 인덱스가 잡아 아래 insert 에서 23505 로 돌아온다.
         const { data: alreadyJoined, error: existsError } = await window.$supabase.rpc('tenant_user_email_exists', { p_email: email });
         if (existsError) throw existsError;
-        if (alreadyJoined) throw new Error('이미 가입한 이메일입니다.');
+        if (alreadyJoined) throw new Error(t('OrganizationChartView.emailAlreadyJoined'));
         const { data, error } = await window.$supabase
             .from('pending_org_members')
             .insert({ tenant_id: window.$tenantName, email, team_id: team.id, role: preRegister.value.role })
             .select('id,email,role,team_id,created_at')
             .single();
         if (error) {
-            if (error.code === '23505') throw new Error('이미 사전등록된 이메일입니다.');
+            if (error.code === '23505') throw new Error(t('OrganizationChartView.emailAlreadyPending'));
             throw error;
         }
         // insert 는 원본 테이블이라 반환된 email 도 원본이다. 조직도 노드는 이
@@ -1060,13 +1066,13 @@ async function commitPreRegister() {
             pendingMembers.value = pendingMembers.value.filter((member) => member.id !== pending.id);
             mergeUsers();
             await window.$supabase.from('pending_org_members').delete().eq('id', pending.id);
-            throw new Error('조직도 저장에 실패해 사전등록을 취소했습니다.');
+            throw new Error(t('OrganizationChartView.preRegisterRolledBack'));
         }
         preRegisterDialog.value = false;
-        toast(`${email} 구성원을 사전등록했습니다.`);
+        toast(t('OrganizationChartView.preRegistered', { email }));
     } catch (error) {
         console.error('[OrganizationChart] 구성원 사전등록 실패:', error);
-        toast(error?.message || '구성원 사전등록에 실패했습니다.', 'error');
+        toast(error?.message || t('OrganizationChartView.preRegisterFailed'), 'error');
     } finally {
         preRegisterSaving.value = false;
     }
@@ -1097,7 +1103,7 @@ async function onAddMembers({ team, userIds }) {
         after_value: { members: memberNames, team: displayName(target) }
     });
     await syncUserDepartments(userIds);
-    toast(`${added}명을 ${displayName(target)} 에 추가했습니다.`);
+    toast(tc('OrganizationChartView.membersAdded', added, { n: added, team: displayName(target) }));
 }
 
 async function onRemoveMember({ team, member }) {
@@ -1118,7 +1124,7 @@ async function onRemoveMember({ team, member }) {
     if (pending) {
         const { error } = await window.$supabase.from('pending_org_members').delete().eq('id', member.id);
         if (error) {
-            toast('사전등록 해제에 실패했습니다.', 'error');
+            toast(t('OrganizationChartView.pendingRemoveFailed'), 'error');
             return;
         }
         pendingMembers.value = pendingMembers.value.filter((candidate) => candidate.id !== member.id);
@@ -1126,7 +1132,7 @@ async function onRemoveMember({ team, member }) {
     } else {
         await syncUserDepartments([member.id]);
     }
-    toast(`${displayName(member)} 님을 부서에서 제외했습니다.`);
+    toast(t('OrganizationChartView.memberRemoved', { name: displayName(member) }));
 }
 
 async function onMoveMember({ member, fromTeam, toTeamId }) {
@@ -1140,12 +1146,12 @@ async function onMoveMember({ member, fromTeam, toTeamId }) {
     const pending = pendingMembers.value.find((candidate) => candidate.id === member.id);
     if (pending) {
         const { error } = await window.$supabase.from('pending_org_members').update({ team_id: toTeamId }).eq('id', member.id);
-        if (error) toast('사전등록 부서 변경에 실패했습니다.', 'error');
+        if (error) toast(t('OrganizationChartView.pendingMoveFailed'), 'error');
         else pending.team_id = toTeamId;
     } else {
         await syncUserDepartments([member.id]);
     }
-    toast(`${displayName(member)} 님을 ${displayName(targetTeam)} 으로 이동했습니다.`);
+    toast(t('OrganizationChartView.memberMoved', { name: displayName(member), team: displayName(targetTeam) }));
 }
 
 function onSelectMemberFromPanel(member) {
@@ -1197,9 +1203,9 @@ async function onUpdateRole({ userId, role }) {
     const ok = await applyRole(userId, role);
     if (ok) {
         scheduleSave();
-        toast('권한을 변경했습니다.');
+        toast(t('OrganizationChartView.roleChanged'));
     } else {
-        toast('권한 변경에 실패했습니다.', 'error');
+        toast(t('OrganizationChartView.roleChangeFailed'), 'error');
     }
 }
 
@@ -1208,10 +1214,10 @@ async function onUpdateRoles({ userIds, role }) {
     const succeeded = results.filter(Boolean).length;
     if (succeeded) {
         scheduleSave();
-        toast(`${succeeded}명의 권한을 변경했습니다.`);
+        toast(tc('OrganizationChartView.rolesChanged', succeeded, { n: succeeded }));
     }
     if (succeeded < userIds.length) {
-        toast(`${userIds.length - succeeded}명은 변경하지 못했습니다.`, 'warning');
+        toast(tc('OrganizationChartView.rolesChangeSkipped', userIds.length - succeeded, { n: userIds.length - succeeded }), 'warning');
     }
 }
 
@@ -1230,7 +1236,7 @@ async function onAgentAssigned({ agent, teamId }) {
     attachNode(root.value, target.id, memberNodeFor({ ...agent, is_agent: true }, target.id));
     expandedIds.add(target.id);
     scheduleSave();
-    toast(`에이전트 '${agent.name}' 를 ${displayName(target)} 에 추가했습니다.`);
+    toast(t('OrganizationChartView.agentAdded', { name: agent.name, team: displayName(target) }));
 }
 
 /** 에이전트 노드 + users 행을 합쳐 상세/편집에 필요한 형태로 만든다 */
@@ -1282,7 +1288,7 @@ async function onAgentDialogSubmit(type, editNode) {
             await backend.deleteAgent(id);
         } catch (error) {
             console.error('[OrganizationChart] 에이전트 삭제 실패:', error);
-            toast('에이전트 삭제에 실패했습니다.', 'error');
+            toast(t('OrganizationChartView.agentDeleteFailed'), 'error');
             return;
         }
         removeNodeEverywhere(root.value, id);
@@ -1291,7 +1297,7 @@ async function onAgentDialogSubmit(type, editNode) {
         scheduleSave();
         // 위에서 이미 노드를 제거했으므로 onAgentDeleted 쪽에서는 다시 기록되지 않는다
         logOrgActivity({ action: 'org_agent_delete', target_id: id, target_name: data?.name || editNode?.name || String(id) });
-        toast('에이전트를 삭제했습니다.');
+        toast(t('OrganizationChartView.agentDeleted'));
     } else {
         try {
             await backend.putAgent({
@@ -1303,7 +1309,7 @@ async function onAgentDialogSubmit(type, editNode) {
             });
         } catch (error) {
             console.error('[OrganizationChart] 에이전트 수정 실패:', error);
-            toast('에이전트 수정에 실패했습니다.', 'error');
+            toast(t('OrganizationChartView.agentUpdateFailed'), 'error');
             return;
         }
         walk(root.value, (node) => {
@@ -1315,7 +1321,7 @@ async function onAgentDialogSubmit(type, editNode) {
         eventBus?.emit('agentUpdated', data);
         await loadUsers();
         scheduleSave();
-        toast('에이전트 정보를 수정했습니다.');
+        toast(t('OrganizationChartView.agentUpdated'));
     }
     agentEditNode.value = null;
 }

@@ -7,7 +7,7 @@
                 :items="teamList"
                 item-title="data.name"
                 :item-value="(item) => item"
-                label="팀 선택"
+                :label="$t('organizationChartDefinition.selectTeam')"
                 variant="outlined"
                 density="compact"
                 prepend-inner-icon="mdi-account-group"

@@ -5,37 +5,39 @@
                 <v-icon size="18" class="mr-1">mdi-sitemap-outline</v-icon>
                 <span>{{ processName }}</span>
             </div>
-            <v-chip v-if="result.__saved" size="small" color="success" variant="flat" prepend-icon="mdi-check">저장됨</v-chip>
+            <v-chip v-if="result.__saved" size="small" color="success" variant="flat" prepend-icon="mdi-check">{{
+                $t('ProcessArtifactViewer.saved')
+            }}</v-chip>
         </div>
 
         <div class="process-artifact__summary">
             <div class="process-artifact__metric">
                 <span class="process-artifact__metric-num">{{ elementCount }}</span>
-                <span class="process-artifact__metric-label">요소</span>
+                <span class="process-artifact__metric-label">{{ $tc('ProcessArtifactViewer.elements', elementCount) }}</span>
             </div>
             <div class="process-artifact__metric">
                 <span class="process-artifact__metric-num">{{ skills.length }}</span>
-                <span class="process-artifact__metric-label">스킬</span>
+                <span class="process-artifact__metric-label">{{ $tc('ProcessArtifactViewer.skills', skills.length) }}</span>
             </div>
             <div class="process-artifact__metric">
                 <span class="process-artifact__metric-num">{{ agents.length }}</span>
-                <span class="process-artifact__metric-label">에이전트</span>
+                <span class="process-artifact__metric-label">{{ $tc('ProcessArtifactViewer.agents', agents.length) }}</span>
             </div>
             <div class="process-artifact__metric">
                 <span class="process-artifact__metric-num">{{ forms.length }}</span>
-                <span class="process-artifact__metric-label">폼</span>
+                <span class="process-artifact__metric-label">{{ $tc('ProcessArtifactViewer.forms', forms.length) }}</span>
             </div>
         </div>
 
         <div v-if="skills.length" class="process-artifact__section">
-            <div class="process-artifact__section-title">스킬</div>
+            <div class="process-artifact__section-title">{{ $tc('ProcessArtifactViewer.skills', skills.length) }}</div>
             <div v-for="(s, i) in skills" :key="'sk' + i" class="process-artifact__item">
                 <v-icon size="13" class="mr-1">mdi-puzzle-outline</v-icon>{{ skillLabel(s) }}
             </div>
         </div>
 
         <div v-if="agents.length" class="process-artifact__section">
-            <div class="process-artifact__section-title">에이전트</div>
+            <div class="process-artifact__section-title">{{ $tc('ProcessArtifactViewer.agents', agents.length) }}</div>
             <div v-for="(a, i) in agents" :key="'ag' + i" class="process-artifact__item">
                 <v-icon size="13" class="mr-1">mdi-account-outline</v-icon>{{ a.name || a.id }}
                 <span v-if="a.role" class="process-artifact__muted"> · {{ a.role }}</span>
@@ -44,7 +46,7 @@
 
         <div class="process-artifact__actions">
             <v-btn size="small" variant="tonal" prepend-icon="mdi-eye-outline" @click="$emit('preview-bpmn', previewPayload)"
-                >미리보기</v-btn
+                >{{ $t('ProcessArtifactViewer.preview') }}</v-btn
             >
             <v-btn
                 size="small"
@@ -54,7 +56,7 @@
                 :disabled="result.__saved || !canSave"
                 prepend-icon="mdi-content-save-outline"
                 @click="$emit('save-generated-process', result)"
-                >{{ result.__saved ? '저장됨' : '저장' }}</v-btn
+                >{{ result.__saved ? $t('ProcessArtifactViewer.saved') : $t('ProcessArtifactViewer.save') }}</v-btn
             >
         </div>
 
@@ -84,7 +86,7 @@ export default {
             // 영속 스키마(name) / 라이브 스키마(process_name) 모두 지원.
             if (sp && (sp.process_name || sp.name)) return sp.process_name || sp.name;
             const pd = this.processDefinition;
-            return (pd && (pd.processDefinitionName || pd.name)) || '생성된 프로세스';
+            return (pd && (pd.processDefinitionName || pd.name)) || this.$t('ProcessArtifactViewer.defaultProcessName');
         },
         elementCount() {
             const pd = this.processDefinition;

@@ -40,7 +40,7 @@ export default {
 
                 // 성공 메시지 표시
                 if (this.$toast) {
-                    this.$toast.success('에이전트가 추가되었습니다.');
+                    this.$toast.success(this.$t('AgentCrudMixin.agentAdded'));
                 }
 
                 // 추가 작업이 필요한 경우 (하위 컴포넌트에서 오버라이드 가능)
@@ -53,7 +53,7 @@ export default {
                 console.error('에이전트 추가 실패:', error);
 
                 if (this.$toast) {
-                    this.$toast.error('에이전트 추가에 실패했습니다.');
+                    this.$toast.error(this.$t('AgentCrudMixin.agentAddFailed'));
                 }
 
                 return false;
@@ -86,7 +86,7 @@ export default {
 
                     // 성공 메시지 표시
                     if (this.$toast) {
-                        this.$toast.success('에이전트 정보가 수정되었습니다.');
+                        this.$toast.success(this.$t('AgentCrudMixin.agentUpdated'));
                     }
 
                     // 글로벌 이벤트 발생 (AgentList 등에서 감지)
@@ -105,7 +105,7 @@ export default {
                 console.error('에이전트 수정 실패:', error);
 
                 if (this.$toast) {
-                    this.$toast.error('에이전트 수정에 실패했습니다.');
+                    this.$toast.error(this.$t('AgentCrudMixin.agentUpdateFailed'));
                 }
 
                 return false;
@@ -139,7 +139,7 @@ export default {
 
                 // 성공 메시지 표시
                 if (this.$toast) {
-                    this.$toast.success('에이전트가 삭제되었습니다.');
+                    this.$toast.success(this.$t('AgentCrudMixin.agentDeleted'));
                 }
 
                 // 추가 작업이 필요한 경우 (하위 컴포넌트에서 오버라이드 가능)
@@ -152,7 +152,7 @@ export default {
                 console.error('에이전트 삭제 실패:', error);
 
                 if (this.$toast) {
-                    this.$toast.error('에이전트 삭제에 실패했습니다.');
+                    this.$toast.error(this.$t('AgentCrudMixin.agentDeleteFailed'));
                 }
 
                 return false;
@@ -173,7 +173,7 @@ export default {
                 console.error('에이전트 목록 조회 실패:', error);
 
                 if (this.$toast) {
-                    this.$toast.error('에이전트 목록을 불러오는데 실패했습니다.');
+                    this.$toast.error(this.$t('AgentCrudMixin.agentListLoadFailed'));
                 }
 
                 return [];
@@ -196,7 +196,7 @@ export default {
                 console.error('에이전트 조회 실패:', error);
 
                 if (this.$toast) {
-                    this.$toast.error('에이전트 정보를 불러오는데 실패했습니다.');
+                    this.$toast.error(this.$t('AgentCrudMixin.agentLoadFailed'));
                 }
 
                 return null;

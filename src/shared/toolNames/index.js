@@ -20,8 +20,32 @@ export const TOOL_NAMES = {
     ask_user: '사용자 확인 요청',
     create_consulting_process_workitem: '컨설팅 기반 프로세스 생성',
     create_pdf2bpmn_workitem: 'PDF→BPMN 변환 요청',
-    get_current_user: '사용자 정보 조회'
+    get_current_user: '사용자 정보 조회',
+    start_process_consulting: '프로세스 컨설팅 시작',
+    generate_process: '프로세스 생성'
 };
+
+/** 영어 화면용 — 키는 TOOL_NAMES 와 같다 */
+export const TOOL_NAMES_EN = {
+    get_process_list: 'List processes',
+    get_process_detail: 'Read process details',
+    get_form_fields: 'Read form fields',
+    execute_process: 'Run process',
+    get_instance_list: 'List instances',
+    get_todolist: 'List tasks',
+    get_organization: 'Read organization chart',
+    ask_user: 'Ask the user',
+    create_consulting_process_workitem: 'Create process from consultation',
+    create_pdf2bpmn_workitem: 'Request PDF→BPMN conversion',
+    get_current_user: 'Read user info',
+    start_process_consulting: 'Start process consulting',
+    generate_process: 'Generate process'
+};
+
+function currentLocale() {
+    const locale = typeof window !== 'undefined' ? window.$i18n?.global?.locale : '';
+    return String((locale && typeof locale === 'object' ? locale.value : locale) || 'ko');
+}
 
 /**
  * 도구 이름 하나를 사람 말로 바꾼다.
@@ -29,9 +53,10 @@ export const TOOL_NAMES = {
  * 이름은 `server__tool_name` 처럼 앞에 출처가 붙어 오기도 한다. 뒤쪽만 본다.
  * 모르는 도구는 있는 그대로 보여 준다 — 감추면 무엇을 했는지 알 수 없다.
  */
-export function formatToolName(name) {
+export function formatToolName(name, locale = currentLocale()) {
     if (!name) return '';
     const raw = String(name);
     const key = raw.split('__').pop();
-    return TOOL_NAMES[key] || key || raw;
+    const names = String(locale).startsWith('en') ? TOOL_NAMES_EN : TOOL_NAMES;
+    return names[key] || key || raw;
 }

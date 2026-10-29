@@ -9,8 +9,8 @@
             <div class="ksp-header">
                 <div class="ksp-title">
                     <v-icon size="20" color="primary" class="mr-2">mdi-bookshelf</v-icon>
-                    <span>지식 베이스</span>
-                    <span class="ksp-subtitle">채팅에 활용할 자료를 선택하세요</span>
+                    <span>{{ $t('KnowledgeSpacePicker.title') }}</span>
+                    <span class="ksp-subtitle">{{ $t('KnowledgeSpacePicker.subtitle') }}</span>
                 </div>
                 <v-btn icon variant="text" size="small" @click="reload" :disabled="loading">
                     <v-icon>mdi-refresh</v-icon>
@@ -42,7 +42,7 @@
                     density="compact"
                     variant="outlined"
                     hide-details
-                    placeholder="파일명 검색"
+                    :placeholder="$t('KnowledgeSpacePicker.searchPlaceholder')"
                     prepend-inner-icon="mdi-magnify"
                     clearable
                     class="ksp-search"
@@ -53,7 +53,7 @@
                     :prepend-icon="allExpanded ? 'mdi-collapse-all-outline' : 'mdi-expand-all-outline'"
                     @click="toggleExpandAll"
                 >
-                    {{ allExpanded ? '모두 접기' : '모두 펼치기' }}
+                    {{ allExpanded ? $t('KnowledgeSpacePicker.collapseAll') : $t('KnowledgeSpacePicker.expandAll') }}
                 </v-btn>
             </div>
 
@@ -65,10 +65,10 @@
                     :disabled="!hasSelection"
                     @click="clearSelection"
                 >
-                    선택 해제
+                    {{ $t('KnowledgeSpacePicker.clearSelection') }}
                 </v-btn>
                 <span class="text-caption text-medium-emphasis ml-auto">
-                    선택됨 {{ selectionLabel }}
+                    {{ $t('KnowledgeSpacePicker.selected', { label: selectionLabel }) }}
                 </span>
             </div>
 
@@ -77,27 +77,27 @@
             <div class="ksp-list">
                 <div v-if="loading" class="ksp-state">
                     <v-progress-circular indeterminate color="primary" size="32" />
-                    <div class="text-body-2 text-medium-emphasis mt-3">지식공간 폴더 로드 중...</div>
+                    <div class="text-body-2 text-medium-emphasis mt-3">{{ $t('KnowledgeSpacePicker.loadingFolders') }}</div>
                 </div>
                 <div v-else-if="error" class="ksp-state">
                     <v-icon size="40" color="error">mdi-alert-circle-outline</v-icon>
                     <div class="text-body-2 text-medium-emphasis mt-2">{{ error }}</div>
-                    <v-btn class="mt-3" variant="tonal" size="small" @click="reload">다시 시도</v-btn>
+                    <v-btn class="mt-3" variant="tonal" size="small" @click="reload">{{ $t('KnowledgeSpacePicker.retry') }}</v-btn>
                 </div>
                 <div v-else-if="!hasStructure && !search" class="ksp-state">
                     <v-icon size="40" color="grey-lighten-1">mdi-cloud-upload-outline</v-icon>
-                    <div class="text-body-2 text-medium-emphasis mt-2">Storage에 인덱싱된 문서가 없습니다</div>
+                    <div class="text-body-2 text-medium-emphasis mt-2">{{ $t('KnowledgeSpacePicker.emptyTitle') }}</div>
                     <div class="text-caption text-medium-emphasis mt-1">
-                        설정 → 지식 베이스 탭에서 Storage로 파일을 올릴 수 있습니다
+                        {{ $t('KnowledgeSpacePicker.emptyHint') }}
                     </div>
                 </div>
                 <div v-else-if="search && searchLoading" class="ksp-state">
                     <v-progress-circular indeterminate color="primary" size="28" />
-                    <div class="text-body-2 text-medium-emphasis mt-3">검색 중...</div>
+                    <div class="text-body-2 text-medium-emphasis mt-3">{{ $t('KnowledgeSpacePicker.searching') }}</div>
                 </div>
                 <div v-else-if="search && searchResults.length === 0" class="ksp-state">
                     <v-icon size="40" color="grey-lighten-1">mdi-file-search-outline</v-icon>
-                    <div class="text-body-2 text-medium-emphasis mt-2">검색 결과가 없습니다</div>
+                    <div class="text-body-2 text-medium-emphasis mt-2">{{ $t('KnowledgeSpacePicker.noResults') }}</div>
                 </div>
 
                 <!-- 검색 모드: 평탄 리스트 (서버 검색 결과) -->
@@ -129,14 +129,14 @@
                             <div class="ksp-file-meta">
                                 <span class="ksp-file-folder">
                                     <v-icon size="11">mdi-folder-outline</v-icon>
-                                    {{ f.folderPath || '(루트)' }}
+                                    {{ f.folderPath || $t('KnowledgeSpacePicker.root') }}
                                 </span>
                                 <span v-if="f.sizeBytes">{{ formatBytes(f.sizeBytes) }}</span>
                                 <span v-if="f.modifiedTime">{{ formatRelativeTime(f.modifiedTime) }}</span>
                                 <span v-if="f.owner">{{ f.owner }}</span>
                             </div>
                         </div>
-                        <v-tooltip :text="f.sourceType === 'drive' ? 'Drive에서 보기' : '다운로드'" location="top">
+                        <v-tooltip :text="f.sourceType === 'drive' ? $t('KnowledgeSpacePicker.viewInDrive') : $t('KnowledgeSpacePicker.download')" location="top">
                             <template v-slot:activator="{ props }">
                                 <v-btn
                                     v-bind="props"
@@ -178,13 +178,13 @@
 
             <div class="ksp-footer">
                 <span v-if="!loading && !error && hasStructure" class="text-caption text-medium-emphasis">
-                    Storage · {{ indexedTotal }}개 문서 · {{ folderCount }}개 폴더
+                    Storage · {{ $t('KnowledgeSpacePicker.footerDocs', { n: indexedTotal }) }} · {{ $t('KnowledgeSpacePicker.footerFolders', { n: folderCount }) }}
                 </span>
                 <v-spacer />
-                <v-btn variant="text" @click="$emit('update:modelValue', false)">취소</v-btn>
+                <v-btn variant="text" @click="$emit('update:modelValue', false)">{{ $t('KnowledgeSpacePicker.cancel') }}</v-btn>
                 <v-btn color="primary" variant="flat" @click="confirm" :disabled="loading">
                     <v-icon start size="16">mdi-check</v-icon>
-                    {{ hasSelection ? `${selectionLabel} 사용` : '선택 없이 닫기' }}
+                    {{ hasSelection ? $t('KnowledgeSpacePicker.useSelection', { label: selectionLabel }) : $t('KnowledgeSpacePicker.closeWithoutSelection') }}
                 </v-btn>
             </div>
         </v-card>
@@ -195,6 +195,7 @@
 import axios from 'axios';
 import KnowledgeTreeNode from './KnowledgeTreeNode.vue';
 import { mimeIcon } from '@/utils/fileIcon';
+import { currentLocale } from '@/composables/i18nText';
 
 function extToMime(name) {
     const ext = (name || '').split('.').pop()?.toLowerCase() || '';
@@ -335,8 +336,8 @@ export default {
         // 폴더째 선택은 파일을 안 세고 '폴더 N'으로 표시(수천 파일이 폴더 1건으로 접힘)
         selectionLabel() {
             const parts = [];
-            if (this.selectedFolderCount > 0) parts.push(`폴더 ${this.selectedFolderCount}`);
-            if (this.selectedKeys.length > 0) parts.push(`파일 ${this.selectedKeys.length}`);
+            if (this.selectedFolderCount > 0) parts.push(this.$t('KnowledgeSpacePicker.selFolders', { n: this.selectedFolderCount }));
+            if (this.selectedKeys.length > 0) parts.push(this.$t('KnowledgeSpacePicker.selFiles', { n: this.selectedKeys.length }));
             return parts.length ? parts.join(' · ') : '0';
         },
         counts() {
@@ -442,20 +443,20 @@ export default {
             const now = new Date();
             const diffMs = now.getTime() - d.getTime();
             const day = 24 * 60 * 60 * 1000;
-            if (diffMs < day) return '오늘';
-            if (diffMs < 2 * day) return '어제';
-            if (diffMs < 7 * day) return `${Math.floor(diffMs / day)}일 전`;
-            if (diffMs < 30 * day) return `${Math.floor(diffMs / (7 * day))}주 전`;
-            if (diffMs < 365 * day) return `${Math.floor(diffMs / (30 * day))}개월 전`;
-            return d.toLocaleDateString('ko-KR');
+            if (diffMs < day) return this.$t('KnowledgeSpacePicker.today');
+            if (diffMs < 2 * day) return this.$t('KnowledgeSpacePicker.yesterday');
+            if (diffMs < 7 * day) return this.$t('KnowledgeSpacePicker.daysAgo', { n: Math.floor(diffMs / day) });
+            if (diffMs < 30 * day) return this.$t('KnowledgeSpacePicker.weeksAgo', { n: Math.floor(diffMs / (7 * day)) });
+            if (diffMs < 365 * day) return this.$t('KnowledgeSpacePicker.monthsAgo', { n: Math.floor(diffMs / (30 * day)) });
+            return d.toLocaleDateString(currentLocale());
         },
         statusLabel(s) {
             return {
-                pending: '대기',
-                processing: '처리중',
+                pending: this.$t('KnowledgeSpacePicker.status.pending'),
+                processing: this.$t('KnowledgeSpacePicker.status.processing'),
                 indexed: '',
-                failed: '실패',
-                excluded: '제외'
+                failed: this.$t('KnowledgeSpacePicker.status.failed'),
+                excluded: this.$t('KnowledgeSpacePicker.status.excluded')
             }[s] || '';
         },
         // 이전 선택 복원 — 부모가 넘긴 전체 doc(권장) 또는 id 목록(fallback)으로 seed.
@@ -486,7 +487,7 @@ export default {
         async loadStructure(force = false) {
             const tenantId = (typeof window !== 'undefined' && window.$tenantName) || '';
             if (!tenantId) {
-                this.error = '테넌트 정보를 확인할 수 없습니다';
+                this.error = this.$t('KnowledgeSpacePicker.noTenant');
                 return;
             }
             if (!force && this.folders.length > 0) {
@@ -516,7 +517,7 @@ export default {
                 this.afterStructure();
             } catch (e) {
                 console.error('[KnowledgeSpacePicker] structure load failed', e);
-                this.error = e?.response?.data?.detail || e?.message || '폴더 목록을 가져오지 못했습니다';
+                this.error = e?.response?.data?.detail || e?.message || this.$t('KnowledgeSpacePicker.loadFailed');
             } finally {
                 this.loading = false;
             }

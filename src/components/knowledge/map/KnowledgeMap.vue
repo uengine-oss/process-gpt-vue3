@@ -2,14 +2,14 @@
     <div class="kbm">
         <header class="kbm__head">
             <div class="kbm__head-text">
-                <h2 class="kbm__title">지식 베이스</h2>
-                <p class="kbm__subtitle">문서를 올리면 본문을 저장하고 카드로 지도를 만듭니다. 채팅에서 폴더를 고르면 에이전트가 이 지도로 문서를 찾습니다.</p>
+                <h2 class="kbm__title">{{ $t('KnowledgeMap.title') }}</h2>
+                <p class="kbm__subtitle">{{ $t('KnowledgeMap.subtitle') }}</p>
             </div>
             <div class="kbm__head-actions">
                 <v-chip v-if="queue.active" size="small" color="info" variant="tonal">
-                    <v-progress-circular indeterminate size="12" width="2" class="mr-2" />처리 중 {{ queue.active }}
+                    <v-progress-circular indeterminate size="12" width="2" class="mr-2" />{{ $t('KnowledgeMap.processing', { n: queue.active }) }}
                 </v-chip>
-                <v-btn variant="text" size="small" prepend-icon="mdi-refresh" :loading="loadingTree" @click="reload">새로고침</v-btn>
+                <v-btn variant="text" size="small" prepend-icon="mdi-refresh" :loading="loadingTree" @click="reload">{{ $t('KnowledgeMap.refresh') }}</v-btn>
             </div>
         </header>
 
@@ -60,44 +60,48 @@
 
         <v-dialog v-model="rename.show" max-width="420">
             <v-card>
-                <v-card-title class="text-subtitle-1">폴더 이름 변경</v-card-title>
+                <v-card-title class="text-subtitle-1">{{ $t('KnowledgeMap.renameTitle') }}</v-card-title>
                 <v-card-text>
-                    <v-text-field v-model="rename.name" label="새 이름" density="compact" variant="outlined" autofocus hide-details @keyup.enter="doRename" />
-                    <div class="text-caption text-medium-emphasis mt-2">하위 폴더와 문서 경로가 함께 바뀝니다. 에이전트가 보는 지도도 새 이름을 씁니다.</div>
+                    <v-text-field v-model="rename.name" :label="$t('KnowledgeMap.newName')" density="compact" variant="outlined" autofocus hide-details @keyup.enter="doRename" />
+                    <div class="text-caption text-medium-emphasis mt-2">{{ $t('KnowledgeMap.renameHint') }}</div>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="rename.show = false">취소</v-btn>
-                    <v-btn color="primary" variant="flat" :loading="rename.loading" :disabled="!rename.name.trim()" @click="doRename">변경</v-btn>
+                    <v-btn variant="text" @click="rename.show = false">{{ $t('KnowledgeMap.cancel') }}</v-btn>
+                    <v-btn color="primary" variant="flat" :loading="rename.loading" :disabled="!rename.name.trim()" @click="doRename">{{ $t('KnowledgeMap.rename') }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
 
         <v-dialog v-model="removeFolder.show" max-width="440">
             <v-card>
-                <v-card-title class="text-subtitle-1">폴더 삭제</v-card-title>
+                <v-card-title class="text-subtitle-1">{{ $t('KnowledgeMap.deleteFolderTitle') }}</v-card-title>
                 <v-card-text class="text-body-2">
-                    <strong>{{ removeFolder.node && removeFolder.node.path }}</strong> 폴더와 하위 문서
-                    <strong>{{ removeFolder.node && removeFolder.node.nTotal }}</strong>건을 지도와 스토리지에서 영구 삭제합니다.
+                    <i18n-t keypath="KnowledgeMap.deleteFolderBody" tag="span" scope="global" :plural="(removeFolder.node && removeFolder.node.nTotal) || 0">
+                        <template #path><strong>{{ removeFolder.node && removeFolder.node.path }}</strong></template>
+                        <template #num><strong>{{ removeFolder.node && removeFolder.node.nTotal }}</strong></template>
+                    </i18n-t>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="removeFolder.show = false">취소</v-btn>
-                    <v-btn color="error" variant="flat" :loading="removeFolder.loading" @click="doRemoveFolder">삭제</v-btn>
+                    <v-btn variant="text" @click="removeFolder.show = false">{{ $t('KnowledgeMap.cancel') }}</v-btn>
+                    <v-btn color="error" variant="flat" :loading="removeFolder.loading" @click="doRemoveFolder">{{ $t('KnowledgeMap.delete') }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
 
         <v-dialog v-model="removeDoc.show" max-width="440">
             <v-card>
-                <v-card-title class="text-subtitle-1">문서 삭제</v-card-title>
+                <v-card-title class="text-subtitle-1">{{ $t('KnowledgeMap.deleteDocTitle') }}</v-card-title>
                 <v-card-text class="text-body-2">
-                    <strong>{{ removeDoc.doc && removeDoc.doc.file_name }}</strong> 을(를) 지도와 스토리지에서 영구 삭제합니다.
+                    <i18n-t keypath="KnowledgeMap.deleteDocBody" tag="span" scope="global">
+                        <template #name><strong>{{ removeDoc.doc && removeDoc.doc.file_name }}</strong></template>
+                    </i18n-t>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="removeDoc.show = false">취소</v-btn>
-                    <v-btn color="error" variant="flat" :loading="removeDoc.loading" @click="doRemoveDoc">삭제</v-btn>
+                    <v-btn variant="text" @click="removeDoc.show = false">{{ $t('KnowledgeMap.cancel') }}</v-btn>
+                    <v-btn color="error" variant="flat" :loading="removeDoc.loading" @click="doRemoveDoc">{{ $t('KnowledgeMap.delete') }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -226,7 +230,7 @@ export default {
                 if (this.current && !this.nodes.some((n) => n.path === this.current)) this.current = '';
                 else await this.openCurrent();
             } catch (e) {
-                this.notify({ text: api.errorText(e, '지도를 불러오지 못했습니다'), color: 'error' });
+                this.notify({ text: api.errorText(e, this.$t('KnowledgeMap.loadMapFailed')), color: 'error' });
             } finally {
                 this.loadingTree = false;
             }
@@ -243,7 +247,7 @@ export default {
                 if (this.current === path) this.folderData = data;
             } catch (e) {
                 if (this.current === path) this.folderData = null;
-                this.notify({ text: api.errorText(e, '폴더를 열지 못했습니다'), color: 'error' });
+                this.notify({ text: api.errorText(e, this.$t('KnowledgeMap.openFolderFailed')), color: 'error' });
             } finally {
                 this.loadingFolder = false;
             }
@@ -274,7 +278,7 @@ export default {
                 await this.reload();
                 this.select(path);
             } catch (e) {
-                this.notify({ text: api.errorText(e, '폴더를 만들지 못했습니다'), color: 'error' });
+                this.notify({ text: api.errorText(e, this.$t('KnowledgeMap.createFolderFailed')), color: 'error' });
             }
         },
         askRename(node) {
@@ -296,9 +300,9 @@ export default {
                 }
                 this.rename.show = false;
                 await this.reload();
-                this.notify('폴더 이름을 바꿨습니다');
+                this.notify(this.$t('KnowledgeMap.renamed'));
             } catch (e) {
-                this.notify({ text: api.errorText(e, '이름을 바꾸지 못했습니다'), color: 'error' });
+                this.notify({ text: api.errorText(e, this.$t('KnowledgeMap.renameFailed')), color: 'error' });
             } finally {
                 this.rename.loading = false;
             }
@@ -312,13 +316,16 @@ export default {
             this.removeFolder.loading = true;
             try {
                 const res = await api.deleteFolder(node.path);
-                if (res && res.ok === false) throw new Error('일부 문서를 지우지 못했습니다');
+                if (res && res.ok === false) throw new Error(this.$t('KnowledgeMap.partialDeleteFailed'));
                 if (this.current === node.path || this.current.startsWith(node.path + '/')) this.current = parentOf(node.path);
                 this.removeFolder.show = false;
                 await this.reload();
-                this.notify(res?.partial ? '폴더를 지웠지만 일부 인덱스 정리가 남았습니다' : '폴더를 삭제했습니다', res?.partial ? 'warning' : 'success');
+                this.notify({
+                    text: res?.partial ? this.$t('KnowledgeMap.folderDeletedPartial') : this.$t('KnowledgeMap.folderDeleted'),
+                    color: res?.partial ? 'warning' : 'success'
+                });
             } catch (e) {
-                this.notify({ text: api.errorText(e, '폴더를 삭제하지 못했습니다'), color: 'error' });
+                this.notify({ text: api.errorText(e, this.$t('KnowledgeMap.deleteFolderFailed')), color: 'error' });
             } finally {
                 this.removeFolder.loading = false;
             }
@@ -335,9 +342,9 @@ export default {
                 this.removeDoc.show = false;
                 this.drawerDoc = null;
                 await Promise.all([this.openCurrent(), this.reload()]);
-                this.notify('문서를 삭제했습니다');
+                this.notify(this.$t('KnowledgeMap.docDeleted'));
             } catch (e) {
-                this.notify({ text: api.errorText(e, '문서를 삭제하지 못했습니다'), color: 'error' });
+                this.notify({ text: api.errorText(e, this.$t('KnowledgeMap.deleteDocFailed')), color: 'error' });
             } finally {
                 this.removeDoc.loading = false;
             }
@@ -351,8 +358,8 @@ export default {
             this.startPolling();
         },
         onUploaded({ done, failed }) {
-            if (done) this.notify(`${done}개를 접수했습니다. 본문 저장과 카드 생성은 백그라운드로 진행됩니다.`);
-            if (failed) this.notify({ text: `${failed}개 업로드 실패`, color: 'error' });
+            if (done) this.notify(this.$t('KnowledgeMap.uploadAccepted', { n: done }));
+            if (failed) this.notify({ text: this.$t('KnowledgeMap.uploadFailedCount', { n: failed }), color: 'error' });
             this.reload();
             this.startPolling();
         },
@@ -369,9 +376,9 @@ export default {
                     if (res?.card && res.built_at && res.built_at !== before) break;
                 }
                 await this.reload();
-                this.notify('폴더 카드를 갱신했습니다');
+                this.notify(this.$t('KnowledgeMap.folderCardUpdated'));
             } catch (e) {
-                this.notify({ text: api.errorText(e, '폴더 카드를 만들지 못했습니다'), color: 'error' });
+                this.notify({ text: api.errorText(e, this.$t('KnowledgeMap.folderCardFailed')), color: 'error' });
             } finally {
                 this.rebuilding = false;
             }

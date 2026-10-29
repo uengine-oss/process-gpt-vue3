@@ -316,7 +316,7 @@ export default {
             }
 
             // 지식 온톨로지 (하드코딩)
-            const knowledgeInfo = ['1024 노드', '3578 연결선', '레벨 3 (38%)'];
+            const knowledgeInfo = [this.$t('AgentBadgesDiagram.sampleNodes'), this.$t('AgentBadgesDiagram.sampleEdges'), this.$t('AgentBadgesDiagram.sampleLevel')];
             this.nodesData.push({
                 id: 'knowledge',
                 type: 'callout',
@@ -328,7 +328,7 @@ export default {
             });
 
             // 성과 & 뱃지 (하드코딩)
-            const achievementInfo = ['🥇 작업완료 x3', '⭐ 우수피드백 x7', '💡 창의적 솔루션 x12'];
+            const achievementInfo = [this.$t('AgentBadgesDiagram.sampleTasks'), this.$t('AgentBadgesDiagram.sampleFeedback'), this.$t('AgentBadgesDiagram.sampleSolutions')];
             this.nodesData.push({
                 id: 'achievements',
                 type: 'callout',

@@ -3,14 +3,14 @@
         <!-- 작업 폴더 헤더 (+ 일괄 저장 버튼) -->
         <div class="ws-files__header">
             <v-icon size="16" class="mr-1">mdi-folder-outline</v-icon>
-            <span class="ws-files__title">{{ title || '작업 폴더' }}</span>
+            <span class="ws-files__title">{{ title || $t('WorkspaceFilesViewer.title') }}</span>
             <v-icon v-if="readOnly" size="14" class="ml-1" :title="$t('Handover.readOnly')">mdi-lock-outline</v-icon>
             <span class="ws-files__count">{{ displayFiles.length }}</span>
             <v-spacer />
             <!-- 실엔진 검증/자동개선 진행 표시 (제시 전 자동 수행) -->
             <v-chip v-if="saveState.validating" size="x-small" color="primary" variant="tonal" class="mr-2">
                 <v-progress-circular indeterminate size="11" width="2" class="mr-1" />
-                {{ saveState.validateMsg || '검증 중...' }}
+                {{ saveState.validateMsg || $t('WorkspaceFilesViewer.validating') }}
             </v-chip>
             <v-chip
                 v-else-if="saveState.validateReport"
@@ -20,7 +20,11 @@
                 class="mr-2"
             >
                 <v-icon size="12" class="mr-1">{{ saveState.validatePassed ? 'mdi-check-circle-outline' : 'mdi-alert-outline' }}</v-icon>
-                {{ saveState.validatePassed ? '검증 통과' : `검증 보정 ${saveState.validateReport.iterations || 0}회` }}
+                {{
+                    saveState.validatePassed
+                        ? $t('WorkspaceFilesViewer.validationPassed')
+                        : $t('WorkspaceFilesViewer.validationFixed', { n: saveState.validateReport.iterations || 0 })
+                }}
             </v-chip>
             <v-btn
                 v-if="savableFiles.length && !readOnly"
@@ -31,7 +35,7 @@
                 :disabled="saveState.saved || saveState.validating"
                 prepend-icon="mdi-content-save-outline"
                 @click="$emit('save')"
-                >{{ saveState.saved ? '저장됨' : '저장' }}</v-btn
+                >{{ saveState.saved ? $t('WorkspaceFilesViewer.saved') : $t('WorkspaceFilesViewer.save') }}</v-btn
             >
         </div>
 
@@ -45,13 +49,13 @@
                 <button class="ws-files__item" :class="{ 'is-active': f.path === selectedPath }" @click="select(f)">
                     <v-icon size="15" class="ws-files__item-icon">{{ fileIcon(fileExtension(f)) }}</v-icon>
                     <span class="ws-files__item-name">{{ displayName(f) }}</span>
-                    <span v-if="f.status === 'running'" class="ws-files__item-badge is-running">편집 중…</span>
+                    <span v-if="f.status === 'running'" class="ws-files__item-badge is-running">{{ $t('WorkspaceFilesViewer.editing') }}</span>
                     <span v-else-if="f.op === 'same'"></span>
-                    <span v-else-if="f.op === 'edit'" class="ws-files__item-badge is-edit">수정</span>
-                    <span v-else class="ws-files__item-badge is-create">생성</span>
+                    <span v-else-if="f.op === 'edit'" class="ws-files__item-badge is-edit">{{ $t('WorkspaceFilesViewer.badgeEdited') }}</span>
+                    <span v-else class="ws-files__item-badge is-create">{{ $t('WorkspaceFilesViewer.badgeCreated') }}</span>
                 </button>
             </template>
-            <div v-if="!displayFiles.length" class="ws-files__empty">아직 생성된 파일이 없습니다.</div>
+            <div v-if="!displayFiles.length" class="ws-files__empty">{{ $t('WorkspaceFilesViewer.empty') }}</div>
         </div>
 
         <!-- 선택 파일 미리보기 — 확장자별 공통 뷰어(HwpxViewer)로 동적 디스패치(URL 없이 content 렌더) -->
@@ -85,7 +89,7 @@
                     prepend-icon="mdi-download"
                     :loading="downloading"
                     @click="downloadSelected"
-                    >다운로드</v-btn
+                    >{{ $t('WorkspaceFilesViewer.download') }}</v-btn
                 >
             </div>
 
@@ -97,7 +101,7 @@
                     :key="selected.url"
                     :src="selected.url"
                     class="ws-files__iframe"
-                    title="문서 미리보기"
+                    :title="$t('WorkspaceFilesViewer.documentPreview')"
                 ></iframe>
                 <img
                     v-else-if="selectedPreviewKind === 'image' && selectedUrlReady"
@@ -107,12 +111,12 @@
                 />
                 <div v-else-if="selectedPreviewKind !== 'none'" class="ws-files__doc">
                     <v-progress-circular indeterminate color="primary" :size="20" />
-                    <span class="ws-files__doc-note">미리보기 주소를 받는 중…</span>
+                    <span class="ws-files__doc-note">{{ $t('WorkspaceFilesViewer.fetchingPreview') }}</span>
                 </div>
                 <div v-else class="ws-files__doc">
                     <v-icon size="34" class="ws-files__doc-icon">{{ fileIcon(fileExtension(selected)) }}</v-icon>
                     <div class="ws-files__doc-name">{{ displayName(selected) }}</div>
-                    <div class="ws-files__doc-note">미리보기를 지원하지 않는 형식입니다. 받아서 확인하세요.</div>
+                    <div class="ws-files__doc-note">{{ $t('WorkspaceFilesViewer.previewUnsupported') }}</div>
                     <v-btn
                         size="small"
                         color="primary"
@@ -120,7 +124,7 @@
                         prepend-icon="mdi-download"
                         :loading="downloading"
                         @click="downloadSelected"
-                        >다운로드</v-btn
+                        >{{ $t('WorkspaceFilesViewer.download') }}</v-btn
                     >
                 </div>
             </div>
@@ -141,7 +145,7 @@
                 />
 
                 <div v-if="selected.truncated" class="ws-files__truncated">
-                    <v-icon size="13" class="mr-1">mdi-information-outline</v-icon>미리보기가 일부만 표시됩니다(파일이 큽니다).
+                    <v-icon size="13" class="mr-1">mdi-information-outline</v-icon>{{ $t('WorkspaceFilesViewer.truncated') }}
                 </div>
                 <div v-if="saveState && saveState.error" class="ws-files__truncated" style="color: rgb(var(--v-theme-error))">
                     <v-icon size="13" class="mr-1">mdi-alert-circle-outline</v-icon>{{ saveState.error }}

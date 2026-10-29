@@ -11,12 +11,12 @@
             <v-icon size="22" color="primary">mdi-cloud-upload-outline</v-icon>
             <div class="kbu__text">
                 <template v-if="atRoot">
-                    <strong>폴더를 통째로 올려 시작하기</strong>
-                    <span class="kbu__hint">폴더를 끌어다 놓으면 그 구조 그대로 지도가 만들어집니다 · 낱개 파일은 폴더를 먼저 고르세요</span>
+                    <strong>{{ $t('KbUploadZone.rootTitle') }}</strong>
+                    <span class="kbu__hint">{{ $t('KbUploadZone.rootHint') }}</span>
                 </template>
                 <template v-else>
-                    <strong>이 폴더에 문서 추가</strong>
-                    <span class="kbu__hint">파일도 폴더도 그대로 끌어다 놓으세요 · 허용 {{ acceptLabel }} · 올리면 페이지를 저장하고 카드를 만듭니다</span>
+                    <strong>{{ $t('KbUploadZone.folderTitle') }}</strong>
+                    <span class="kbu__hint">{{ $t('KbUploadZone.folderHint', { exts: acceptLabel }) }}</span>
                 </template>
             </div>
             <v-btn
@@ -27,7 +27,7 @@
                 :disabled="uploading"
                 @click.stop="$refs.folderInput.click()"
             >
-                폴더째 올리기
+                {{ $t('KbUploadZone.uploadFolder') }}
             </v-btn>
         </div>
         <!-- 드롭존 *밖*에 둔다 — 안에 두면 folderInput.click() 이 드롭존으로 버블링돼
@@ -38,13 +38,13 @@
         <div v-if="uploading || stats.total > 0 || skipped > 0" class="kbu__progress">
             <div v-if="skipped > 0" class="kbu__line text-warning">
                 <v-icon size="14" color="warning">mdi-information-outline</v-icon>
-                지원하지 않는 형식 {{ skipped }}개 제외
+                {{ $t('KbUploadZone.skippedUnsupported', { n: skipped }) }}
             </div>
-            <div v-if="uploading && stats.total === 0" class="kbu__line text-medium-emphasis">파일 확인 중…</div>
+            <div v-if="uploading && stats.total === 0" class="kbu__line text-medium-emphasis">{{ $t('KbUploadZone.checkingFiles') }}</div>
             <template v-if="stats.total > 0">
                 <div class="kbu__line">
-                    <span class="font-weight-medium">{{ stats.done + stats.failed }} / {{ stats.total }} 접수</span>
-                    <span v-if="stats.failed" class="text-error ml-2">실패 {{ stats.failed }}</span>
+                    <span class="font-weight-medium">{{ $t('KbUploadZone.receivedProgress', { done: stats.done + stats.failed, total: stats.total }) }}</span>
+                    <span v-if="stats.failed" class="text-error ml-2">{{ $t('KbUploadZone.failedCount', { n: stats.failed }) }}</span>
                     <v-spacer />
                     <span class="text-medium-emphasis">{{ pct }}%</span>
                 </div>
@@ -58,7 +58,7 @@
             <div v-if="failed.length" class="kbu__failed">
                 <button type="button" class="kbu__toggle" @click="showFailed = !showFailed">
                     <v-icon size="14" color="error">mdi-alert-circle</v-icon>
-                    실패 {{ failed.length }}건
+                    {{ $t('KbUploadZone.failedItems', { n: failed.length }) }}
                     <v-icon size="14">{{ showFailed ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
                 </button>
                 <div v-if="showFailed" class="kbu__failed-list">
@@ -72,16 +72,16 @@
 
         <v-dialog v-model="dup.show" max-width="440" persistent>
             <v-card>
-                <v-card-title class="text-subtitle-1">이미 올라간 파일이 있습니다</v-card-title>
+                <v-card-title class="text-subtitle-1">{{ $t('KbUploadZone.dupTitle') }}</v-card-title>
                 <v-card-text class="text-body-2">
-                    같은 내용의 파일 <strong>{{ dup.dupCount }}</strong>개가 이미 지식베이스에 있습니다.
-                    새 파일 <strong>{{ dup.newCount }}</strong>개만 올릴까요?
+                    <i18n-t keypath="KbUploadZone.dupExisting" tag="span" scope="global" :plural="dup.dupCount"><template #num><strong>{{ dup.dupCount }}</strong></template></i18n-t>
+                    {{ ' ' }}<i18n-t keypath="KbUploadZone.dupAsk" tag="span" scope="global" :plural="dup.newCount"><template #num><strong>{{ dup.newCount }}</strong></template></i18n-t>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="resolveDup('cancel')">취소</v-btn>
-                    <v-btn variant="text" @click="resolveDup('overwrite')">모두 올리기</v-btn>
-                    <v-btn color="primary" variant="flat" @click="resolveDup('skip')">새 파일만</v-btn>
+                    <v-btn variant="text" @click="resolveDup('cancel')">{{ $t('KbUploadZone.cancel') }}</v-btn>
+                    <v-btn variant="text" @click="resolveDup('overwrite')">{{ $t('KbUploadZone.uploadAll') }}</v-btn>
+                    <v-btn color="primary" variant="flat" @click="resolveDup('skip')">{{ $t('KbUploadZone.newOnly') }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -175,7 +175,7 @@ export default {
                     for (const en of entries) files = files.concat(await readEntry(en, ''));
                 } catch (err) {
                     this.uploading = false;
-                    this.$emit('notify', { text: errorText(err, '폴더를 읽지 못했습니다'), color: 'error' });
+                    this.$emit('notify', { text: errorText(err, this.$t('KbUploadZone.readFolderFailed')), color: 'error' });
                     return;
                 }
                 this.uploading = false;
@@ -211,7 +211,7 @@ export default {
         },
         async upload(files, folderResolver = null) {
             if (!this.folderPath && !folderResolver) {
-                this.$emit('notify', { text: '낱개 파일은 폴더를 먼저 고르세요. 폴더째라면 그대로 끌어다 놓으면 됩니다', color: 'warning' });
+                this.$emit('notify', { text: this.$t('KbUploadZone.pickFolderFirst'), color: 'warning' });
                 return;
             }
             if (!files.length) return;
@@ -228,7 +228,7 @@ export default {
             files = files.filter((f) => allowed.has(extOf(f.name)));
             if (!files.length) {
                 this.uploading = false;
-                this.$emit('notify', { text: `지원하지 않는 형식 ${this.skipped}개를 제외했습니다 (허용: ${this.acceptLabel})`, color: 'warning' });
+                this.$emit('notify', { text: this.$t('KbUploadZone.skippedUnsupportedNotice', { n: this.skipped, exts: this.acceptLabel }), color: 'warning' });
                 return;
             }
 
@@ -263,7 +263,7 @@ export default {
             }
             if (!accepted.length) {
                 this.uploading = false;
-                this.$emit('notify', { text: '올릴 새 파일이 없습니다 (모두 중복)', color: 'warning' });
+                this.$emit('notify', { text: this.$t('KbUploadZone.noNewFiles'), color: 'warning' });
                 return;
             }
 
@@ -295,7 +295,7 @@ export default {
                         }
                     } catch (e) {
                         this.stats.failed += 1;
-                        if (this.failed.length < 200) this.failed.push({ id, name, error: errorText(e, '업로드 실패') });
+                        if (this.failed.length < 200) this.failed.push({ id, name, error: errorText(e, this.$t('KbUploadZone.uploadFailed')) });
                         const status = e?.response?.status;
                         if (!status || status === 429 || status >= 500) {
                             ctrl.limit = Math.max(1, Math.floor(ctrl.limit / 2));

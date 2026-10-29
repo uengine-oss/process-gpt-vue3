@@ -2,7 +2,7 @@
     <div v-if="hasSideInfo" class="side-info">
         <details v-if="showActivityBlock" class="side-info__box" open>
             <summary class="side-info__summary">
-                <span class="side-info__title">활동</span>
+                <span class="side-info__title">{{ $t('AgentChatRoomContext.activity') }}</span>
                 <span class="side-info__count">{{ activityList.length }}</span>
             </summary>
             <ul class="side-info__list side-info__list--scroll">
@@ -19,7 +19,7 @@
                             {{ a.kind === 'subagent' ? 'mdi-robot-outline' : 'mdi-wrench-outline' }}
                         </v-icon>
                         <span class="activity-kind" :class="`is-${a.kind}`">
-                            {{ a.kind === 'subagent' ? '서브에이전트' : '도구' }}
+                            {{ a.kind === 'subagent' ? $t('AgentChatRoomContext.subagent') : $t('AgentChatRoomContext.tool') }}
                         </span>
                         <strong v-if="a.kind === 'subagent'" class="activity-name">
                             {{ a.subagentType || 'subagent' }}
@@ -33,7 +33,7 @@
 
         <details v-if="showKnowledgeBlock" class="side-info__box" open>
             <summary class="side-info__summary">
-                <span class="side-info__title">지식 베이스</span>
+                <span class="side-info__title">{{ $t('AgentChatRoomContext.knowledgeBase') }}</span>
                 <span class="side-info__count">{{ knowledgeFolderList.length + knowledgeList.length }}</span>
             </summary>
             <ul class="side-info__list side-info__list--scroll">
@@ -42,7 +42,7 @@
                     <v-icon size="14" color="#FFA726" class="side-info__kb-icon">mdi-folder</v-icon>
                     <span class="side-info__kb-main">
                         <span class="side-info__item-label">{{ fld.name }}</span>
-                        <span class="side-info__kb-path">{{ fld.path }} · 폴더 전체</span>
+                        <span class="side-info__kb-path">{{ fld.path }} · {{ $t('AgentChatRoomContext.wholeFolder') }}</span>
                     </span>
                 </li>
                 <li v-for="d in knowledgeList" :key="d.key" class="side-info__item side-info__kb" :title="d.title">
@@ -60,7 +60,7 @@
 
         <details v-if="showAttachmentsBlock" class="side-info__box" :open="!showKnowledgeBlock">
             <summary class="side-info__summary">
-                <span class="side-info__title">업로드</span>
+                <span class="side-info__title">{{ $t('AgentChatRoomContext.uploads') }}</span>
                 <span class="side-info__count">{{ attachmentsList.length }}</span>
             </summary>
             <ul class="side-info__list">
@@ -187,7 +187,7 @@ export default {
                     const label = (a?.file_name || a?.fileName || a?.name || a?.label || '').toString().trim();
                     return {
                         key: (a?.id || `att-${idx}`).toString(),
-                        label: label || (a?.file_path || a?.fileUrl || a?.url || a?.path || `첨부 ${idx + 1}`).toString()
+                        label: label || (a?.file_path || a?.fileUrl || a?.url || a?.path || this.$t('AgentChatRoomContext.attachmentN', { n: idx + 1 })).toString()
                     };
                 })
                 .filter((x) => x.label);

@@ -118,7 +118,7 @@
                                         density="comfortable"
                                         size="small"
                                         :color="artifactSidebarVisible ? 'primary' : undefined"
-                                        aria-label="산출물"
+                                        :aria-label="$t('ChatRoomPage.outputs')"
                                         @click="toggleArtifactSidebar"
                                     >
                                         <v-icon size="18">mdi-file-document-outline</v-icon>
@@ -1483,7 +1483,7 @@ export default {
             const maxNames = 2;
             const shown = names.slice(0, maxNames);
             const rest = names.length - shown.length;
-            return rest > 0 ? `${shown.join(', ')} 외 ${rest}` : shown.join(', ');
+            return rest > 0 ? this.$t('ChatRoomPage.participantsMore', { names: shown.join(', '), n: rest }) : shown.join(', ');
         },
         participantsPreviewTooltip() {
             const parts = Array.isArray(this.participantUsersForView) ? this.participantUsersForView : [];
@@ -4593,7 +4593,7 @@ export default {
             const result = message?.pdf2bpmnResult || null;
             const contract = result && result.__contract;
             if (!result || !contract || !contract.processDefinition) {
-                if (result) result.__saveError = '저장할 프로세스 정보가 없습니다.';
+                if (result) result.__saveError = this.$t('ChatRoomPage.noProcessToSave');
                 return;
             }
             if (result.__saved || result.__saving) return;
@@ -4605,7 +4605,7 @@ export default {
                 const pd = contract.processDefinition;
                 const procId = (pd.processDefinitionId || pd.id || '').toString().trim();
                 const procName = (pd.processDefinitionName || pd.name || procId || '새 프로세스').toString();
-                if (!procId) throw new Error('processDefinitionId 가 없습니다.');
+                if (!procId) throw new Error(this.$t('ChatRoomPage.noProcessDefinitionId'));
 
                 const flat = elementsToFlattenedDefinition(pd);
 
@@ -4665,7 +4665,7 @@ export default {
                 if (message) message.pdf2bpmnResult = { ...result };
             } catch (e) {
                 result.__saving = false;
-                result.__saveError = (e && (e.message || e.toString())) || '저장 실패';
+                result.__saveError = (e && (e.message || e.toString())) || this.$t('ChatRoomPage.saveFailed');
                 if (message) message.pdf2bpmnResult = { ...result };
                 console.error('[SaveProcess] 저장 실패:', e);
             }
@@ -5211,7 +5211,7 @@ export default {
                 }
             } catch (e) {
                 console.warn('[HITL] submitPdf2BpmnHumanFeedback failed:', e);
-                const errMsg = this.createMessageObj('HITL 응답 전달 중 오류가 발생했습니다. 다시 시도해 주세요.', 'assistant');
+                const errMsg = this.createMessageObj(this.$t('ChatRoomPage.hitlSubmitFailed'), 'assistant');
                 this.messages.push(errMsg);
             }
         },
@@ -6316,7 +6316,7 @@ export default {
             // 산출물 파일 탭은 **프로세스 이름(label)** 기준으로 합친다 — deepagent 가 한 프로세스를
             // 여러 process-<id> 폴더로 쪼개 보내도(중복) 같은 이름이면 하나의 탭으로 병합(파일은 path 로 union).
             // (단, '산출물 파일'(default/미분류)·서로 다른 프로세스명은 별도 탭 유지.)
-            if (type === 'files' && label && label !== '산출물 파일') {
+            if (type === 'files' && label && label !== '산출물 파일' && label !== this.$t('ChatRoomPage.outputFiles')) {
                 const sameLabelIdx = this.artifactPanels.findIndex(
                     (p) => p.type === 'files' && p.label === label && p.data?.messageId !== data?.messageId
                 );
@@ -6525,7 +6525,7 @@ export default {
             } catch (e) {
                 /* ignore */
             }
-            return group === 'default' ? '산출물 파일' : group;
+            return group === 'default' ? this.$t('ChatRoomPage.outputFiles') : group;
         },
         /** deepagent 산출물 파일 패널 — 프로세스 폴더(process-<uuid>)마다 별도 탭. entry 가 있으면 by-path upsert. */
         upsertWorkspaceFilesPanel(entry) {
@@ -7384,10 +7384,10 @@ export default {
                         this.handleWorkspaceFileEdit(panelId, { path, content: edited });
                     }
                 } else if (this.$toast?.warning) {
-                    this.$toast.warning('AI 편집 결과가 비어 있습니다.');
+                    this.$toast.warning(this.$t('ChatRoomPage.aiEditEmpty'));
                 }
             } catch (e) {
-                if (this.$toast?.error) this.$toast.error('AI 편집 실패: ' + (e?.message || ''));
+                if (this.$toast?.error) this.$toast.error(this.$t('ChatRoomPage.aiEditFailed', { error: e?.message || '' }));
                 console.warn('[aiEditWorkspaceFile] 실패:', e);
             }
         },
@@ -7621,7 +7621,7 @@ export default {
                 }
 
                 st.validating = true;
-                st.validateMsg = '실행 엔진으로 검증 중...';
+                st.validateMsg = this.$t('ChatRoomPage.validatingWithEngine');
                 this.$forceUpdate && this.$forceUpdate();
                 try {
                     // 1) draft proc_def 저장 (is_draft=true) + draft form_def
@@ -7773,7 +7773,7 @@ export default {
                 } catch (e) {
                     // 실패를 침묵시키지 않고 패널에 노출(테스트 시 원인 확인 가능).
                     console.warn('[DraftValidate] 실패:', e);
-                    st.error = `임시저장/검증 실패: ${(e && (e.message || e.detail)) || e}`;
+                    st.error = this.$t('ChatRoomPage.draftValidateFailed', { error: (e && (e.message || e.detail)) || e });
                 } finally {
                     st.validating = false;
                     st.validateMsg = '';
@@ -7827,7 +7827,9 @@ export default {
                         //  사용자는 수정이 반영됐다고 오인한다.)
                         if (!Array.isArray(saved) || saved.length === 0) {
                             st.saving = false;
-                            st.error = `스킬 저장 실패: ${uploadErrors[0] || '업로드된 스킬이 없습니다.'}`;
+                            st.error = this.$t('ChatRoomPage.skillSaveFailed', {
+                                error: uploadErrors[0] || this.$t('ChatRoomPage.noSkillUploaded')
+                            });
                             return;
                         }
                         this._markWorkspaceFilesSaved(list);
@@ -7838,11 +7840,11 @@ export default {
                         return;
                     } catch (e) {
                         st.saving = false;
-                        st.error = `스킬 저장 실패: ${(e && (e.message || e.detail)) || e}`;
+                        st.error = this.$t('ChatRoomPage.skillSaveFailed', { error: (e && (e.message || e.detail)) || e });
                         return;
                     }
                 }
-                st.error = 'process-definition.json 이 없습니다.';
+                st.error = this.$t('ChatRoomPage.noProcessDefinitionFile');
                 return;
             }
             st.saving = true;
@@ -7853,7 +7855,7 @@ export default {
                 try {
                     pd = JSON.parse(pdFile.content);
                 } catch (e) {
-                    throw new Error('process-definition.json 파싱 실패');
+                    throw new Error(this.$t('ChatRoomPage.processDefinitionParseFailed'));
                 }
                 if (pd && pd.processDefinition) pd = pd.processDefinition;
                 // elements[] 형식이면 flatten, 이미 flattened(activities[]) 면 그대로 저장.
@@ -7861,7 +7863,7 @@ export default {
                 const tenantId = getTenantId();
                 const procId = (definition.processDefinitionId || pd.processDefinitionId || '').toString().trim();
                 const procName = (definition.processDefinitionName || pd.processDefinitionName || procId || '새 프로세스').toString();
-                if (!procId) throw new Error('processDefinitionId 가 없습니다.');
+                if (!procId) throw new Error(this.$t('ChatRoomPage.noProcessDefinitionId'));
 
                 // .bpmn 파생 파일(createBpmnXml 결과)이 있으면 proc_def.bpmn 에 함께 저장.
                 const bpmnFile = list.find(
@@ -8006,7 +8008,10 @@ export default {
                     const roomId = (this.currentChatRoom?.id || this.roomId || '').toString();
                     const resultMsg = {
                         // Process GPT Agent 정체성(이름/아바타) 부여 — 빈 유저로 표시되지 않게.
+                        // 본문은 대화 기록(에이전트도 읽는다)에 남으므로 한국어 그대로 두고,
+                        // 화면은 contentI18nKey 로 현재 언어 문구를 보여 준다(Chat.getDisplayMessageContent).
                         ...this.createMessageObj('✅ 저장이 완료되었습니다. 생성된 프로세스·스킬·에이전트를 확인하세요.', 'agent'),
+                        contentI18nKey: 'ChatRoomPage.saveCompleted',
                         uuid: resultUuid,
                         pdf2bpmnResult: {
                             savedProcesses: [{ process_id: procId, process_name: procName, bpmn_xml: bpmnXml || '', definition }],
@@ -8027,11 +8032,15 @@ export default {
 
                 if (this.$toast && this.$toast.success)
                     this.$toast.success(
-                        `저장되었습니다(폼 ${formsSaved}개, 스킬 ${savedSkillNames.length}개, 에이전트 ${savedAgents.length}개).`
+                        this.$t('ChatRoomPage.savedSummary', {
+                            forms: formsSaved,
+                            skills: savedSkillNames.length,
+                            agents: savedAgents.length
+                        })
                     );
             } catch (e) {
                 st.saving = false;
-                st.error = (e && (e.message || e.toString())) || '저장 실패';
+                st.error = (e && (e.message || e.toString())) || this.$t('ChatRoomPage.saveFailed');
                 console.error('[SaveWS] 저장 실패:', e);
             }
         },
@@ -8516,7 +8525,7 @@ export default {
                 if (msg?.slideMarkdown) {
                     this.pushArtifactPanel({
                         type: 'slide',
-                        label: '슬라이드',
+                        label: this.$t('ChatRoomPage.slide'),
                         data: { slideMarkdown: msg.slideMarkdown, imageUrls: msg.slideImageUrls || [], messageId: msg?.uuid || null }
                     });
                     return;
@@ -10383,10 +10392,16 @@ export default {
                     messages: msg
                 });
 
-                // 채팅방 last message 업데이트
+                // 채팅방 last message 업데이트 — 번역 키가 있는 고정 문구는 본문(한국어) 대신 현재 언어 문구로
                 if (this.currentChatRoom && this.currentChatRoom.id === targetRoomId) {
+                    const params = msg.contentI18nParams && typeof msg.contentI18nParams === 'object' ? msg.contentI18nParams : {};
+                    const preview = !msg.contentI18nKey
+                        ? msg.content
+                        : typeof params.n === 'number'
+                        ? this.$tc(msg.contentI18nKey, params.n, params)
+                        : this.$t(msg.contentI18nKey, params);
                     this.currentChatRoom.message = {
-                        msg: (msg.content || '').toString().substring(0, 50),
+                        msg: (preview || '').toString().replace(/[*#`]/g, '').trim().substring(0, 50),
                         type: 'text',
                         createdAt: msg.timeStamp
                     };
@@ -10831,6 +10846,7 @@ export default {
                     if (!hasResult && generatedBpmns.length > 0) {
                         const processCount = resultData.process_count || generatedBpmns.length;
                         const taskId = String(explicitTaskId || me._resolvePdf2bpmnTaskId(resultData, targetRoomId) || '').trim();
+                        // 본문은 대화 기록에 저장되므로 한국어 그대로 두고, 화면은 번역 키로 보여 준다.
                         let content = `✅ **BPMN 프로세스 생성 완료**\n\n`;
                         content += `${processCount}개의 프로세스가 생성되었습니다.`;
 
@@ -10839,6 +10855,8 @@ export default {
                         const graphName = String(resultData?.graph_name || '').trim();
 
                         const msgObj = me.createMessageObj(content, 'assistant');
+                        msgObj.contentI18nKey = 'ChatRoomPage.bpmnGenerationDone';
+                        msgObj.contentI18nParams = { n: Number(processCount) || 0 };
                         msgObj.pdf2bpmnResult = {
                             processCount,
                             savedProcesses: resultData.saved_processes || [],
@@ -11191,6 +11209,7 @@ export default {
             const savedProcesses = resultData.saved_processes || [];
             const taskId = String(explicitTaskId || me._resolvePdf2bpmnTaskId(resultData, targetRoomId) || '').trim();
 
+            // 본문은 대화 기록에 저장되므로 한국어 그대로 두고, 화면은 번역 키로 보여 준다.
             let content = `✅ **BPMN 프로세스 생성 완료**\n\n`;
             content += `${processCount}개의 프로세스가 생성되었습니다.\n\n`;
             content += `\n프로세스 정의가 저장되었습니다. 왼쪽 메뉴에서 확인할 수 있습니다.`;
@@ -11205,6 +11224,8 @@ export default {
             const graphName = String(resultData?.graph_name || '').trim();
 
             const msgObj = me.createMessageObj(content, 'assistant');
+            msgObj.contentI18nKey = 'ChatRoomPage.bpmnGenerationDoneSaved';
+            msgObj.contentI18nParams = { n: Number(processCount) || 0 };
             msgObj.pdf2bpmnResult = {
                 processCount,
                 savedProcesses,

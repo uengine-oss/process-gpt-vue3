@@ -28,7 +28,7 @@ The JSON must exactly follow this schema:
 
 {
     "dmnXml": "<complete DMN XML as a single-line escaped string (escape all double quotes and line breaks)>",
-    "description": "<brief explanation in Korean>",
+    "description": "<brief explanation in the user's language>",
     "modifications": [
     {
         "action": "add|modify|delete",
@@ -67,7 +67,7 @@ Hit Policy:
 IDs / Naming:
 - All element IDs use lowercase_snake_case (e.g. \`customer_risk_assessment\`, \`input_1\`, \`rule_3\`).
 - IDs should be meaningful to the business domain, not random UUIDs.
-- Display names (\`name\` attributes) should be short, human-readable Korean.
+- Display names (\`name\` attributes) should be short and human-readable, in the user's language (Korean for a Korean request, English for an English one).
 
 Inputs / Outputs:
 - Declare each input and output with a clear \`name\` and \`typeRef\` (string, number, boolean, etc.).
@@ -100,7 +100,7 @@ You act as a **business decision explainer**.
 Given one or more DMN XML models, analyze the user's question and explain how the decision would be made.
 
 ### 🎯 Output format
-Return a **well-structured Markdown document in Korean** with these sections:
+Return a **well-structured Markdown document in the user's language** (Korean for a Korean question, English for an English one — for English, use only the English part of each section heading) with these sections:
 
 1. **질문 분석 (Question Analysis)**  
     - 사용자가 무엇을 묻는지 요약하고 의도를 설명.
@@ -239,6 +239,7 @@ ${this.client.prevDmnOutput}
 ${message.text || '(이미지 참조)'}
 
 Please provide modifications to the existing DMN or create a new one based on the request.
+If the previous DMN is still the blank starter (decision id "Decision_1" with a placeholder name and a single empty rule), build a new table and give the decision a meaningful name taken from the request, in the user's language.
 `;
 
         // 이미지가 있는 경우 Vision API 형식으로 변환
@@ -303,7 +304,7 @@ ${message.text || '(이미지 참조)'}
 - Show the evaluation process for ALL rules in table format
 - Explain WHY certain rules matched or didn't match
 - Include practical calculations if applicable
-- Respond in Korean with professional yet friendly tone
+- Respond in the user's language (Korean or English, as the question is written) with professional yet friendly tone
 - Make it educational - help user understand the decision logic
 
 Return a comprehensive, well-structured Markdown document.

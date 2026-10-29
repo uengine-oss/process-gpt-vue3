@@ -4,7 +4,7 @@
             <div class="manual-link-form mb-2">
                 <v-text-field
                     v-model="newName"
-                    placeholder="이름 (예: 작업 매뉴얼)"
+                    :placeholder="$t('ManualLinkField.namePlaceholder')"
                     density="compact"
                     variant="outlined"
                     hide-details
@@ -29,7 +29,7 @@
                 <template v-if="editingIdx === idx">
                     <v-text-field
                         v-model="editName"
-                        placeholder="이름"
+                        :placeholder="$t('ManualLinkField.name')"
                         density="compact"
                         variant="outlined"
                         hide-details
@@ -73,19 +73,19 @@
             <v-card>
                 <v-card-title class="text-subtitle-1 font-weight-bold pa-4 pb-2">
                     <v-icon size="18" color="error" class="mr-2">mdi-alert-circle-outline</v-icon>
-                    링크 삭제
+                    {{ $t('ManualLinkField.deleteTitle') }}
                 </v-card-title>
                 <v-card-text class="pa-4">
                     <div class="text-body-2">
-                        선택한 링크<template v-if="deleteTarget"> "{{ getChipLabel(deleteTarget) }}"</template>를 삭제하시겠습니까?
+                        {{ $t('ManualLinkField.deleteConfirm', { label: deleteTarget ? ` "${getChipLabel(deleteTarget)}"` : '' }) }}
                     </div>
                 </v-card-text>
                 <v-card-actions class="pa-4 pt-0">
                     <v-spacer />
-                    <v-btn variant="text" class="text-none" @click="cancelRemove">취소</v-btn>
+                    <v-btn variant="text" class="text-none" @click="cancelRemove">{{ $t('ManualLinkField.cancel') }}</v-btn>
                     <v-btn variant="flat" color="error" class="text-none" @click="confirmRemove">
                         <v-icon start size="14">mdi-delete-outline</v-icon>
-                        삭제
+                        {{ $t('ManualLinkField.delete') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>

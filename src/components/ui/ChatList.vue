@@ -202,6 +202,7 @@ import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useCustomizerStore } from '@/stores/customizer';
 import { usePhoneShell } from '@/shared/phoneShell';
 import { processGptAgent } from '@/constants/processGptAgent';
+import { currentLocale } from '@/composables/i18nText';
 
 const backend = BackendFactory.createBackend();
 
@@ -651,7 +652,14 @@ export default {
                 if (idx === -1) return;
                 const room = this.chatRooms[idx];
                 room.message = room.message || {};
-                room.message.msg = msg.messageForUser ? msg.messageForUser : msg.content;
+                // 번역 키가 있는 고정 안내는 저장 본문(한국어) 대신 현재 언어 문구로
+                const i18nParams = msg.contentI18nParams && typeof msg.contentI18nParams === 'object' ? msg.contentI18nParams : {};
+                const translated = msg.contentI18nKey
+                    ? typeof i18nParams.n === 'number'
+                        ? this.$tc(msg.contentI18nKey, i18nParams.n, i18nParams)
+                        : this.$t(msg.contentI18nKey, i18nParams)
+                    : '';
+                room.message.msg = msg.messageForUser ? msg.messageForUser : translated && translated !== msg.contentI18nKey ? translated.replace(/[*#`]/g, '').trim() : msg.content;
                 room.message.createdAt = msg.timeStamp;
 
                 const isMine = msg.email && this.userInfo?.email ? msg.email === this.userInfo.email : false;
@@ -752,15 +760,17 @@ export default {
             const date = new Date(timestamp);
             const now = new Date();
             const diff = now - date;
-            if (diff < 60 * 1000) return '방금';
+            if (diff < 60 * 1000) return this.$t('ChatList.justNow');
             if (diff < 60 * 60 * 1000) {
                 const minutes = Math.floor(diff / (60 * 1000));
-                return `${minutes}분 전`;
+                return this.$t('ChatList.minutesAgo', { n: minutes });
             }
+            // 화면 언어를 따른다 — 한국어 '오후 09:44', 영어 '9:44 PM'.
+            const locale = currentLocale();
             if (diff < 24 * 60 * 60 * 1000) {
-                return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                return date.toLocaleTimeString(locale, { hour: locale === 'en-US' ? 'numeric' : '2-digit', minute: '2-digit' });
             }
-            return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+            return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
         }
     }
 };

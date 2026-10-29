@@ -1,19 +1,19 @@
 <template>
     <div class="kbt">
         <div class="kbt__head">
-            <span class="kbt__title">폴더</span>
+            <span class="kbt__title">{{ $t('KbFolderTree.title') }}</span>
             <span class="kbt__spacer" />
             <v-btn
                 v-if="hasChildren.size > 0"
                 icon
                 variant="text"
                 size="x-small"
-                :title="allExpanded ? '모두 접기' : '모두 펴기'"
+                :title="allExpanded ? $t('KbFolderTree.collapseAll') : $t('KbFolderTree.expandAll')"
                 @click="$emit('expand-all', !allExpanded)"
             >
                 <v-icon size="16">{{ allExpanded ? 'mdi-unfold-less-horizontal' : 'mdi-unfold-more-horizontal' }}</v-icon>
             </v-btn>
-            <v-btn icon variant="text" size="x-small" title="새 폴더" @click="startCreate('')">
+            <v-btn icon variant="text" size="x-small" :title="$t('KbFolderTree.newFolder')" @click="startCreate('')">
                 <v-icon size="16">mdi-folder-plus-outline</v-icon>
             </v-btn>
         </div>
@@ -24,12 +24,12 @@
                 class="kbt__row kbt__row--root"
                 :class="{ 'is-active': !current }"
                 style="padding-left: 8px"
-                title="지식베이스 전체"
+                :title="$t('KbFolderTree.rootTitle')"
                 @click="$emit('select', '')"
             >
                 <span class="kbt__caret kbt__caret--spacer" />
                 <v-icon size="14" color="primary">mdi-map-outline</v-icon>
-                <span class="kbt__name">전체</span>
+                <span class="kbt__name">{{ $t('KbFolderTree.all') }}</span>
             </div>
 
             <div v-if="creating.active && creating.parent === ''" class="kbt__row kbt__row--input" style="padding-left: 8px">
@@ -39,7 +39,7 @@
                     ref="createInput"
                     v-model="creating.name"
                     class="kbt__input"
-                    placeholder="새 폴더 이름 (Enter)"
+                    :placeholder="$t('KbFolderTree.newFolderPlaceholder')"
                     @keyup.enter="commitCreate"
                     @keyup.esc="cancelCreate"
                     @blur="commitCreate"
@@ -47,7 +47,7 @@
             </div>
 
             <div v-if="!nodes.length && !creating.active" class="kbt__empty">
-                아직 폴더가 없습니다. 폴더를 만들고 문서를 올리면 지도가 만들어집니다.
+                {{ $t('KbFolderTree.empty') }}
             </div>
 
             <template v-for="node in visible" :key="node.path">
@@ -84,7 +84,7 @@
                         ref="createInput"
                         v-model="creating.name"
                         class="kbt__input"
-                        placeholder="새 폴더 이름 (Enter)"
+                        :placeholder="$t('KbFolderTree.newFolderPlaceholder')"
                         @keyup.enter="commitCreate"
                         @keyup.esc="cancelCreate"
                         @blur="commitCreate"
@@ -95,12 +95,12 @@
 
         <v-menu v-model="menu.show" :target="[menu.x, menu.y]" location="bottom start" :close-on-content-click="true">
             <v-list density="compact" min-width="180">
-                <v-list-item prepend-icon="mdi-folder-plus-outline" title="새 하위 폴더" @click="startCreate(menu.node ? menu.node.path : '')" />
+                <v-list-item prepend-icon="mdi-folder-plus-outline" :title="$t('KbFolderTree.newSubfolder')" @click="startCreate(menu.node ? menu.node.path : '')" />
                 <template v-if="menu.node && canManage">
-                    <v-list-item prepend-icon="mdi-map-refresh" title="폴더 카드 다시 만들기" @click="$emit('rebuild-card', menu.node)" />
-                    <v-list-item prepend-icon="mdi-pencil-outline" title="이름 변경" @click="$emit('rename', menu.node)" />
+                    <v-list-item prepend-icon="mdi-map-refresh" :title="$t('KbFolderTree.rebuildFolderCard')" @click="$emit('rebuild-card', menu.node)" />
+                    <v-list-item prepend-icon="mdi-pencil-outline" :title="$t('KbFolderTree.rename')" @click="$emit('rename', menu.node)" />
                     <v-divider />
-                    <v-list-item prepend-icon="mdi-delete-outline" title="폴더 삭제" class="text-error" @click="$emit('remove', menu.node)" />
+                    <v-list-item prepend-icon="mdi-delete-outline" :title="$t('KbFolderTree.deleteFolder')" class="text-error" @click="$emit('remove', menu.node)" />
                 </template>
             </v-list>
         </v-menu>

@@ -25,7 +25,7 @@
                                     <!-- 지식 베이스 파일 관리 -->
                                     <v-tab v-if="!isUEngineMode" value="KnowledgeFiles">
                                         <v-icon class="mr-2" size="20">mdi-folder-text-outline</v-icon>
-                                        지식 베이스
+                                        {{ $t('AccountSettings.knowledgeBase') }}
                                     </v-tab>
                                     <!-- MCP 서버 -->
                                     <v-tab v-if="!isUEngineMode" value="MCP-Servers">
@@ -137,7 +137,7 @@
                             size="small"
                             @click="showAdminTools = !showAdminTools"
                         >
-                            <v-icon class="mr-2" size="16">{{ showAdminTools ? 'mdi-chevron-up' : 'mdi-cog-outline' }}</v-icon>관리
+                            <v-icon class="mr-2" size="16">{{ showAdminTools ? 'mdi-chevron-up' : 'mdi-cog-outline' }}</v-icon>{{ $t('AccountSettings.manage') }}
                         </v-btn>
 
                         <template v-if="admin && showAdminTools">

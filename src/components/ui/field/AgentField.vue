@@ -612,7 +612,7 @@ export default {
         },
         async fetchAgentData() {
             if (!this.agent.endpoint) {
-                this.$toast?.error('Endpoint을 입력해주세요');
+                this.$toast?.error(this.$t('agentField.endpointRequired'));
                 return;
             }
 
