@@ -142,3 +142,7 @@ export function elementsToFlattenedDefinition(processDefinition) {
 }
 
 export default elementsToFlattenedDefinition;
+
+// 작업 폴더 저장(ChatRoomPage.handleSaveWorkspaceFiles·runDraftValidationForRoom)이 저장에 쓰는 변환을
+// 이 모듈 하나로 불러 쓰도록 폼 연결 규칙도 함께 내보낸다.
+export { collectWorkspaceForms, linkWorkspaceForms } from './workspaceForms.js';
