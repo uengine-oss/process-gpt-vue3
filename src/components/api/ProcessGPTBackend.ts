@@ -372,16 +372,40 @@ class ProcessGPTBackend implements Backend {
         return response.data;
     }
 
-    /** draft(임시저장) proc_def 행을 삭제한다(방 단위 재생성 시 이전 draft 정리). */
+    /**
+     * draft(임시저장) proc_def 행을 삭제한다(방 단위 재생성 시 이전 draft 정리).
+     *
+     * is_draft=true 인 행만 지운다. 같은 id 로 사용자가 이미 저장한 정의(is_draft=false/null)는
+     * 정리 대상이 아니다 — 조건 없이 id 로만 지우면, 저장한 정의를 같은 방에서 고치는 동안
+     * 다음 차례의 정리가 그 정의를 지워 「저장」을 다시 누르기 전까지(고치기가 실패하면 영영)
+     * 체계도에서 사라진다. is_draft 열이 없는 스키마면 삭제가 실패할 뿐 아무것도 지우지 않는다.
+     */
     async deleteDraftProcDef(defId: string) {
-        const id = String(defId || '')
-            .toLowerCase()
-            .replace(/\.bpmn$/i, '');
-        if (!id) return;
+        const exact = String(defId || '').replace(/\.bpmn$/i, '');
+        if (!exact) return;
+        // 저장은 id 를 받은 그대로 쓰고(putRawDefinition) 예전 정리는 소문자로 찾았다 — 둘 다 본다.
+        for (const id of Array.from(new Set([exact, exact.toLowerCase()]))) {
+            try {
+                await storage.delete('proc_def', { match: { id, tenant_id: window.$tenantName, is_draft: true } });
+            } catch (e) {
+                /* best-effort cleanup */
+            }
+        }
+    }
+
+    /**
+     * 이 id 로 사용자가 저장한(목록에 보이는) proc_def 가 있는가 — 행이 있고 is_draft 가 true 가 아니면 저장된 것.
+     * 채팅의 임시저장(draft)이 저장된 정의를 덮어쓰지 않게 하는 데 쓴다. 조회가 실패하면 저장된 것으로 본다
+     * (덮어쓰지 않는 쪽이 안전하다).
+     */
+    async isSavedProcDef(defId: string): Promise<boolean> {
+        const id = String(defId || '').replace(/\.bpmn$/i, '');
+        if (!id) return false;
         try {
-            await storage.delete('proc_def', { match: { id, tenant_id: window.$tenantName } });
+            const row: any = await storage.getObject('proc_def', withTenantMatch({ match: { id } }));
+            return !!(row && row.id) && row.is_draft !== true;
         } catch (e) {
-            /* best-effort cleanup */
+            return true;
         }
     }
 

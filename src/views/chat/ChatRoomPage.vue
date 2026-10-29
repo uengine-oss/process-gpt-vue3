@@ -7589,7 +7589,14 @@ export default {
                 const st =
                     this.workspaceSaveStateByGroup[group] ||
                     (this.workspaceSaveStateByGroup[group] = { saving: false, saved: false, error: '', passingCases: [] });
-                if (st.__validated || st.validating) continue;
+                // 이미 검증한(또는 검증 중인) 그룹은 다시 돌리지 않되, 그 그룹이 들고 있는 draft 는 아래 정리에서
+                // 뺀다 — 예전에는 이번 차례에 새로 만든 draft 만 남겨, 파일이 안 바뀐 다음 차례에 아직 화면에 있는
+                // draft 까지 지웠다. 저장한 뒤 바뀌지 않은 그룹(st.saved)은 검증할 새 내용이 없어 draft 를 쓰지 않는다
+                // (방을 다시 열면 상태가 비어 저장한 그룹도 다시 검증하며 저장된 정의 위에 draft 를 덮어썼다).
+                if (st.__validated || st.validating || st.saved) {
+                    if (st.__draftId && !st.saved) newDraftIds.push(st.__draftId);
+                    continue;
+                }
 
                 let pd;
                 try {
@@ -7623,16 +7630,23 @@ export default {
                 st.validating = true;
                 st.validateMsg = '실행 엔진으로 검증 중...';
                 this.$forceUpdate && this.$forceUpdate();
+                // 같은 방에서 고치는 중이라 같은 id 로 사용자가 이미 저장한 정의가 있으면 그 행에 draft 를 쓰지 않는다.
+                // 덮어쓰면 그 행이 is_draft=true 가 되어 체계도에서 사라지고, 다음 차례 정리(deleteDraftProcDef)가
+                // 지운다 — 「저장」을 다시 누르기 전까지 정의가 없고, 고치기가 실패해 저장하지 않으면 그대로 사라진다.
+                // 그때는 따로 둔 draft id 로 검증만 돌리고 곧바로 지운다. 폼도 저장된 정의의 것이라 덮어쓰지 않는다.
+                const savedProcDef = backend.isSavedProcDef ? await backend.isSavedProcDef(procId) : false;
+                const draftId = savedProcDef ? `${procId}__draft` : procId;
+                st.__draftId = savedProcDef ? null : procId;
                 try {
                     // 1) draft proc_def 저장 (is_draft=true) + draft form_def
-                    await backend.putRawDefinition(bpmnXml, procId, {
+                    await backend.putRawDefinition(bpmnXml, draftId, {
                         name: procName,
                         definition,
                         type: 'bpmn',
                         is_draft: true
                     });
-                    newDraftIds.push(procId);
-                    for (const aid of Object.keys(forms)) {
+                    if (!savedProcDef) newDraftIds.push(procId);
+                    for (const aid of savedProcDef ? [] : Object.keys(forms)) {
                         try {
                             await backend.putRawDefinition(forms[aid].html, forms[aid].form_id, {
                                 type: 'form',
@@ -7718,7 +7732,7 @@ export default {
                     // 2) 실엔진 검증 + LLM 자동개선 (completion 이 draft.definition 을 갱신)
                     let report = null;
                     try {
-                        report = await backend.validateAndImproveDraft(procId, {
+                        report = await backend.validateAndImproveDraft(draftId, {
                             processName: procName,
                             forms,
                             // 식별 화면에서 전환한 방은 인계 기록에서 도출한 흐름을 그대로 쓴다. 실제 엔진으로
@@ -7736,6 +7750,8 @@ export default {
                     const improved =
                         report && report.final_definition && typeof report.final_definition === 'object' ? report.final_definition : null;
                     if (improved && (Array.isArray(improved.activities) || Array.isArray(improved.elements))) {
+                        // 검증용 draft id 로 돌렸어도 패널·저장은 원래 정의 id 를 쓴다.
+                        if (savedProcDef && improved.processDefinitionId) improved.processDefinitionId = procId;
                         const newContent = JSON.stringify(improved, null, 2);
                         pdFile.content = newContent;
                         // upsert 가 process-definition.json → .bpmn 재파생까지 처리.
@@ -7779,9 +7795,12 @@ export default {
                     st.validateMsg = '';
                     this.$forceUpdate && this.$forceUpdate();
                 }
+                // 저장된 정의 대신 쓴 검증용 draft 는 할 일을 마쳤다 — 남기면 같은 이름의 숨은 정의가 쌓인다.
+                if (savedProcDef) await backend.deleteDraftProcDef(draftId);
             }
 
-            // 이전 방 draft 중 이번에 재사용되지 않은 것 삭제 (option A)
+            // 이전 방 draft 중 이번에 재사용되지 않은 것 삭제 (option A).
+            // deleteDraftProcDef 는 is_draft=true 인 행만 지운다 — 그 사이 「저장」으로 승격된 정의는 남는다.
             const stale = prevDraftIds.filter((id) => id && !newDraftIds.includes(id));
             for (const id of stale) {
                 try {
