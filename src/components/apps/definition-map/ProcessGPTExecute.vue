@@ -216,8 +216,9 @@ import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import customBpmnModule from '@/components/customBpmn';
 
 import BackendFactory from '@/components/api/BackendFactory';
-import { findStartActivity } from '@/utils/processStart';
+import { findStartActivity, hasDanglingStartEvent } from '@/utils/processStart';
 import { buildStartWorkItem, runsAsAgent } from '@/shared/processStart/index.js';
+import { isUuid } from '@/utils/agentId.js';
 const backend = BackendFactory.createBackend();
 
 import { useDefaultSetting } from '@/stores/defaultSetting';
@@ -262,6 +263,8 @@ export default {
         instId: '',
         effectiveBpmn: '',
         roleMappings: [],
+        // 시작 업무를 맡은 쪽 { id, name } — 에이전트면 시작 역할 지정도 그 에이전트로 둔다(createNewWorkItem 이 정함).
+        startAssignee: null,
         // 휴대폰 실행 화면: 역할 지정 펼침, 소스 업로드 다이얼로그, 역할 요약 칩용 이름표
         roleOpen: false,
         sourceOpen: false,
@@ -424,6 +427,11 @@ export default {
         async findStartActivity() {
             const definition = this.processDefinition || {};
             const activities = Array.isArray(definition.activities) ? definition.activities : [];
+            const bpmn = this.effectiveBpmn || definition.bpmn || this.bpmn || '';
+
+            // 정의 JSON 의 시작 이벤트에서 나가는 연결선이 없으면(그림 XML 에는 있음) 엔진도 같은 그래프 규칙으로
+            // 첫 액티비티의 "다음" 단계를 돌려준다 — 이때는 XML·구조로 찾는 로컬 판별을 쓴다.
+            if (hasDanglingStartEvent(definition)) return findStartActivity(definition, { bpmn });
 
             const resolved = await backend.getStartActivity({
                 process_definition_id: this.resolvedDefinitionId || definition.processDefinitionId,
@@ -439,10 +447,11 @@ export default {
                 if (resolved.activity) return resolved.activity;
             }
 
-            return findStartActivity(definition);
+            return findStartActivity(definition, { bpmn });
         },
         async init() {
             var me = this;
+            me.startAssignee = null;
             if (me.effectiveBpmn) {
                 me.processDefinition.bpmn = me.effectiveBpmn;
             }
@@ -524,8 +533,11 @@ export default {
                 me.roleMappings = roles.map((role) => {
                     let disabled = 'false';
                     if (role.name == startActivity.role) {
+                        // 시작 단계 역할은 실행 창을 연 사람이 맡는다. 다만 시작 업무를 에이전트가 맡으면
+                        // (createNewWorkItem — activity.agent 또는 역할 endpoint 가 에이전트) 그 에이전트로 둔다.
+                        // 예전에는 늘 현재 사용자로 덮어써 에이전트 역할이 사람 담당이 됐다.
                         const uid = localStorage.getItem('uid');
-                        role.endpoint = uid;
+                        role.endpoint = (me.startAssignee && me.startAssignee.id) || uid;
                         disabled = 'true';
                     } else if (role.default && role.default.length > 0) {
                         hasDefaultRole = true;
@@ -575,6 +587,15 @@ export default {
                 if (agent) assignee = { id: agent.id, name: agent.username };
             }
 
+            // 단계에 에이전트가 따로 적혀 있지 않아도(activity.agent 없음) 그 단계 역할의 담당이 에이전트면
+            // 그 에이전트가 맡는다. 실행 창을 연 사람 몫으로 만들면 에이전트 단계가 사람 업무가 된다
+            // (VM 녹화: 「재고 확인 에이전트」 역할의 시작 업무가 실행한 사람 담당 IN_PROGRESS 로 생겼다).
+            if (!runsAsAgent(activity)) {
+                const roleAgent = await this.findRoleAgent(activity.role);
+                if (roleAgent) assignee = { id: roleAgent.id, name: roleAgent.username };
+            }
+            me.startAssignee = assignee;
+
             // 상태값 · 오케스트레이션 목록 · 기한 계산은 @/shared/processStart 가 정한다.
             // 여기에 따로 두면 모바일 화면과 갈라지고, 갈라지면 새로 추가된
             // 오케스트레이션을 모르는 쪽에서 시작한 건이 에이전트 없이 남는다.
@@ -587,6 +608,34 @@ export default {
 
             await backend.putWorkItem(newWorkItem.id, newWorkItem);
             return newWorkItem;
+        },
+        /**
+         * 이 역할의 담당(roles[].endpoint · default)이 에이전트(users.is_agent)면 그 에이전트를, 아니면 null.
+         * 대화 저장은 역할 endpoint 를 저장한 에이전트의 users.id 로 바꿔 두므로, activity.agent 가 비어
+         * 있어도 역할만 보고 에이전트 단계임을 알 수 있다. uuid 가 아닌 값(사람 역할 슬러그 등)은 보지 않는다.
+         */
+        async findRoleAgent(roleName) {
+            const role = (this.processDefinition?.roles || []).find((r) => r && r.name === roleName);
+            if (!role) return null;
+            const ids = [];
+            for (const value of [role.endpoint, role.default]) {
+                for (const v of Array.isArray(value) ? value : [value]) {
+                    const id = v == null ? '' : String(v).trim();
+                    if (isUuid(id) && !ids.includes(id)) ids.push(id);
+                }
+            }
+            for (const id of ids) {
+                let user = this.defaultSetting.getAgentById(id);
+                if (!user) {
+                    try {
+                        user = await backend.getUserById(id);
+                    } catch (e) {
+                        user = null;
+                    }
+                }
+                if (user && (user.is_agent === true || user.isAgent === true)) return user;
+            }
+            return null;
         },
         closeDialog() {
             this.$emit('close');
