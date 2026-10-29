@@ -874,7 +874,7 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
-import { collectWorkspaceAgents, remapAgentRefs, slugToUuid } from '@/utils/agentId.js';
+import { collectWorkspaceAgents, describeAgentFileProblems, readWorkspaceAgents, remapAgentRefs, slugToUuid } from '@/utils/agentId.js';
 import axios from 'axios';
 import { isArtifactUrlFresh, usableArtifactUrl } from '@/utils/artifactLinks.js';
 import { isDocumentFile, isTurnArtifactRecord } from '@/shared/workspaceFiles/index.js';
@@ -7833,7 +7833,10 @@ export default {
                 }
                 if (pd && pd.processDefinition) pd = pd.processDefinition;
                 // 이 탭의 에이전트 산출물과, 각각이 users 에 저장될 id(슬러그 → 결정적 uuid).
-                const workspaceAgents = collectWorkspaceAgents(list);
+                // 읽지 못한 에이전트 파일(agentFiles.unreadable)은 저장하지 않고 정의의 슬러그도 바꾸지 않는다 —
+                // 대신 아래 저장 결과에 그 파일을 알린다(예전에는 말없이 건너뛰었다).
+                const agentFiles = readWorkspaceAgents(list);
+                const workspaceAgents = agentFiles.agents;
                 // deepagent 는 activity.agent·roles[].endpoint 에 에이전트 슬러그(agents/<slug>.json)를 적는다.
                 // 실행 엔진은 담당자를 users.id/email 로만 찾으므로 슬러그 그대로 저장하면 에이전트 단계가
                 // 시작되지 않는다 → 저장할 정의에서는 아래 4) 에서 저장할 에이전트 id 로 바꾼다.
@@ -7967,6 +7970,10 @@ export default {
                 this._markWorkspaceFilesSaved(list);
                 st.saved = true;
                 st.saving = false;
+                // 읽지 못해 저장하지 않은·고쳐 읽은 에이전트 파일 — 작업 폴더 패널과 채팅 저장 결과 카드에 보인다.
+                const agentFileNote = describeAgentFileProblems(agentFiles);
+                const agentFileMsg = [agentFileNote.notSaved, agentFileNote.repaired].filter(Boolean).join(' ');
+                if (agentFileMsg) st.error = agentFileMsg;
 
                 // 6) 저장된 정보로 기존 pdf2bpmn 결과 UI(생성된 프로세스/스킬/에이전트) 메시지를 채팅에 추가 → 확인 가능.
                 try {
@@ -7984,6 +7991,7 @@ export default {
                             __saving: false
                         }
                     };
+                    if (agentFileNote.notSaved) resultMsg.pdf2bpmnResult.__saveError = agentFileNote.notSaved;
                     this.messages.push(resultMsg);
                     this.$nextTick(() => this.scrollToBottomSafe && this.scrollToBottomSafe());
                     if (roomId) {
@@ -7993,6 +8001,7 @@ export default {
                     console.warn('[SaveWS] 결과 메시지 추가 실패(무시):', msgErr);
                 }
 
+                if (agentFileMsg && this.$toast && this.$toast.warning) this.$toast.warning(agentFileMsg);
                 if (this.$toast && this.$toast.success)
                     this.$toast.success(
                         `저장되었습니다(폼 ${formsSaved}개, 스킬 ${savedSkillNames.length}개, 에이전트 ${savedAgents.length}개).`

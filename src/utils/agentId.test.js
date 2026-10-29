@@ -2,7 +2,17 @@
 // 실행 엔진은 담당자를 users.id/email 로만 찾는다 — 슬러그가 남으면 에이전트 단계가 시작되지 않는다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { agentRefResolver, agentStableId, collectWorkspaceAgents, isUuid, remapAgentRefs, slugToUuid } from './agentId.js';
+import {
+    agentRefResolver,
+    agentStableId,
+    collectWorkspaceAgents,
+    describeAgentFileProblems,
+    isUuid,
+    readAgentJson,
+    readWorkspaceAgents,
+    remapAgentRefs,
+    slugToUuid
+} from './agentId.js';
 import { elementsToFlattenedDefinition } from './elementsToFlattened.js';
 
 const DIR = '/workspace/.bpmn/process-a1b2c3d';
@@ -193,4 +203,83 @@ test('저장 경로와 같은 순서(치환 → flatten)로 만든 proc_def.defi
     assert.equal(definition.roles[0].endpoint, id);
     assert.equal(definition.activities[0].agent, id);
     assert.ok(!JSON.stringify(definition).includes('"stock_agent"'));
+});
+
+// ---------------------------------------------------------------------------
+// 깨진 에이전트 파일 — VM 녹화에서 모델이 agents/quote_calc_agent.json·estimate_agent.json 끝의 `}` 를 빠뜨렸다.
+// ---------------------------------------------------------------------------
+
+test('끝의 닫는 괄호만 빠진 에이전트 JSON 은 채워 읽는다', () => {
+    const text = '{\n  "id": "quote_calc_agent",\n  "name": "견적 산출 자동화 에이전트",\n  "description": "견적서를 작성한다."\n';
+    const r = readAgentJson(text);
+    assert.equal(r.repaired, true);
+    assert.equal(r.value.name, '견적 산출 자동화 에이전트');
+    // 마지막 값 뒤 쉼표가 남은 채 끊긴 것도
+    const trailingComma = readAgentJson('{"id": "a", "name": "에이전트 A", "tools": ["x", "y"],\n');
+    assert.equal(trailingComma.repaired, true);
+    assert.deepEqual(trailingComma.value.tools, ['x', 'y']);
+    // 멀쩡한 파일은 손대지 않는다
+    assert.deepEqual(readAgentJson('{"id": "a", "name": "A"}'), { value: { id: 'a', name: 'A' }, repaired: false, error: '' });
+});
+
+test('고칠 수 없거나, 고쳐도 이름 있는 객체가 아니면 읽지 못한 것으로 둔다', () => {
+    for (const text of [
+        '{"id": "a", "name": "견적 산', // 문자열 안에서 잘림
+        '{"id": "a", "name": ', // 값이 없음
+        '{"id": "a", "description": "이름이 없다"', // 채우면 읽히지만 name 이 없다
+        '{"id": "a", "name": "A"]', // 괄호 짝이 틀림
+        '{not json',
+        ''
+    ]) {
+        const r = readAgentJson(text);
+        assert.equal(r.value, null, text);
+        assert.equal(r.repaired, false);
+        assert.ok(r.error);
+    }
+});
+
+test('readWorkspaceAgents 는 읽지 못한 에이전트 파일을 따로 돌려주고, 그 슬러그는 바꿀 짝이 없다', () => {
+    const files = [
+        agentFile('stock_agent'),
+        { path: `${DIR}/agents/quote_calc_agent.json`, name: 'quote_calc_agent.json', content: '{"id": "quote_calc_agent", "name": "견적' },
+        {
+            path: `${DIR}/agents/estimate_agent.json`,
+            name: 'estimate_agent.json',
+            content: '{"id": "estimate_agent", "name": "견적 에이전트"\n'
+        }
+    ];
+    const { agents, unreadable } = readWorkspaceAgents(files);
+    assert.deepEqual(
+        agents.map((a) => [a.sourceId, a.repaired]),
+        [
+            ['stock_agent', false],
+            ['estimate_agent', true]
+        ]
+    );
+    assert.deepEqual(
+        unreadable.map((u) => [u.fileStem, u.path]),
+        [['quote_calc_agent', `${DIR}/agents/quote_calc_agent.json`]]
+    );
+    // collectWorkspaceAgents 는 예전처럼 읽은 것만
+    assert.equal(collectWorkspaceAgents(files).length, 2);
+
+    const { definition } = remapAgentRefs({ roles: [{ name: '견적 산출', endpoint: 'quote_calc_agent' }] }, agents);
+    assert.equal(definition.roles[0].endpoint, 'quote_calc_agent');
+
+    const note = describeAgentFileProblems({ agents, unreadable });
+    assert.match(note.notSaved, /agents\/quote_calc_agent\.json 을 읽을 수 없어/);
+    assert.match(note.notSaved, /「quote_calc_agent」 값은 그대로/);
+    assert.match(note.repaired, /agents\/estimate_agent\.json 끝의 닫는 괄호/);
+    assert.deepEqual(describeAgentFileProblems({ agents: agents.slice(0, 1), unreadable: [] }), { notSaved: '', repaired: '' });
+});
+
+test('레거시 agents.json 이 깨졌으면 그것도 읽지 못한 파일로 알린다', () => {
+    const { agents, unreadable } = readWorkspaceAgents([
+        { path: `${DIR}/agents.json`, name: 'agents.json', content: '[{"id": "x", "name": "X"}' }
+    ]);
+    assert.equal(agents.length, 0);
+    assert.deepEqual(
+        unreadable.map((u) => u.path),
+        [`${DIR}/agents.json`]
+    );
 });
