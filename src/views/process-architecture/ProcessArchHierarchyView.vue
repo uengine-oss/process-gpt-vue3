@@ -80,7 +80,7 @@
                                                             :class="{ 'node-collapsible': getMajorsInDomain(mega, domain).length > 0 }"
                                                             @click="toggleNode(`mega-${domain.id}-${mega.id}`)"
                                                         >
-                                                            <div class="node-name">{{ mega.name }}</div>
+                                                            <div class="node-name">{{ displayProcessName(mega, $t) }}</div>
                                                             <div class="node-sub">Mega</div>
                                                             <v-icon v-if="!props.readonly" class="node-add-icon" size="12" @click.stop="emit('addProcess', { type: 'major', megaId: mega.id })">mdi-plus</v-icon>
                                                             <v-icon v-if="!props.readonly" class="node-edit-icon" size="12" @click.stop="emit('editProcess', { type: 'mega', id: mega.id, name: mega.name })">mdi-pencil-outline</v-icon>
@@ -115,7 +115,7 @@
                                                                         <div v-if="getProcessLabelCode(major.name)" class="node-code">
                                                                             {{ getProcessLabelCode(major.name) }}
                                                                         </div>
-                                                                        <div class="node-name">{{ getProcessLabelName(major.name) }}</div>
+                                                                        <div class="node-name">{{ getProcessLabelName(displayProcessName(major, $t)) }}</div>
                                                                         <div class="node-sub">{{ (major.sub_proc_list || []).length }} sub</div>
                                                                         <v-icon v-if="!props.readonly" class="node-edit-icon" size="12" @click.stop="emit('editProcess', { type: 'major', id: major.id, name: major.name })">mdi-pencil-outline</v-icon>
                                                                         <v-icon
@@ -247,6 +247,7 @@ import ProgressBadge from '@/components/ui/ProgressBadge.vue';
 import { compareMajorsByStage, getMajorBusinessDomain, majorMatchesDomain } from './processClassification';
 import { getHierarchyLabel } from '@/services/tenantCustomizationService';
 import { getStageDef } from '@/utils/processStages';
+import { displayProcessName } from '@/utils/uncategorizedProcess';
 
 const instance = getCurrentInstance();
 const t = (key: string) => {

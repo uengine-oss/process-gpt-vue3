@@ -652,7 +652,14 @@ export default {
                 if (idx === -1) return;
                 const room = this.chatRooms[idx];
                 room.message = room.message || {};
-                room.message.msg = msg.messageForUser ? msg.messageForUser : msg.content;
+                // 번역 키가 있는 고정 안내는 저장 본문(한국어) 대신 현재 언어 문구로
+                const i18nParams = msg.contentI18nParams && typeof msg.contentI18nParams === 'object' ? msg.contentI18nParams : {};
+                const translated = msg.contentI18nKey
+                    ? typeof i18nParams.n === 'number'
+                        ? this.$tc(msg.contentI18nKey, i18nParams.n, i18nParams)
+                        : this.$t(msg.contentI18nKey, i18nParams)
+                    : '';
+                room.message.msg = msg.messageForUser ? msg.messageForUser : translated && translated !== msg.contentI18nKey ? translated.replace(/[*#`]/g, '').trim() : msg.content;
                 room.message.createdAt = msg.timeStamp;
 
                 const isMine = msg.email && this.userInfo?.email ? msg.email === this.userInfo.email : false;
