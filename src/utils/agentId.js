@@ -71,6 +71,68 @@ function parseJson(text) {
     }
 }
 
+/**
+ * 문자열 밖에서 열린 채로 끝난 { [ 를 닫은 문자열. 고칠 수 없으면 ''.
+ * 문자열 안에서 끝났거나(내용이 잘림) 괄호 짝이 어긋나면 고치지 않는다. 끝의 쉼표 하나는 지운다.
+ */
+function closeUnterminatedJson(raw) {
+    const stack = [];
+    let inString = false;
+    let escaped = false;
+    for (const ch of raw) {
+        if (inString) {
+            if (escaped) escaped = false;
+            else if (ch === '\\') escaped = true;
+            else if (ch === '"') inString = false;
+            continue;
+        }
+        if (ch === '"') inString = true;
+        else if (ch === '{' || ch === '[') stack.push(ch);
+        else if (ch === '}' || ch === ']') {
+            const open = stack.pop();
+            if ((ch === '}' && open !== '{') || (ch === ']' && open !== '[')) return '';
+        }
+    }
+    if (inString || stack.length === 0) return '';
+    const body = raw.replace(/\s+$/, '').replace(/,$/, '');
+    return (
+        body +
+        stack
+            .reverse()
+            .map((c) => (c === '{' ? '}' : ']'))
+            .join('')
+    );
+}
+
+/**
+ * 에이전트 파일(agents/<id>.json) 내용을 읽는다.
+ *
+ * 깨진 JSON 이면 끝에 빠진 닫는 괄호만 채워 한 번 더 읽어 본다 — 딥 에이전트가 write_file 내용 끝의 `}` 를
+ * 빠뜨린 일이 있었다(VM 녹화 agents/quote_calc_agent.json, 튜토리얼 회차 estimate_agent.json). 고친 결과가
+ * 이름(name)이 있는 객체일 때만 받아들이고, 그 밖에는 읽지 못한 것으로 둔다(지어내지 않는다).
+ *
+ * @returns {{ value: any, repaired: boolean, error: string }}
+ */
+export function readAgentJson(text) {
+    const raw = (text || '').toString();
+    try {
+        return { value: JSON.parse(raw), repaired: false, error: '' };
+    } catch (e) {
+        const fixed = closeUnterminatedJson(raw);
+        if (fixed) {
+            try {
+                const value = JSON.parse(fixed);
+                if (value && typeof value === 'object' && !Array.isArray(value) && typeof value.name === 'string' && value.name.trim()) {
+                    return { value, repaired: true, error: '' };
+                }
+            } catch (e2) {
+                /* 고쳐도 못 읽으면 아래로 */
+            }
+        }
+        return { value: null, repaired: false, error: (e && e.message) || 'JSON 형식 오류' };
+    }
+}
+
 function isLegacyAgentsFile(f) {
     const name = ((f && f.name) || '').toLowerCase();
     const p = normalizePath(f && f.path).toLowerCase();
@@ -78,45 +140,87 @@ function isLegacyAgentsFile(f) {
 }
 
 /**
- * 작업 폴더 파일 목록에서 에이전트 산출물을 모은다.
- * - agents/<id>.json(단일 객체, 파일 1개 = 에이전트 1명)
+ * 작업 폴더 파일 목록에서 에이전트 산출물을 모으고, 읽지 못한 에이전트 파일도 함께 돌려준다.
+ * - agents/<id>.json(단일 객체, 파일 1개 = 에이전트 1명) — 끝 괄호만 빠졌으면 채워 읽는다(readAgentJson)
  * - 레거시 agents.json(배열 또는 { agents: [...] }) — 첫 파일 하나만
  *
- * 각 항목: { agent, sourceId(파일 안의 원래 id), fileStem(파일명), id(users.id 로 저장할 값), path }
+ * agents 각 항목: { agent, sourceId(파일 안의 원래 id), fileStem(파일명), id(users.id 로 저장할 값), path, repaired }
  * id 는 agentStableId 로 정한다 — draft 저장·최종 저장·편집 이동이 모두 이 값을 쓴다.
+ * unreadable 각 항목: { path, fileStem, error } — 저장하지 않는다. 정의 안의 그 슬러그도 바꾸지 않는다
+ * (저장할 에이전트가 없으니 가리킬 id 가 없다). 예전에는 이런 파일을 말없이 건너뛰어, 고른 에이전트 둘 중
+ * 하나가 저장되지 않은 것을 사용자가 알 수 없었다.
  */
-export function collectWorkspaceAgents(files) {
+export function readWorkspaceAgents(files) {
     const list = Array.isArray(files) ? files : [];
-    const out = [];
+    const agents = [];
+    const unreadable = [];
     for (const f of list) {
         const m = normalizePath(f && f.path).match(PER_AGENT_FILE);
         if (!m) continue;
-        const obj = parseJson(f.content);
-        if (!obj || typeof obj !== 'object' || Array.isArray(obj)) continue;
-        out.push({
+        const { value: obj, repaired, error } = readAgentJson(f.content);
+        if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+            unreadable.push({ path: f.path, fileStem: m[1], error: error || '에이전트 객체가 아닙니다' });
+            continue;
+        }
+        agents.push({
             agent: obj,
             sourceId: (obj.id || '').toString().trim(),
             fileStem: m[1],
             id: agentStableId(obj, f.path),
-            path: f.path
+            path: f.path,
+            repaired
         });
     }
     const legacy = list.find(isLegacyAgentsFile);
     if (legacy) {
         const parsed = parseJson(legacy.content);
+        if (parsed === null && (legacy.content || '').toString().trim()) {
+            unreadable.push({ path: legacy.path, fileStem: '', error: 'JSON 형식 오류' });
+        }
         const arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed && parsed.agents) ? parsed.agents : [];
         for (const a of arr) {
             if (!a || typeof a !== 'object') continue;
-            out.push({
+            agents.push({
                 agent: a,
                 sourceId: (a.id || '').toString().trim(),
                 fileStem: '',
                 id: agentStableId(a, legacy.path),
-                path: legacy.path
+                path: legacy.path,
+                repaired: false
             });
         }
     }
-    return out;
+    return { agents, unreadable };
+}
+
+/** 작업 폴더의 에이전트 산출물(읽은 것만). 읽지 못한 파일까지 필요하면 readWorkspaceAgents 를 쓴다. */
+export function collectWorkspaceAgents(files) {
+    return readWorkspaceAgents(files).agents;
+}
+
+/**
+ * 읽지 못한·고쳐 읽은 에이전트 파일을 사용자에게 알릴 문장. 없으면 ''.
+ * - notSaved: 읽지 못해 저장하지 않은 파일(채팅 저장 결과 카드의 「저장 실패」 줄에 보인다)
+ * - repaired: 끝 괄호를 채워 읽고 저장한 파일
+ */
+export function describeAgentFileProblems({ agents = [], unreadable = [] } = {}) {
+    const fileLabel = (p) => {
+        const m = normalizePath(p).match(/(agents\/[^/]+\.json|agents\.json)$/i);
+        return m ? m[1] : normalizePath(p);
+    };
+    const notSaved = unreadable.map((u) => {
+        const file = fileLabel(u.path);
+        const slug = u.fileStem ? ` 프로세스에서 이 에이전트를 가리키는 「${u.fileStem}」 값은 그대로 두었습니다.` : '';
+        return `에이전트 파일 ${file} 을 읽을 수 없어(JSON 형식 오류) 이 에이전트는 저장하지 않았습니다.${slug} 파일을 고친 뒤 다시 저장하세요.`;
+    });
+    const repaired = agents
+        .filter((a) => a && a.repaired)
+        .map((a) => {
+            const file = fileLabel(a.path);
+            const name = (a.agent && a.agent.name) || a.fileStem;
+            return `에이전트 파일 ${file} 끝의 닫는 괄호가 빠져 있어 채워서 읽고 저장했습니다(${name}).`;
+        });
+    return { notSaved: notSaved.join(' '), repaired: repaired.join(' ') };
 }
 
 /** 하이픈·밑줄·공백·대소문자 차이만 있는 슬러그를 같은 것으로 본다(stock_agent ↔ stock-agent). */

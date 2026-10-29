@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { collectWorkspaceAgents, remapAgentRefs, slugToUuid } from '../../utils/agentId.js';
+import { collectWorkspaceAgents, describeAgentFileProblems, readWorkspaceAgents, remapAgentRefs, slugToUuid } from '../../utils/agentId.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const source = fs.readFileSync(path.join(HERE, 'ChatRoomPage.vue'), 'utf8');
@@ -55,8 +55,11 @@ function buildComponent() {
     const procDefs = [];
     const agents = [];
     const bpmnBuiltFrom = [];
+    const toasts = [];
     // 꺼낸 메서드가 모듈 스코프에서 쓰는 이름들.
     globalThis.collectWorkspaceAgents = collectWorkspaceAgents;
+    globalThis.readWorkspaceAgents = readWorkspaceAgents;
+    globalThis.describeAgentFileProblems = describeAgentFileProblems;
     globalThis.remapAgentRefs = remapAgentRefs;
     globalThis.getTenantId = () => 'tutorial';
     globalThis.backend = {
@@ -91,9 +94,15 @@ function buildComponent() {
         $nextTick(fn) {
             fn();
         },
-        $forceUpdate() {}
+        $forceUpdate() {},
+        // 화면 언어 문구(feat/i18n-tutorial-path 가 이 메서드의 안내문을 $t 로 바꾼다) — 키를 그대로 돌려준다.
+        $t: (key) => key,
+        $toast: {
+            success: (m) => toasts.push({ kind: 'success', m }),
+            warning: (m) => toasts.push({ kind: 'warning', m })
+        }
     };
-    return { vm, procDefs, agents, bpmnBuiltFrom };
+    return { vm, procDefs, agents, bpmnBuiltFrom, toasts };
 }
 
 const DIR = '/workspace/.bpmn/process-a1b2c3d';
@@ -181,4 +190,84 @@ test('작업 폴더의 파일 내용(process-definition.json)은 바꾸지 않�
     const before = files[0].content;
     await vm.handleSaveWorkspaceFiles(files);
     assert.equal(files[0].content, before);
+});
+
+// ---------------------------------------------------------------------------
+// 읽지 못한 에이전트 파일 — 말없이 건너뛰지 않고 저장 결과에 알린다
+//
+// 실제 사고(VM 녹화 policy-to-process): 모델이 agents/quote_calc_agent.json 을 쓰면서 끝의 `}` 를 빠뜨려
+// 고른 에이전트 둘 중 하나가 저장되지 않았는데, 저장 결과는 「생성된 에이전트 (1개)」만 보여 아무도 몰랐다.
+// ---------------------------------------------------------------------------
+
+/** 견적 산출 에이전트(quote_calc_agent)를 하나 더 둔 작업 폴더. quoteContent 로 그 파일 내용을 바꾼다. */
+function workspaceFilesWithQuoteAgent(quoteContent) {
+    const files = workspaceFiles();
+    const pd = JSON.parse(files[0].content);
+    pd.roles.push({ name: '견적 산출 에이전트', endpoint: 'quote_calc_agent' });
+    pd.elements.push(
+        { elementType: 'Activity', id: 'calc_quote', name: '견적 산출', role: '견적 산출 에이전트', agent: 'quote_calc_agent' },
+        { elementType: 'Sequence', id: 's2', source: 'check_stock', target: 'calc_quote' }
+    );
+    files[0].content = JSON.stringify(pd);
+    files.push({ path: `${DIR}/agents/quote_calc_agent.json`, name: 'quote_calc_agent.json', ext: '.json', content: quoteContent });
+    return files;
+}
+
+const QUOTE_AGENT = {
+    id: 'quote_calc_agent',
+    name: '견적 산출 자동화 에이전트',
+    role: '견적 금액 산정 및 견적서 초안 자동 생성 담당자',
+    description: '제품 가격표와 할인율, 설치비 기준에 따라 견적서를 작성한다.'
+};
+
+test('읽을 수 없는 에이전트 파일은 저장하지 않고, 어느 파일인지 저장 결과에 알린다', async () => {
+    const { vm, procDefs, agents, toasts } = buildComponent();
+    // 내용 중간에서 잘린 파일 — 고칠 수 없다(지어내지 않는다).
+    const truncated = '{\n  "id": "quote_calc_agent",\n  "name": "견적 산출 자동화 에이전트",\n  "role": "견적 금액 산';
+    await vm.handleSaveWorkspaceFiles(workspaceFilesWithQuoteAgent(truncated));
+
+    assert.deepEqual(
+        agents.map((a) => a.name),
+        ['재고 확인 에이전트']
+    );
+    const def = procDefs[0].definition;
+    const quoteRole = def.roles.find((r) => r.name === '견적 산출 에이전트');
+    assert.equal(quoteRole.endpoint, 'quote_calc_agent', '저장하지 않은 에이전트의 슬러그는 바꾸지 않는다(가리킬 id 가 없다)');
+    assert.equal(def.activities.find((a) => a.id === 'calc_quote').agent, 'quote_calc_agent');
+
+    const result = vm.messages.at(-1).pdf2bpmnResult;
+    assert.equal(result.savedAgents.length, 1);
+    assert.match(result.__saveError, /agents\/quote_calc_agent\.json/);
+    assert.match(result.__saveError, /저장하지 않았습니다/);
+    const st = vm.workspaceSaveStateByGroup['process-a1b2c3d'];
+    assert.equal(st.saved, true, '나머지는 저장됐다');
+    assert.match(st.error, /agents\/quote_calc_agent\.json/);
+    assert.ok(toasts.some((t) => t.kind === 'warning' && /quote_calc_agent/.test(t.m)));
+});
+
+test('끝의 닫는 괄호만 빠진 에이전트 파일은 채워 읽어 저장하고 그렇게 했다고 알린다', async () => {
+    const { vm, procDefs, agents } = buildComponent();
+    // VM 의 파일 그대로 — 마지막 줄 `}` 가 없다.
+    const missingBrace = JSON.stringify(QUOTE_AGENT, null, 2).replace(/\}\s*$/, '');
+    await vm.handleSaveWorkspaceFiles(workspaceFilesWithQuoteAgent(missingBrace));
+
+    assert.deepEqual(agents.map((a) => a.name).sort(), ['견적 산출 자동화 에이전트', '재고 확인 에이전트']);
+    const quoteId = slugToUuid('quote_calc_agent');
+    assert.ok(agents.some((a) => a.id === quoteId));
+    assert.equal(procDefs[0].definition.roles.find((r) => r.name === '견적 산출 에이전트').endpoint, quoteId);
+
+    const result = vm.messages.at(-1).pdf2bpmnResult;
+    assert.equal(result.__saveError, undefined, '저장은 됐으니 「저장 실패」 줄은 없다');
+    assert.match(vm.workspaceSaveStateByGroup['process-a1b2c3d'].error, /채워서 읽고 저장했습니다/);
+});
+
+test('에이전트 파일이 모두 멀쩡하면 아무 안내도 붙지 않는다', async () => {
+    const { vm, toasts } = buildComponent();
+    await vm.handleSaveWorkspaceFiles(workspaceFilesWithQuoteAgent(JSON.stringify(QUOTE_AGENT)));
+    assert.equal(vm.messages.at(-1).pdf2bpmnResult.__saveError, undefined);
+    assert.equal(vm.workspaceSaveStateByGroup['process-a1b2c3d'].error, '');
+    assert.equal(
+        toasts.some((t) => t.kind === 'warning'),
+        false
+    );
 });
