@@ -4825,7 +4825,10 @@ export default {
             );
         },
         getLoadingLabel(message) {
-            return message?.content || '생각 중...';
+            // 저장된 자리표시 문구(생각 중...)는 화면 언어로
+            const content = message?.content;
+            if (!content || content === '생각 중...' || content === '생각 중…') return this.$t('AgentMessagePanel.thinking');
+            return content;
         },
         /**
          * 스트리밍 중(isLoading=true) 단계의 마크다운 렌더.
@@ -4862,7 +4865,7 @@ export default {
                 t === 'AI 생성중...' ||
                 t === 'AI 생성 중...'
             ) {
-                return '<span style="color:rgba(0,0,0,0.55)">생각 중...</span>';
+                return `<span style="color:rgba(0,0,0,0.55)">${this.$t('AgentMessagePanel.thinking')}</span>`;
             }
             marked.setOptions({ breaks: true, gfm: true });
             return this.withExternalLinks(this.withMermaidContainers(marked(this.escapeSingleTildes(raw))));
