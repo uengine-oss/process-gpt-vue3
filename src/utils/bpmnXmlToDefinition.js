@@ -183,6 +183,15 @@ export async function convertXMLToJSON(xmlString, processDefinitionId) {
             return JSON.stringify(parsed);
         };
 
+        // properties(JSON 문자열) — 편집기(bpmn-js)가 내보내는 json="" 속성 형식과 BPMNXmlGenerator 의
+        // <uengine:json> 자식 형식을 모두 읽는다. 자식 형식만 읽으면 편집기에서 저장한 XML 의 값이 '{}' 가 된다.
+        const propsString = (node) => {
+            const parsed = getPropsJson(node);
+            if (parsed && typeof parsed === 'object') return JSON.stringify(parsed);
+            const child = node?.['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'];
+            return typeof child === 'string' && child ? child : '{}';
+        };
+
         // ---------- route / meta ----------
         let definitionName = null;
         let version = null;
@@ -498,17 +507,20 @@ export async function convertXMLToJSON(xmlString, processDefinitionId) {
                 condition: window.$mode == 'ProcessGPT' ? gateway.condition || '' : propsJson?.condition || '',
                 // 게이트웨이 참조정보(분기 판단용 폼/필드 키): ["form_id.field_id", ...]
                 conditionData: Array.isArray(propsJson?.conditionData) ? propsJson.conditionData : [],
-                properties: gateway['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
+                properties: propsString(gateway)
             };
         };
 
         const buildSequence = (flow) => {
+            // 연결선 조건은 sequenceFlow 의 uengine:properties JSON 에 있다(SequenceFlowPanel·BPMNXmlGenerator 가 쓴다).
+            // 편집기는 이를 json="" 속성으로 내보내므로 getPropsJson(두 형식 모두)으로 읽는다. 속성 형식을 못 읽으면
+            // 편집기 저장마다 condition 이 '' 로, properties(엔진이 읽는 conditionFunction 등)가 '{}' 로 지워진다.
+            const propsJson = getPropsJson(flow) || {};
             let condition = '';
             if (window.$mode == 'ProcessGPT') {
-                condition = flow.condition || '';
+                condition = flow.condition || (typeof propsJson.condition === 'string' ? propsJson.condition : '') || '';
             } else {
-                const fjStr = flow['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'];
-                condition = (fjStr ? safeJson(fjStr, {})?.condition : '') || flow.condition || '';
+                condition = propsJson.condition || flow.condition || '';
             }
             return {
                 id: flow.id,
@@ -516,7 +528,7 @@ export async function convertXMLToJSON(xmlString, processDefinitionId) {
                 source: flow.sourceRef || flow.source,
                 target: flow.targetRef || flow.target,
                 condition,
-                properties: flow['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
+                properties: propsString(flow)
             };
         };
 
@@ -741,4 +753,73 @@ export async function convertXMLToJSON(xmlString, processDefinitionId) {
         console.error('Error parsing XML:', error);
         throw error;
     }
+}
+
+function parsePropsObject(value) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) return value;
+    if (typeof value !== 'string' || !value.trim()) return {};
+    try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function hasKey(obj, key) {
+    return !!obj && Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+/**
+ * 편집기 저장(XML → 정의)에서 XML 에 실리지 않은 연결선 조건·게이트웨이 참조정보를 저장돼 있던 정의에서 이어 받는다.
+ *
+ * 대화로 만든 프로세스의 BPMN 은 정의(JSON)에서 파생된 것이라, 게이트웨이 conditionData 같은 값은 XML 에 없고
+ * proc_def.definition 에만 있다. 편집기는 저장할 때 정의를 XML 에서 다시 만들므로(convertXMLToJSON), activity 는
+ * mergeProcessDefinitionActivities 로 이전 값을 보완하지만 연결선·게이트웨이는 그대로 덮여 조건이 지워졌다.
+ * 그러면 엔진은 갈림길을 연결선 이름(승인/반려)만 보고 LLM 으로 고른다.
+ *
+ * - 연결선: XML JSON 에 condition 키가 없고(편집기에서 조건을 건드리지 않음) 조건이 비어 있으면, 같은 id —
+ *   없으면 같은 source→target(편집기가 id 를 SequenceFlow_<source>_<target> 으로 바꾼다) — 의 저장된 조건과
+ *   properties(conditionFunction 등)를 이어 받는다.
+ * - 게이트웨이: XML JSON 에 conditionData 키가 없고 비어 있으면 같은 id 의 저장된 conditionData 를 이어 받는다.
+ * 편집기에서 직접 지운 값(키가 있고 비어 있음)은 그대로 둔다. next 를 제자리에서 고치고 돌려준다.
+ */
+export function keepStoredFlowConditions(next, stored) {
+    if (!next || typeof next !== 'object' || !stored || typeof stored !== 'object') return next;
+
+    const storedSequences = (Array.isArray(stored.sequences) ? stored.sequences : []).filter((s) => s && typeof s === 'object');
+    const byId = new Map();
+    const byEnds = new Map();
+    for (const seq of storedSequences) {
+        if (seq.id && !byId.has(seq.id)) byId.set(seq.id, seq);
+        if (seq.source && seq.target) {
+            const key = `${seq.source}\u0000${seq.target}`;
+            // 같은 두 점을 잇는 선이 여럿이면 어느 것인지 모르므로 쓰지 않는다.
+            byEnds.set(key, byEnds.has(key) ? null : seq);
+        }
+    }
+    for (const seq of Array.isArray(next.sequences) ? next.sequences : []) {
+        if (!seq || typeof seq !== 'object') continue;
+        const props = parsePropsObject(seq.properties);
+        if (hasKey(props, 'condition')) continue;
+        if (typeof seq.condition === 'string' && seq.condition.trim()) continue;
+        if (seq.condition && typeof seq.condition === 'object') continue;
+        const prev = byId.get(seq.id) || byEnds.get(`${seq.source}\u0000${seq.target}`);
+        if (!prev) continue;
+        const prevProps = parsePropsObject(prev.properties);
+        const prevCondition = prev.condition || prevProps.condition || '';
+        if (prevCondition) seq.condition = typeof prevCondition === 'string' ? prevCondition : JSON.parse(JSON.stringify(prevCondition));
+        const merged = { ...prevProps, ...props };
+        if (Object.keys(merged).length) seq.properties = JSON.stringify(merged);
+    }
+
+    const storedGateways = new Map((Array.isArray(stored.gateways) ? stored.gateways : []).filter((g) => g && g.id).map((g) => [g.id, g]));
+    for (const gw of Array.isArray(next.gateways) ? next.gateways : []) {
+        if (!gw || typeof gw !== 'object') continue;
+        if (Array.isArray(gw.conditionData) && gw.conditionData.length) continue;
+        if (hasKey(parsePropsObject(gw.properties), 'conditionData')) continue;
+        const prev = storedGateways.get(gw.id);
+        if (prev && Array.isArray(prev.conditionData) && prev.conditionData.length) gw.conditionData = [...prev.conditionData];
+    }
+    return next;
 }

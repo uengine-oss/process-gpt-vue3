@@ -7560,12 +7560,13 @@ export default {
         async runDraftValidationForRoom() {
             const groups = Object.keys(this.roomWorkspaceFilesByGroup || {});
             if (!groups.length) return;
-            let elementsToFlattenedDefinition;
+            let saveHelpers;
             try {
-                ({ elementsToFlattenedDefinition } = await import('@/utils/elementsToFlattened.js'));
+                saveHelpers = await import('@/utils/elementsToFlattened.js');
             } catch (e) {
                 return;
             }
+            const { elementsToFlattenedDefinition, collectWorkspaceForms, linkWorkspaceForms } = saveHelpers;
             const tenantId = getTenantId();
             // 이전 방 draft 정리(option A): 이번에 만들 draft id 집합을 모은 뒤, 추적된 옛 id 중 빠진 것 삭제.
             const prevDraftIds = Array.isArray(this._roomDraftIds) ? this._roomDraftIds.slice() : [];
@@ -7611,13 +7612,11 @@ export default {
                 const bpmnXml = (bpmnFile && bpmnFile.content) || this._buildBpmnXmlFromDefinition(definition) || null;
 
                 // 검증용 폼 정보(activity_id → {form_id, html}) — 실행 테스트 입력값 생성에 사용.
+                // 최종 저장(handleSaveWorkspaceFiles)과 같은 폼 id 로 저장하고, 정의(activity.tool·참조정보)가
+                // 그 id 를 가리키게 맞춘다 — 어긋나면 검증 실행이 기본 폼으로 돌아 갈림길을 못 정한다.
                 const forms = {};
-                for (const f of files) {
-                    const p = (f.path || '').replace(/\\/g, '/');
-                    const m = p.match(/\/forms\/([^/]+)\.(?:html|form)$/i);
-                    if (!m) continue;
-                    const aid = m[1];
-                    forms[aid] = { form_id: `${procId}_${aid.toLowerCase()}_form`, html: (f.content || '').toString() };
+                for (const form of linkWorkspaceForms(definition, collectWorkspaceForms(files, procId, definition))) {
+                    forms[form.activityId] = { form_id: form.formId, html: form.html };
                 }
 
                 st.validating = true;
@@ -7848,7 +7847,8 @@ export default {
             st.saving = true;
             st.error = '';
             try {
-                const { elementsToFlattenedDefinition } = await import('@/utils/elementsToFlattened.js');
+                const saveHelpers = await import('@/utils/elementsToFlattened.js');
+                const { elementsToFlattenedDefinition, collectWorkspaceForms, linkWorkspaceForms } = saveHelpers;
                 let pd;
                 try {
                     pd = JSON.parse(pdFile.content);
@@ -7869,6 +7869,10 @@ export default {
                 );
                 const bpmnXml = bpmnFile && bpmnFile.content ? bpmnFile.content : this._buildBpmnXmlFromDefinition(definition) || null;
 
+                // 폼(forms/<id>.html|.form)을 저장할 id 를 편집기 폼 저장과 같은 규칙으로 정하고, 정의의
+                // activity.tool·참조정보(inputData)·게이트웨이 conditionData 가 그 id 를 가리키게 맞춘다.
+                // 어긋나면 실행 화면이 기본 폼을 띄우고 입력값이 엔진이 찾는 폼 id 밑에 없어 갈림길이 멈춘다.
+                const workspaceForms = linkWorkspaceForms(definition, collectWorkspaceForms(list, procId, definition));
                 // 1) proc_def 저장 — 최종 저장(사용자 클릭)이므로 draft 를 승격(is_draft=false)해 목록에 노출.
                 await backend.putObject(
                     'proc_def',
@@ -7885,33 +7889,19 @@ export default {
                     { onConflict: 'id,tenant_id' }
                 );
 
-                // 파일명(camelCase 등) → activity id 와 동일 규칙(snake)으로 정규화(매핑 일관성)
-                const toSnake = (s) =>
-                    String(s || '')
-                        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
-                        .replace(/[^a-zA-Z0-9]+/g, '_')
-                        .replace(/_+/g, '_')
-                        .replace(/^_|_$/g, '')
-                        .toLowerCase() || 'node';
-
-                // 2) form_def 저장 (forms/<id>.html → form_def, form_id 는 activity.tool 과 동일 규칙)
+                // 2) form_def 저장 — 위에서 정한 폼 id·activity id 로(activity.tool 이 가리키는 id 와 같다).
+                //    HTML 정규화(row-layout·v-model)와 fields_json 추출은 putRawDefinition(type: 'form') 이 한다.
                 let formsSaved = 0;
-                for (const f of list) {
-                    const p = (f.path || '').replace(/\\/g, '/');
-                    const lname = (f.name || '').toLowerCase();
-                    const isForm =
-                        /\/forms\//.test(p) &&
-                        (f.ext === '.html' || f.ext === '.form' || lname.endsWith('.html') || lname.endsWith('.form'));
-                    if (!isForm) continue;
-                    const activityId = toSnake((f.name || '').replace(/\.(?:html|form)$/i, ''));
-                    const html = (f.content || '').toString();
-                    if (!activityId || !html) continue;
-                    const formId = `${procId}_${activityId}_form`;
+                for (const form of workspaceForms) {
                     try {
-                        await backend.putRawDefinition(html, formId, { type: 'form', proc_def_id: procId, activity_id: activityId });
+                        await backend.putRawDefinition(form.html, form.formId, {
+                            type: 'form',
+                            proc_def_id: procId,
+                            activity_id: form.activityId
+                        });
                         formsSaved += 1;
                     } catch (formErr) {
-                        console.warn('[SaveWS] form 저장 실패:', activityId, formErr);
+                        console.warn('[SaveWS] form 저장 실패:', form.activityId, formErr);
                     }
                 }
 

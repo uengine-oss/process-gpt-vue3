@@ -15,6 +15,7 @@ import { syncBpmnCallActivitiesIntoDefinition } from '@/utils/bpmnCallActivityDe
 import { buildChangeSignature } from '@/utils/xmlDiff';
 import {
     convertXMLToJSON as convertXMLToJSONShared,
+    keepStoredFlowConditions,
     reorderActivitiesBySequence as reorderActivitiesBySequenceShared
 } from '@/utils/bpmnXmlToDefinition';
 
@@ -249,6 +250,8 @@ export default {
                 );
             }
             this.mergeSubProcessActivitiesRecursively(newProcessDefinition.subProcesses, previousActivityMap);
+            // 연결선 조건·게이트웨이 conditionData 도 XML 에 없으면 이전 정의 값을 이어 받는다(편집기 저장이 지우지 않게).
+            keepStoredFlowConditions(newProcessDefinition, previousDefinition);
             return newProcessDefinition;
         },
         async checkedFormData() {
