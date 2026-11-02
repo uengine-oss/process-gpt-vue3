@@ -70,6 +70,66 @@ async function getParticipantOrientation(page) {
     });
 }
 
+async function expectOrthogonalSequenceFlows(page) {
+    const routing = await page.evaluate(() => {
+        const registry = window.$bpmnAutoLayoutE2E.$refs.bpmn.bpmnViewer.get('elementRegistry');
+        const flows = registry.filter(element => element.type === 'bpmn:SequenceFlow');
+        return {
+            count: flows.length,
+            invalid: flows.filter(edge => edge.waypoints.length < 2 || edge.waypoints.some(point =>
+                !Number.isFinite(point.x) || !Number.isFinite(point.y)
+            )).map(edge => edge.id),
+            diagonal: flows.flatMap(edge => edge.waypoints.slice(1).flatMap((point, index) => {
+                const previous = edge.waypoints[index];
+                return Math.abs(point.x - previous.x) > 0.1 && Math.abs(point.y - previous.y) > 0.1
+                    ? [`${edge.id}:${index}`] : [];
+            }))
+        };
+    });
+    expect(routing.count).toBeGreaterThan(0);
+    expect(routing.invalid, 'sequence flow coordinates').toEqual([]);
+    expect(routing.diagonal, 'sequence flow orthogonality').toEqual([]);
+}
+
+async function expectNoSubprocessTaskOverlap(page) {
+    const overlaps = await page.evaluate(() => {
+        const registry = window.$bpmnAutoLayoutE2E.$refs.bpmn.bpmnViewer.get('elementRegistry');
+        const isDescendant = (element, ancestor) => {
+            for (let parent = element.parent; parent; parent = parent.parent) {
+                if (parent === ancestor) return true;
+            }
+            return false;
+        };
+        return registry.filter(element => element.type === 'bpmn:SubProcess').flatMap(subprocess =>
+            registry.filter(element => element.type === 'bpmn:UserTask' && !isDescendant(element, subprocess) &&
+                element.x < subprocess.x + subprocess.width && element.x + element.width > subprocess.x &&
+                element.y < subprocess.y + subprocess.height && element.y + element.height > subprocess.y
+            ).map(element => `${subprocess.id}:${element.id}`)
+        );
+    });
+    expect(overlaps, 'subprocess must not cover an external task').toEqual([]);
+}
+
+async function installNativeRoutingProbe(page) {
+    await page.evaluate(() => {
+        const viewer = window.$bpmnAutoLayoutE2E.$refs.bpmn.bpmnViewer;
+        const modeling = viewer.get('modeling');
+        const delegate = viewer.get('layouter')._delegate;
+        const probe = window.__nativeRoutingProbe = { depth: 0, duringResize: 0, total: 0 };
+        const resizeShape = modeling.resizeShape.bind(modeling);
+        modeling.resizeShape = (...args) => {
+            probe.depth++;
+            try { return resizeShape(...args); } finally { probe.depth--; }
+        };
+        const layoutConnection = delegate.layoutConnection.bind(delegate);
+        delegate.layoutConnection = (...args) => {
+            probe.total++;
+            if (probe.depth) probe.duringResize++;
+            return layoutConnection(...args);
+        };
+    });
+}
+
 async function getViewportFitMetrics(page) {
     return page.evaluate(() => {
         const viewer = window.$bpmnAutoLayoutE2E?.$refs?.bpmn?.bpmnViewer;
@@ -230,22 +290,17 @@ test.describe('process-gpt bpmn auto orientation on viewport ratio change', () =
         await page.locator('.djs-palette [data-action="change-orientation"]').waitFor();
         await loadCaseByIndex(page, caseIndex);
         await installAutoLayoutCounter(page);
+        await installNativeRoutingProbe(page);
         const before = await getParticipantOrientation(page);
 
         await page.locator('.djs-palette [data-action="change-orientation"]').click();
         await page.waitForTimeout(1500);
         expect((await getParticipantOrientation(page)).isHorizontal).toBe(!before.isHorizontal);
         expect(await getAutoLayoutApplyCount(page)).toBe(0);
-        const rotationErrors = await page.evaluate(() => {
-            const registry = window.$bpmnAutoLayoutE2E.$refs.bpmn.bpmnViewer.get('elementRegistry');
-            return registry.filter(element => element.type === 'bpmn:SequenceFlow').flatMap(edge =>
-                edge.waypoints.slice(1).flatMap((point, index) => {
-                    const previous = edge.waypoints[index];
-                    return Math.abs(point.x - previous.x) > 0.1 && Math.abs(point.y - previous.y) > 0.1
-                        ? [`${edge.id}:${index}`] : [];
-                }));
-        });
-        expect(rotationErrors).toEqual([]);
+        await expectOrthogonalSequenceFlows(page);
+        await expectNoSubprocessTaskOverlap(page);
+        expect(await page.evaluate(() => window.__nativeRoutingProbe.duringResize)).toBe(0);
+        expect(await page.evaluate(() => window.__nativeRoutingProbe.total)).toBeGreaterThan(0);
         await page.evaluate(() => window.$bpmnAutoLayoutE2E.$refs.bpmn.resetZoom());
         await screenshotCanvas(page, `11-palette-rotation-only-${caseIndex}`);
 
@@ -253,9 +308,57 @@ test.describe('process-gpt bpmn auto orientation on viewport ratio change', () =
         await page.waitForTimeout(1500);
         expect((await getParticipantOrientation(page)).isHorizontal).toBe(before.isHorizontal);
         expect(await getAutoLayoutApplyCount(page)).toBe(0);
+        await expectOrthogonalSequenceFlows(page);
+        await expectNoSubprocessTaskOverlap(page);
+        expect(await page.evaluate(() => window.__nativeRoutingProbe.duringResize)).toBe(0);
+        await screenshotCanvas(page, `12-palette-rotation-return-${caseIndex}`);
+
+        await page.evaluate(() => {
+            const viewer = window.$bpmnAutoLayoutE2E.$refs.bpmn.bpmnViewer;
+            const task = viewer.get('elementRegistry').find(element => element.type === 'bpmn:UserTask');
+            viewer.get('modeling').resizeShape(task, {
+                x: task.x, y: task.y, width: task.width + 10, height: task.height
+            });
+        });
+        expect(await page.evaluate(() => window.__nativeRoutingProbe.duringResize)).toBeGreaterThan(0);
 
         await page.locator('.e2e-auto-layout-button').click();
         await expect.poll(() => getAutoLayoutApplyCount(page)).toBeGreaterThan(0);
+        await page.waitForTimeout(1500);
+        await expectOrthogonalSequenceFlows(page);
+    });
+
+    test('lane-less palette rotation restores native routing after both directions', async ({ page }) => {
+        await setAutoOrientationMode(page, 'none');
+        await page.goto('/bpmn-auto-layout-e2e');
+        await page.locator('.djs-palette [data-action="change-orientation"]').waitFor();
+        await page.evaluate(async () => {
+            const viewer = window.$bpmnAutoLayoutE2E.$refs.bpmn.bpmnViewer;
+            const { xml } = await viewer.saveXML();
+            const doc = new DOMParser().parseFromString(xml, 'application/xml');
+            const lanes = [...doc.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'lane')];
+            const laneIds = new Set(lanes.map(lane => lane.getAttribute('id')));
+            [...doc.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'laneSet')].forEach(laneSet => laneSet.remove());
+            [...doc.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/DI', 'BPMNShape')]
+                .filter(shape => laneIds.has(shape.getAttribute('bpmnElement'))).forEach(shape => shape.remove());
+            await viewer.importXML(new XMLSerializer().serializeToString(doc));
+        });
+        await installNativeRoutingProbe(page);
+        for (const horizontal of [false, true]) {
+            await page.locator('.djs-palette [data-action="change-orientation"]').click();
+            await page.waitForTimeout(500);
+            expect((await getParticipantOrientation(page)).isHorizontal).toBe(horizontal);
+            expect(await page.evaluate(() => window.__nativeRoutingProbe.duringResize)).toBe(0);
+            await expectOrthogonalSequenceFlows(page);
+        }
+        await page.evaluate(() => {
+            const viewer = window.$bpmnAutoLayoutE2E.$refs.bpmn.bpmnViewer;
+            const task = viewer.get('elementRegistry').find(element => element.type === 'bpmn:UserTask');
+            viewer.get('modeling').resizeShape(task, {
+                x: task.x, y: task.y, width: task.width + 10, height: task.height
+            });
+        });
+        expect(await page.evaluate(() => window.__nativeRoutingProbe.duringResize)).toBeGreaterThan(0);
     });
 
     test('manual rotation does not run auto layout afterwards', async ({ page }) => {

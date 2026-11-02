@@ -5,7 +5,7 @@ const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
     testDir: './e2e/bpmn-auto-layout',
-    testMatch: ['bpmn-auto-layout.spec.mjs', 'bpmn-auto-orientation.spec.mjs', 'bpmn-layout-compare.spec.mjs'],
+    testMatch: ['bpmn-auto-layout.spec.mjs', 'bpmn-auto-orientation.spec.mjs', 'bpmn-layout-compare.spec.mjs', 'bpmn-connection-drag.spec.mjs'],
     fullyParallel: false,
     workers: 1,
     reporter: [
