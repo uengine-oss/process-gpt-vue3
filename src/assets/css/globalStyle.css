@@ -220,6 +220,8 @@ hr {
         flex: 0 0 100% !important;
         max-width: 100% !important;
         margin-bottom: 0.75rem;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
     }
     .form-layout-card-contents-desktop [class*='col-']:not(:only-child):not(:last-child) {
         border-right: none !important;
@@ -762,6 +764,37 @@ hr {
 .row-layout-box {
     max-height:320px;
     overflow: auto;
+}
+
+/* 여러 행 입력(is_multidata_mode) 행은 .form-layout-card-contents-* 밖에 있어 좁은 화면에서도 칸이 나란히 남았다.
+   놓인 폭 기준으로 칸을 세로로 쌓는다(넓은 화면은 그대로). */
+.row-layout-box {
+    container: rlb / inline-size;
+}
+/* 휴대폰: 제출 완료·이전 단계·중간 저장 버튼이 높이 24px 라 손가락으로 누르기 어렵다(권장 40px 이상) */
+@media only screen and (max-width: 768px) {
+    .Process-gpt-execute-mobile-layout .v-row.mt-4 > .v-btn.v-btn--density-compact,
+    .work-itme-current-component .v-row.mt-4 > .v-btn.v-btn--density-compact {
+        min-height: 40px;
+        padding-inline: 16px;
+    }
+}
+/* 휴대폰: 페이지 스크롤 안의 또 다른 스크롤(320px 제한)은 항목을 가리고 조작을 어렵게 한다 */
+@media only screen and (max-width: 768px) {
+    .row-layout-box {
+        max-height: none;
+        overflow: visible;
+    }
+}
+@container rlb (max-width: 560px) {
+    .row-layout-box .row {
+        flex-direction: column !important;
+    }
+    .row-layout-box [class*='col-'] {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
 }
 
 .user-input-generator-textarea {
@@ -1649,6 +1682,9 @@ hr {
             flex: 0 0 100% !important;
             max-width: 100% !important;
             margin-bottom: 1rem;
+            /* #kEditor1 .col-sm-N {padding:10px} 가 마지막 칸에만 남아 입력칸 오른쪽 끝이 들쭉날쭉해진다 */
+            padding-left: 0 !important;
+            padding-right: 0 !important;
         }
         
         /* 여러 개의 컬럼이 있을 때만 border-bottom 적용 */

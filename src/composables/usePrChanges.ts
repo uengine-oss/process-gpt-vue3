@@ -63,6 +63,10 @@ export interface LoadPrChangesOptions {
     withSnapshots?: boolean;
 }
 
+/** 요소가 하나도 없는 BPMN. 새 프로세스 제안의 비교 기준이다. */
+export const EMPTY_BPMN_XML =
+    '<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="empty"><bpmn:process id="empty_process" isExecutable="true"/></bpmn:definitions>';
+
 /** 프로세스·의사결정의 브랜치 이름은 `v4.0-abc` 처럼 버전 앞에 v 가 붙는다. */
 function stripVersionPrefix(branch: string | null | undefined): string {
     return String(branch || '').replace(/^v/i, '');
@@ -486,6 +490,11 @@ async function loadDefinitionSnapshots(
     const base =
         byVersion.get(String(head.parent_version || '')) || byVersion.get(derivedParent) || byVersion.get(stripVersionPrefix(baseBranch));
     if (base?.snapshot) return { headXml: head.snapshot || '', baseXml: base.snapshot };
+
+    // 기준 브랜치가 없는 요청은 새 프로세스 제안이다(프로세스 식별 화면이 만든다).
+    // 아직 없던 프로세스이므로 빈 정의와 비교해 모든 요소를 '추가' 로 보인다. 숨김 정의에
+    // 초안 XML 이 이미 들어 있어 아래 운영 XML 과 비교하면 변경이 없는 것처럼 보인다.
+    if (!baseBranch && !head.parent_version) return { headXml: head.snapshot || '', baseXml: EMPTY_BPMN_XML };
 
     // 버전을 한 번도 저장하지 않은 정의에 초안이 올라온 경우(피드백 기반 개선 요청이 대표적이다)
     // 갈라져 나온 버전 행이 없다. 그 초안은 지금 운영 중인 정의에서 갈라졌으므로 운영 XML

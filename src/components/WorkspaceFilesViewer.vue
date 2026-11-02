@@ -3,7 +3,8 @@
         <!-- 작업 폴더 헤더 (+ 일괄 저장 버튼) -->
         <div class="ws-files__header">
             <v-icon size="16" class="mr-1">mdi-folder-outline</v-icon>
-            <span class="ws-files__title">작업 폴더</span>
+            <span class="ws-files__title">{{ title || '작업 폴더' }}</span>
+            <v-icon v-if="readOnly" size="14" class="ml-1" :title="$t('Handover.readOnly')">mdi-lock-outline</v-icon>
             <span class="ws-files__count">{{ displayFiles.length }}</span>
             <v-spacer />
             <!-- 실엔진 검증/자동개선 진행 표시 (제시 전 자동 수행) -->
@@ -22,7 +23,7 @@
                 {{ saveState.validatePassed ? '검증 통과' : `검증 보정 ${saveState.validateReport.iterations || 0}회` }}
             </v-chip>
             <v-btn
-                v-if="savableFiles.length"
+                v-if="savableFiles.length && !readOnly"
                 size="x-small"
                 color="primary"
                 variant="flat"
@@ -36,26 +37,47 @@
 
         <!-- 파일 목록 (process-definition.json·manifest.json 은 숨김 — BPMN 파일 내부 JSON 탭에서 확인/편집) -->
         <div class="ws-files__list">
-            <button
-                v-for="f in displayFiles"
-                :key="f.path"
-                class="ws-files__item"
-                :class="{ 'is-active': f.path === selectedPath }"
-                @click="select(f)"
-            >
-                <v-icon size="15" class="ws-files__item-icon">{{ fileIcon(fileExtension(f)) }}</v-icon>
-                <span class="ws-files__item-name">{{ displayName(f) }}</span>
-                <span v-if="f.status === 'running'" class="ws-files__item-badge is-running">편집 중…</span>
-                <span v-else-if="f.op === 'edit'" class="ws-files__item-badge is-edit">수정</span>
-                <span v-else class="ws-files__item-badge is-create">생성</span>
-            </button>
+            <template v-for="(f, i) in displayFiles" :key="f.path">
+                <!-- 갈래(방 브랜치)별 묶음 머리 -->
+                <div v-if="f.group !== undefined && (i === 0 || displayFiles[i - 1].group !== f.group)" class="ws-files__group">
+                    <v-icon size="14" class="mr-1">mdi-source-branch</v-icon>{{ f.group }}
+                </div>
+                <button class="ws-files__item" :class="{ 'is-active': f.path === selectedPath }" @click="select(f)">
+                    <v-icon size="15" class="ws-files__item-icon">{{ fileIcon(fileExtension(f)) }}</v-icon>
+                    <span class="ws-files__item-name">{{ displayName(f) }}</span>
+                    <span v-if="f.status === 'running'" class="ws-files__item-badge is-running">편집 중…</span>
+                    <span v-else-if="f.op === 'same'"></span>
+                    <span v-else-if="f.op === 'edit'" class="ws-files__item-badge is-edit">수정</span>
+                    <span v-else class="ws-files__item-badge is-create">생성</span>
+                </button>
+            </template>
             <div v-if="!displayFiles.length" class="ws-files__empty">아직 생성된 파일이 없습니다.</div>
         </div>
 
         <!-- 선택 파일 미리보기 — 확장자별 공통 뷰어(HwpxViewer)로 동적 디스패치(URL 없이 content 렌더) -->
         <div v-if="selected" class="ws-files__preview">
             <div class="ws-files__preview-bar">
-                <span class="ws-files__preview-path">{{ selected.path }}</span>
+                <span class="ws-files__preview-path">{{ selected.group !== undefined ? selected.name : selected.path }}</span>
+                <!-- 이전 버전(커밋 이력) — 커밋은 바뀌지 않으므로 어느 버전이든 연다 -->
+                <v-menu v-if="loadVersions" location="bottom end" @update:model-value="(open) => open && fetchVersions()">
+                    <template v-slot:activator="{ props }">
+                        <v-btn v-bind="props" size="x-small" variant="text" icon class="e2e-ws-file-history" :title="$t('Handover.versions')">
+                            <v-icon size="16">mdi-history</v-icon>
+                        </v-btn>
+                    </template>
+                    <v-list density="compact" min-width="220">
+                        <v-list-item v-if="versionsLoading"><v-progress-circular indeterminate size="16" width="2" /></v-list-item>
+                        <v-list-item
+                            v-for="v in versions"
+                            :key="v.commitId"
+                            class="e2e-ws-file-version"
+                            prepend-icon="mdi-source-commit"
+                            :title="versionTime(v.at)"
+                            :subtitle="v.authorName || v.reason"
+                            @click="openVersion(v)"
+                        />
+                    </v-list>
+                </v-menu>
                 <v-btn
                     v-if="selectedIsDocument"
                     size="x-small"
@@ -111,7 +133,7 @@
                     :ext="fileExtension(selected)"
                     :def-json="selected.json || ''"
                     :edit-target="editTarget"
-                    :read-only="false"
+                    :read-only="readOnly"
                     @update:content="onContentEdit"
                     @update:def-json="onDefJsonEdit"
                     @ai-edit-request="onAiEditRequest"
@@ -155,13 +177,20 @@ export default {
         // [{ path, name, ext, content, op:'create'|'edit', truncated, status }]
         files: { type: Array, default: () => [] },
         // { saving, saved, error } — 부모(ChatRoomPage)가 DB 저장 상태를 전달
-        saveState: { type: Object, default: () => ({ saving: false, saved: false, error: '' }) }
+        saveState: { type: Object, default: () => ({ saving: false, saved: false, error: '' }) },
+        // 다른 방 브랜치 산출물처럼 고칠 수 없는 목록. 저장·편집을 막는다.
+        readOnly: { type: Boolean, default: false },
+        title: { type: String, default: '' },
+        // (file) => Promise<[{ commitId, at, reason, authorName, url }]> — 주면 이전 버전 메뉴를 보인다
+        loadVersions: { type: Function, default: null }
     },
     emits: ['save', 'edit-file', 'ai-edit-file', 'navigate-process', 'resolve-url'],
     data() {
         return {
             selectedPath: null,
-            downloading: false
+            downloading: false,
+            versions: [],
+            versionsLoading: false
         };
     },
     computed: {
@@ -291,6 +320,27 @@ export default {
         }
     },
     methods: {
+        async fetchVersions() {
+            if (!this.loadVersions || !this.selected) return;
+            this.versionsLoading = true;
+            this.versions = [];
+            try {
+                this.versions = (await this.loadVersions(this.selected)) || [];
+            } catch (e) {
+                this.versions = [];
+            } finally {
+                this.versionsLoading = false;
+            }
+        },
+        openVersion(v) {
+            if (v?.url) window.open(v.url, '_blank', 'noopener');
+        },
+        versionTime(at) {
+            const d = new Date(at);
+            if (isNaN(d.getTime())) return String(at || '');
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        },
         /** 목록에서 파일을 고른다. 고르는 즉시 받을 수 있는 주소를 확보한다. */
         select(file) {
             this.selectedPath = file?.path || null;
@@ -570,5 +620,13 @@ export default {
     margin-top: 10px;
     font-size: 11px;
     color: rgba(var(--v-theme-on-surface), 0.55);
+}
+.ws-files__group {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px 2px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(var(--v-theme-on-surface), 0.7);
 }
 </style>

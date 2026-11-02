@@ -311,6 +311,8 @@
                             :read-only="isBuiltinSkill"
                             :selected-branch="selectedBranch"
                             :default-branch="defaultBranch"
+                            :git-backed="branches.length > 0"
+                            :git-ready="branchesLoaded"
                             :is-owner="isSkillOwner"
                             @update:isLoading="isEditorLoading = $event"
                             @file-saved="onFileSaved"
@@ -460,6 +462,8 @@ export default {
             originalFolderName: '',
 
             branches: [],
+            // 저장소 연결 여부(branches)를 다 불러왔는지. 스킬 전용 도구 패널이 지정 시점을 정할 때 쓴다.
+            branchesLoaded: false,
             selectedBranch: '',
             defaultBranch: 'main',
             isSkillOwner: false,
@@ -653,6 +657,8 @@ export default {
                 this.branches = [];
                 this.defaultBranch = 'main';
                 this.selectedBranch = 'main';
+            } finally {
+                this.branchesLoaded = true;
             }
         },
 
@@ -771,6 +777,7 @@ export default {
             this.config.roots = [];
             this.skillFilesFromApi = [];
             this.branches = [];
+            this.branchesLoaded = false;
             this.selectedBranch = '';
             this.defaultBranch = 'main';
             this.showHistory = false;
@@ -817,7 +824,8 @@ export default {
                     const raw = builtinResult?.skills ?? builtinResult;
                     const builtinList = Array.isArray(raw) ? raw : raw?.skills || [];
                     const builtinNames = builtinList.map((s) => (typeof s === 'string' ? s : s.name || s.skill_name || '')).filter(Boolean);
-                    this.isBuiltinSkill = builtinNames.includes(skill.skill_name);
+                    // 서비스 기본 스킬(process-gpt-system)도 조회 전용이다 — 서버를 다시 띄우면 원본으로 덮어써진다.
+                    this.isBuiltinSkill = builtinNames.includes(skill.skill_name) || skill.system === true;
                 } catch (e) {
                     this.isBuiltinSkill = false;
                 }

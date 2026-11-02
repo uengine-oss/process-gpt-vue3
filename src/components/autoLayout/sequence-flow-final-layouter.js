@@ -4889,6 +4889,7 @@ export function deferSequenceFlowRouting(elementRegistry, options = {}) {
   let active = true;
   const pending = new Set();
   pending.fresh = options.fresh === true;
+  pending.skipNative = options.skipNative === true;
   const freshConnections = pending.fresh ? elementRegistry.getAll().filter(e => !e.labelTarget && e.source && e.target && e.businessObject?.$type === 'bpmn:SequenceFlow') : [];
   freshConnections.forEach(e => freshLayoutConnections.add(e));
   deferredSequenceFlowRouting.set(elementRegistry, pending);
@@ -4896,8 +4897,9 @@ export function deferSequenceFlowRouting(elementRegistry, options = {}) {
     finish(modeling) {
       if (!active) return;
       active = false;
-      getActiveObstacleSpatialIndex()?.rebuild(elementRegistry.getAll());
+      pending.skipNative = false;
       try {
+        getActiveObstacleSpatialIndex()?.rebuild(elementRegistry.getAll());
         const flows = elementRegistry.getAll().filter(element => !element.labelTarget && element.source && element.target && element.businessObject?.$type === 'bpmn:SequenceFlow');
         for (const connection of pending.fresh ? flows : pending) {
           // Boundary routing is explicitly completed by the layout's attachment pass.
@@ -5104,13 +5106,17 @@ function validFinalRouteCandidate(connection, points, obstacles, maxNoRunScore =
 }
 
 SequenceFlowFinalLayouter.prototype.layoutSequenceFlowFinal = function (connection, hints) {
+  const pending = deferredSequenceFlowRouting.get(this._elementRegistry);
+  if (pending?.skipNative) {
+    pending.add(connection);
+    return cloneWaypoints(connection.waypoints);
+  }
   var delegateHints = hints ? Object.assign({}, hints) : {};
   var wps = connection.waypoints;
   if (Array.isArray(wps) && wps.length > MAX_BPMN_DELEGATE_WAYPOINT_HINT) {
     delegateHints.waypoints = decimateWaypointsToMax(wps, MAX_BPMN_DELEGATE_WAYPOINT_HINT);
   }
   var pts = this._delegate.layoutConnection(connection, delegateHints);
-  const pending = deferredSequenceFlowRouting.get(this._elementRegistry);
   if (pending && hints && (hints.connectionStart || hints.connectionEnd)) {
     pending.add(connection);
     return pts;

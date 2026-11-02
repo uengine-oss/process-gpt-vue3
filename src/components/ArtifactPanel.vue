@@ -87,12 +87,17 @@
                         :ref="(el) => setPanelRef(panel.id, el)"
                         :files="panel.data.files || []"
                         :save-state="panel.data.saveState || { saving: false, saved: false, error: '' }"
+                        :read-only="!!panel.data.readOnly"
+                        :title="panel.data.title || ''"
+                        :load-versions="panel.data.loadVersions || null"
                         @save="emitPanelAction(panel, 'save', panel.data.files || [])"
                         @edit-file="emitPanelAction(panel, 'edit-file', $event)"
                         @ai-edit-file="emitPanelAction(panel, 'ai-edit-file', $event)"
                         @resolve-url="emitPanelAction(panel, 'resolve-url', $event)"
                         @navigate-process="emitPanelAction(panel, 'navigate-process', $event)"
                     />
+                    <!-- 인계 스레드의 작업 흐름 그림 -->
+                    <HandoverFlowDiagram v-else-if="panel.type === 'handoverFlow'" :roomId="panel.data.roomId" />
                     <!-- 새 패널 타입은 여기에 v-else-if로 추가 -->
                 </div>
             </template>
@@ -106,6 +111,7 @@ import PdfViewer from '@/components/PdfViewer.vue';
 import SlideArtifactViewer from '@/components/SlideArtifactViewer.vue';
 import ProcessArtifactViewer from '@/components/ProcessArtifactViewer.vue';
 import WorkspaceFilesViewer from '@/components/WorkspaceFilesViewer.vue';
+import HandoverFlowDiagram from '@/components/chat/HandoverFlowDiagram.vue';
 import AgentChatRoomContext, { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 
 // 패널 타입별 아이콘 레지스트리 — 새 타입 추가 시 여기만 수정
@@ -115,13 +121,22 @@ const PANEL_TYPE_ICONS = {
     slide: 'mdi-presentation',
     process: 'mdi-sitemap-outline',
     files: 'mdi-folder-outline',
+    handoverFlow: 'mdi-source-branch',
     tools: 'mdi-tools',
     attachments: 'mdi-paperclip'
 };
 
 export default {
     name: 'ArtifactPanel',
-    components: { HwpxViewer, PdfViewer, SlideArtifactViewer, ProcessArtifactViewer, WorkspaceFilesViewer, AgentChatRoomContext },
+    components: {
+        HwpxViewer,
+        PdfViewer,
+        SlideArtifactViewer,
+        ProcessArtifactViewer,
+        WorkspaceFilesViewer,
+        AgentChatRoomContext,
+        HandoverFlowDiagram
+    },
     props: {
         panels: { type: Array, default: () => [] },
         activeId: { type: String, default: null }

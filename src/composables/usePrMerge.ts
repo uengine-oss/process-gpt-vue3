@@ -46,7 +46,10 @@ export async function mergeDefinitionPr(backend: any, pr: any): Promise<string> 
         version_tag: 'major',
         arcv_id: `${defId}_${version}`,
         parent_version: headVersion,
-        message: `[병합] ${pr.title || ''}`.trim()
+        message: `[병합] ${pr.title || ''}`.trim(),
+        // 프로세스 식별이 제안한 새 프로세스는 승인 전까지 숨김(is_draft) 정의다.
+        // 병합되면 정식 프로세스로 목록에 나타나야 한다(이미 정식이면 그대로다).
+        is_draft: false
     });
 
     return version;

@@ -59,3 +59,75 @@ test('멈춰 있는지 알아본다', () => {
     assert.equal(isPaused(OUTPUT), true);
     assert.equal(isPaused({}), false);
 });
+
+// ---------------------------------------------------------------------------
+// 에이전트 실행이 질문을 남기고 멈춘 작업(HUMAN_ASKED) — 질문 카드 답변으로 재개
+// ---------------------------------------------------------------------------
+
+import { humanQuestionText, resumePatchForAnswer } from './index.js';
+
+test('질문 카드는 deepagents 의 question 도 보인다', () => {
+    assert.equal(humanQuestionText({ question: '이번 주 납기 지연 허용 기준이 며칠입니까?' }), '이번 주 납기 지연 허용 기준이 며칠입니까?');
+    assert.equal(humanQuestionText({ text: '승인할까요?', question: '무시' }), '승인할까요?');
+    assert.equal(humanQuestionText(null), '');
+});
+
+test('HUMAN_ASKED 작업에 답하면 feedback 에 붙이고 FB_REQUESTED 로 돌린다', () => {
+    const patch = resumePatchForAnswer(
+        { draft_status: 'HUMAN_ASKED', feedback: [{ content: '이전 피드백' }] },
+        '5일까지 허용합니다',
+        { userId: 'u1', at: '2026-10-06T03:16:00.000Z' }
+    );
+    assert.deepEqual(patch, {
+        feedback: [
+            { content: '이전 피드백' },
+            { time: '2026-10-06T03:16:00.000Z', content: '5일까지 허용합니다', user_id: 'u1', kind: 'human_answer' }
+        ],
+        draft_status: 'FB_REQUESTED'
+    });
+});
+
+test('문자열로 저장된 feedback 도 이어 붙인다', () => {
+    const patch = resumePatchForAnswer({ draft_status: 'HUMAN_ASKED', feedback: '[{"content":"a"}]' }, 'b', { at: 't' });
+    assert.deepEqual(patch.feedback.map((f) => f.content), ['a', 'b']);
+    assert.deepEqual(resumePatchForAnswer({ draft_status: 'HUMAN_ASKED', feedback: 'not json' }, 'b', { at: 't' }).feedback.length, 1);
+});
+
+test('실행 중(STARTED)이거나 끝난 작업은 건드리지 않는다', () => {
+    // 실행 안에서 응답 이벤트를 폴링하며 기다리는 도구는 STARTED 그대로다.
+    for (const draft_status of ['STARTED', 'COMPLETED', 'FB_REQUESTED', 'CANCELLED', null]) {
+        assert.equal(resumePatchForAnswer({ draft_status }, '답'), null, String(draft_status));
+    }
+    assert.equal(resumePatchForAnswer(null, '답'), null);
+});
+
+// ---------------------------------------------------------------------------
+// 재개 사유 구분 표시(kind) — 스펙 workitem-resume-signal RS-6
+//
+// 사람 답변 재개와 반려 재작업은 워커가 집는 순간 행 모양이 같다(STARTED,
+// claim_count=1, feedback 1건). 화면이 feedback 항목에 kind 를 남기지 않으면
+// SDK 가 둘을 구분하지 못하고, CLI 에이전트는 멈춘 세션 대신 처음부터 다시 한다.
+// ---------------------------------------------------------------------------
+
+import { FEEDBACK_KIND_HUMAN_ANSWER, FEEDBACK_KIND_REVISION, revisionFeedbackEntry } from './index.js';
+
+test('RS-6.1 질문 카드 답은 human_answer 로 표시해 원문 그대로 붙인다', () => {
+    const answer = '승인합니다. 단 C사는 제외하세요';
+    const patch = resumePatchForAnswer({ draft_status: 'HUMAN_ASKED', feedback: [] }, answer, { at: 't' });
+    const last = patch.feedback.at(-1);
+    assert.equal(last.kind, FEEDBACK_KIND_HUMAN_ANSWER);
+    assert.equal(FEEDBACK_KIND_HUMAN_ANSWER, 'human_answer');
+    assert.equal(last.content, answer);
+    assert.equal(patch.draft_status, 'FB_REQUESTED');
+});
+
+test('RS-6.2 결과 화면 피드백은 revision 으로 표시하고 기존 필드는 그대로 둔다', () => {
+    assert.deepEqual(revisionFeedbackEntry('표 형식으로 다시', { userId: 'u1', at: '2026-10-07T00:00:00.000Z' }), {
+        time: '2026-10-07T00:00:00.000Z',
+        content: '표 형식으로 다시',
+        user_id: 'u1',
+        kind: 'revision'
+    });
+    assert.equal(FEEDBACK_KIND_REVISION, 'revision');
+    assert.equal(revisionFeedbackEntry('x').user_id, null);
+});

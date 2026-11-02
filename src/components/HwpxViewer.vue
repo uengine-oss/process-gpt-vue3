@@ -142,13 +142,14 @@
                 spellcheck="false"
                 @input="onCodeEdit"
             ></textarea>
-            <!-- ProcessGPT 폼 미리보기 — 커스텀 컴포넌트(<text-field> 등)는 DynamicForm 으로 렌더 -->
+            <!-- ProcessGPT 폼 미리보기 — 유저 태스크 패널의 폼 미리보기 탭(FormDefinition preview)을 그대로 쓴다.
+                 작업 폴더의 .form 은 편집기 형식(div.row)이라 DynamicForm 에 바로 넣으면 그려지지 않는다. -->
             <div
                 v-else-if="mode === 'html' && isProcessGptForm"
                 class="hwpx-viewer__content hwpx-viewer__form"
                 data-viewer-kind="form"
             >
-                <DynamicForm :formHTML="effectiveContent" :readonly="true" />
+                <FormDefinition type="preview" :modelValue="effectiveContent" />
             </div>
             <!-- HTML(기존 HWP/DOCX 흐름): url fetch 또는 content -->
             <template v-else>
@@ -397,8 +398,8 @@ export default {
     components: {
         // 저장 결과 다이얼로그와 '동일한' BPMN 미리보기를 쓰기 위해 ProcessDefinition(isViewMode+isAIGenerated)을 사용.
         ProcessDefinition: defineAsyncComponent(() => import('@/components/ProcessDefinition.vue')),
-        // ProcessGPT 폼(<text-field> 등 커스텀 컴포넌트)은 v-html 로 안 되므로 DynamicForm 으로 렌더.
-        DynamicForm: defineAsyncComponent(() => import('@/components/designer/DynamicForm.vue'))
+        // ProcessGPT 폼(<text-field> 등 커스텀 컴포넌트)은 v-html 로 안 되므로 유저 태스크 패널과 같은 폼 미리보기로 렌더.
+        FormDefinition: defineAsyncComponent(() => import('@/components/FormDefinition.vue'))
     },
     props: {
         htmlUrl: { type: String, default: '' },

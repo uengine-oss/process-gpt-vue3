@@ -74,6 +74,11 @@ export const router = createRouter({
                       component: () => retryDynamicImport(() => import('@/views/e2e/BpmnAutoLayoutE2E.vue'))
                   },
                   {
+                      name: 'Handover E2E',
+                      path: '/handover-e2e',
+                      component: () => retryDynamicImport(() => import('@/views/e2e/HandoverE2E.vue'))
+                  },
+                  {
                       name: 'ProcessGPT Mapper UI E2E',
                       path: '/processgpt-mapper-ui-e2e',
                       component: () => retryDynamicImport(() => import('@/views/e2e/ProcessGptMapperUiE2E.vue'))

@@ -634,13 +634,20 @@ export default {
                 }
             }
         },
-        deleteChatRoom(chatRoomId) {
+        async deleteChatRoom(chatRoomId) {
             let index = this.chatRoomList.findIndex((room) => room.id === chatRoomId);
             if (index !== -1) {
                 this.chatRoomList.splice(index, 1);
             }
-            this.backend.delete(`chats/${chatRoomId}`, { key: 'id' });
-            this.backend.delete(`chat_rooms/${chatRoomId}`, { key: 'id' });
+            // 인계 스레드 방은 지우지 않고 내 목록에서만 뺀다(이 함수가 없는 백엔드면 예전처럼 지운다)
+            const removed = await Promise.resolve(this.backend.removeChatRoom?.(chatRoomId)).catch((e) => {
+                console.error('[Chats] 채팅방 지우기 실패:', e);
+                return 'failed';
+            });
+            if (!removed) {
+                this.backend.delete(`chats/${chatRoomId}`, { key: 'id' });
+                this.backend.delete(`chat_rooms/${chatRoomId}`, { key: 'id' });
+            }
 
             if (this.chatRoomList && this.chatRoomList.length > 0) {
                 this.chatRoomSelected(this.chatRoomList[0]);

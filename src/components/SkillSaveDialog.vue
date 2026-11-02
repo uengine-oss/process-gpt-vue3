@@ -15,6 +15,7 @@
 
             <!-- no repo -->
             <v-card-text v-else-if="step === 'no-repo'" class="pa-4 pt-2">
+                <v-alert v-if="note" type="info" variant="tonal" density="compact" class="mb-3 text-caption" data-test="save-note">{{ note }}</v-alert>
                 <v-alert type="warning" variant="tonal" class="mb-4">
                     <div class="text-body-2">{{ $t('SkillSaveDialog.noRepoMessage') }}</div>
                 </v-alert>
@@ -29,6 +30,7 @@
 
             <!-- save form -->
             <v-card-text v-else-if="step === 'form'" class="pa-4 pt-2">
+                <v-alert v-if="note" type="info" variant="tonal" density="compact" class="mb-3 text-caption" data-test="save-note">{{ note }}</v-alert>
                 <!-- 소유자: 기존 direct/PR 토글 -->
                 <v-btn-toggle v-if="isOwner" v-model="mode" mandatory color="primary" rounded="lg" class="mb-4 w-100" density="compact">
                     <v-btn value="pr" class="flex-1 text-none">
@@ -250,6 +252,11 @@ export default {
         modelValue: {
             type: Boolean,
             default: false
+        },
+        // 저장과 함께 반영되는 도구 지정 변경 안내(없으면 빈 문자열)
+        note: {
+            type: String,
+            default: ''
         },
         skillName: {
             type: String,

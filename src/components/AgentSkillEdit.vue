@@ -1,6 +1,6 @@
 <template>
-    <v-card flat v-if="skillFile">
-        <v-card-title class="d-flex align-center justify-space-between pa-0">
+    <v-card flat v-if="skillFile" class="skill-edit-card">
+        <v-card-title class="d-flex align-center justify-space-between pa-0 skill-edit-toolbar">
             <div class="d-flex align-center text-h6">
                 <v-text-field
                     v-if="!readOnly && isEditable"
@@ -13,21 +13,34 @@
                 <span v-else class="ml-3">{{ fileName }}</span>
             </div>
             <div class="d-flex align-center gap-2 mr-2">
-                <v-btn v-if="!readOnly" @click="openAgentChat" :loading="isOpeningAgentChat" variant="text" icon size="small">
+                <v-btn v-if="!readOnly" @click="openAgentChat" :loading="isOpeningAgentChat" variant="text" icon size="small" aria-label="이 스킬로 대화">
                     <v-icon>mdi-chat-processing-outline</v-icon>
+                    <v-tooltip activator="parent" location="bottom">이 스킬로 대화</v-tooltip>
                 </v-btn>
-                <v-btn v-if="isMarkdown" @click="toggleMarkdownPreview" variant="text" icon size="small">
+                <v-btn v-if="isSkillMd" @click="toolDrawer = !toolDrawer" variant="text" icon size="small" aria-label="도구" data-test="open-tool-drawer">
+                    <v-badge :model-value="toolStatus.count > 0" :content="toolStatus.count" color="grey-darken-1" offset-x="-2" offset-y="2">
+                        <v-icon>mdi-toolbox-outline</v-icon>
+                    </v-badge>
+                    <v-tooltip activator="parent" location="bottom">{{ toolTooltip }}</v-tooltip>
+                </v-btn>
+                <v-btn v-if="isMarkdown" @click="toggleMarkdownPreview" variant="text" icon size="small" aria-label="미리보기">
                     <v-icon>{{ markdownPreview ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
+                    <v-tooltip activator="parent" location="bottom">{{ markdownPreview ? '편집기로' : '미리보기' }}</v-tooltip>
                 </v-btn>
-                <v-btn v-if="!readOnly" @click="saveDialog = true" variant="text" icon color="primary" :loading="isLoading" size="small">
-                    <v-icon>mdi-content-save</v-icon>
+                <v-btn v-if="!readOnly" @click="openSaveDialog" variant="text" icon color="primary" :loading="isLoading" size="small" aria-label="저장">
+                    <v-badge :model-value="toolStatus.unsaved" dot color="warning" data-test="unsaved-dot">
+                        <v-icon>mdi-content-save</v-icon>
+                    </v-badge>
+                    <v-tooltip activator="parent" location="bottom">{{ toolStatus.unsaved ? '저장 (도구 변경 있음)' : '저장' }}</v-tooltip>
                 </v-btn>
-                <v-btn v-if="!readOnly && isEditable" @click="openDeleteDialog" variant="text" icon color="error" size="small">
+                <v-btn v-if="!readOnly && isEditable" @click="openDeleteDialog" variant="text" icon color="error" size="small" aria-label="삭제">
                     <v-icon>mdi-delete</v-icon>
+                    <v-tooltip activator="parent" location="bottom">삭제</v-tooltip>
                 </v-btn>
             </div>
         </v-card-title>
-        <v-card-text class="h-100 px-0">
+        <v-card-text class="px-0 pb-0 skill-edit-body">
+            <div class="skill-edit-main">
             <v-alert
                 v-if="directiveRemoved"
                 type="warning"
@@ -48,12 +61,31 @@
                 :options="monacoEditorOptions"
                 @mount="handleMount"
             />
+            </div>
+            <!-- 이 스킬을 읽어야 쓰는 도구: 도구줄 아이콘으로 여는 옆 칸. 편집기와 높이가 같고 도구줄(저장)을 가리지 않는다.
+                 닫혀 있어도 남아 있어 저장 뒤 지정을 보낸다. -->
+            <aside v-if="isSkillMd" v-show="toolDrawer" class="skill-tool-aside" data-test="tool-drawer">
+                <SkillToolBindingPanel
+                    ref="toolPanel"
+                    :content="skillContent"
+                    :skill-name="skillName"
+                    :read-only="readOnly"
+                    :git-backed="gitBacked"
+                    :git-ready="gitReady"
+                    @update:content="skillContent = $event"
+                    @status="toolStatus = $event"
+                    @open="toolDrawer = true"
+                    @close="toolDrawer = false"
+                    @reveal="revealIncludeTools"
+                />
+            </aside>
         </v-card-text>
     </v-card>
 
     <SkillSaveDialog
         v-model="saveDialog"
         :skill-name="skillName"
+        :note="saveNote"
         :file-path="filePath"
         :content="skillContent"
         :file-name="fileName"
@@ -143,6 +175,7 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark.css';
 import BackendFactory from '@/components/api/BackendFactory';
 import SkillSaveDialog from '@/components/SkillSaveDialog.vue';
+import SkillToolBindingPanel from '@/components/SkillToolBindingPanel.vue';
 import CommitMessageGenerator from '@/components/ai/CommitMessageGenerator';
 import { hasInheritanceDirective } from '@/utils/skillMdParser';
 import { processGptAgent } from '@/constants/processGptAgent';
@@ -168,7 +201,7 @@ marked.setOptions({
 
 export default {
     name: 'AgentSkillEdit',
-    components: { SkillSaveDialog },
+    components: { SkillSaveDialog, SkillToolBindingPanel },
     props: {
         skillFile: {
             type: Object,
@@ -189,6 +222,15 @@ export default {
         isOwner: {
             type: Boolean,
             default: false
+        },
+        gitBacked: {
+            type: Boolean,
+            default: false
+        },
+        // gitBacked 를 다 불러왔는지(스킬 상세가 저장소 정보를 받기 전에는 거짓)
+        gitReady: {
+            type: Boolean,
+            default: true
         }
     },
     data() {
@@ -200,6 +242,9 @@ export default {
             skillContent: '',
 
             saveDialog: false,
+            toolDrawer: false,
+            toolStatus: { count: 0, designatable: 0, unsaved: false },
+            saveNote: '',
 
             deleteDialog: false,
             deleteCommitMessage: '',
@@ -215,6 +260,11 @@ export default {
         };
     },
     computed: {
+        toolTooltip() {
+            const { count, designatable } = this.toolStatus;
+            if (designatable) return `이 스킬을 읽어야 쓰는 도구 ${count}개 · 지정 안 됨 ${designatable}`;
+            return count ? `이 스킬을 읽어야 쓰는 도구 ${count}개` : '이 스킬을 읽어야 쓰는 도구';
+        },
         monacoEditorOptions() {
             return {
                 automaticLayout: true,
@@ -227,6 +277,9 @@ export default {
         markdownHtml() {
             if (!this.markdownPreview || !this.skillContent) return '';
             return marked(this.skillContent);
+        },
+        isSkillMd() {
+            return (this.filePath || this.fileName) === 'SKILL.md';
         },
         isMarkdown() {
             return this.fileName && (this.fileName.endsWith('.md') || this.fileName.endsWith('.markdown'));
@@ -369,8 +422,32 @@ export default {
                 this.isOpeningAgentChat = false;
             }
         },
-        onSaved({ mode }) {
-            const msg = mode === 'direct' ? '스킬 파일이 성공적으로 저장되었습니다.' : 'PR이 성공적으로 생성되었습니다.';
+        openSaveDialog() {
+            this.saveNote = (this.$refs.toolPanel && this.$refs.toolPanel.unsavedDetail) || '';
+            this.saveDialog = true;
+        },
+        /** 도구 칸의 metadata.include_tools 를 누르면 편집기에서 그 줄을 보여 준다. */
+        revealIncludeTools() {
+            this.markdownPreview = false;
+            this.$nextTick(() => {
+                const editor = this.monacoEditor;
+                const model = editor && editor.getModel();
+                if (!model) return;
+                const lines = model.getLinesContent();
+                let i = lines.findIndex((l) => /^\s+include_tools:/.test(l));
+                if (i < 0) i = lines.findIndex((l) => /^metadata:/.test(l));
+                if (i < 0) return;
+                const line = i + 1;
+                editor.revealLineInCenter(line);
+                editor.setSelection({ startLineNumber: line, startColumn: 1, endLineNumber: line, endColumn: model.getLineMaxColumn(line) });
+                editor.focus();
+            });
+        },
+        async onSaved({ mode }) {
+            // 연결(SKILL.md)이 저장된 뒤에 보류한 스킬 전용 지정을 보낸다.
+            const designated = this.$refs.toolPanel ? await this.$refs.toolPanel.afterSaved() : '';
+            let msg = mode === 'direct' ? '스킬 파일이 성공적으로 저장되었습니다.' : 'PR이 성공적으로 생성되었습니다.';
+            if (designated) msg += ` ${designated}`;
             this.$try({
                 context: this,
                 action: () => {
@@ -490,6 +567,7 @@ export default {
             }
         },
         handleMount(editor) {
+            this.monacoEditor = editor;
             if (editor) {
                 editor.layout({ height: 320, width: editor.getLayoutInfo().width });
             }
@@ -502,6 +580,44 @@ export default {
 </script>
 
 <style scoped>
+.skill-edit-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgb(var(--v-theme-surface));
+}
+/* 도구줄 아래 남은 높이만 본문이 쓴다(h-100 이면 도구줄만큼 넘쳐 아래가 잘렸다) */
+.skill-edit-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    height: 100%;
+    min-height: 0;
+}
+/* 편집기와 도구 칸을 나란히 두고 높이를 맞춘다 */
+.skill-edit-body {
+    flex: 1 1 0;
+    display: flex;
+    align-items: stretch;
+    min-height: 0;
+}
+.skill-edit-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+.skill-tool-aside {
+    flex: 0 0 340px;
+    position: relative;
+    border-left: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    background: rgb(var(--v-theme-surface));
+}
+/* 칸의 높이는 편집기가 정한다 — 도구가 많아도 칸 안에서만 스크롤한다 */
+.skill-tool-aside > * {
+    position: absolute;
+    inset: 0;
+}
 .markdown-preview {
     height: 100%;
     min-height: 320px;

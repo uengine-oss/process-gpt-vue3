@@ -363,18 +363,33 @@ export default class StorageBaseSupabase {
                     };
                 }
             } else {
+                // 이 테넌트 소속이 아니어도 비밀번호는 확인한다. 비밀번호가 맞으면
+                // 계정 주인이므로 "가입되지 않은 테넌트"라고 알려준다 — 그렇지 않으면
+                // 다른 테넌트 사용자가 비밀번호 오류로 오해하고 재설정을 반복한다.
+                // 비밀번호가 틀리면 예전처럼 같은 문구로 응답해 계정 존재 여부를 숨긴다.
+                // 확인용으로 만들어진 세션은 바로 지워 이 테넌트에 들어오지 못하게 한다.
+                const probe = await window.$supabase.auth.signInWithPassword({
+                    email: userInfo.email,
+                    password: userInfo.password
+                });
+                const ownsAccount = !probe.error && !!probe.data?.session;
+                if (ownsAccount) {
+                    await window.$supabase.auth.signOut({ scope: 'local' });
+                }
+                const reason = ownsAccount ? 'not_registered_tenant' : 'not_registered_email';
                 await this.recordAuthAudit({
                     action: 'login',
                     email: userInfo.email,
                     success: false,
-                    errorMessage: 'not_registered_email',
+                    errorMessage: reason,
                     tenantId: window.$tenantName || null,
-                    metadata: { method: 'password', reason: 'not_registered_email' }
+                    metadata: { method: 'password', reason }
                 });
-                // 가입되지 않은 이메일이어도 비밀번호 오류와 동일한 문구로 응답한다.
                 await window.$app_.try({
                     action: () => Promise.reject(new Error()),
-                    errorMsg: window.$i18n.global.t('StorageBaseSupabase.invalidCredentials')
+                    errorMsg: window.$i18n.global.t(
+                        ownsAccount ? 'StorageBaseSupabase.unRegisteredTenant' : 'StorageBaseSupabase.invalidCredentials'
+                    )
                 });
                 return {
                     error: true
@@ -497,7 +512,9 @@ export default class StorageBaseSupabase {
                 }
             }
 
-            return await window.$supabase.auth.signOut();
+            // 기본값(global)은 이 계정의 모든 기기 세션을 지워, 한 곳에서 로그아웃하면
+            // 다른 브라우저·기기까지 로그인이 풀린다. 이 브라우저 세션만 끝낸다.
+            return await window.$supabase.auth.signOut({ scope: 'local' });
         } catch (e) {
             throw new StorageBaseError('error in signOut', e, arguments);
         }

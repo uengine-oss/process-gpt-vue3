@@ -95,6 +95,22 @@
                                         제목 한 줄 + 오른쪽 단추). 단추는 새로 만들지 않고 앱바로 옮겨 간다.
                                     -->
                                     <Teleport to="#pg-m-appbar-actions" :disabled="!phoneShell">
+                                    <!-- 다음 담당자(사람 또는 에이전트)에게 업무를 넘긴다. 참여하지 않은 방(읽기 전용)에서는 넘길 수 없다. -->
+                                    <v-tooltip v-if="!isViewOnlyRoom" :text="$t('Handover.title')" location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                density="comfortable"
+                                                size="small"
+                                                class="e2e-handover-open"
+                                                @click="openHandoverDialog"
+                                            >
+                                                <v-icon size="18">mdi-account-arrow-right-outline</v-icon>
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
                                     <v-btn
                                         v-if="hasArtifactPanel"
                                         icon
@@ -107,7 +123,12 @@
                                     >
                                         <v-icon size="18">mdi-file-document-outline</v-icon>
                                     </v-btn>
-                                    <v-menu v-model="settingsMenu" location="bottom end" :close-on-content-click="true">
+                                    <v-menu
+                                        v-if="!isViewOnlyRoom"
+                                        v-model="settingsMenu"
+                                        location="bottom end"
+                                        :close-on-content-click="true"
+                                    >
                                         <template v-slot:activator="{ props }">
                                             <v-btn v-bind="props" icon variant="text" density="comfortable" size="small">
                                                 <v-icon size="18">mdi-cog-outline</v-icon>
@@ -167,7 +188,7 @@
                                 :currentChatRoom="currentChatRoom"
                                 :chatRoomId="roomId || ''"
                                 type="chats"
-                                :disableChat="false"
+                                :disableChat="isViewOnlyRoom"
                                 :markdownEnabled="false"
                                 :chatRoomMode="true"
                                 :hideInput="true"
@@ -188,7 +209,12 @@
                                 @human-feedback-submit="handleHumanFeedbackSubmit"
                                 @human-feedback-skip="handleHumanFeedbackSkip"
                                 @sendMessage="handleSendMessage"
-                            />
+                            >
+                                <!-- 인계받은 방이면 이 업무가 거쳐 온 앞선 방들의 대화를 읽기 전용으로 먼저 보여 준다 -->
+                                <template #custom-content>
+                                    <HandoverHistory :room="currentChatRoom" />
+                                </template>
+                            </Chat>
                         </div>
 
                         <!-- 입력 영역 -->
@@ -218,6 +244,7 @@
                                 </v-btn>
                             </div>
                             <UnifiedChatInput
+                                v-if="!isViewOnlyRoom"
                                 ref="composer"
                                 variant="inline"
                                 :showExamples="false"
@@ -232,7 +259,13 @@
                                 @sendMessage="handleSendMessage"
                                 @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
                                 @desktop-voice-toggle="toggleDesktopVoice"
-                            />
+                            >
+                            </UnifiedChatInput>
+                            <!-- 인계로 넘어온 앞선 방처럼 내가 참여하지 않은 방은 읽기만 한다 -->
+                            <div v-else class="view-only-bar e2e-view-only">
+                                <v-icon size="16" class="mr-2">mdi-eye-outline</v-icon>
+                                {{ $t('Handover.viewOnly') }}
+                            </div>
                         </div>
                     </div>
 
@@ -698,6 +731,25 @@
             </v-card>
         </v-dialog>
 
+        <!-- 업무 인계 -->
+        <v-dialog v-model="handoverDialog" max-width="720" scrollable>
+            <HandoverDialog
+                v-if="handoverDialog"
+                :key="handoverDialogKey"
+                :roomId="currentChatRoom?.id || roomId"
+                :sourceRoom="currentChatRoom"
+                :artifactCandidates="handoverArtifactCandidates"
+                :merge="handoverMerge"
+                :recentMessages="handoverRecentMessages"
+                :defaultOrchestration="handoverDefaultOrchestration"
+                :isSubmitting="handoverSubmitting"
+                :canCloseThread="handoverCanClose"
+                @close="handoverDialog = false"
+                @submit="submitHandover"
+                @close-thread="closeHandoverThread"
+            />
+        </v-dialog>
+
         <!-- 삭제 확인 -->
         <v-dialog v-model="deleteDialog" max-width="520" persistent>
             <v-card class="pa-2" style="border-radius: 16px">
@@ -834,6 +886,10 @@ import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import BPMNXmlGenerator from '@/components/BPMNXmlGenerator.vue';
 import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import ArtifactPanel from '@/components/ArtifactPanel.vue';
+import HandoverDialog from '@/components/chat/HandoverDialog.vue';
+import { branchFilesForPanel, fileVersions } from '@/utils/artifactBranchFiles.js';
+import { isTextEntry, treePathOf } from '@/utils/artifactWorktree.js';
+import HandoverHistory from '@/components/chat/HandoverHistory.vue';
 import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/processArtifactPanel.js';
 import { buildHitlPanel, shouldRestoreFromAssistantContent } from '@/shared/hitl/index.js';
 import { shouldSteerInsteadOfNewTurn } from '@/shared/steering/index.js';
@@ -842,6 +898,7 @@ import { formatToolName as sharedFormatToolName } from '@/shared/toolNames/index
 import { parseMcpToolOutput } from '@/shared/toolOutput';
 import { askUserFeedbackOf } from '@/shared/askUser';
 import { chatFailureMessage, createPersistCircuit } from '@/shared/chatFailure/index.js';
+import { forgetChatRoomDeleted, isChatRoomDeleted, markChatRoomDeleted, removeChatRoomFromLocalIndex } from '@/utils/deletedChatRooms';
 import { AGENT_CHAT_ROOM_CONTEXT_TYPES } from '@/components/AgentChatRoomContext.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
@@ -907,7 +964,9 @@ export default {
         ProcessDefinition,
         OntologyGraphViewer,
         VoiceAgentDesktopMode,
-        ArtifactPanel
+        ArtifactPanel,
+        HandoverDialog,
+        HandoverHistory
     },
     data() {
         return {
@@ -1005,6 +1064,18 @@ export default {
             artifactPanels: [], // [{ id, type, label, data: { htmlUrl, fileUrl, messageId } }]
             roomWorkspaceFilesByGroup: {}, // 프로세스 폴더(process-<uuid>)별 산출물 파일 누적 — 프로세스마다 탭
             workspaceSaveStateByGroup: {}, // 프로세스별 DB 저장 상태 { [group]: {saving,saved,error} }
+            // 업무 인계 — 이 방의 산출물을 들고 다음 담당자(사람/에이전트)에게 넘긴다
+            handoverDialog: false,
+            handoverDialogKey: 0,
+            handoverSubmitting: false,
+            handoverArtifactCandidates: [],
+            handoverMerge: null, // 합류 인계면 갈래 병합 결과(충돌 고르기)
+            // 에이전트에게 넘긴 방에서 업무 종료를 할 수 있는가
+            handoverCanClose: false,
+            // 인계 다이얼로그를 열 때 확정한다(computed 로 두면 방 전환 시 흔들린다).
+            handoverDefaultOrchestration: 'deepagents',
+            // 에이전트에게 암묵적으로 위임된 건들 { [`${roomId}:${agentId}:${msgUuid}`]: true }
+            agentDelegationTracked: {},
             activeArtifactId: null, // 현재 활성 탭 ID
             artifactSidebarVisible: false,
             artifactSidebarWidth: 820,
@@ -1184,6 +1255,24 @@ export default {
         },
         hasArtifactPanel() {
             return this.artifactPanels.length > 0;
+        },
+        /**
+         * 내가 참여자가 아닌 방 — 인계받은 방의 '이전 대화'·작업 흐름에서 앞선 방을 열었을 때다.
+         * 읽기만 한다(메시지·인계·설정 변경·삭제·파일 편집 없음). 참여자 목록이 빈 예전 방은 제외한다.
+         */
+        isViewOnlyRoom() {
+            const parts = Array.isArray(this.currentChatRoom?.participants) ? this.currentChatRoom.participants : [];
+            if (!this.roomId || !this.currentChatRoom?.id || parts.length === 0) return false;
+            const me = this.normalizeParticipant(this.userInfo);
+            if (!me || (!me.id && !me.email)) return false;
+            return !parts.some((p) => this.participantMatches(this.normalizeParticipant(p), me));
+        },
+        /** 인계 다이얼로그의 AI 제안에 넘길 최근 대화 */
+        handoverRecentMessages() {
+            const list = Array.isArray(this.messages) ? this.messages.slice(-10) : [];
+            return list
+                .filter((m) => (m?.content || '').toString().trim())
+                .map((m) => ({ role: m.role || 'user', content: m.content }));
         },
         isDraftContextView() {
             // embedded agent 컨텍스트에서 roomId가 없으면 드래프트 화면
@@ -1571,6 +1660,7 @@ export default {
         }
     },
     async beforeUnmount() {
+        this.flushEditCommits();
         if (this._phoneTapListener) document.removeEventListener('pointerdown', this._phoneTapListener, true);
         this.stopChatAccessHeartbeat();
         this.EventBus.emit('chat-room-unselected');
@@ -1609,6 +1699,7 @@ export default {
     },
     methods: {
         handleOpenUiStateUpdate(payload) {
+            if (this.isViewOnlyRoom) return;
             try {
                 // payload: { messageUuid, state }
                 const messageUuid = payload?.messageUuid || null;
@@ -1634,6 +1725,7 @@ export default {
             }
         },
         async handleOpenUiAction(payload) {
+            if (this.blockIfViewOnly()) return;
             try {
                 // payload: { messageUuid, action, state }
                 const messageUuid = payload?.messageUuid || null;
@@ -1761,6 +1853,7 @@ export default {
             }
         },
         handleBeforeReply(message) {
+            if (this.blockIfViewOnly()) return;
             try {
                 this.$refs.composer?.setReply?.(message);
             } catch (e) {}
@@ -1941,6 +2034,9 @@ export default {
         async putChatRoomMerged(room) {
             const r = room !== undefined && room !== null ? room : this.currentChatRoom;
             if (!r || !r.id) return;
+            // 지운 방은 되살리지 않는다. putObject 는 upsert 라서, 삭제 뒤에 뒤늦게
+            // 돌아온 쓰기(이름 자동생성 응답 등)가 행을 그대로 다시 만들어 넣는다.
+            if (isChatRoomDeleted(r.id)) return;
             try {
                 const { data: existing, error } = await window.$supabase
                     .from('chat_rooms')
@@ -2457,6 +2553,12 @@ export default {
                 is_agent: p?.is_agent ?? p?.isAgent ?? null
             };
         },
+        /** 읽기 전용 방에서 바꾸는 동작을 막는다. 막았으면 true. */
+        blockIfViewOnly() {
+            if (!this.isViewOnlyRoom) return false;
+            if (this.$toast?.info) this.$toast.info(this.$t('Handover.viewOnly'));
+            return true;
+        },
         participantMatches(a, b) {
             if (!a || !b) return false;
             if (a.email && b.email && a.email === b.email) return true;
@@ -2570,6 +2672,9 @@ export default {
             // 화면 로딩을 막지 않도록 kickoff는 백그라운드로 시작한다.
             this.$nextTick(() => {
                 this.maybeKickoffFromSession(roomId).catch(() => {});
+                // 프로세스 식별 화면에서 '실행 가능한 프로세스로 전환' 으로 넘어온 방:
+                // 요청문이 이미 들어 있으므로 사용자가 다시 입력할 필요가 없다.
+                this.maybeAutoSend(roomId).catch(() => {});
             });
 
             try {
@@ -2777,12 +2882,47 @@ export default {
                 }
             } catch (e) {}
         },
+        /**
+         * `?autosend=1` 로 열린 방에서, 이미 들어 있는 사용자 요청을 에이전트에게 자동 전달한다.
+         * 식별 화면이 도출 결과를 실어 보냈으므로 사람이 프로세스를 다시 서술하지 않는다.
+         * 어시스턴트 응답이 이미 있으면(재방문) 아무것도 하지 않는다.
+         */
+        async maybeAutoSend(roomId) {
+            if (String(this.$route.query.autosend || '') !== '1') return;
+            if (this._autoSentRooms && this._autoSentRooms[roomId]) return;
+            this._autoSentRooms = this._autoSentRooms || {};
+
+            const msgs = Array.isArray(this.messages) ? this.messages : [];
+            if (msgs.some((m) => (m?.role || '') === 'assistant')) return;
+            const lastUser = [...msgs].reverse().find((m) => (m?.role || '') === 'user' && String(m?.content || '').trim());
+            if (!lastUser) return;
+
+            const parts = Array.isArray(this.currentChatRoom?.participants) ? this.currentChatRoom.participants : [];
+            const agent = parts.map((p) => this.normalizeParticipant(p)).find((p) => p && (p.is_agent || p.agent_type === 'agent'));
+            if (!agent) return;
+
+            this._autoSentRooms[roomId] = true;
+            const target = {
+                id: agent.id,
+                username: agent.username || agent.id,
+                email: agent.email || `agent:${agent.id}`,
+                profile: agent.profile || null,
+                policy: 'must_reply',
+                __routingDecision: { should_intervene: true, reply_mode: 'answer', reason: 'identification_conversion' }
+            };
+            await this.streamAgents([target], String(lastUser.content), {
+                message_uuid: lastUser.uuid,
+                metadata: { participant_agent_ids: [agent.id] }
+            });
+        },
         async loadRoom(roomId) {
-            // 우선 로컬 인덱스 사용
+            // 우선 로컬 인덱스 사용.
+            // 단, 지운 방은 캐시로 되살리지 않는다 — 그 스냅샷이 currentChatRoom 에 들어오면
+            // 이후의 방 저장이 DB 에 행을 다시 만들어 넣는다(유령 방).
             let cachedRoom = null;
             try {
                 const raw = localStorage.getItem('chatRoomIndex');
-                if (raw) {
+                if (raw && !isChatRoomDeleted(roomId)) {
                     const idx = JSON.parse(raw);
                     const cached = idx?.[roomId] || null;
                     if (cached) {
@@ -2806,7 +2946,7 @@ export default {
 
             // 최신 context 등을 위해 로컬 인덱스 갱신(가능하면)
             try {
-                if (this.currentChatRoom && this.currentChatRoom.id) {
+                if (this.currentChatRoom && this.currentChatRoom.id && !isChatRoomDeleted(this.currentChatRoom.id)) {
                     const raw = localStorage.getItem('chatRoomIndex');
                     const idx = raw ? JSON.parse(raw) : {};
                     idx[this.currentChatRoom.id] = this.currentChatRoom;
@@ -3109,6 +3249,8 @@ export default {
             await this.checkExistingPdf2BpmnTask(roomId);
             this.processLoadedHwpxMessages();
             this.checkExistingArtifactPanels();
+            await this.ensureHandoverFlowTab(roomId);
+            await this.ensureBranchFilesTab(roomId);
             this.$nextTick(() => this.scrollToBottomSafe());
         },
 
@@ -3701,6 +3843,7 @@ export default {
             this.messages.push(this.normalizeAssistantMessageForDisplay(message));
         },
         openRenameDialog() {
+            if (this.blockIfViewOnly()) return;
             this.settingsMenu = false;
             this.renameDraft = (
                 this.currentChatRoom?.id ? this.currentChatRoom?.name || '' : this.draftName || this.$t('chatListing.newChat')
@@ -3749,6 +3892,7 @@ export default {
             this.participantsDialog = true;
         },
         async saveParticipants() {
+            if (this.blockIfViewOnly()) return;
             try {
                 const me = this.normalizeParticipant(this.userInfo);
                 const normalized = (this.participantsDraft || []).map(this.normalizeParticipant).filter(Boolean);
@@ -3794,17 +3938,85 @@ export default {
             this.settingsMenu = false;
             this.deleteDialog = true;
         },
+        /**
+         * 방을 지운다.
+         *
+         * 지우는 것만으로는 부족했다. chat_rooms 쓰기는 전부 upsert 라서, 삭제 뒤에
+         * 뒤늦게 돌아온 비동기 작업(방 이름 자동생성 응답, 저장 보류 타이머,
+         * 스트림 뒷정리)이 행을 그대로 되살렸다 — 답변이 오류로 끝난 턴에서
+         * "메시지는 지워졌는데 방만 남는" 유령 방이 그렇게 생겼다.
+         *
+         * 그래서 순서를 지킨다: 먼저 이 방으로 가는 작업을 멈추고(스트림·타이머),
+         * 지운 id 를 차단 목록에 올려 이후의 모든 쓰기를 막고, 로컬 캐시에서도
+         * 지운다(남으면 loadRoom 이 그 스냅샷으로 방을 되살린다).
+         */
         async confirmDelete() {
+            if (this.blockIfViewOnly()) return;
             const id = this.currentChatRoom?.id || this.roomId;
             this.deleteDialog = false;
             if (!id) return;
+
+            // 1) 이 방으로 가는 작업을 먼저 멈춘다 — 삭제 뒤에 깨어나 행을 되살리지 못하게.
+            this.stopAgentsInRoom(id);
+            this.cancelRoomPersistTimers(id);
+
+            // 인계 스레드에 속한 방은 지우지 않고 내 목록에서만 뺀다 — 다음 사람이 이 방 대화를 방 id 로 읽는다.
+            // 방은 남으므로 쓰기 차단·캐시 삭제를 하지 않는다.
+            try {
+                if (await backend.isHandoverThreadRoom(id)) {
+                    await backend.removeChatRoom(id);
+                    this.EventBus.emit('chat-rooms-updated');
+                    this.EventBus.emit('chat-room-unselected');
+                    await this.$router.replace({ path: '/chat' });
+                    return;
+                }
+            } catch (e) {
+                console.error('[ChatRoomPage] 인계 방 숨기기 실패:', e);
+                if (this.$toast?.error) this.$toast.error(`채팅방을 목록에서 빼지 못했습니다: ${(e && (e.message || e.toString())) || '알 수 없는 오류'}`);
+                return;
+            }
+
+            // 2) 쓰기 차단 + 로컬 캐시 정리. 삭제가 실패하면 되돌린다(아래 catch).
+            markChatRoomDeleted(id);
+            removeChatRoomFromLocalIndex(id);
+
             try {
                 await backend.delete(`db://chats/${id}`, { key: 'id' });
                 await backend.delete(`db://chat_rooms/${id}`, { key: 'id' });
-            } catch (e) {}
+            } catch (e) {
+                // 삭제 실패를 삼키면 안 된다. 예전에는 조용히 넘겨서, 방이 그대로
+                // 남아 있는데도 사용자에게는 지워진 것처럼 보였다.
+                console.error('[ChatRoomPage] 채팅방 삭제 실패:', e);
+                // 방이 DB 에 그대로 남아 있으니 차단도 되돌린다 — 이후의 정상 저장을 막지 않게.
+                forgetChatRoomDeleted(id);
+                if (this.$toast?.error) {
+                    this.$toast.error(`채팅방을 삭제하지 못했습니다: ${(e && (e.message || e.toString())) || '알 수 없는 오류'}`);
+                }
+                this.EventBus.emit('chat-rooms-updated');
+                return;
+            }
+
             this.EventBus.emit('chat-rooms-updated');
             this.EventBus.emit('chat-room-unselected');
             await this.$router.replace({ path: '/chat' });
+        },
+
+        /** 이 방에 예약돼 있는 저장 타이머를 거둔다(방 삭제 시). */
+        cancelRoomPersistTimers(roomId) {
+            const rid = (roomId || '').toString();
+            if (!rid) return;
+            for (const map of [this._frontendStatePersistTimers, this._serverRowPersistFallbackTimers]) {
+                try {
+                    const timers = map || {};
+                    for (const key of Object.keys(timers)) {
+                        if (!key.startsWith(`${rid}:`)) continue;
+                        clearTimeout(timers[key]);
+                        delete timers[key];
+                    }
+                } catch (e) {
+                    // 타이머 정리 실패가 삭제를 막아서는 안 된다.
+                }
+            }
         },
 
         // 설정 메뉴의 [도구 설정] 클릭 핸들러.
@@ -4602,6 +4814,7 @@ export default {
         },
 
         handleHumanFeedbackSkip(messageOrFeedback) {
+            if (this.blockIfViewOnly()) return;
             const message = messageOrFeedback && messageOrFeedback.__humanFeedback ? messageOrFeedback : this.pendingHumanFeedbackMessage;
             const feedback = messageOrFeedback && !messageOrFeedback.__humanFeedback ? messageOrFeedback : message?.__humanFeedback;
 
@@ -4654,6 +4867,7 @@ export default {
         },
 
         async handleHumanFeedbackSubmit(messageOrFeedback, feedbackResult) {
+            if (this.blockIfViewOnly()) return;
             // Chat.vue에서 emit한 경우: (humanFeedback, feedbackResult)
             // 기존 호출(로컬 패널) 대비 호환: (message, feedbackResult)
             if (!feedbackResult && messageOrFeedback && messageOrFeedback.type) {
@@ -5003,6 +5217,7 @@ export default {
         },
 
         async handleSendMessage(payload) {
+            if (this.blockIfViewOnly()) return;
             const fileMeta = this.getPayloadFileSummary(payload);
             const rawFiles = this.getPayloadRawFiles(payload);
             const fallbackRawFileInfos = this.mapRawFilesToDisplayInfos(rawFiles);
@@ -5323,6 +5538,7 @@ export default {
         },
 
         async handleInviteAgent(_payload) {
+            if (this.blockIfViewOnly()) return;
             try {
                 if (!this.currentChatRoom?.id) return;
                 const roomId = this.currentChatRoom.id;
@@ -5422,6 +5638,15 @@ export default {
                         agent_selection_reason: null
                     }
                 };
+
+                // 사람 → 에이전트로 일이 넘어가는 지점이므로 암묵적 핸드오버로 기록한다.
+                // (프로세스/조직 마이닝에서 자동화된 단계가 빠지지 않게 하는 원자료)
+                await this.trackAgentDelegation(
+                    roomId,
+                    { ...agentTarget, orchestration: agentMeta?.agent_type || agentMeta?.orchestration || null },
+                    triggerMsg?.uuid || triggerUuid,
+                    userText
+                );
 
                 await this.streamAgents([agentTarget], userText, resendPayload);
             } catch (e) {
@@ -6135,6 +6360,66 @@ export default {
             this.artifactSidebarVisible = true;
         },
 
+        /**
+         * 인계 스레드에 속한 방이면 산출물 패널에 '작업 흐름' 탭을 넣어 둔다. 패널을 열지는 않는다 —
+         * 기존 산출물 버튼으로 패널을 열면 다른 산출물 탭과 함께 보인다.
+         */
+        async ensureHandoverFlowTab(roomId) {
+            if (!roomId || this.artifactPanels.some((p) => p.type === 'handoverFlow')) return;
+            try {
+                const { originRoomId } = await backend.resolveOriginRoomId(roomId);
+                const rows = (await backend.getHandoverThread(originRoomId)).filter((r) => r.source === 'chat_handover');
+                const here = this.currentChatRoom?.id || this.roomId;
+                if (!rows.length || here !== roomId || this.artifactPanels.some((p) => p.type === 'handoverFlow')) return;
+                const id = `handoverFlow-${this.uuid()}`;
+                this.artifactPanels.push({ id, type: 'handoverFlow', label: this.$t('Handover.flow'), data: { roomId } });
+                if (!this.activeArtifactId) this.activeArtifactId = id;
+            } catch (e) {
+                console.warn('[handover] 작업 흐름 탭을 넣지 못함:', e);
+            }
+        },
+
+        /**
+         * 인계 워크트리 방이면 '갈래 산출물' 탭을 넣는다. 이 스레드의 방 브랜치마다 head 파일을 묶어
+         * 읽기 전용으로 보인다. 넘긴 사람은 받은 쪽이 고치거나 새로 만든 파일을 여기서 연다.
+         */
+        async ensureBranchFilesTab(roomId) {
+            try {
+                const info = await backend.getRoomArtifactBranches(roomId);
+                const here = this.currentChatRoom?.id || this.roomId;
+                if (!info || here !== roomId) return;
+                await this.syncRoomFilesFromBranch(roomId, info);
+                if (info.branches.length < 2) return;
+                const files = await branchFilesForPanel(info, (entry) => backend.artifactObjectUrl(entry), {
+                    mine: this.$t('Handover.mineSide')
+                });
+                const loadVersions = async (file) => {
+                    const branch = info.branches.find((b) => b.roomId === file.groupRoomId);
+                    const commits = await backend.getRoomArtifactCommits(file.groupRoomId);
+                    // 다 넘겨받아 시작한 방은 첫 버전이 넘긴 방의 커밋(기준)에 있다.
+                    if (branch?.baseCommitId && !commits.some((c) => c.id === branch.baseCommitId)) {
+                        const base = await backend.getArtifactCommit(branch.baseCommitId);
+                        if (base) commits.push(base);
+                    }
+                    const versions = fileVersions(commits, file.name);
+                    for (const v of versions) v.url = await backend.artifactObjectUrl(v.entry);
+                    return versions;
+                };
+                const data = {
+                    files,
+                    readOnly: true,
+                    title: this.$t('Handover.branchFiles'),
+                    messageId: `branches:${roomId}`,
+                    loadVersions
+                };
+                const existing = this.artifactPanels.find((p) => p.type === 'files' && p.data?.messageId === data.messageId);
+                if (existing) existing.data = data;
+                else this.artifactPanels.push({ id: `branches-${this.uuid()}`, type: 'files', label: this.$t('Handover.branchFiles'), data });
+            } catch (e) {
+                console.warn('[handover] 갈래 산출물 탭을 넣지 못함:', e);
+            }
+        },
+
         /** 파일 경로에서 프로세스 그룹 키(process-<uuid> 폴더명) 추출. 없으면 'default'. */
         _processGroupKey(path) {
             const m = (path || '').replace(/\\/g, '/').match(/\/(process-[^/]+)\//);
@@ -6325,6 +6610,253 @@ export default {
                     processGroup: group
                 }
             });
+        },
+
+        // ------------------------------------------------------------------
+        // 업무 인계 (핸드오버)
+        //
+        // 이 방에서 만든 산출물을 들고 다음 담당자에게 일을 넘긴다.
+        // 대상은 사람일 수도 에이전트일 수도 있으며 둘 다 users 테이블의 리소스다.
+        // 인계 행위는 handover_events 로 남아 프로세스/조직 마이닝의 원자료가 된다.
+        // ------------------------------------------------------------------
+
+        /**
+         * 이 방이 지금 들고 있는 산출물 후보를 모은다.
+         * branchPaths 가 있으면(인계 워크트리 방) 방 브랜치 head(합류면 병합 결과)의 경로가 후보다.
+         * 없으면(예전 방) 화면에 뜬 작업 파일을 후보로 하고, 넘길 때 이 방 첫 커밋에 담는다.
+         */
+        collectHandoverArtifacts(branchPaths = null) {
+            const candidates = [];
+
+            for (const path of branchPaths || []) {
+                const base = path.split('/').pop() || '';
+                if (base.startsWith('.') || base === 'manifest.json') continue;
+                candidates.push({ type: 'branch_file', ref: path, name: base, content: '' });
+            }
+
+            // 1) 에이전트 워크스페이스 파일 — 샌드박스에만 있으므로 본문을 함께 넘겨
+            //    백엔드가 스토리지에 영속화하게 한다.
+            const groups = branchPaths ? {} : this.roomWorkspaceFilesByGroup || {};
+            for (const group of Object.keys(groups)) {
+                const files = Array.isArray(groups[group]) ? groups[group] : [];
+                for (const f of files) {
+                    if (!f || !f.path) continue;
+                    const base = (f.name || f.path.split('/').pop() || '').toString();
+                    // 내부 매니페스트/도트파일은 인계 대상이 아니다(WorkspaceFilesViewer 와 동일 기준).
+                    if (base.startsWith('.') || base === 'manifest.json') continue;
+                    const candidate = {
+                        type: 'workspace_file',
+                        ref: f.path,
+                        name: base,
+                        content: typeof f.content === 'string' ? f.content : ''
+                    };
+                    // 문서(docx·pdf 등)는 바이너리라 내용 대신 주소로 넘긴다. 주소가 만료됐으면
+                    // 넘기기 직전에 file_id 로 새로 받는다(submitHandover).
+                    if (isDocumentFile(f)) {
+                        candidate.content = '';
+                        candidate.url = f.url || '';
+                        candidate.fileId = f.file_id || '';
+                        candidate.urlExpiresAt = f.url_expires_at || '';
+                    }
+                    candidates.push(candidate);
+                }
+            }
+
+            // 2) 방 첨부 — 이미 스토리지에 있으므로 경로만 참조한다.
+            const attachments = Array.isArray(this.plannedAttachments) ? this.plannedAttachments : [];
+            for (const a of attachments) {
+                if (!a || !a.file_path) continue;
+                candidates.push({
+                    type: 'attachment',
+                    ref: a.file_path,
+                    name: a.file_name || a.file_path.split('/').pop(),
+                    storagePath: a.file_path
+                });
+            }
+
+            // 3) 지식 베이스 문서
+            const docs = Array.isArray(this.selectedKnowledgeDocs) ? this.selectedKnowledgeDocs : [];
+            for (const d of docs) {
+                if (!d) continue;
+                const path = d.file_path || d.fileId || d.file_id || d.id || '';
+                candidates.push({
+                    type: 'knowledge',
+                    ref: path,
+                    name: d.name || d.fileName || d.title || path,
+                    storagePath: path || null
+                });
+            }
+
+            // 대화는 파일로 복사해 넘기지 않는다. 받은 쪽(사람은 '이전 대화', 에이전트는 deepagents)이
+            // 받은 방 id 로 인계 체인을 따라 원래 대화를 읽는다. 예전 '대화 기록.md' 는 화면에 불러온
+            // 메시지만 담겨 대화 전체가 아니었고, 단계마다 이름만 다른 사본이 쌓였다.
+            return candidates;
+        },
+
+        async openHandoverDialog() {
+            if (this.blockIfViewOnly()) return;
+            const roomId = this.currentChatRoom?.id || this.roomId;
+            if (!roomId) return;
+            // 방 브랜치가 있으면 그 파일이 후보다. 이 방이 나눠 준 갈래를 모으는 합류면 병합 결과가 후보다.
+            const [branches, merge] = await Promise.all([
+                backend.getRoomArtifactBranches(roomId).catch(() => null),
+                backend.getHandoverMerge(roomId).catch(() => null)
+            ]);
+            const mineTree = branches?.branches?.find((b) => b.mine)?.tree || null;
+            const tree = merge ? { ...merge.tree, ...Object.fromEntries(merge.conflicts.map((c) => [c.path, true])) } : mineTree;
+            this.handoverMerge = merge;
+            this.handoverArtifactCandidates = this.collectHandoverArtifacts(tree ? Object.keys(tree).sort() : null);
+            this.handoverCanClose = (await backend.getHandoverCloseState(roomId)).canClose;
+            // 에이전트에게 넘길 경우 지금 방이 쓰는 런타임을 그대로 물려준다.
+            this.handoverDefaultOrchestration = (this.getRoomOrchestration() || 'deepagents').toString();
+            // key 를 올려 다이얼로그를 매번 새로 마운트한다(이전 선택 상태가 남지 않게).
+            this.handoverDialogKey += 1;
+            this.handoverDialog = true;
+        },
+
+        async submitHandover(payload) {
+            if (this.handoverSubmitting) return;
+            this.handoverSubmitting = true;
+            try {
+                // 문서 산출물의 서명 주소는 한 시간이면 죽는다. 넘기기 직전에 새 주소를 받는다.
+                for (const a of payload.artifacts || []) {
+                    if (!a.fileId) continue;
+                    const holder = { url: a.url, file_id: a.fileId, url_expires_at: a.urlExpiresAt };
+                    try {
+                        a.url = (await usableArtifactUrl(holder, this.requestArtifactUrl)) || a.url;
+                    } catch (e) {
+                        /* 들고 있던 주소로 시도한다 */
+                    }
+                }
+                // 받는 사람마다 한 건씩 넘긴다. 한 번에 여러 명에게 나눠 주면 같은 묶음으로 기록해,
+                // 식별 화면이 그 단계를 병렬(다른 일) 또는 다중 인스턴스(같은 일)로 도출하게 한다.
+                const receivers = Array.isArray(payload.receivers) && payload.receivers.length
+                    ? payload.receivers
+                    : [{ toUser: payload.toUser, nextActivityLabel: payload.nextActivityLabel }];
+                const groupId = receivers.length > 1 ? await backend.uuid() : null;
+                // 넘기는 방 커밋은 한 번만 만든다. 받는 방 브랜치는 받는 사람마다 이 커밋에서 시작한다.
+                const merge = this.handoverMerge ? await backend.resolveHandoverMerge(this.handoverMerge, payload.mergeChoices) : undefined;
+                const snapshot = await backend.prepareHandoverSnapshot(payload.fromRoomId, payload.artifacts || [], { merge });
+                const results = [];
+                for (const r of receivers) {
+                    const result = await backend.createChatHandover({
+                        ...payload,
+                        toUser: r.toUser,
+                        nextActivityLabel: r.nextActivityLabel,
+                        groupId,
+                        snapshot
+                    });
+                    results.push({ ...r, result });
+                }
+
+                // 현재 방에도 인계 사실을 남겨 둔다(수신자 방에는 브리핑이 따로 들어간다).
+                const handedTo = results
+                    .map((r) => `**${r.toUser?.name || r.toUser?.id}** 님에게 "${r.nextActivityLabel}"`)
+                    .join(', ');
+                const systemMessage = {
+                    role: 'system',
+                    name: this.userInfo?.name || localStorage.getItem('userName') || '',
+                    email: localStorage.getItem('email') || '',
+                    content: `${handedTo} 업무를 인계했습니다.`,
+                    timeStamp: new Date().toISOString(),
+                    handover: {
+                        case_id: results[0].result.caseId,
+                        to_room_id: results[0].result.toRoomId,
+                        to_room_ids: results.map((r) => r.result.toRoomId),
+                        group_id: groupId
+                    }
+                };
+                const msgUuid = await backend.uuid();
+                await backend.putObject(`db://chats/${msgUuid}`, {
+                    uuid: msgUuid,
+                    id: payload.fromRoomId,
+                    messages: systemMessage
+                });
+                this.messages = [...this.messages, { ...systemMessage, uuid: msgUuid }];
+
+                this.handoverDialog = false;
+                if (this.$toast?.success) {
+                    const names = results.map((r) => r.toUser?.name || r.toUser?.id).join(', ');
+                    this.$toast.success(`${names} 님에게 업무를 인계했습니다.`);
+                }
+            } catch (e) {
+                console.error('[handover] 인계 실패:', e);
+                if (this.$toast?.error) this.$toast.error('인계 실패: ' + (e?.message || e));
+            } finally {
+                this.handoverSubmitting = false;
+            }
+        },
+
+        /**
+         * 에이전트에게 일이 넘어간 순간을 기록한다(버튼 없이 일어나는 암묵적 인계).
+         * 실패해도 대화 흐름은 막지 않는다.
+         */
+        async trackAgentDelegation(roomId, agent, triggerMessageUuid, triggerText) {
+            try {
+                if (!roomId || !agent?.id || !triggerMessageUuid) return;
+                // 프로세스 식별 화면이 만든 실행 전환 방은 업무가 아니라 도출 결과를 다루는 방이다.
+                // 여기서의 요청을 인계로 남기면 마이닝이 자기 출력을 다시 업무로 읽는다.
+                const roomContext = this.currentChatRoom?.id === roomId ? this.currentChatRoom?.context : null;
+                if (roomContext?.identification) return;
+                const key = `${roomId}:${agent.id}:${triggerMessageUuid}`;
+                if (this.agentDelegationTracked[key]) return;
+                this.agentDelegationTracked[key] = true;
+                await backend.recordAgentDelegation({
+                    roomId,
+                    agent: {
+                        id: agent.id,
+                        name: agent.username || agent.name || agent.alias || '',
+                        orchestration: agent.orchestration || agent.agent_type || null,
+                        role: agent.role || null
+                    },
+                    triggerMessageUuid,
+                    triggerText
+                });
+            } catch (e) {
+                console.warn('[handover] 에이전트 위임 추적 실패:', e);
+            }
+        },
+
+        /** 에이전트에게 넘긴 방에서 더 이어 줄 일 없이 업무를 끝낸다. 스레드가 끝난 건으로 도출에 들어간다. */
+        async closeHandoverThread() {
+            const roomId = this.currentChatRoom?.id || this.roomId;
+            if (!roomId || this.handoverSubmitting) return;
+            this.handoverSubmitting = true;
+            try {
+                const closed = await backend.closeHandoverThread(roomId);
+                if (closed) {
+                    const systemMessage = {
+                        role: 'system',
+                        name: this.userInfo?.name || localStorage.getItem('userName') || '',
+                        email: localStorage.getItem('email') || '',
+                        content: this.$t('Handover.closedMessage'),
+                        timeStamp: new Date().toISOString()
+                    };
+                    const msgUuid = await backend.uuid();
+                    await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: systemMessage });
+                    this.messages = [...this.messages, { ...systemMessage, uuid: msgUuid }];
+                    if (this.$toast?.success) this.$toast.success(this.$t('Handover.closedMessage'));
+                }
+                this.handoverDialog = false;
+            } catch (e) {
+                console.error('[handover] 업무 종료 실패:', e);
+                if (this.$toast?.error) this.$toast.error(this.$t('Handover.closeFailed') + ' ' + (e?.message || e));
+            } finally {
+                this.handoverSubmitting = false;
+            }
+        },
+
+        /** 에이전트 턴이 끝났을 때 처리 시간과 산출물을 채운다. */
+        async finishAgentDelegation(roomId, agentId, triggerMessageUuid, workspaceFiles) {
+            try {
+                if (!roomId || !agentId || !triggerMessageUuid) return;
+                const artifacts = (Array.isArray(workspaceFiles) ? workspaceFiles : [])
+                    .filter((f) => f && f.path)
+                    .map((f) => ({ type: 'workspace_file', ref: f.path, name: f.name || f.path.split('/').pop() }));
+                await backend.completeAgentDelegation({ roomId, agentId, triggerMessageUuid, artifacts });
+            } catch (e) {
+                console.warn('[handover] 에이전트 위임 완료 처리 실패:', e);
+            }
         },
 
         /**
@@ -6730,6 +7262,11 @@ export default {
         },
 
         handleArtifactAction({ type, action, panelId, payload }) {
+            // 읽기 전용 방에서는 내려받기·미리보기·이동 같은 보기 동작만 한다
+            if (this.isViewOnlyRoom && !['download', 'preview-bpmn', 'resolve-url', 'navigate-process'].includes(action)) {
+                this.blockIfViewOnly();
+                return;
+            }
             if (type === 'hwpx') {
                 if (action === 'page-edit-request') {
                     this.handleHwpxSectionEdit(panelId, payload);
@@ -6941,6 +7478,8 @@ export default {
             } else {
                 const content = (payload?.content ?? '').toString();
                 f.content = content; // 편집 내용 반영
+                // 인계 워크트리 방이면 고친 파일을 이 방 브랜치에 바로 커밋한다(입력이 멈춘 뒤 한 번).
+                this.scheduleEditCommit(path, content);
                 // process-definition.json 을 직접 고쳤으면 같은 그룹 .bpmn 재파생.
                 if (/process-definition\.json$/.test(path.replace(/\\/g, '/'))) {
                     try {
@@ -6959,6 +7498,56 @@ export default {
                 }
             }
             if (panel?.data?.saveState) panel.data.saveState.saved = false;
+        },
+
+        /** 화면에서 고친 작업 파일을 방 브랜치에 커밋하도록 예약한다. 같은 파일은 입력이 멈춘 뒤 한 번만 커밋한다. */
+        scheduleEditCommit(path, content) {
+            const roomId = this.currentChatRoom?.id || this.roomId;
+            if (!roomId || !treePathOf(path, roomId)) return;
+            if (!this._editCommits) this._editCommits = new Map();
+            const key = `${roomId}:${path}`;
+            const prev = this._editCommits.get(key);
+            if (prev) clearTimeout(prev.timer);
+            const run = () => {
+                this._editCommits.delete(key);
+                return backend.commitEditedArtifact(roomId, path, content).catch((e) => {
+                    console.warn('[handover] 편집 커밋 실패:', e);
+                    if (this.$toast?.error) this.$toast.error(`${this.$t('Handover.editCommitFailed')}: ${e?.message || e}`);
+                });
+            };
+            this._editCommits.set(key, { run, timer: setTimeout(run, 1200) });
+        },
+
+        /** 예약된 편집 커밋을 바로 보낸다(방을 떠날 때). */
+        flushEditCommits() {
+            for (const { run, timer } of this._editCommits?.values() || []) {
+                clearTimeout(timer);
+                run();
+            }
+        },
+
+        /**
+         * 이 방 작업 파일을 브랜치 최신 내용으로 맞춘다. 패널은 에이전트 실행 기록으로 다시 그려져서,
+         * 사람이 고쳐 커밋한 내용이 새로 고침 뒤에 옛 내용으로 보이지 않게 한다.
+         */
+        async syncRoomFilesFromBranch(roomId, info) {
+            const mine = (info?.branches || []).find((b) => b.mine);
+            if (!mine) return;
+            for (const files of Object.values(this.roomWorkspaceFilesByGroup || {})) {
+                for (const f of files || []) {
+                    const treePath = treePathOf(f.path, roomId);
+                    const entry = treePath && mine.tree?.[treePath];
+                    if (!entry || !isTextEntry(treePath, entry) || (entry.size || 0) > 512 * 1024) continue;
+                    try {
+                        const res = await fetch(await backend.artifactObjectUrl(entry));
+                        if (!res.ok) continue;
+                        const text = await res.text();
+                        if (text !== f.content) f.content = text;
+                    } catch (e) {
+                        /* 못 읽으면 기록의 내용을 그대로 둔다 */
+                    }
+                }
+            }
         },
 
         /**
@@ -7132,6 +7721,9 @@ export default {
                         report = await backend.validateAndImproveDraft(procId, {
                             processName: procName,
                             forms,
+                            // 식별 화면에서 전환한 방은 인계 기록에서 도출한 흐름을 그대로 쓴다. 실제 엔진으로
+                            // 한 번 돌려 보기만 하고(결함은 화면에 보인다) LLM 이 흐름을 고쳐 쓰지 않게 한다.
+                            maxIters: this.currentChatRoom?.context?.identification ? 1 : undefined,
                             // 검증 인스턴스를 현재 사용자에게 귀속 → 완료 인스턴스 목록에서 확인 가능.
                             email: this.userInfo?.email,
                             userUid: this.userInfo?.uid || this.userInfo?.id
@@ -7168,7 +7760,12 @@ export default {
                     this._roomDraftIds = newDraftIds.slice();
                     try {
                         if (this.currentChatRoom) {
-                            this.currentChatRoom.draftProcDefIds = newDraftIds.slice();
+                            // chat_rooms 에는 draftProcDefIds 열이 없다. 방 객체에 바로 붙이면 다음 메시지를
+                            // 보낼 때 방 저장이 400 으로 실패해 메시지가 나가지 않는다 — context(jsonb)에 둔다.
+                            this.currentChatRoom.context = {
+                                ...(this.currentChatRoom.context || {}),
+                                draftProcDefIds: newDraftIds.slice()
+                            };
                         }
                     } catch (re) {
                         /* ignore */
@@ -8604,6 +9201,16 @@ export default {
                 }
             }
 
+            // 이 턴을 유발한 사용자 메시지 uuid — 암묵적 위임(사람 → 에이전트) 이벤트의 키.
+            // 같은 (방, 에이전트, 트리거 메시지) 조합은 DB 유니크 인덱스가 중복을 막으므로
+            // 스트림 재접속으로 다시 들어와도 안전하다.
+            const handoverRoomId = (this.currentChatRoom?.id || this.roomId || '').toString();
+            const handoverTriggerUuid =
+                (payload?.message_uuid || payload?.messageUuid || '').toString().trim() ||
+                (payload?.metadata?.message_uuid || payload?.metadata?.messageUuid || '').toString().trim() ||
+                (payload?.msgUuid || '').toString().trim() ||
+                null;
+
             const promises = finalTargets.map(async (agentTarget) => {
                 const agentId = agentTarget.id;
                 if (!agentId) return;
@@ -8622,6 +9229,11 @@ export default {
                     } catch (e) {
                         // 조회 실패 시 기존 값 그대로 진행
                     }
+                }
+                // 버튼을 누르지 않아도 에이전트에게 일이 넘어간 것이므로 핸드오버로 남긴다.
+                // 에이전트의 질문에 답하는 턴(run_state 로 재개)은 같은 위임의 연속이라 새로 남기지 않는다.
+                if (!payload?.metadata?.run_state) {
+                    this.trackAgentDelegation(handoverRoomId, { ...agentTarget, orchestration }, handoverTriggerUuid, userText);
                 }
 
                 const assistantUuid = this.uuid();
@@ -9538,6 +10150,15 @@ export default {
                                 this.checkAndSubscribePdf2Bpmn(safeFinal || full || '', toolCalls, roomId);
                             }
                         } catch (e) {}
+
+                        // 에이전트 위임의 왕복을 닫는다. returned_at - occurred_at 이 에이전트
+                        // 처리 시간이 되어, 이후 사람 대기 시간과 분리해 병목을 볼 수 있다.
+                        this.finishAgentDelegation(
+                            handoverRoomId,
+                            agentId,
+                            handoverTriggerUuid,
+                            Array.isArray(msg?.workspaceFiles) ? msg.workspaceFiles : []
+                        );
                     },
                     onError: async (err) => {
                         // 배칭 타이머가 살아 있으면 아래에서 세팅한 오류 본문을 덮어쓸 수 있으므로 먼저 취소·확정한다.
@@ -9754,6 +10375,7 @@ export default {
         async saveMessageToRoom(msg, roomId) {
             const targetRoomId = roomId || this.currentChatRoom?.id;
             if (!targetRoomId || !msg?.uuid) return;
+            if (isChatRoomDeleted(targetRoomId)) return;
             try {
                 await backend.putObject(`db://chats/${msg.uuid}`, {
                     uuid: msg.uuid,
@@ -11646,6 +12268,9 @@ export default {
                     return;
                 }
                 const targetRoomId = (roomId || this.currentChatRoom?.id || this.roomId || '').toString();
+                // 지운 방에는 메시지도 되살리지 않는다. 이 저장은 타이머로 늦게 오기 때문에
+                // (아래 fallback) 삭제 뒤에 깨어나 chats row 를 다시 만들어 넣을 수 있다.
+                if (isChatRoomDeleted(targetRoomId)) return;
                 // 서버가 chats row 를 INSERT 하는 assistant 스트리밍 메시지는, realtime INSERT 로
                 // rowUuid 가 도착하기 전에 client uuid 로 upsert 하면 "같은 turn = 두 row" 가 되어
                 // HITL 패널이 중복 렌더된다. rowUuid 가 생길 때까지 보류하고,
@@ -12104,5 +12729,16 @@ export default {
     content: '·';
     margin-right: 6px;
     color: rgba(0, 0, 0, 0.25);
+}
+
+.view-only-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--cds-text-secondary, rgba(0, 0, 0, 0.6));
+    background: rgba(var(--v-theme-on-surface), 0.03);
+    border-radius: 12px;
 }
 </style>

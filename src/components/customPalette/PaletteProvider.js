@@ -8,6 +8,7 @@ import '@/components/autoLayout/bpmn-waypoints-refresh.js';
 import { applyColumnRowLayout } from '@/components/autoLayout/column-row-layout.js';
 import {
   computeFinalSequenceFlowWaypoints,
+  deferSequenceFlowRouting,
   collectSequenceFlowObstacleElements,
   enforceFinalSourceExitClearance,
   enforceFinalTargetApproachClearance,
@@ -1128,6 +1129,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
   onLoadStart();
   const modeling = this._modeling;
   const logPrefix = '[changeParticipantOrientation]';
+  let routing;
 
   try {
     if (element.type !== 'bpmn:Participant') {
@@ -1138,6 +1140,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
 
     const childElements = element.children || [];
     const elementRegistry = this._injector.get('elementRegistry');
+    routing = deferSequenceFlowRouting(elementRegistry, { skipNative: true });
     const rotationElements = getParticipantDescendants(elementRegistry, element);
 
     let isSubprocessImported = false;
@@ -1157,6 +1160,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
 
     if (!lanes.length) {
       rotateLaneLessParticipant(modeling, element, rotationElements, false);
+      routing.finish(modeling);
       onLoadEnd();
       return;
     }
@@ -1381,8 +1385,10 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
     if (typeof sync === 'function') {
       sync(this._injector, { horizontal: false });
     }
+    routing.finish(modeling);
     onLoadEnd();
   } catch (error) {
+    routing?.cancel();
     console.error(`${logPrefix} ?뚯쟾 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.`, error);
     onLoadEnd();
   }
@@ -1392,6 +1398,7 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
   onLoadStart();
   const modeling = this._modeling;
   const logPrefix = '[changeParticipantOrientation]';
+  let routing;
   try {
     if (element.type !== 'bpmn:Participant') {
       console.warn(`${logPrefix} participant媛 ?꾨떃?덈떎.`);
@@ -1401,6 +1408,7 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
 
     const childElements = element.children || [];
     const elementRegistry = this._injector.get('elementRegistry');
+    routing = deferSequenceFlowRouting(elementRegistry, { skipNative: true });
     const rotationElements = getParticipantDescendants(elementRegistry, element);
 
     let isSubprocessImported = false;
@@ -1421,6 +1429,7 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
 
     if (!lanes.length) {
       rotateLaneLessParticipant(modeling, element, rotationElements, true);
+      routing.finish(modeling);
       onLoadEnd();
       return;
     }
@@ -1648,8 +1657,10 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
     if (typeof sync === 'function') {
       sync(this._injector, { horizontal: true });
     }
+    routing.finish(modeling);
     onLoadEnd();
   } catch (error) {
+    routing?.cancel();
     console.error(`${logPrefix} ?뚯쟾 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.`, error);
     onLoadEnd();
   }

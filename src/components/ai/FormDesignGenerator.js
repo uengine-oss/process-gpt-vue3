@@ -7,8 +7,9 @@ const backend = BackendFactory.createBackend();
 
 // '화면 정의' 메뉴에서 AI를 통한 폼 생성을 위한 생성기 클래스
 export default class FormDesignGenerator extends AIGenerator {
-    constructor(client, language) {
-        super(client, language);
+    constructor(client, options) {
+        // 폼 설계 전용 모델 설정(llmConfig.formDesign — 추론 강도 minimal로 대기 시간을 줄인다)
+        super(client, { llmPurpose: 'formDesign', ...(options || {}) });
 
         this.datasourceURL = this.client.datasourceURL;
         this.datasourcePrompt = this.getDatasourcePrompt();

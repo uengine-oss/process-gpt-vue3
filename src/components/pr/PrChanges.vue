@@ -4,6 +4,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { loadPrChanges, buildPlainFileView, type PrChanges } from '@/composables/usePrChanges';
 import { t } from '@/composables/i18nText';
 import PrDefinitionCompare from '@/components/pr/PrDefinitionCompare.vue';
+import { COPY, includeToolsChangeFromPatch } from '@/utils/skillToolBinding';
 
 const props = withDefaults(defineProps<{ pr: any; showSummary?: boolean; businessView?: boolean }>(), {
     showSummary: true,
@@ -52,6 +53,27 @@ const plainFiles = computed(() => {
     return groups;
 });
 const items = computed(() => changes.value?.items || []);
+/**
+ * 스킬 병합 요청에서 SKILL.md 의 include_tools 가 바뀌면 "읽은 뒤 쓰는 도구 변경"으로 따로 보인다.
+ * 도구마다 지금 상태(스킬 전용 지정 여부)를 붙이고, 지정 안 된 도구는 병합 후 지정 안내를 보인다.
+ */
+const toolBindingChange = computed(() => {
+    if ((props.pr?.resource_type || '') !== 'skill') return null;
+    const skillMd = files.value.find((file) => /(^|\/)SKILL\.md$/.test(file.filename || ''));
+    return skillMd ? includeToolsChangeFromPatch(skillMd.patch) : null;
+});
+const skillOnlyTools = ref<string[] | null>(null);
+const undesignatedAdded = computed(() =>
+    skillOnlyTools.value && toolBindingChange.value ? toolBindingChange.value.added.filter((n) => !skillOnlyTools.value!.includes(n)) : []
+);
+watch(toolBindingChange, async (change) => {
+    if (!change || skillOnlyTools.value) return;
+    try {
+        skillOnlyTools.value = (await backend.getSkillOnlyTools())?.tools || [];
+    } catch (_) {
+        skillOnlyTools.value = null;
+    }
+});
 const activeFileObj = computed(() => files.value.find((file) => file.filename === activeFile.value) || null);
 
 /** 변경 항목의 동작 이름. 로케일 파일이 말을 갖는다. */
@@ -139,6 +161,20 @@ function diffLineClass(line: string): string {
         </div>
 
         <template v-else-if="changes">
+            <div v-if="toolBindingChange" class="pc-binding" data-test="tool-binding-change">
+                <v-icon size="15" class="mr-1" color="warning">mdi-toolbox-outline</v-icon>
+                <span class="font-weight-medium mr-1">읽은 뒤 쓰는 도구 변경:</span>
+                <span v-for="name in toolBindingChange.added" :key="'+' + name" class="mr-2" :data-added="name">
+                    + <code>{{ name }}</code>
+                    <template v-if="skillOnlyTools"> · {{ skillOnlyTools.includes(name) ? COPY.afterSkill : COPY.always }}</template>
+                </span>
+                <span v-for="name in toolBindingChange.removed" :key="'-' + name" class="mr-2">
+                    − <code>{{ name }}</code>
+                </span>
+                <div v-if="undesignatedAdded.length" class="text-caption text-warning" data-test="needs-designation">
+                    {{ undesignatedAdded.join(', ') }}: 병합 후 관리자 현황에서 스킬 전용으로 지정해야 이 스킬을 읽은 뒤에만 쓰게 됩니다.
+                </div>
+            </div>
             <!-- 무엇이 바뀌는지 한 줄로 먼저 알린다. -->
             <div v-if="props.showSummary && changes.summary" class="pc-summary">
                 <v-icon size="15" class="mr-1">mdi-text-short</v-icon>
@@ -630,5 +666,12 @@ function diffLineClass(line: string): string {
     font-size: 11.5px;
     color: rgba(var(--v-theme-on-surface), 0.6);
     margin-top: 2px;
+}
+.pc-binding {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    background: rgba(var(--v-theme-warning), 0.08);
+    font-size: 13px;
 }
 </style>

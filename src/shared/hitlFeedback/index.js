@@ -105,3 +105,54 @@ export function mergeFeedback(output, payload, at = new Date().toISOString()) {
 export function isPaused(output) {
     return parseOutput(output).hitl_paused === true;
 }
+
+/**
+ * 질문 카드에 보일 문구.
+ *
+ * SDK 에이전트(deepagents 등)는 질문을 `question` 에 담고, 다른 도구는 `text` 에
+ * 담는다. 한쪽만 읽으면 질문 없는 빈 카드가 된다.
+ */
+export function humanQuestionText(data) {
+    return String(data?.text || data?.question || '');
+}
+
+/**
+ * 질문 카드에 답했을 때 작업을 다시 진행시키는 갱신. 그럴 필요가 없으면 null.
+ *
+ * 에이전트 실행이 질문을 남기고 끝난 작업은 `draft_status = 'HUMAN_ASKED'` 로
+ * 멈춰 있다. 응답 이벤트만 남기면 아무도 다시 집지 않으므로, 답을 feedback 에
+ * 붙이고 `FB_REQUESTED` 로 돌려야 워커가 이어서 실행한다. 실행 안에서 응답
+ * 이벤트를 폴링하며 기다리는 도구는 `STARTED` 라 여기에 해당하지 않는다.
+ */
+export function resumePatchForAnswer(todo, answer, { userId = null, at = new Date().toISOString() } = {}) {
+    if (todo?.draft_status !== 'HUMAN_ASKED') return null;
+
+    let feedback = todo.feedback;
+    if (typeof feedback === 'string') {
+        try {
+            feedback = JSON.parse(feedback);
+        } catch (_e) {
+            feedback = [];
+        }
+    }
+    const existing = Array.isArray(feedback) ? feedback : [];
+
+    return {
+        feedback: [...existing, { time: at, content: String(answer), user_id: userId, kind: FEEDBACK_KIND_HUMAN_ANSWER }],
+        draft_status: 'FB_REQUESTED'
+    };
+}
+
+/**
+ * feedback 항목의 구분 표시. 워커가 다시 집는 순간 사람 답변 재개와 반려 재작업은
+ * 행 모양이 같다. 이 표시가 있어야 SDK 가 재개 사유를 정하고, 에이전트가 멈춘
+ * 지점에서 원문 답으로 이어 간다(없으면 반려로 보고 처음부터 다시 한다).
+ * 값은 SDK 의 재개 사유 이름과 같다.
+ */
+export const FEEDBACK_KIND_HUMAN_ANSWER = 'human_answer';
+export const FEEDBACK_KIND_REVISION = 'revision';
+
+/** 결과 화면에서 보낸 피드백(반려·수정 요청) 한 건. */
+export function revisionFeedbackEntry(text, { userId = null, at = new Date().toISOString() } = {}) {
+    return { time: at, content: String(text), user_id: userId, kind: FEEDBACK_KIND_REVISION };
+}

@@ -1,0 +1,48 @@
+{
+  "room": "fea4f690-af74-46e8-bc57-df243271b7b3",
+  "before": 48,
+  "after": 49,
+  "total": 82.836,
+  "marks": [
+    {
+      "name": "업무 대화방",
+      "phase": "event",
+      "at": 12.409
+    },
+    {
+      "name": "인계 다이얼로그 열기",
+      "phase": "event",
+      "at": 28.576
+    },
+    {
+      "name": "다음 단계 작성",
+      "phase": "event",
+      "at": 41.049
+    },
+    {
+      "name": "담당자 선택",
+      "phase": "event",
+      "at": 53.78
+    },
+    {
+      "name": "인계 실행",
+      "phase": "event",
+      "at": 58.833
+    },
+    {
+      "name": "인계 처리 대기",
+      "phase": "wait",
+      "at": 58.833
+    },
+    {
+      "name": "인계 완료",
+      "phase": "event",
+      "at": 68.089
+    },
+    {
+      "name": "구간 종료",
+      "phase": "event",
+      "at": 82.18
+    }
+  ]
+}

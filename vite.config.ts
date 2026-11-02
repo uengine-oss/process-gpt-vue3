@@ -121,6 +121,13 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/strategy-service/, '')
             },
+            // 인계 마이닝(프로세스·조직 도출) 서비스. strategy(:8014)와 함께 띄울 수 있게 :8015.
+            // 게이트웨이(nginx) 라우트는 아직 없다 — 배포 경로는 후속 과제(분석 문서 참고).
+            '/process-miner/': {
+                target: env.MINER_PROXY_TARGET || process.env.MINER_PROXY_TARGET || 'http://127.0.0.1:8015',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/process-miner/, '')
+            },
             '/query': {
                 target: 'http://localhost:8005',
                 changeOrigin: true

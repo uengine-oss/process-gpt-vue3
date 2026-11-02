@@ -1,0 +1,81 @@
+{
+  "roomId": "5ca1c86f-7529-4560-909f-7b974e874a6e",
+  "total": 246.783,
+  "marks": [
+    {
+      "name": "메인 화면",
+      "phase": "event",
+      "at": 10.404
+    },
+    {
+      "name": "업무 대화 시작",
+      "phase": "event",
+      "at": 93.873
+    },
+    {
+      "name": "업무 질문 1",
+      "phase": "event",
+      "at": 103.411
+    },
+    {
+      "name": "응답 대기 1",
+      "phase": "wait",
+      "at": 105.917
+    },
+    {
+      "name": "응답 도착 1",
+      "phase": "event",
+      "at": 136.422
+    },
+    {
+      "name": "업무 질문 2",
+      "phase": "event",
+      "at": 144.433
+    },
+    {
+      "name": "응답 대기 2",
+      "phase": "wait",
+      "at": 146.942
+    },
+    {
+      "name": "응답 도착 2",
+      "phase": "event",
+      "at": 183.307
+    },
+    {
+      "name": "인계 버튼 클릭",
+      "phase": "event",
+      "at": 203.94
+    },
+    {
+      "name": "다음 단계 작성",
+      "phase": "event",
+      "at": 219.399
+    },
+    {
+      "name": "담당자 선택",
+      "phase": "event",
+      "at": 228.787
+    },
+    {
+      "name": "인계 실행",
+      "phase": "event",
+      "at": 231.903
+    },
+    {
+      "name": "인계 처리 대기",
+      "phase": "wait",
+      "at": 231.903
+    },
+    {
+      "name": "인계 완료",
+      "phase": "event",
+      "at": 232.422
+    },
+    {
+      "name": "구간 종료",
+      "phase": "event",
+      "at": 246.429
+    }
+  ]
+}

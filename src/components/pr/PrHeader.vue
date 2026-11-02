@@ -44,7 +44,7 @@
                     <span class="prh-dot">&middot;</span>
                     <span class="prh-branch">{{ shortBranch(pr.branch_name) }}</span>
                     <span class="prh-arrow">&rarr;</span>
-                    <span class="prh-branch">{{ pr.base_branch }}</span>
+                    <span class="prh-branch">{{ pr.base_branch || $t('pr.header.newResource') }}</span>
                     <template v-if="pr.git_pr_number">
                         <span class="prh-dot">&middot;</span>
                         <span class="prh-num">#{{ pr.git_pr_number }}</span>

@@ -90,6 +90,12 @@ export default class AIGenerator {
 
     stop() {
         this.stopSignaled = true;
+        // 받은 조각이 없을 때(추론 모델이 생각하는 동안)도 바로 끊는다. 예전에는 다음 조각이 와야 끊겼다
+        if (this.currentXhr && this.currentXhr.readyState !== 4) {
+            this.abortedByUser = true;
+            this.currentXhr.abort();
+            this.state = 'stopped';
+        }
         if (this.client && this.client.onModelStopped) {
             this.client.onModelStopped();
         }
@@ -271,10 +277,17 @@ export default class AIGenerator {
         }
 
         let responseCnt = 0;
+        // options.streamThrottleMs가 있으면 진행 중 결과를 시간 간격으로 넘긴다(실시간 표시용).
+        // 없으면 예전처럼 받은 조각 16개마다 한 번.
+        const streamThrottleMs = Number(this.options && this.options.streamThrottleMs) || 0;
+        let lastEmittedAt = 0;
 
         me.gptResponseId = null;
         const url = `${this.backendUrl}/messages`;
         const xhr = new XMLHttpRequest();
+        // 사용자가 멈춘 요청은 오류로도, 완료로도 처리하지 않는다
+        me.abortedByUser = false;
+        me.currentXhr = xhr;
         xhr.open('POST', url);
         xhr.setRequestHeader('Content-Type', 'application/json');
         const authHeaders = this.getAuthHeaders();
@@ -343,9 +356,11 @@ export default class AIGenerator {
         xhr.onprogress = function (event) {
             var currentResId;
             if (me.stopSignaled) {
+                me.abortedByUser = true;
                 xhr.abort();
                 me.stopSignaled = false;
                 me.state = 'stopped';
+                return;
             }
             // console.log("Received " + event.loaded + " bytes of data.");
             // console.log("Data: " + xhr.responseText);
@@ -392,11 +407,13 @@ export default class AIGenerator {
             }
 
             if (me.client.onModelCreated && me.client.genType != 'form') {
-                if (responseCnt > 15) {
+                const due = streamThrottleMs ? Date.now() - lastEmittedAt >= streamThrottleMs : responseCnt > 15;
+                if (due) {
                     me.saveCacheSteps(messages, newUpdatesJoined.length);
 
                     me.client.onModelCreated(me.createModel(newUpdatesJoined));
                     responseCnt = 0;
+                    lastEmittedAt = Date.now();
                 } else {
                     responseCnt++;
                 }
@@ -414,7 +431,8 @@ export default class AIGenerator {
         };
 
         xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4 && xhr.status !== 200) {
+            // abort()도 readyState 4 · status 0 으로 온다. 사용자가 멈춘 것은 오류가 아니다
+            if (xhr.readyState === 4 && xhr.status !== 200 && !me.abortedByUser) {
                 console.error('HTTP 응답 에러:', xhr.status, xhr.statusText);
                 me.state = 'error';
 
@@ -440,6 +458,11 @@ export default class AIGenerator {
 
         xhr.onloadend = function () {
             console.log('End to Success - onloadend', xhr);
+            if (me.abortedByUser) {
+                // 멈춘 요청: 받다 만 결과를 반영하지도, 대화 이력·캐시에 남기지도 않는다
+                me.state = 'stopped';
+                return;
+            }
             me.state = 'end';
             let model = me.createModel(me.modelJson);
             console.log('[*][AIGenerator] 백엔드 서버에서 최종적인 응답 데이터 구축 완료', { modelJson: me.modelJson });
