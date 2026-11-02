@@ -5,6 +5,7 @@ import { useStrategyStore } from '@/stores/strategy/strategyStore';
 import BackendFactory from '@/components/api/BackendFactory';
 import StrategyOntologyExplorer from '@/components/strategy/ontology/StrategyOntologyExplorer.vue';
 import OntologySchemaView from '@/components/strategy/ontology/OntologySchemaView.vue';
+import StrategyImprovePanel from '@/components/strategy/StrategyImprovePanel.vue';
 import { LEVEL_TEXT, achievementLevel, levelColor } from '@/components/strategy/ontology/achievementLevel.js';
 import { useDashboardThresholds } from '@/services/dashboardThresholdsService';
 import '@/components/strategy/ontology/strategyTheme.css';
@@ -358,6 +359,11 @@ const conflictKpiOptions = computed(() =>
         (o.kpis || []).filter((k: any) => k.id !== kpiDialog.editingId).map((k: any) => ({ title: k.name, subtitle: o.name, value: k.id }))
     )
 );
+const kpiById = computed(() => {
+    const m = new Map<string, any>();
+    for (const o of store.objectives) for (const k of o.kpis || []) m.set(k.id, k);
+    return m;
+});
 const conflictObjectiveOptions = computed(() =>
     store.objectives.filter((o: any) => o.id !== objectiveDialog.editingId).map((o: any) => ({ title: o.name, value: o.id }))
 );
@@ -414,6 +420,17 @@ watch(
         }
     }
 );
+
+// 상충 KPI 고르면 프로세스를 맞춘다 — 이 KPI 가 프로세스 미연결이면 상대 KPI 의 프로세스를 따른다.
+// 반대(상대가 미연결)는 저장할 때 상대 KPI 에 이 KPI 의 프로세스를 자동 등록한다(saveKpi).
+function adoptConflictProcess() {
+    if (kpiDialog.form.proc_def_id) return;
+    const linked = kpiDialog.form.conflicts_with.map((id) => kpiById.value.get(id)).find((k: any) => k?.proc_def_id);
+    if (!linked) return;
+    kpiDialog.form.proc_def_id = linked.proc_def_id;
+    showSnack(`상충 KPI '${linked.name}' 의 프로세스 '${processName(linked.proc_def_id)}' 에 연결했습니다`, 'info');
+}
+watch(() => [...kpiDialog.form.conflicts_with], adoptConflictProcess);
 
 function openKpiDialog(kpi?: any) {
     kpiDialog.editingId = kpi?.id || null;
@@ -482,6 +499,36 @@ async function saveKpi() {
     if (kpiDialog.editingId) await store.updateKpi(kpiDialog.editingId, payload);
     else await store.createKpi(payload);
     kpiDialog.open = false;
+    await linkConflictKpisToProcess(payload.proc_def_id, payload.conflicts_with);
+}
+
+// 상충 KPI 중 프로세스 미연결인 것은 이 KPI 의 프로세스에 자동 등록한다. 다른 프로세스에 연결된 KPI 는
+// 한 KPI 가 프로세스 하나에만 연결되므로 바꾸지 않고, 이 프로세스 판단에선 상충이 빠진다고 알린다.
+async function linkConflictKpisToProcess(procDefId: string | null, conflictIds: string[]) {
+    if (!procDefId || !conflictIds?.length) return;
+    const partners = conflictIds.map((id) => kpiById.value.get(id)).filter(Boolean);
+    const unlinked = partners.filter((k: any) => !k.proc_def_id);
+    const elsewhere = partners.filter((k: any) => k.proc_def_id && k.proc_def_id !== procDefId);
+    try {
+        if (unlinked.length)
+            await store.linkKpisToProcess(
+                unlinked.map((k: any) => k.id),
+                procDefId
+            );
+    } catch (e: any) {
+        showSnack(e?.message || '상충 KPI 프로세스 연결 실패', 'error');
+        return;
+    }
+    if (elsewhere.length) {
+        showSnack(
+            `상충 KPI ${elsewhere.map((k: any) => `'${k.name}'`).join(', ')} 은(는) 다른 프로세스에 연결돼 있어 '${processName(
+                procDefId
+            )}' 판단에는 반영되지 않습니다`,
+            'warning'
+        );
+    } else if (unlinked.length) {
+        showSnack(`상충 KPI ${unlinked.map((k: any) => `'${k.name}'`).join(', ')} 을(를) '${processName(procDefId)}' 에 자동 연결했습니다`);
+    }
 }
 
 async function removeKpi(kpi: any) {
@@ -1152,6 +1199,7 @@ onBeforeUnmount(() => {
                     <v-tab value="kpis">KPI ({{ selectedObjective.kpis.length }})</v-tab>
                     <v-tab value="initiatives">{{ $t('strategyBoard.initiatives') }} ({{ selectedObjective.initiatives.length }})</v-tab>
                     <v-tab value="contribution" data-testid="contribution-tab">{{ $t('strategyBoard.contribution') }}</v-tab>
+                    <v-tab value="improve" data-testid="improve-tab">{{ $t('strategyBoard.improve') }}</v-tab>
                 </v-tabs>
                 <v-divider />
 
@@ -1367,6 +1415,9 @@ onBeforeUnmount(() => {
                             {{ $t('strategyBoard.noInitiatives') }}
                         </div>
                     </template>
+
+                    <!-- 개선점 탭: 미달 KPI → 병목 태스크 → 개선할 스킬(전략 하향 분석) -->
+                    <StrategyImprovePanel v-else-if="detailTab === 'improve'" :objective-id="selectedObjective.id" />
 
                     <!-- 기여도 탭: 이 목표(+하위 전략) 범위의 성과자 가중 순위 + 스킬 성장 기여 -->
                     <template v-else>

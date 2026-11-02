@@ -976,7 +976,8 @@ export default {
                     ...base,
                     id: newId,
                     event_type: 'human_response',
-                    data: { answer },
+                    // 선택형 질문에 적은 의견(고른 이유·기준)도 함께 남긴다 — 워커가 판단 사례·규칙으로 기록한다(spec 019)
+                    data: task.comment ? { answer, comment: task.comment } : { answer },
                     status: 'APPROVED'
                 };
                 // 낙관적 UI 업데이트: 즉시 완료 표시 + 로그

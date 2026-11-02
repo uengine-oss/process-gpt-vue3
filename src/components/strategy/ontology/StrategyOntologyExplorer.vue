@@ -10,6 +10,7 @@ import { useDashboardThresholds } from '@/services/dashboardThresholdsService';
 import './strategyTheme.css';
 import { LEVEL_TEXT, levelColor } from './achievementLevel.js';
 import OntologySymbol from './OntologySymbol.vue';
+import { studioWebUrl } from '@/views/strategy/ontology-data/ontologyDataApi';
 import {
     COLLAPSED_WIDTH,
     EXPLORER_LAYERS,
@@ -47,6 +48,7 @@ const STAGE_TONE_BY_KEY: Record<string, string> = {
     process: '#0f766e',
     task: '#0f766e',
     asset: '#475569',
+    studio: '#475569',
     instance: '#0369a1',
     workitem: '#0369a1',
     resource: '#a21caf',
@@ -83,7 +85,9 @@ const LABEL_TEXT: Record<string, string> = {
     DataObject: '데이터',
     Document: '문서',
     ProcessArea: '프로세스 영역',
-    ProcessGroup: '프로세스 그룹'
+    ProcessGroup: '프로세스 그룹',
+    DataClass: 'Studio 클래스',
+    DataEntity: 'Studio 엔티티'
 };
 const LABEL_ICON: Record<string, string> = {
     Strategy: 'mdi-flag-variant-outline',
@@ -101,7 +105,9 @@ const LABEL_ICON: Record<string, string> = {
     DataObject: 'mdi-file-table-outline',
     Document: 'mdi-file-document-outline',
     ProcessArea: 'mdi-view-dashboard-outline',
-    ProcessGroup: 'mdi-folder-outline'
+    ProcessGroup: 'mdi-folder-outline',
+    DataClass: 'mdi-database-outline',
+    DataEntity: 'mdi-database-marker-outline'
 };
 const REL_TEXT: Record<string, string> = {
     HAS_SUB_STRATEGY: '하위 전략',
@@ -130,7 +136,9 @@ const REL_TEXT: Record<string, string> = {
     CALLS_PROCESS: '호출',
     HANDS_OFF_TO: '인계',
     IN_CHARGE_OF: '담당 조직',
-    CONFLICTS_WITH: '상충'
+    CONFLICTS_WITH: '상충',
+    INSTANCE_OF: '클래스',
+    LEARNED_FROM: '학습 근거'
 };
 // 방향에 따라 읽는 말이 다른 관계 — 소속(PART_OF)은 지도에서 부모 → 자식으로 읽는다(ontologyLineage.buildIndex)
 const REL_TEXT_DIR: Record<string, { out: string; in: string }> = {
@@ -143,7 +151,8 @@ const ORIGIN_TEXT: Record<string, string> = {
     measured: '측정 정의',
     synced: '동기화',
     extracted: 'LLM 추출',
-    statistical: '통계 가설 승인'
+    statistical: '통계 가설 승인',
+    'ontology-studio': 'Ontology Studio'
 };
 // 코스 설명표의 좁은 종류 칸용 짧은 이름
 const LABEL_SHORT: Record<string, string> = { ProcessInstance: '인스턴스', WorkItem: '워크아이템', Initiative: '이니셔티브' };
@@ -469,7 +478,7 @@ const directLinks = computed(() => {
     const groups = new Map<string, any>();
     for (const { edge, other, outgoing } of index.value.adj.get(selected.value.id) || []) {
         const dir = REL_TEXT_DIR[edge.rel_type];
-        const text = dir ? (outgoing ? dir.out : dir.in) : REL_TEXT[edge.rel_type] || edge.rel_type;
+        const text = dir ? (outgoing ? dir.out : dir.in) : REL_TEXT[edge.rel_type] || edge.properties?.label || edge.rel_type;
         const key = `${outgoing ? '→' : '←'} ${text}`;
         if (!groups.has(key)) groups.set(key, { rel: key, origin: ORIGIN_TEXT[edge.origin] || '', items: [] });
         groups.get(key).items.push({ n: index.value.nodes.get(other), note: hypoNote(edge) });
@@ -585,7 +594,10 @@ function subtitle(n: any): string {
         case 'System':
         case 'Document':
         case 'DataObject':
+        case 'DataClass':
             return assetUsage(n);
+        case 'DataEntity':
+            return n.properties?.class || 'Studio 엔티티';
         case 'ProcessArea':
         case 'ProcessGroup':
             return memberCount(n);
@@ -598,6 +610,7 @@ function assetUsage(n: any): string {
     const adj = index.value.adj.get(n.id) || [];
     const by = (rel: string) => adj.filter((a: any) => a.edge.rel_type === rel && !a.outgoing).length;
     if (n.label === 'DataObject') return `데이터 · 쓰기 ${by('WRITES_DATA')} · 읽기 ${by('READS_DATA')}`;
+    if (n.label === 'DataClass') return `${n.properties?.class || ''} · 판단 태스크 ${by('READS_DATA')}`;
     if (n.label === 'System') return `시스템 · 태스크 ${by('USES_SYSTEM')}`;
     return `문서 · 연결 ${by('GOVERNED_BY')}`;
 }
@@ -758,6 +771,12 @@ const PROP_ROWS: Record<string, [string, string, ((v: any) => string)?][]> = {
         ['kind', '종류', (v) => (v === 'link' ? '링크' : '파일')],
         ['link_url', '링크']
     ],
+    DataClass: [
+        ['class', 'Studio 클래스'],
+        ['count', '건수', (v) => Number(v).toLocaleString()],
+        ['description', '설명']
+    ],
+    DataEntity: [['class', 'Studio 클래스']],
     ProcessArea: [['domain_id', '도메인']],
     ProcessGroup: [['domain_id', '도메인']]
 };
@@ -1119,6 +1138,10 @@ function openSource(n: any) {
         case 'Document':
             if (n.properties?.link_url) window.open(n.properties.link_url, '_blank', 'noopener');
             break;
+        case 'DataClass':
+        case 'DataEntity':
+            router.push({ path: '/analytics/ontology-data', query: { tab: 'studio', cls: n.properties?.class } });
+            break;
     }
 }
 const SOURCE_TEXT: Record<string, string> = {
@@ -1136,8 +1159,25 @@ const SOURCE_TEXT: Record<string, string> = {
     System: '시스템 관리 열기',
     ProcessArea: '프로세스 계층 열기',
     ProcessGroup: '프로세스 계층 열기',
-    Document: '문서 열기'
+    Document: '문서 열기',
+    DataClass: 'Studio 데이터 보기',
+    DataEntity: 'Studio 데이터 보기'
 };
+// 판단 데이터셋 — Studio 데이터 노드나 그 데이터를 읽는(READS_DATA) 판단 태스크에서 데이터셋 편집 화면으로(spec 020)
+const datasetLink = computed(() => {
+    const n = selected.value;
+    if (!n) return null;
+    if (n.label === 'DataClass' || n.label === 'DataEntity') return { path: '/analytics/ontology-data', query: { tab: 'datasets' } };
+    const readsStudio = (index.value.adj.get(n.id) || []).some(
+        (a: any) => a.outgoing && a.edge.rel_type === 'READS_DATA' && a.edge.origin === 'ontology-studio'
+    );
+    if (n.label === 'Task' && readsStudio) {
+        const [proc, act] = String(n.id).split(':');
+        return { path: '/analytics/ontology-data', query: { tab: 'datasets', proc, act } };
+    }
+    return null;
+});
+const studioUrl = computed(() => (graph.value?.data_layer?.studio_url ? studioWebUrl(graph.value.data_layer.studio_url) : ''));
 
 const canOpenSource = computed(() => {
     const n = selected.value;
@@ -2000,6 +2040,18 @@ defineExpose({ reload: load });
                         </v-btn>
                         <v-btn v-if="canOpenSource" size="small" variant="outlined" data-testid="open-source" @click="openSource(selected)">
                             <v-icon start size="16">mdi-open-in-new</v-icon>{{ SOURCE_TEXT[selected.label] }}
+                        </v-btn>
+                        <v-btn v-if="datasetLink" size="small" variant="tonal" color="primary" data-testid="open-dataset" @click="router.push(datasetLink)">
+                            <v-icon start size="16">mdi-table-cog</v-icon>판단 데이터셋 보기·조정
+                        </v-btn>
+                        <v-btn
+                            v-if="studioUrl && (selected.label === 'DataClass' || selected.label === 'DataEntity')"
+                            size="small"
+                            variant="text"
+                            :href="studioUrl"
+                            target="_blank"
+                        >
+                            <v-icon start size="16">mdi-open-in-new</v-icon>Ontology Studio
                         </v-btn>
                         <v-btn
                             v-if="selected.label === 'Process'"

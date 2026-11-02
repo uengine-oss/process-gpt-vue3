@@ -1038,10 +1038,10 @@ export default {
                     disable: false
                 },
                 {
-                    title: 'analytics.ontology',
-                    icon: 'ibm-process-mining',
+                    title: 'analytics.ontologyData',
+                    icon: 'database',
                     BgColor: 'primary',
-                    to: '/analytics/ontology',
+                    to: '/analytics/ontology-data',
                     disable: false
                 },
                 {

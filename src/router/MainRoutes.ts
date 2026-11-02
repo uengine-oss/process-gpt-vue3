@@ -706,9 +706,15 @@ const allRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/strategy/StrategyBoard.vue')
     },
     {
+        // 기업 운영 온톨로지 화면은 전략 보드 온톨로지 익스플로러로 합쳤다(Studio 데이터 열·전략 개선점 탭 포함, spec 020)
         name: 'Ontology Explorer',
         path: '/analytics/ontology',
-        component: () => import('@/views/strategy/OntologyExplorer.vue')
+        redirect: { path: '/strategy-board', query: { view: 'explorer' } }
+    },
+    {
+        name: 'Ontology Data',
+        path: '/analytics/ontology-data',
+        component: () => import('@/views/strategy/OntologyData.vue')
     },
     {
         name: 'Survey Response',

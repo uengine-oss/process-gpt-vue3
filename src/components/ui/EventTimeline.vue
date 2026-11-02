@@ -88,6 +88,13 @@
                                             <span>{{ opt }}</span>
                                         </button>
                                     </div>
+                                    <!-- 고른 이유·기준(선택) — 에이전트가 판단 사례·규칙으로 남긴다(spec 019) -->
+                                    <textarea
+                                        v-model.trim="humanQueryComments[item.payload.id]"
+                                        class="query-input query-comment"
+                                        rows="2"
+                                        :placeholder="$t('agentMonitor.inputComment')"
+                                    ></textarea>
                                 </div>
                                 <div
                                     v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'confirm'"
@@ -648,6 +655,7 @@ export default {
     ],
     data() {
         return {
+            humanQueryComments: {},
             isParseSuccess: false,
             imageIndex: 0,
             imageDialog: {
@@ -1052,7 +1060,9 @@ export default {
             this.$emit('onCancelHumanQuery', task);
         },
         onConfirmHumanQuery(task) {
-            this.$emit('onConfirmHumanQuery', task);
+            const comment = this.humanQueryComments[task.id];
+            this.$emit('onConfirmHumanQuery', comment ? { ...task, comment } : task);
+            delete this.humanQueryComments[task.id];
         },
         submitTask(task) {
             this.$emit('submitTask', task);
@@ -2241,6 +2251,13 @@ export default {
 .query-select:focus {
     outline: none;
     border-color: hsl(var(--accent-brand)); /* blue-400 */
+}
+
+.query-comment {
+    margin-top: 8px;
+    border-radius: 12px;
+    resize: vertical;
+    font-family: inherit;
 }
 
 .confirm-hint {
