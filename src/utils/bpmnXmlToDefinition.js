@@ -636,7 +636,8 @@ export async function convertXMLToJSON(xmlString, processDefinitionId) {
             processDefinitionId: processDefinitionId,
             version: version,
             shortDescription: shortDescription,
-            description: 'process.description',
+            // the process description the editor keeps in shortDescription.text (ProcessDefinition.vue), not a placeholder
+            description: shortDescription?.text || '',
             data: data,
             roles: lanes.map((lane) => {
                 let endpoint = '';
