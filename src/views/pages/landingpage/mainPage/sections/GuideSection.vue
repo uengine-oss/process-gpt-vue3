@@ -14,6 +14,20 @@
                         <span class="guide-link-hint">{{ $t('LandingGuide.startHint') }}</span>
                     </a>
                 </div>
+                <div class="guide-install">
+                    <div class="guide-install-head">
+                        <b>{{ $t('LandingGuide.installTitle') }}</b>
+                        <span>{{ $t('LandingGuide.installHint') }}</span>
+                    </div>
+                    <pre class="guide-install-cmd"><code>{{ install }}</code></pre>
+                    <div class="guide-install-foot">
+                        <span>{{ $t('LandingGuide.installSafety') }}</span>
+                        <span class="guide-install-actions">
+                            <a :href="scriptUrl" target="_blank" rel="noopener">{{ $t('LandingGuide.installViewScript') }}</a>
+                            <button type="button" @click="copyInstall">{{ copied ? $t('LandingGuide.installCopied') : $t('LandingGuide.installCopy') }}</button>
+                        </span>
+                    </div>
+                </div>
                 <p class="guide-note">{{ $t('LandingGuide.note') }}</p>
             </div>
         </div>
@@ -23,18 +37,30 @@
 <script>
 import { homePath } from '@/utils/homePath';
 import BackendFactory from '@/components/api/BackendFactory';
-import { guideLinks } from './guideLinks';
+import { guideLinks, LITE_INSTALL, LITE_SCRIPT_URL } from './guideLinks';
 const backend = BackendFactory.createBackend();
 
 // 소개는 uengine.org 가 맡고, 이 화면은 튜토리얼·GitHub·제품 소개·로그인으로 가는 길만 안내한다.
 export default {
     name: 'GuideSection',
+    data() {
+        return { install: LITE_INSTALL, scriptUrl: LITE_SCRIPT_URL, copied: false };
+    },
     computed: {
         links() {
             return guideLinks(this.$i18n.locale);
         }
     },
     methods: {
+        async copyInstall() {
+            try {
+                await navigator.clipboard.writeText(this.install);
+                this.copied = true;
+                setTimeout(() => (this.copied = false), 2000);
+            } catch (e) {
+                this.copied = false;
+            }
+        },
         // HeroSection 과 같은 시작 경로: 로그인 전이면 로그인, 테넌트 서버면 테넌트 관리, 아니면 홈
         async gotoStart() {
             const isLogin = await backend.checkDBConnection();
@@ -123,6 +149,66 @@ export default {
 .guide-link-start .guide-link-label,
 .guide-link-start .guide-link-hint {
     color: #fff;
+}
+
+.guide-install {
+    margin-top: 28px;
+    text-align: left;
+    background: #fff;
+    border: 1px solid #e5e5ea;
+    border-radius: 14px;
+    padding: 20px 22px;
+}
+
+.guide-install-head b {
+    display: block;
+    font-size: 1.05rem;
+    color: #111;
+    margin-bottom: 4px;
+}
+
+.guide-install-head span,
+.guide-install-foot > span:first-child {
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.6;
+    word-break: keep-all;
+}
+
+.guide-install-cmd {
+    margin: 14px 0;
+    padding: 14px 16px;
+    background: #1a1a2e;
+    color: #e8e8f0;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+.guide-install-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.guide-install-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.guide-install-actions button {
+    border: 1px solid #1976d2;
+    color: #1976d2;
+    background: #fff;
+    border-radius: 999px;
+    padding: 4px 14px;
+    cursor: pointer;
 }
 
 .guide-note {
