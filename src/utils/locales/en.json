@@ -3366,6 +3366,18 @@
         "selectTeam": "Select Team",
         "selectTeamFirst": "Please select a team first"
     },
+    "LandingGuide": {
+        "tagline": "Process GPT is an open-source workflow tool (Agentic BPM). Define a workflow for people and AI agents to run together.",
+        "note": "Tutorials and product information are kept up to date on uengine.org.",
+        "tutorial": "Tutorials",
+        "tutorialHint": "Learn step by step",
+        "github": "GitHub",
+        "githubHint": "Browse the source code",
+        "product": "Product overview",
+        "productHint": "Explore Process GPT",
+        "start": "Get started",
+        "startHint": "Log in to this app"
+    },
     "Header": {
         "tutorial": "Tutorial",
         "works": "How Process GPT Works?",
