@@ -8843,7 +8843,9 @@ export default {
             return null;
         },
 
-        triggerFileDownload(url, filename) {
+        async triggerFileDownload(url, filename) {
+            // office-mcp 결과 주소(http://kong:8000/storage/...)는 브라우저가 못 연다 — 저장소 주소면 서명해 받는다
+            if (isStorageObjectUrl(url)) url = (await resolveStorageUrl(url).catch(() => '')) || url;
             try {
                 const link = document.createElement('a');
                 link.href = url;
