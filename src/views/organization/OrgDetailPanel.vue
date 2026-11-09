@@ -3,7 +3,7 @@
         <v-tabs v-model="tab" density="compact" color="primary" class="org-panel__tabs" grow>
             <v-tab value="team" class="text-none">부서 정보</v-tab>
             <v-tab value="members" class="text-none">구성원</v-tab>
-            <v-tab value="roles" class="text-none">권한 관리</v-tab>
+            <v-tab v-if="palRoles" value="roles" class="text-none">권한 관리</v-tab>
         </v-tabs>
 
         <v-window v-model="tab" class="org-panel__body">
@@ -226,7 +226,13 @@
                                     class="org-role-select"
                                     @update:model-value="(value) => $emit('update-role', { userId: member.id, role: value })"
                                 />
-                                <v-chip v-else size="x-small" :color="roleColor(member.id)" variant="tonal">
+                                <!-- 비 PAL 모드에서 에이전트는 AGENT 표시로 충분하다(관리자/사용자 구분이 없다) -->
+                                <v-chip
+                                    v-else-if="palRoles || !memberIsAgent(member)"
+                                    size="x-small"
+                                    :color="roleColor(member.id)"
+                                    variant="tonal"
+                                >
                                     {{ roleLabel(member.id) }}
                                 </v-chip>
                             </div>
@@ -284,7 +290,7 @@
             </v-window-item>
 
             <!-- ───────────────── 권한 관리 ───────────────── -->
-            <v-window-item value="roles" class="org-panel__pane">
+            <v-window-item v-if="palRoles" value="roles" class="org-panel__pane">
                 <v-text-field
                     v-model="roleSearch"
                     placeholder="이름 · 이메일 검색"
@@ -435,7 +441,7 @@ export default { name: 'OrgDetailPanel' };
 
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { ROLE_HIERARCHY, ROLE_META } from '@/utils/roles';
+import { ROLE_HIERARCHY, ROLE_META, isAdminRole } from '@/utils/roles';
 import {
     childMembers,
     childTeams,
@@ -455,7 +461,12 @@ const props = defineProps({
     users: { type: Array, default: () => [] },
     editable: { type: Boolean, default: false },
     canManageRoles: { type: Boolean, default: false },
-    currentUserId: { type: String, default: '' }
+    currentUserId: { type: String, default: '' },
+    /**
+     * PAL 역할 체계(admin/owner/editor/reviewer/viewer)를 보여 줄지.
+     * 비 PAL 모드는 관리자 여부만 쓰므로 '권한 관리' 탭을 숨기고 구성원 칩을 관리자/사용자로 표시한다.
+     */
+    palRoles: { type: Boolean, default: true }
 });
 
 const emit = defineEmits([
@@ -552,13 +563,28 @@ function roleOf(userId) {
     if (user.role) return user.role;
     return user.is_admin ? 'admin' : 'viewer';
 }
+/** 비 PAL 모드 구분 — 계정 설정(ManageAccessTab)과 같은 최고관리자/관리자/사용자 */
+function legacyRoleKind(userId) {
+    const user = userById.value.get(userId);
+    if (!user) return null;
+    if (user.role === 'superAdmin') return 'superAdmin';
+    return user.is_admin || isAdminRole(user.role) ? 'admin' : 'user';
+}
 function roleLabel(userId) {
+    if (!props.palRoles) {
+        const kind = legacyRoleKind(userId);
+        return kind === 'superAdmin' ? '최고관리자' : kind === 'admin' ? '관리자' : kind === 'user' ? '사용자' : '-';
+    }
     const role = roleOf(userId);
     if (!role) return '-';
     if (role === 'superAdmin') return '최고관리자';
     return ROLE_META[role]?.label || role;
 }
 function roleColor(userId) {
+    if (!props.palRoles) {
+        const kind = legacyRoleKind(userId);
+        return kind === 'superAdmin' ? 'error' : kind === 'admin' ? 'primary' : 'grey';
+    }
     const role = roleOf(userId);
     if (role === 'superAdmin') return 'error';
     return ROLE_META[role]?.color || 'grey';
