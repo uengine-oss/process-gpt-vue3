@@ -8,7 +8,7 @@
         </div>
         <ExpandableList v-else :items="instanceList" :limit="10" @expanded="onInstancesExpanded" @collapsed="onInstancesCollapsed">
             <template #items="{ displayedItems }">
-                <template v-for="item in displayedItems" :key="item.title">
+                <template v-for="item in displayedItems" :key="item.instId || item.to">
                     <div v-if="item.isNew" class="d-flex">
                         <v-progress-circular indeterminate class="mt-2" color="primary" :size="20"></v-progress-circular>
                         <NavItem v-if="!JMS" class="leftPadding pl-2" :item="item" :use-i18n="false" />
@@ -32,6 +32,7 @@
 import NavItem from '@/layouts/full/vertical-sidebar/NavItem/index.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
+import { sortSidebarInstances } from '@/utils/instanceListDisplay';
 
 const backend = BackendFactory.createBackend();
 
@@ -90,7 +91,10 @@ export default {
             }
         },
         async loadInstances() {
-            let result = await backend.getInstanceListByStatus(['NEW', 'RUNNING']);
+            // 사이드바는 "가장 최근에 바뀐 인스턴스가 맨 위"다. 서버에도 updated_at 순으로 달라고 하고
+            // (다른 화면은 start_date 순 기본값을 그대로 쓴다), 받은 뒤 한 번 더 정렬한다 —
+            // PostgreSQL DESC 는 NULL 을 맨 앞에 두기 때문이다(날짜가 빈 오래된 인스턴스가 위로 올라오던 원인).
+            let result = await backend.getInstanceListByStatus(['NEW', 'RUNNING'], { orderBy: 'updated_at', sort: 'desc' });
             if (!result) result = [];
             const processedInstances = result.map((item) => {
                 const title = item.name;
@@ -101,6 +105,7 @@ export default {
                     to: `/instancelist/${item.instId.replace(/\./g, '_DOT_')}`,
                     BgColor: 'primary',
                     updatedAt: item.updatedAt,
+                    startDate: item.startDate,
                     isNew: item.status == 'NEW',
                     isDeleted: item.is_deleted,
                     deletedAt: item.deleted_at
@@ -108,19 +113,8 @@ export default {
                 return item;
             });
 
-            this.instanceList = processedInstances;
-
-            // isDeleted 항목을 마지막으로 정렬하고, 삭제된 항목들은 삭제일자 기준 내림차순 정렬
-            this.instanceList.sort((a, b) => {
-                if (a.isDeleted === b.isDeleted) {
-                    if (a.isDeleted) {
-                        // 둘 다 삭제된 경우 삭제일자 기준 내림차순
-                        return new Date(b.deletedAt) - new Date(a.deletedAt);
-                    }
-                    return 0;
-                }
-                return a.isDeleted ? 1 : -1;
-            });
+            // 최근에 바뀐 것(updated_at, 없으면 start_date) 먼저, 삭제된 항목은 맨 아래(삭제일 내림차순)
+            this.instanceList = sortSidebarInstances(processedInstances);
             this.$emit('update:instanceList', this.instanceList);
         },
         async loadInstancesByRole() {
