@@ -37,6 +37,8 @@ import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPa
 import ContainerSettingPanel from '@/components/designer/modeling/ContainerSettingPanel.vue';
 import DynamicComponent from './DynamicComponent.vue';
 import { ensureFormDesigner } from '@/utils/legacyAssets';
+import { fieldTypeLabel } from '@/components/designer/form/fieldRegistry';
+import { uniqueLabel } from '@/utils/formModel';
 
 export default {
     name: 'mash-up',
@@ -272,6 +274,16 @@ export default {
             } else {
                 const nameSeq = Object.values(window.mashup.componentRefs).filter((componentRef) => componentRef.localName).length + 1;
                 snipptDom.body.querySelectorAll('[name]').forEach((el) => el.setAttribute('name', el.getAttribute('name') + `-${nameSeq}`));
+                // 새 필드의 보이는 이름(alias)이 비어 있으면 작업 화면이 라벨 자리에 이 내부 이름(text-field-2)을 보여 준다.
+                // 필드 종류 이름(지금 언어)을 넣어 두고, 만든 사람이 설정에서 고치게 한다.
+                const takenAliases = Object.values(window.mashup.componentRefs).map((componentRef) => componentRef.localAlias);
+                const translate = (key) => (this.$te && this.$te(key) ? this.$t(key) : null);
+                snipptDom.body.querySelectorAll('[alias]').forEach((el) => {
+                    const tag = el.tagName.toLowerCase();
+                    if (!tag.endsWith('-field') || el.getAttribute('alias')) return;
+                    const alias = uniqueLabel(fieldTypeLabel(tag, translate), takenAliases);
+                    if (alias) el.setAttribute('alias', alias);
+                });
             }
 
             const app = createApp(DynamicComponent, { content: snipptDom.body.innerHTML, vueRenderUUID: vueRenderUUID })

@@ -353,6 +353,25 @@ export function uniqueName(form, base, extraTaken = []) {
     return `${base}_${n}`;
 }
 
+/**
+ * 폼 안에서 겹치지 않는 보이는 이름(alias). '텍스트', '텍스트 2', '텍스트 3' …
+ * 새 필드의 alias를 비워 두면 작업 화면이 라벨 자리에 내부 이름(text_2, 예전 편집기는 text-field-2)을 보여 준다.
+ */
+export function uniqueAlias(form, base, extraTaken = []) {
+    return uniqueLabel(base, [...allFields(form).map((f) => f.attrs.alias), ...extraTaken]);
+}
+
+/** taken 과 겹치지 않는 보이는 이름: 'base', 'base 2', 'base 3' … base 가 비면 ''. */
+export function uniqueLabel(base, taken = []) {
+    const label = String(base || '').trim();
+    if (!label) return '';
+    const used = new Set([...taken].filter(Boolean));
+    if (!used.has(label)) return label;
+    let n = 2;
+    while (used.has(`${label} ${n}`)) n++;
+    return `${label} ${n}`;
+}
+
 /** 새 행. spans: [6, 6] 처럼 칸 비율. */
 export function createRow(form, spans, { alias = '' } = {}) {
     return {
