@@ -60,7 +60,7 @@ export const useAuthStore = defineStore({
                     } else {
                         const tenantId = window.$tenantName;
                         await backend.setTenant(tenantId);
-                        const target = window.$isTenantServer ? '/tenant/manage' : '/process-architecture';
+                        const target = window.$isTenantServer ? '/tenant/manage' : homePath();
 
                         // MFA(TOTP) (docs/security.md 2-3, 항목 3)
                         // 비밀번호만 통과한 세션(currentLevel=aal1, nextLevel=aal2)은 보호 화면을
