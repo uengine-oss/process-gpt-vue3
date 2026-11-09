@@ -1,16 +1,14 @@
 <template>
     <!-- 대화 목록 -->
-    <div class="d-flex align-center mt-3 ml-2">
-        <div style="font-size: 14px" class="text-medium-emphasis cp-menu">
-            {{ $t('VerticalSidebar.chatList') || '채팅' }}
-        </div>
-        <div class="sidebar-title-icon" @click.stop="toggleSearch">
-            <Icons :icon="searchOpen ? 'close' : 'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
-        </div>
-        <div class="sidebar-title-icon" @click.stop="openCreateDialog">
-            <Icons :icon="'plus'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
-        </div>
-    </div>
+    <SidebarSectionHeader
+        :title="$t('VerticalSidebar.chatList') || '채팅'"
+        :search-open="searchOpen"
+        :search-label="$t('VerticalSidebar.searchChats')"
+        :add-label="$t('VerticalSidebar.newChat')"
+        testid="sidebar-chats"
+        @search="toggleSearch"
+        @add="startNewChat"
+    />
 
     <v-expand-transition>
         <div v-show="searchOpen" class="px-3 pt-2">
@@ -105,109 +103,22 @@
             </template>
         </ExpandableList>
     </div>
-
-    <!-- 새 채팅방 생성 -->
-    <v-dialog v-model="createDialog" persistent max-width="600px">
-        <v-card class="pa-4">
-            <v-row class="ma-0 pa-0">
-                <v-card-title class="pa-0">
-                    {{ $t('chatListing.create') || '새 채팅방' }}
-                </v-card-title>
-                <v-spacer></v-spacer>
-                <v-btn @click="createDialog = false" icon variant="text" density="comfortable" style="margin-top: -8px">
-                    <v-icon>mdi-close</v-icon>
-                </v-btn>
-            </v-row>
-            <v-card-text class="ma-0 pa-0 pb-2 pt-4">
-                <v-text-field v-model="createObj.name" :label="$t('chatListing.chatRoomName') || '채팅방 이름'" density="compact" />
-                <v-autocomplete
-                    v-model="createObj.participants"
-                    :items="userList"
-                    chips
-                    closable-chips
-                    color="blue-grey-lighten-2"
-                    item-title="username"
-                    :item-value="(item) => item"
-                    multiple
-                    :label="$t('chatListing.selectParticipants') || '참여자 선택'"
-                    small-chips
-                    :loading="isLoadingUsers"
-                >
-                    <template v-slot:chip="{ props, item }">
-                        <v-chip
-                            v-if="item.raw.profile"
-                            v-bind="props"
-                            :prepend-avatar="item.raw.profile"
-                            :text="item.raw.username ? item.raw.username : item.raw.email"
-                        ></v-chip>
-                        <v-chip
-                            v-else-if="item.raw.id == 'system_id'"
-                            v-bind="props"
-                            prepend-avatar="/images/chat-icon.png"
-                            text="System"
-                        ></v-chip>
-                        <v-chip
-                            v-else
-                            v-bind="props"
-                            prepend-icon="mdi-account-circle"
-                            :text="item.raw.username ? item.raw.username : item.raw.email"
-                        ></v-chip>
-                    </template>
-
-                    <template v-slot:item="{ props, item }">
-                        <v-list-item
-                            v-if="item.raw.profile"
-                            v-bind="props"
-                            :prepend-avatar="item.raw.profile"
-                            :title="item.raw.username ? item.raw.username : item.raw.email"
-                            :subtitle="item.raw.email"
-                        ></v-list-item>
-                        <v-list-item
-                            v-else-if="item.raw.id == 'system_id'"
-                            v-bind="props"
-                            prepend-avatar="/images/chat-icon.png"
-                            title="System"
-                        ></v-list-item>
-                        <v-list-item
-                            v-else
-                            v-bind="props"
-                            :title="item.raw.username ? item.raw.username : item.raw.email"
-                            :subtitle="item.raw.email"
-                        >
-                            <template v-slot:prepend>
-                                <v-icon style="position: relative; margin-right: 10px; margin-left: -3px" size="48"
-                                    >mdi-account-circle</v-icon
-                                >
-                            </template>
-                        </v-list-item>
-                    </template>
-                </v-autocomplete>
-                <div class="text-caption text-grey mt-2">- 내 계정은 자동으로 포함됩니다.</div>
-            </v-card-text>
-            <v-row class="ma-0 pa-0">
-                <v-spacer></v-spacer>
-                <v-btn color="primary" rounded @click="createChatRoom" variant="flat">
-                    {{ $t('chatListing.create') || '생성' }}
-                </v-btn>
-            </v-row>
-        </v-card>
-    </v-dialog>
 </template>
 
 <script>
 import { isChatRoomDeleted } from '@/utils/deletedChatRooms';
 import BackendFactory from '@/components/api/BackendFactory';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
+import SidebarSectionHeader from '@/components/ui/SidebarSectionHeader.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import { useCustomizerStore } from '@/stores/customizer';
 import { usePhoneShell } from '@/shared/phoneShell';
-import { processGptAgent } from '@/constants/processGptAgent';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'ChatList',
-    components: { ExpandableList },
+    components: { ExpandableList, SidebarSectionHeader },
     setup() {
         const { active: phoneShell } = usePhoneShell();
         return { phoneShell };
@@ -223,16 +134,9 @@ export default {
         nowTick: Date.now(),
         _nowTickTimeout: null,
         _nowTickInterval: null,
-        // 검색/생성
+        // 검색
         searchOpen: false,
         searchText: '',
-        createDialog: false,
-        createObj: {
-            name: '',
-            participants: []
-        },
-        userList: [],
-        isLoadingUsers: false,
         _onChatRoomsUpdated: null,
         _onChatRoomSelected: null,
         _onChatRoomUnselected: null,
@@ -368,107 +272,10 @@ export default {
                 this.searchText = '';
             }
         },
-        uuid() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-                const r = (Math.random() * 16) | 0;
-                const v = c === 'x' ? r : (r & 0x3) | 0x8;
-                return v.toString(16);
-            });
-        },
-        normalizeParticipant(p) {
-            if (!p) return null;
-            return {
-                id: p?.id || p?.uid || null,
-                email: p?.email || null,
-                username: p?.username || p?.name || p?.email || '',
-                profile: p?.profile || null,
-                agent_type: p?.agent_type || p?.agentType || null,
-                is_agent: p?.is_agent ?? p?.isAgent ?? null
-            };
-        },
-        participantMatches(a, b) {
-            if (!a || !b) return false;
-            if (a.email && b.email && a.email === b.email) return true;
-            if (a.id && b.id && a.id === b.id) return true;
-            return false;
-        },
-        async loadUserList() {
-            this.isLoadingUsers = true;
-            try {
-                const list = await backend.getUserList(null);
-                const base = Array.isArray(list) ? list : [];
-                const meEmail = this.userInfo?.email || null;
-                const meId = this.userInfo?.id || this.userInfo?.uid || null;
-                const withoutMe = base.filter((u) => {
-                    const id = u?.id || u?.uid || null;
-                    const email = u?.email || null;
-                    if (meId && id && meId === id) return false;
-                    if (meEmail && email && meEmail === email) return false;
-                    return true;
-                });
-
-                // Process GPT Agent 최상단 고정
-                const merged = [processGptAgent, ...withoutMe.filter((u) => (u?.id || u?.uid) !== processGptAgent.id)];
-                this.userList = merged;
-            } catch (e) {
-                this.userList = [processGptAgent];
-            } finally {
-                this.isLoadingUsers = false;
-            }
-        },
-        async openCreateDialog() {
-            if (!this.userInfo) {
-                try {
-                    this.userInfo = await backend.getUserInfo();
-                } catch (e) {}
-            }
-            if (!this.userList || this.userList.length === 0) {
-                await this.loadUserList();
-            }
-            this.createObj = { name: '', participants: [] };
-            this.createDialog = true;
-        },
-        async createChatRoom() {
-            try {
-                if (!this.userInfo) {
-                    this.userInfo = await backend.getUserInfo();
-                }
-                const me = this.normalizeParticipant(this.userInfo);
-                const selected = (this.createObj?.participants || []).map(this.normalizeParticipant).filter(Boolean);
-                const participants =
-                    me && !selected.some((p) => this.participantMatches(p, me)) ? [...selected, me].filter(Boolean) : selected;
-
-                if (!participants || participants.length < 2) return;
-
-                const roomId = this.uuid();
-                const now = Date.now();
-                const roomName = (this.createObj?.name || '').toString().trim().substring(0, 50) || '새 대화';
-
-                const agentIds = participants
-                    .map((p) => p?.id)
-                    .filter(Boolean)
-                    .filter((id) => !!this.defaultSetting?.getAgentById?.(id));
-                const primaryAgentId = agentIds.length > 0 ? agentIds[0] : null;
-
-                const room = {
-                    id: roomId,
-                    name: roomName,
-                    primary_agent_id: primaryAgentId,
-                    participants,
-                    message: { msg: 'NEW', type: 'text', createdAt: now }
-                };
-
-                await backend.putObject('db://chat_rooms', room);
-                this.createDialog = false;
-
-                // 즉시 목록/인덱스 반영 후 열기
-                this.chatRooms = [room, ...(this.chatRooms || [])];
-                this.saveChatRoomIndexToLocalStorage();
-                this.EventBus.emit('chat-rooms-updated');
-                await this.openChatRoom(room);
-            } catch (e) {
-                // ignore
-            }
+        // ＋ 새 대화 — 이름 · 참여자를 먼저 묻지 않는다. 새 대화는 첫 화면 입력창에서 첫 말로 시작하고,
+        // 사람과는 「사람 동료」를 눌러 1:1 로, 에이전트는 대화 안에서 부른다.
+        startNewChat() {
+            this.$router.push({ path: '/definition-map', query: { focus: 'chat' } });
         },
         getBasePath() {
             try {

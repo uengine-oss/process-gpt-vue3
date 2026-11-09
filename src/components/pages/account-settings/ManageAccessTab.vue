@@ -294,6 +294,13 @@ export default {
         }
     },
     async mounted() {
+        // 사이드바 「사람 동료」의 ＋ 로 들어오면(?invite=1) 초대 창을 바로 연다
+        if (this.$route?.query?.invite === '1') {
+            const rest = { ...this.$route.query };
+            delete rest.invite;
+            this.$router.replace({ query: rest });
+            if (this.editable) this.openInviteUserCard = true;
+        }
         this.checkIfMobile();
         window.addEventListener('resize', this.checkIfMobile);
     },

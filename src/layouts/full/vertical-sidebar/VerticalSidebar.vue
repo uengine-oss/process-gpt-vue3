@@ -155,52 +155,32 @@
 
                 <!-- 인스턴스 타이틀 + 목록 -->
                 <v-col v-if="isShowInstances" class="pa-0 mb-4 mt-8">
-                    <div v-if="!pal && !JMS" class="d-flex align-center">
-                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
-                            {{ $t('VerticalSidebar.instanceList') }}
-                        </div>
-                        <div v-for="item in instanceItem" :key="item.title">
-                            <v-tooltip location="bottom" :text="$t(item.title)">
-                                <template v-slot:activator="{ props }">
-                                    <div class="sidebar-title-icon" @click="navigateTo(item.to)" v-bind="props">
-                                        <Icons :icon="item.icon" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
-                                    </div>
-                                </template>
-                            </v-tooltip>
-                        </div>
-                    </div>
+                    <SidebarSectionHeader
+                        v-if="!pal && !JMS"
+                        class="mt-0"
+                        :title="$t('VerticalSidebar.instanceList')"
+                        :search-label="$t('VerticalSidebar.searchInstances')"
+                        :add-label="$t('VerticalSidebar.runProcess')"
+                        testid="sidebar-instances"
+                        @search="navigateTo('/list-pages/completed')"
+                        @add="navigateTo({ path: '/definition-map', query: { focus: 'processes' } })"
+                    />
                     <ProcessInstanceList @update:instanceLists="handleInstanceListUpdate" />
                 </v-col>
 
                 <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
                 <div v-if="mode !== 'uEngine' && isAdmin && !pal" class="mb-4 mt-4">
-                    <v-row class="align-center pa-0 ma-0">
-                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
-                            {{ $t('VerticalSidebar.agentList') }}
-                        </div>
-                        <div class="sidebar-title-icon" @click="toggleSidebarAgentSearch">
-                            <Icons :icon="'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
-                        </div>
-                        <template v-if="isAdmin">
-                            <!-- 에이전트 생성 진입점은 조직도 페이지 좌측 '에이전트 생성' 탭으로 통합됨 (OrganizationManagePanel). 중복 진입점이라 주석 처리. -->
-                            <!-- <v-tooltip location="bottom" :text="$t('VerticalSidebar.createAgent')">
-                                <template v-slot:activator="{ props }">
-                                    <div class="sidebar-title-icon" v-bind="props" @click="openAgentCreateDialog">
-                                        <Icons :icon="'plus'" :size="14" :color="'#808080'" />
-                                    </div>
-                                </template>
-                            </v-tooltip> -->
-                            <div v-for="item in organizationItem" :key="item.title">
-                                <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
-                                    <template v-slot:activator="{ props }">
-                                        <div class="sidebar-title-icon" v-bind="props" @click="navigateTo(item.to)">
-                                            <Icons :icon="item.icon" :size="20" :color="'#808080'" />
-                                        </div>
-                                    </template>
-                                </v-tooltip>
-                            </div>
-                        </template>
-                    </v-row>
+                    <!-- ＋ 는 조직도 화면의 에이전트 생성 창을 연다(조직도 관리는 상단 「관리」 메뉴) -->
+                    <SidebarSectionHeader
+                        class="mt-0"
+                        :title="$t('VerticalSidebar.agentList')"
+                        :search-open="agentSearchOpen"
+                        :search-label="$t('VerticalSidebar.searchAgents')"
+                        :add-label="$t('VerticalSidebar.createAgent')"
+                        testid="sidebar-agents"
+                        @search="toggleSidebarAgentSearch"
+                        @add="navigateTo({ path: '/organization', query: { createAgent: '1' } })"
+                    />
                     <v-col class="pa-0">
                         <AgentList ref="sidebarAgentList" />
                     </v-col>
@@ -208,14 +188,18 @@
 
                 <!-- 사람 동료 -->
                 <div v-if="mode !== 'uEngine' && !gs && !pal" class="mb-4">
-                    <div class="d-flex align-center ml-2">
-                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0">
-                            {{ $t('VerticalSidebar.userList') || '유저 목록' }}
-                        </div>
-                        <div class="sidebar-title-icon" @click="toggleSidebarUserSearch">
-                            <Icons :icon="'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
-                        </div>
-                    </div>
+                    <!-- ＋ 는 관리자에게만 — 계정 설정의 사용자 초대 창을 연다 -->
+                    <SidebarSectionHeader
+                        class="mt-0"
+                        :title="$t('VerticalSidebar.userList') || '유저 목록'"
+                        :search-open="userSearchOpen"
+                        :search-label="$t('VerticalSidebar.searchUsers')"
+                        :addable="isAdmin"
+                        :add-label="$t('VerticalSidebar.inviteUser')"
+                        testid="sidebar-users"
+                        @search="toggleSidebarUserSearch"
+                        @add="navigateTo({ path: '/account-settings', query: { tab: 'ManageAccess', invite: '1' } })"
+                    />
                     <v-col class="pa-0">
                         <SidebarUserList ref="sidebarUserList" />
                     </v-col>
@@ -223,20 +207,18 @@
 
                 <!-- 스킬 타이틀 + 목록 -->
                 <div v-if="mode !== 'uEngine' && !gs && isAdmin && !pal" class="mb-4">
-                    <v-row class="align-center pa-0 ma-0">
-                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
-                            {{ $t('VerticalSidebar.skills') }}
-                        </div>
-                        <v-tooltip location="bottom" :text="$t('VerticalSidebar.addSkill')">
-                            <template v-slot:activator="{ props }">
-                                <div class="sidebar-title-icon" v-bind="props" @click="navigateTo('/skills')">
-                                    <SettingsIcon size="14" color="#808080" />
-                                </div>
-                            </template>
-                        </v-tooltip>
-                    </v-row>
+                    <SidebarSectionHeader
+                        class="mt-0"
+                        :title="$t('VerticalSidebar.skills')"
+                        :search-open="skillSearchOpen"
+                        :search-label="$t('VerticalSidebar.searchSkills')"
+                        :add-label="$t('SkillsManagement.addSkill')"
+                        testid="sidebar-skills"
+                        @search="toggleSidebarSkillSearch"
+                        @add="navigateTo({ path: '/skills', query: { add: '1' } })"
+                    />
                     <v-col class="pa-0">
-                        <SkillList />
+                        <SkillList ref="sidebarSkillList" />
                     </v-col>
                 </div>
 
@@ -301,31 +283,19 @@
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
                         <!-- Item Sub Header -->
-                        <div v-if="item.header && !item.disable" class="d-flex align-center mt-3 ml-2">
-                            <div v-if="index === 0" style="font-size: 14px" class="text-medium-emphasis cp-menu flex-shrink-0 mr-1">
-                                {{ $t(item.header) }}
-                            </div>
-                            <v-row class="pa-0 ma-0 pt-1 flex-nowrap">
-                                <!-- 프로세스 정의 버튼 -->
-                                <v-tooltip
-                                    v-for="procItem in processSectionListItems"
-                                    :key="procItem.title"
-                                    location="bottom"
-                                    :text="$t(procItem.title)"
-                                >
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            @click="navigateTo(procItem.to)"
-                                            v-bind="props"
-                                            icon
-                                            variant="text"
-                                            class="text-medium-emphasis cp-menu"
-                                            density="comfortable"
-                                        >
-                                            <Icons :icon="procItem.icon" :size="20" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
+                        <div v-if="item.header && !item.disable" class="d-flex align-center">
+                            <SidebarSectionHeader
+                                v-if="index === 0"
+                                class="flex-shrink-0 mr-1"
+                                :title="$t(item.header)"
+                                :search-label="$t('VerticalSidebar.searchProcesses')"
+                                :addable="processSectionListItems.length > 0"
+                                :add-label="$t('definitionManagement.processDefinition')"
+                                testid="sidebar-processes"
+                                @search="navigateTo({ path: '/definition-map', query: { search: '1' } })"
+                                @add="navigateTo(processSectionListItems[0].to)"
+                            />
+                            <v-row class="pa-0 ma-0 pt-3 flex-nowrap">
                                 <template v-for="subItem in definitionItem" :key="subItem.title">
                                     <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
                                         <template v-slot:activator="{ props }">
@@ -505,6 +475,7 @@ import { lookupRequiredRole } from '@/utils/routePermissions';
 import { resolveRole, hasRoleAtLeast } from '@/utils/roles';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
 import SidebarUserList from '@/components/ui/SidebarUserList.vue';
+import SidebarSectionHeader from '@/components/ui/SidebarSectionHeader.vue';
 import ChatList from '@/components/ui/ChatList.vue';
 import AgentCreateDialog from '@/components/ui/AgentCreateDialog.vue';
 
@@ -530,6 +501,7 @@ const backend = BackendFactory.createBackend();
 
 export default {
     components: {
+        SidebarSectionHeader,
         MembershipRequestBadge,
         NotificationSidebarMenu,
         ProcessInstanceList,
@@ -571,9 +543,10 @@ export default {
         };
     },
     data: () => ({
+        agentSearchOpen: false,
+        userSearchOpen: false,
+        skillSearchOpen: false,
         sidebarItem: [],
-        instanceItem: [],
-        organizationItem: [],
         definitionItem: [],
         definitionList: null,
         isDefinitionListLoading: false,
@@ -820,24 +793,25 @@ export default {
             this.isAgentCreateDialogOpen = false;
         },
         toggleSidebarAgentSearch() {
-            try {
-                const comp = this.$refs.sidebarAgentList;
-                if (comp && typeof comp.toggleSearch === 'function') {
-                    comp.toggleSearch();
-                }
-            } catch (e) {
-                // ignore
-            }
+            if (this.toggleListSearch('sidebarAgentList')) this.agentSearchOpen = !this.agentSearchOpen;
         },
         toggleSidebarUserSearch() {
+            if (this.toggleListSearch('sidebarUserList')) this.userSearchOpen = !this.userSearchOpen;
+        },
+        toggleSidebarSkillSearch() {
+            if (this.toggleListSearch('sidebarSkillList')) this.skillSearchOpen = !this.skillSearchOpen;
+        },
+        toggleListSearch(refName) {
             try {
-                const comp = this.$refs.sidebarUserList;
+                const comp = this.$refs[refName];
                 if (comp && typeof comp.toggleSearch === 'function') {
                     comp.toggleSearch();
+                    return true;
                 }
             } catch (e) {
                 // ignore
             }
+            return false;
         },
         updateNotiCount(count) {
             this.notiCount = count;
@@ -915,28 +889,6 @@ export default {
                 this.getDefinitionList();
             }
 
-            if (!this.pal && !this.JMS) {
-                // 사이드바에서 완료된 인스턴스 목록 보기 버튼
-                this.instanceItem = [
-                    {
-                        title: 'definitionManagement.completedList',
-                        icon: 'check-mark',
-                        BgColor: 'primary',
-                        disable: true,
-                        to: '/list-pages/completed',
-                        size: 20
-                    }
-                ];
-                this.organizationItem = [
-                    {
-                        title: 'organizationChartDefinition.title',
-                        icon: 'side-group',
-                        BgColor: 'primary',
-                        to: '/organization',
-                        disable: false
-                    }
-                ];
-            }
 
             // 프로세스 관리 메뉴 (프로세스 정의/업로드/내보내기는 아래 프로세스 섹션에 표시)
             // 변경 관리는 모든 모드에 표시하고, PAL 모드에서는 내 수신함 대신 프로세스 목록을 표시한다.
@@ -1111,32 +1063,6 @@ export default {
                     }
                 });
             }
-
-            // 완료된 인스턴스가 있는지 직접 확인
-            await this.checkCompletedInstances();
-        },
-        async checkCompletedInstances() {
-            try {
-                // COMPLETED 상태의 인스턴스가 있는지 직접 확인
-                const completedList = await backend.getInstanceListByStatus(['COMPLETED'], {
-                    range: { from: 0, to: 0 } // 1개만 가져와서 존재 여부만 확인
-                });
-
-                const hasCompleted = completedList && completedList.length > 0;
-
-                // 버튼 상태 즉시 업데이트
-                if (this.instanceItem && this.instanceItem.length > 0) {
-                    this.instanceItem[0].disable = !hasCompleted;
-                }
-            } catch (error) {
-                // 오류 시 기본적으로 숨김
-                if (this.instanceItem && this.instanceItem.length > 0) {
-                    this.instanceItem[0].disable = true;
-                }
-            }
-        },
-        openCompletedList() {
-            this.$router.push('/list-pages/completed');
         },
         openNewProject() {
             this.isNewProjectOpen = true;

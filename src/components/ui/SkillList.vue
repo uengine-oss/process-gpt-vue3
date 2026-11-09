@@ -1,11 +1,31 @@
 <template>
     <div class="skill-list-container">
+        <!-- 사이드바 머리의 🔍 로 연다 — 이름 · 설명으로 거른다 (에이전트 목록과 같은 모양) -->
+        <v-expand-transition>
+            <div v-show="!isLoading && skillList.length > 0 && isSearchOpen" class="px-2 pb-2">
+                <v-text-field
+                    v-model="skillSearchValue"
+                    variant="solo-filled"
+                    density="compact"
+                    hide-details
+                    clearable
+                    prepend-inner-icon="mdi-magnify"
+                    :placeholder="$t('SkillList.search')"
+                    ref="skillSearchInput"
+                />
+            </div>
+        </v-expand-transition>
+
         <div v-if="isLoading" class="list-skeleton-loading">
             <v-skeleton-loader v-for="n in 3" :key="n" type="list-item" />
         </div>
 
         <div v-else-if="skillList.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
             {{ $t('SkillList.empty') || '등록된 스킬이 없습니다' }}
+        </div>
+
+        <div v-else-if="rootSkills.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
+            {{ $t('SkillList.searchEmpty') }}
         </div>
 
         <ExpandableList v-else :items="rootSkills" :limit="5" @expanded="onExpanded" @collapsed="onCollapsed">
@@ -65,11 +85,18 @@ export default {
             reviewModalOpen: false,
             reviewSkillName: '',
             reviewTargets: [],
-            skillOwnersMap: new Map()
+            skillOwnersMap: new Map(),
+            isSearchOpen: false,
+            skillSearchValue: ''
         };
     },
     computed: {
         rootSkills() {
+            const keyword = (this.skillSearchValue || '').toLowerCase().trim();
+            // 검색 중에는 하위 스킬도 바로 찾을 수 있게 트리를 펴서 거른다
+            if (keyword) {
+                return this.skillList.filter((s) => `${s.name || ''} ${s.description || ''}`.toLowerCase().includes(keyword));
+            }
             const childSet = new Set(this.skillList.flatMap((s) => s.children || []));
             return this.skillList.filter((s) => !childSet.has(s.name));
         },
@@ -119,6 +146,18 @@ export default {
         }
     },
     methods: {
+        toggleSearch() {
+            this.isSearchOpen = !this.isSearchOpen;
+            if (this.isSearchOpen) {
+                this.$nextTick(() => {
+                    try {
+                        this.$refs.skillSearchInput?.focus?.();
+                    } catch (e) {}
+                });
+            } else {
+                this.skillSearchValue = '';
+            }
+        },
         async subscribeSkills() {
             try {
                 const tenantId = window.$tenantName;

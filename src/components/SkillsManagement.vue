@@ -30,7 +30,7 @@
                             <v-icon>mdi-tools</v-icon>
                             <v-tooltip activator="parent" location="bottom">스킬 전용 도구</v-tooltip>
                         </v-btn>
-                        <v-menu location="bottom end" :disabled="isUploading">
+                        <v-menu v-model="addMenuOpen" location="bottom end" :disabled="isUploading">
                             <template v-slot:activator="{ props }">
                                 <v-btn v-bind="props" color="primary" rounded variant="flat" size="small" :loading="isUploading">
                                     <v-icon start>mdi-plus</v-icon>
@@ -673,6 +673,8 @@ export default {
     components: { AppBaseCard, SkillProposalBadge, SkillProposalReviewModal, SkillOnlyToolsDialog },
     data() {
         return {
+            // 사이드바 「스킬」의 ＋ 로 들어오면(?add=1) 스킬 추가 메뉴를 바로 펼친다
+            addMenuOpen: false,
             // 스킬이 여는 스킬 전용 도구 현황(딥 에이전트 GET /skill-tools/bindings). 못 불러오면 배지를 생략한다.
             skillToolBindings: {},
             skillOnlyTools: [],
@@ -870,6 +872,14 @@ export default {
         this.backend = BackendFactory.createBackend();
     },
     mounted() {
+        if (this.$route?.query?.add === '1') {
+            const rest = { ...this.$route.query };
+            delete rest.add;
+            this.$router.replace({ query: rest });
+            this.$nextTick(() => {
+                this.addMenuOpen = true;
+            });
+        }
         this.loadSkillToolBindings();
         if (window.innerWidth <= 1279) {
             this.viewMode = 'card';
