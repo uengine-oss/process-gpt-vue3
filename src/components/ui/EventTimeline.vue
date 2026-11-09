@@ -103,7 +103,7 @@
                                     {{ $t('agentMonitor.continue') }}
                                 </div>
                             </div>
-                            <v-row v-if="!item.payload.isCompleted" class="query-actions ma-0 pa-0">
+                            <v-row v-if="!item.payload.isCompleted && !readonly" class="query-actions ma-0 pa-0">
                                 <v-spacer></v-spacer>
                                 <v-btn
                                     @click="onCancelHumanQuery(item.payload)"
@@ -638,6 +638,11 @@ export default {
         howToUseInfo: {
             type: Object,
             default: null
+        },
+        // 담당자가 아닌 사람이 보는 중 — 진행 기록은 보이되 채택·질문 응답은 할 수 없다
+        readonly: {
+            type: Boolean,
+            default: false
         }
     },
     emits: [
@@ -798,6 +803,7 @@ export default {
             );
         },
         shouldShowSubmitButton(payload) {
+            if (this.readonly) return false;
             const agentMode = String(this.todoStatus?.agent_mode || '').toUpperCase();
             return payload.isCompleted && this.isSubmittableTask(payload) && (agentMode === 'DRAFT' || agentMode === 'COMPLETE');
         },
