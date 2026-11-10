@@ -8,6 +8,7 @@ import { evaluateMfaGate, MFA_CHALLENGE_PATH, MFA_ENROLL_PATH, MFA_ENROLL_QUERY 
 import { withCallActivityHistory } from '@/components/customDrilldown/drilldownHistory';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 import { homePath, isMobileViewport, MOBILE_HOME } from '@/utils/homePath';
+import { isPhoneBrowser, needsViewportReload } from '@/shared/mobileView';
 
 declare global {
     interface Window {
@@ -146,6 +147,12 @@ function isOnResetPasswordWithRecoveryHash(): boolean {
 }
 
 router.beforeEach(async (to: any, from: any, next: any) => {
+    // 휴대폰 브라우저: 로그인 · 랜딩(기기 폭)과 앱 화면(데스크톱 폭) 사이를 오가면 화면 폭이 바뀐다.
+    // 폭은 화면이 처음 그려지기 전에만 정할 수 있으므로 그 주소를 새로 연다(index.html 의 __pgptViewport).
+    if (needsViewportReload(to.path)) {
+        window.location.assign(to.fullPath);
+        return next(false);
+    }
     // Approval lookup fails closed; a network error must not admit pending accounts.
     try {
         const redirect = await membershipRedirect(to.path);
@@ -194,7 +201,8 @@ router.beforeEach(async (to: any, from: any, next: any) => {
         // 모바일에서 로그인한 채 조직 주소의 루트로 오면 첫 화면(정의 체계도)으로 보낸다.
         // 루트는 홍보용 랜딩이라 휴대폰에서 로그인한 사람에게는 막다른 곳이다 — 모바일 앱도
         // 켤 때 조직 주소의 루트만 열고 어디로 갈지는 여기에 맡긴다(utils/homePath).
-        if (to.path === '/' && isMobileViewport() && !window.$isTenantServer) {
+        // 휴대폰 브라우저는 데스크톱 화면이어도(폭이 넓어도) 휴대폰이므로 같이 보낸다.
+        if (to.path === '/' && (isMobileViewport() || isPhoneBrowser()) && !window.$isTenantServer) {
             const { data, error } = (await window.$supabase?.auth?.getSession?.()) || {};
             if (!error && data?.session?.user) return next(MOBILE_HOME);
         }
