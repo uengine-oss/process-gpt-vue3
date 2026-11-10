@@ -1,5 +1,5 @@
 /**
- * 2026-11-09 · 11-10 사용성 검토 반영 회귀 묶음 (F-UX-01 ~ F-UX-16)
+ * 2026-11-09 · 11-10 · 11-11 사용성 검토 반영 회귀 묶음 (F-UX-01 ~ F-UX-17)
  *
  * 실제 백엔드(설치본)에 붙은 프런트를 화면으로 밟는다. 업무(todolist)에 쓰는 요청은 모두 가로채
  * 내용만 확인하므로 데이터는 바뀌지 않는다.
@@ -300,4 +300,33 @@ test('F-UX-16 정의 체계도의 가져오기는 「프로세스 가져오기�
     await login(page, 'admin');
     await expect(page.getByText('프로세스 가져오기').first()).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText('컴포넌트 가져오기')).toHaveCount(0);
+});
+
+// ── 2026-11-11 검토 반영 (F-UX-17) ─────────────────────────────────────────────────────
+
+test('F-UX-17 비 PAL 화면의 페이지 머리는 카드 테두리에서 띄우고 우측 단추를 제목과 같은 줄에 둔다', async ({ page }) => {
+    await login(page, 'admin');
+    for (const path of ['/process-architecture', '/review-board']) {
+        await page.goto(`${BASE}${path}`);
+        const header = page.locator('.v-main .page-header').first();
+        await expect(header).toBeVisible({ timeout: 30_000 });
+        const box = await header.evaluate((el) => {
+            const cs = getComputedStyle(el);
+            const title = el.querySelector('.page-title')!.getBoundingClientRect();
+            const card = el.closest('.v-card')!.getBoundingClientRect();
+            const right = el.querySelector('.page-header-right')?.getBoundingClientRect();
+            return {
+                display: cs.display,
+                titleInsetLeft: title.left - card.left,
+                titleInsetTop: title.top - card.top,
+                rightTop: right ? right.top : null,
+                titleTop: title.top,
+                titleBottom: title.bottom
+            };
+        });
+        expect(box.display, path).toBe('flex');
+        expect(box.titleInsetLeft, path).toBeGreaterThanOrEqual(12);
+        expect(box.titleInsetTop, path).toBeGreaterThanOrEqual(12);
+        if (box.rightTop !== null) expect(box.rightTop, path).toBeLessThan(box.titleBottom);
+    }
 });

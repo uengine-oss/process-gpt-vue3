@@ -89,6 +89,9 @@ import '@/assets/css/customMarkdown.scss';
 // 글로벌 클래스 정의) — 비 Pal 화면의 스타일에 영향을 주지 않도록 Pal 모드에서만 로드한다.
 if ((window as any).$pal) {
     import('@/assets/css/SKGlobalStyle.scss');
+} else {
+    // 비 Pal 에서도 page-header 마크업을 쓰는 화면(프로세스 체계도 등)의 머리 레이아웃만 채운다.
+    import('@/assets/css/pageHeaderStandalone.scss');
 }
 
 // 전역 관리 ts
