@@ -337,3 +337,38 @@ export function parseAskUser(content) {
             .map((s) => s.trim())
     };
 }
+
+/**
+ * 이미 답한 질문의 패널 — 뒤에 사람의 말이 있는데 아직 「응답 제출」이 열려 있는 deepagent 패널.
+ *
+ * 질문은 두 번 그려질 수 있다. 스트리밍 중에 도구 인자로 한 번, 서버가 그 답 행(row)을 저장해
+ * 실시간으로 다시 보낼 때 본문에서 한 번(restoreDeepagentHitlFromAssistantContent). 둘째 패널은
+ * 새로 만든 것이라 「제출함」 표시가 없다. 그래서 이미 「승인」을 보냈는데 위에 같은 질문이
+ * 다시 열려 있고, 또 누르면 「승인」이 두 번 간다(VM 2026-11-10, 3장 프롬프트 3회 중 2회).
+ *
+ * 그 질문 뒤에 사람이 말한 것이 있으면 이미 답한 것으로 본다 — 입력창에 쓴 말도 그 질문의 답으로
+ * 간다(방 단위 pending run_state). 각 패널의 위치와 그 답(첫 사람 말)을 돌려준다.
+ *
+ * @param {Array<Record<string, any>>} messages 시간순 메시지
+ * @returns {Array<{ index: number, answer: string }>}
+ */
+export function findAnsweredHitlPanels(messages) {
+    const list = Array.isArray(messages) ? messages : [];
+    const out = [];
+    let nextUserAnswer = null; // 뒤에서부터 훑으며 "이 자리 뒤의 첫 사람 말"을 들고 간다
+    for (let i = list.length - 1; i >= 0; i--) {
+        const m = list[i];
+        if (!m) continue;
+        const role = (m.role || '').toString();
+        if (role === 'user') {
+            const text = (m.content || '').toString().trim();
+            if (text) nextUserAnswer = text;
+            continue;
+        }
+        const fb = m.__humanFeedback;
+        if (fb && fb.__deepagentHitl && !fb.__submitted && nextUserAnswer !== null) {
+            out.push({ index: i, answer: nextUserAnswer });
+        }
+    }
+    return out.reverse();
+}

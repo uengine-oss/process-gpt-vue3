@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 
 import {
     buildHitlPanel,
+    findAnsweredHitlPanels,
     isCandidateCategory,
     parseAskUser,
     parseHumanInputQuestion,
@@ -280,5 +281,41 @@ describe('parseAskUser', () => {
         assert.equal(parseAskUser(JSON.stringify({ user_request_type: 'ask_user' })), null);
         assert.equal(parseAskUser(JSON.stringify({ result: 'ok' })), null);
         assert.equal(parseAskUser('{망가진 json'), null);
+    });
+});
+
+describe('이미 답한 질문의 패널', () => {
+    const panel = (submitted = false) => ({ __deepagentHitl: true, __submitted: submitted });
+    it('뒤에 사람 말이 있으면 그 말을 답으로 돌려준다', () => {
+        const msgs = [
+            { role: 'user', content: '프로세스를 만들어 줘' },
+            { role: 'assistant', content: '이대로 진행할까요?', __humanFeedback: panel() },
+            { role: 'user', content: '승인' },
+            { role: 'assistant', content: '추가할 항목을 골라주세요', __humanFeedback: panel() }
+        ];
+        assert.deepEqual(findAnsweredHitlPanels(msgs), [{ index: 1, answer: '승인' }]);
+    });
+    it('제출한 패널과 deepagent 가 아닌 패널, 아직 답이 없는 마지막 질문은 건드리지 않는다', () => {
+        const msgs = [
+            { role: 'assistant', __humanFeedback: panel(true) },
+            { role: 'assistant', __humanFeedback: { __submitted: false } },
+            { role: 'user', content: '  ' },
+            { role: 'user', content: '네' },
+            { role: 'assistant', __humanFeedback: panel() }
+        ];
+        assert.deepEqual(findAnsweredHitlPanels(msgs), []);
+        assert.deepEqual(findAnsweredHitlPanels(null), []);
+    });
+    it('같은 질문이 두 번 그려졌으면 둘 다 그 뒤의 첫 답으로 닫는다', () => {
+        const msgs = [
+            { role: 'assistant', __humanFeedback: panel() },
+            { role: 'assistant', __humanFeedback: panel() },
+            { role: 'user', content: '승인' },
+            { role: 'user', content: '없음' }
+        ];
+        assert.deepEqual(findAnsweredHitlPanels(msgs), [
+            { index: 0, answer: '승인' },
+            { index: 1, answer: '승인' }
+        ]);
     });
 });
