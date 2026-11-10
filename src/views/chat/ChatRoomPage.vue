@@ -891,7 +891,7 @@ import { branchFilesForPanel, fileVersions } from '@/utils/artifactBranchFiles.j
 import { isTextEntry, treePathOf } from '@/utils/artifactWorktree.js';
 import HandoverHistory from '@/components/chat/HandoverHistory.vue';
 import { buildProcessPanelFromMessage, processIdFromResult } from '@/utils/processArtifactPanel.js';
-import { buildHitlPanel, shouldRestoreFromAssistantContent } from '@/shared/hitl/index.js';
+import { buildHitlPanel, findAnsweredHitlPanels, shouldRestoreFromAssistantContent } from '@/shared/hitl/index.js';
 import { shouldSteerInsteadOfNewTurn } from '@/shared/steering/index.js';
 import { shouldGenerateChatRoomName as sharedShouldGenerateChatRoomName } from '@/shared/chatRoom/index.js';
 import { formatToolName as sharedFormatToolName } from '@/shared/toolNames/index.js';
@@ -1588,6 +1588,10 @@ export default {
         }
     },
     watch: {
+        /** 사람의 말이 붙거나 메시지가 다시 그려지면, 이미 답한 질문의 패널을 닫는다(findAnsweredHitlPanels). */
+        'messages.length'() {
+            this.closeAnsweredHitlPanels();
+        },
         /** 휴대폰 앱바 제목은 방 이름이다. 이름을 바꾸면 그대로 따라간다. */
         'currentChatRoom.name': {
             immediate: true,
@@ -3651,10 +3655,15 @@ export default {
                 if (exists !== -1) {
                     // 기존 optimistic 메시지를 실시간 데이터로 최신화(필드 merge)
                     const prevSnapshot = this.messages[exists] || {};
+                    // 이미 답한 패널(「제출함」)을 본문에서 새로 그린 빈 패널로 덮지 않는다.
+                    if (typeof incoming === 'object' && prevSnapshot.__humanFeedback?.__submitted) {
+                        incoming.__humanFeedback = prevSnapshot.__humanFeedback;
+                    }
                     this.messages[exists] =
                         typeof incoming === 'object'
                             ? this.normalizeAssistantMessageForDisplay({ ...prevSnapshot, ...incoming })
                             : incoming;
+                    this.closeAnsweredHitlPanels();
                     // optimistic 에만 있던 프런트엔드 전용 상태(__humanFeedback / toolCalls /
                     // pdf2bpmnResult 등) 가 merge 로 살아남았다면, 같은 row 를 UPDATE 해
                     // 새로고침 후에도 HITL 패널·진행상황·미리보기가 유지되게 한다.
@@ -4378,6 +4387,18 @@ export default {
          * 후보 선택/컨설팅 질문 본문에서 HITL 패널을 결정적으로 복원한다.
          * 새로고침으로 프런트 전용 __humanFeedback이 없는 과거 row도 같은 UI로 회복된다.
          */
+        /**
+         * 뒤에 사람의 말이 있는데 아직 「응답 제출」이 열린 deepagent 패널을 「제출함」으로 닫는다.
+         * 같은 질문이 스트리밍과 실시간 행에서 두 번 그려져 이미 답한 질문이 다시 열려 보이던 것을 막는다.
+         */
+        closeAnsweredHitlPanels() {
+            for (const { index, answer } of findAnsweredHitlPanels(this.messages)) {
+                const fb = this.messages[index]?.__humanFeedback;
+                if (!fb) continue;
+                fb.__submitted = true;
+                fb.__submittedText = fb.__submittedText || answer;
+            }
+        },
         restoreDeepagentHitlFromAssistantContent(msg) {
             if (!msg || msg.__humanFeedback || (msg.role || '').toString() !== 'assistant') return;
             const roomOrchestration = (this.currentChatRoom?.context?.orchestration || this.currentChatRoom?.orchestration || '')
