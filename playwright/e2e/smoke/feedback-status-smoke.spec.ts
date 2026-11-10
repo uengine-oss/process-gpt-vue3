@@ -48,7 +48,8 @@ async function login(page: import('@playwright/test').Page) {
     await page.locator('.cp-id input').fill(email);
     await page.locator('.cp-pwd input').fill(password);
     await page.locator('.cp-login').click();
-    await expect(page).toHaveURL(/\/process-architecture/, { timeout: 60_000 });
+    // 첫 화면은 정의 체계도(/definition-map, 2026-11-09 #240). PAL 등 예전 첫 화면(/process-architecture)도 받는다.
+    await expect(page).toHaveURL(/\/(definition-map|process-architecture)/, { timeout: 60_000 });
 }
 
 test.describe('smoke: 피드백 처리 상태 화면', () => {
