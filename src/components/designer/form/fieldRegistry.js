@@ -39,3 +39,15 @@ export const ROW_TEMPLATES = [
 ];
 
 export const paletteOf = (tag) => FIELD_PALETTE.find((item) => item.tag === tag);
+
+/**
+ * 새 필드에 넣을 보이는 이름(alias)의 바탕 — 지금 언어의 필드 종류 이름(formBuilder.type.*), 번역이 없으면 팔레트 이름.
+ * alias를 비워 두면 작업 화면이 라벨 자리에 내부 이름(text_2, 예전 편집기는 text-field-2)을 보여 준다.
+ * translate(key)는 번역이 있으면 문자열, 없으면 null/''를 돌려준다(컴포넌트에서는 $te/$t로 만든다).
+ */
+export function fieldTypeLabel(tag, translate) {
+    const tagName = String(tag || '').toLowerCase();
+    const key = `formBuilder.type.${tagName.replace(/-field$/, '').replace(/-([a-z])/g, (_, c) => c.toUpperCase())}`;
+    const translated = typeof translate === 'function' ? translate(key) : null;
+    return translated || paletteOf(tagName)?.label || '';
+}

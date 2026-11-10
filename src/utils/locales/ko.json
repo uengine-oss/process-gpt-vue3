@@ -221,6 +221,11 @@
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
     "headerMenu": {
+        "manage": "관리",
+        "manageProcessArchitecture": "프로세스 체계도",
+        "manageOrganization": "조직도 · 에이전트",
+        "manageSkills": "스킬 관리",
+        "manageCompleted": "완료된 인스턴스",
         "sidebar": "사이드바 접기/펼치기",
         "dashboard": "대시보드",
         "todoList": "나의 업무",
@@ -2583,6 +2588,8 @@
         "replace-with-adhoc-subprocess": "Ad-hoc SubProcess (애드혹 서브프로세스)로 변경"
     },
     "WorkItem": {
+        "moreActions": "더보기",
+        "chooseAgent": "맡길 방식 고르기",
         "progress": "프로세스",
         "history": "액티비티",
         "chatbot": "어시스턴트",
@@ -2936,6 +2943,15 @@
         "delete": "삭제"
     },
     "VerticalSidebar": {
+        "searchChats": "대화 검색",
+        "newChat": "새 대화",
+        "searchInstances": "완료된 인스턴스 검색",
+        "runProcess": "프로세스 골라 실행",
+        "searchAgents": "에이전트 검색",
+        "searchUsers": "사람 검색",
+        "inviteUser": "사람 초대",
+        "searchSkills": "스킬 검색",
+        "searchProcesses": "프로세스 검색",
         "instanceList": "인스턴스",
         "projectList": "프로젝트",
         "agentList": "에이전트 동료",
@@ -3723,6 +3739,7 @@
         "submitProcessing": "제출 작업 처리중"
     },
     "agentMonitor": {
+        "ownerOnly": "담당자만 에이전트에 맡길 수 있습니다. 에이전트가 일하면 여기에서 진행 기록을 볼 수 있습니다.",
         "accept": "채택",
         "request": "응답 요청",
         "requestContent": "요청 내용이 전송되었습니다.",
@@ -3964,6 +3981,8 @@
         "searchEmpty": "검색 결과가 없습니다"
     },
     "SkillList": {
+        "search": "스킬 검색",
+        "searchEmpty": "검색 결과가 없습니다",
         "title": "스킬 목록",
         "loading": "스킬 로딩 중...",
         "empty": "등록된 스킬이 없습니다",

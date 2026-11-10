@@ -14,6 +14,7 @@
                 :todo-status="todoStatus"
                 :browser-iframe-url="browserIframeUrl"
                 :howToUseInfo="howToUseInfo"
+                :readonly="readonly"
                 @update:human-query-answers="humanQueryAnswers = $event"
                 @update:expanded-tasks="expandedTasks = $event"
                 @update:slide-indexes="slideIndexes = $event"
@@ -39,7 +40,10 @@
                 @start-task="startTask"
                 @download-browser-agent="downloadBrowserAgent"
             /> -->
-            <div v-if="timeline.length === 0 && !isQueued && (hasNoSelectedAgent || !isInitialLoading)">
+            <div v-if="readonly && timeline.length === 0 && !isQueued && !isInitialLoading" class="empty-state">
+                <p>{{ $t('agentMonitor.ownerOnly') }}</p>
+            </div>
+            <div v-if="!readonly && timeline.length === 0 && !isQueued && (hasNoSelectedAgent || !isInitialLoading)">
                 <AgentSelectField :model-value="selectedAgent" :backend="backend" :is-execute="true" @update:model-value="updateWorkItem" />
             </div>
 
@@ -65,12 +69,12 @@
             <div v-if="isLoading" class="feedback-loading">
                 <div class="loading-spinner"></div>
                 <span>{{ getLoadingMessage() }}</span>
-                <button @click="stopTask" class="stop-button" aria-label="중단">⏹</button>
+                <button v-if="!readonly" @click="stopTask" class="stop-button" aria-label="중단">⏹</button>
             </div>
         </div>
 
         <!-- 채팅 입력 -->
-        <div v-if="tasks.length > 0 || isActionsMode" class="chat-input-wrapper">
+        <div v-if="(tasks.length > 0 || isActionsMode) && !readonly" class="chat-input-wrapper">
             <Chat
                 :messages="chatMessages"
                 :agentInfo="{ isRunning: isLoading, isConnection: false }"
@@ -127,6 +131,7 @@
 import ChatModule from '@/components/ChatModule.vue';
 import BrowserAgent from '@/components/BrowserAgent.vue';
 import Chat from '@/components/ui/Chat.vue';
+import { rememberAgentDelegation } from '@/utils/agentDelegation';
 import EventTimeline from '@/components/ui/EventTimeline.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
@@ -169,6 +174,11 @@ export default {
         autoMessage: {
             type: String,
             default: null
+        },
+        // 담당자가 아닌 사람이 보는 중: 진행 기록만 보이고 맡기기·채택·대화·중단은 할 수 없다
+        readonly: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
@@ -701,6 +711,7 @@ export default {
         // ✅ 작업 제출 및 완료 처리
         // ========================================
         submitTask(task) {
+            if (this.readonly) return;
             const original = task.outputRaw;
             // 항상 원본 객체를 우선 사용해 폼 키를 유지, 없으면 content/primary로 대체
             let payloadForSubmit = original;
@@ -970,6 +981,7 @@ export default {
 
         // human_asked 응답 처리 (status 비사용: 응답 레코드만 저장)
         async onConfirmHumanQuery(task) {
+            if (this.readonly) return;
             if (!task || !task.isHumanAsked) return;
 
             try {
@@ -1002,6 +1014,7 @@ export default {
         },
 
         async onCancelHumanQuery(task) {
+            if (this.readonly) return;
             if (!task || !task.isHumanAsked) return;
 
             try {
@@ -1069,6 +1082,7 @@ export default {
         // 🚀 작업 실행 관련 메서드들
         // ========================================
         async startTask(newVal = this.selectedAgent) {
+            if (this.readonly) return;
             const taskId = this.validateTaskId();
             if (!taskId) return;
 
@@ -1092,6 +1106,8 @@ export default {
                     status: 'IN_PROGRESS',
                     agent_orch: agentOrch
                 });
+                // 다음 「에이전트에 맡기기」 한 번은 이 방식으로 시작한다
+                rememberAgentDelegation({ orchestration: agentOrch, agentMode });
             } catch (error) {
                 this.handleError(error, '작업 시작 중 오류가 발생했습니다');
             }
@@ -1216,6 +1232,7 @@ export default {
             }
         },
         async stopTask() {
+            if (this.readonly) return;
             const taskId = this.validateTaskId();
             if (!taskId) return;
 
@@ -1229,6 +1246,7 @@ export default {
             }
         },
         async submitChat(content) {
+            if (this.readonly) return;
             if (!content) return;
 
             const taskId = this.validateTaskId();
@@ -1364,6 +1382,7 @@ export default {
         },
 
         async updateWorkItem(newVal) {
+            if (this.readonly) return;
             const oldVal = {
                 agent: this.workItem.worklist.agent,
                 agentMode: this.workItem.worklist.agentMode,

@@ -47,6 +47,21 @@ function goToMyFeedback() {
     }
 }
 
+// 관리 화면 묶음 — 사이드바 구역 머리에 흩어져 있던 관리 진입점(체계도 · 조직도 · 스킬 목록 · 완료 목록)을 한곳에.
+// 사이드바 머리에는 ＋ · 🔍 만 남긴다. 관리자에게만 보인다(사이드바의 해당 구역도 관리자 전용).
+const manageMenuItems = [
+    { title: 'headerMenu.manageProcessArchitecture', icon: 'mdi-sitemap-outline', to: '/process-architecture' },
+    { title: 'headerMenu.manageOrganization', icon: 'mdi-account-group-outline', to: '/organization' },
+    { title: 'headerMenu.manageSkills', icon: 'mdi-lightning-bolt-outline', to: '/skills' },
+    { title: 'headerMenu.manageCompleted', icon: 'mdi-check-circle-outline', to: '/list-pages/completed' }
+];
+
+const manageMenuOpen = ref(false);
+
+function goToManage(to: string) {
+    if (router.currentRoute.value.path !== to) router.push(to);
+}
+
 function goToMergeRequests() {
     if (router.currentRoute.value.path !== '/merge-requests') {
         router.push('/merge-requests');
@@ -66,6 +81,7 @@ interface SidebarItem {
 }
 
 const isAdmin = localStorage.getItem('isAdmin') === 'true';
+const showManageMenu = isAdmin && !(window as any).$pal;
 
 const sidebarItems = ref<SidebarItem[]>([
     {
@@ -298,6 +314,14 @@ function handleNotificationBadgeUpdate(event: Event) {
                             {{ $t('headerMenu.mergeRequests') }}
                         </v-btn>
                     </div>
+                    <template v-if="showManageMenu">
+                        <div v-for="m in manageMenuItems" :key="m.to" class="mr-2">
+                            <v-btn @click="goToManage(m.to)" class="mobile-nav-btn pr-2 pl-2" variant="text">
+                                <v-icon class="mr-2">{{ m.icon }}</v-icon>
+                                {{ $t(m.title) }}
+                            </v-btn>
+                        </div>
+                    </template>
                 </v-row>
             </v-container>
             <v-divider></v-divider>
@@ -353,6 +377,29 @@ function handleNotificationBadgeUpdate(event: Event) {
                             </v-btn>
                         </template>
                     </v-tooltip>
+                    <v-menu v-if="showManageMenu" v-model="manageMenuOpen" location="bottom start">
+                        <template v-slot:activator="{ props: menuProps }">
+                            <v-tooltip :text="$t('headerMenu.manage')" :disabled="manageMenuOpen">
+                                <template v-slot:activator="{ props: tipProps }">
+                                    <v-btn v-bind="{ ...menuProps, ...tipProps }" icon data-testid="header-manage-menu">
+                                        <v-icon>mdi-cog-transfer-outline</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </template>
+                        <v-list density="compact" min-width="220">
+                            <v-list-subheader>{{ $t('headerMenu.manage') }}</v-list-subheader>
+                            <v-list-item
+                                v-for="m in manageMenuItems"
+                                :key="m.to"
+                                :prepend-icon="m.icon"
+                                :data-testid="`header-manage-${m.to.replace(/\//g, '-').replace(/^-/, '')}`"
+                                @click="goToManage(m.to)"
+                            >
+                                <v-list-item-title>{{ $t(m.title) }}</v-list-item-title>
+                            </v-list-item>
+                        </v-list>
+                    </v-menu>
                 </v-row>
 
                 <!---/Search part -->

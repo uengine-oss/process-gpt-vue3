@@ -39,11 +39,11 @@
                     <v-spacer></v-spacer>
 
                     <!-- 위임하기 UI -->
-                    <v-row class="ma-0 pa-0" v-if="!isCompleted && (isNoAssignee || !isOwnWorkItem) && isSimulate != 'true'">
+                    <v-row class="ma-0 pa-0" v-if="showDelegate">
                         <v-spacer></v-spacer>
                         <v-tooltip :text="$t('WorkItem.delegate')">
                             <template v-slot:activator="{ props }">
-                                <div @click="openDelegateTask()" class="d-flex align-center" v-bind="props" style="cursor: pointer">
+                                <div @click="openDelegateTask()" class="d-flex align-center" v-bind="props" style="cursor: pointer" data-testid="workitem-delegate">
                                     <v-avatar size="32">
                                         <v-img
                                             :src="
@@ -255,6 +255,7 @@
                                 :workItem="workItem"
                                 :key="updatedDefKey"
                                 :selected-agent-type="selectedAgent"
+                                :readonly="!isOwnWorkItem"
                                 @browser-use-completed="handleBrowserUseCompleted"
                                 @update:agent-busy="updateAgentBusyState"
                                 @before-generate-example="beforeGenerateExample"
@@ -347,7 +348,7 @@
                                     class="work-item-form-btn-box align-center"
                                 >
                                     <v-btn
-                                        v-if="!gs"
+                                        v-if="!gs && isMobile"
                                         class="mr-1"
                                         color="gray"
                                         variant="flat"
@@ -361,7 +362,7 @@
                                         <span v-if="!isMobile" class="ms-1">{{ $t('FormRealtimeAssistant.title') }}</span>
                                     </v-btn>
                                     <v-btn
-                                        v-if="hasGeneratedContent && (!selectedResearchMethod || selectedResearchMethod === 'default')"
+                                        v-if="isMobile && canResetGeneratedContent"
                                         @click="resetGeneratedContent"
                                         :disabled="isGeneratingExample"
                                         :class="isMobile ? 'mr-1 text-medium-emphasis' : 'mr-1'"
@@ -375,33 +376,21 @@
                                         <v-icon>mdi-delete-outline</v-icon>
                                         <span v-if="!isMobile" class="ms-1">{{ $t('WorkItem.resetContent') }}</span>
                                     </v-btn>
+                                    <!-- 누르면 바로 맡긴다(정해 둔 방식 → 지난번 방식 → 딥 에이전트). 방식 고르기는 ⋯ 안에 -->
                                     <v-btn
                                         v-if="!isMobile && !gs"
                                         class="mr-1"
-                                        color="gray"
-                                        variant="flat"
-                                        density="comfortable"
-                                        rounded
-                                        :disabled="isGeneratingExample"
-                                        style="background-color: var(--cds-text-muted); color: white; min-width: 36px; padding: 0 6px"
-                                        @click="selectedTab = 'agent-monitor'"
-                                    >
-                                        <v-icon>mdi-auto-fix</v-icon>
-                                        <span class="ms-2">{{ $t('WorkItem.researchMethod') }}</span>
-                                    </v-btn>
-                                    <v-btn
-                                        v-if="!isMobile && !gs && aiFormEnabled"
-                                        class="mr-1"
-                                        color="gray"
+                                        color="primary"
                                         variant="flat"
                                         density="comfortable"
                                         rounded
                                         :loading="isGeneratingExample"
                                         :disabled="isGeneratingExample"
-                                        style="background-color: var(--cds-text-muted); color: white"
-                                        @click="triggerBasicLlmAgentFromResearchMethod"
+                                        data-testid="workitem-delegate-agent"
+                                        @click="delegateToAgent"
                                     >
-                                        <Icons :icon="'sparkles'" :size="20" />
+                                        <v-icon>mdi-auto-fix</v-icon>
+                                        <span class="ms-2">{{ $t('WorkItem.researchMethod') }}</span>
                                     </v-btn>
                                     <!-- 피드백 버튼만 유지 -->
                                     <v-btn
@@ -456,6 +445,47 @@
                                         <Icons :icon="'stop'" :size="'16'" />
                                     </v-btn>
 
+                                    <v-menu v-if="!isMobile && !gs" location="bottom end">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                class="mr-1 text-medium-emphasis"
+                                                density="comfortable"
+                                                icon
+                                                variant="outlined"
+                                                size="small"
+                                                style="border-color: var(--cds-border) !important"
+                                                :aria-label="$t('WorkItem.moreActions')"
+                                                data-testid="workitem-more-actions"
+                                            >
+                                                <v-icon>mdi-dots-horizontal</v-icon>
+                                            </v-btn>
+                                        </template>
+                                        <v-list density="compact">
+                                            <v-list-item prepend-icon="mdi-tune-variant" @click="selectedTab = 'agent-monitor'">
+                                                <v-list-item-title>{{ $t('WorkItem.chooseAgent') }}</v-list-item-title>
+                                            </v-list-item>
+                                            <v-list-item
+                                                v-if="aiFormEnabled"
+                                                prepend-icon="mdi-creation"
+                                                :disabled="isGeneratingExample"
+                                                @click="triggerBasicLlmAgentFromResearchMethod"
+                                            >
+                                                <v-list-item-title>{{ $t('WorkItem.quickCreate') }}</v-list-item-title>
+                                            </v-list-item>
+                                            <v-list-item prepend-icon="mdi-robot" @click="openRealtimeAssistant">
+                                                <v-list-item-title>{{ $t('FormRealtimeAssistant.title') }}</v-list-item-title>
+                                            </v-list-item>
+                                            <v-list-item
+                                                v-if="canResetGeneratedContent"
+                                                prepend-icon="mdi-delete-outline"
+                                                :disabled="isGeneratingExample"
+                                                @click="resetGeneratedContent"
+                                            >
+                                                <v-list-item-title>{{ $t('WorkItem.resetContent') }}</v-list-item-title>
+                                            </v-list-item>
+                                        </v-list>
+                                    </v-menu>
                                     <v-btn
                                         v-if="isMobile && aiFormEnabled"
                                         @click="beforeGenerateExample"
@@ -559,6 +589,8 @@ import FormRealtimeAssistant from './FormRealtimeAssistant.vue';
 
 import JSON5 from 'json5';
 import partialParse from 'partial-json-parser';
+import { canReassignWorkItem, findStarterId } from '@/utils/workItemAccess';
+import { pickAgentDelegation, readLastAgentDelegation } from '@/utils/agentDelegation';
 import axios from 'axios';
 
 export default {
@@ -924,6 +956,22 @@ export default {
                     .map((e) => e.trim());
                 return endpointList.includes(currentUserId);
             }
+        },
+        // 위임(담당자 바꾸기)은 담당자 본인 · 시작자 · 관리자만. 다른 참여자는 남의 업무를 볼 수만 있다.
+        showDelegate() {
+            if (this.isSimulate == 'true' || this.isDryRun || this.isStarted || this.isCompleted) return false;
+            if (this.pal) return this.isNoAssignee;
+            const uid = this.mode == 'uEngine' ? localStorage.getItem('email') : localStorage.getItem('uid');
+            return canReassignWorkItem({
+                uid,
+                isAdmin: localStorage.getItem('isAdmin') == 'true',
+                endpoint: this.workItem?.worklist?.endpoint,
+                starterId: findStarterId(this.workListByInstId),
+                completed: this.isCompleted
+            });
+        },
+        canResetGeneratedContent() {
+            return this.hasGeneratedContent && (!this.selectedResearchMethod || this.selectedResearchMethod === 'default');
         },
         isNoAssignee() {
             const endpoint = this.workItem && this.workItem.worklist ? this.workItem.worklist.endpoint : null;
@@ -2159,6 +2207,7 @@ export default {
             });
         },
         openDelegateTask() {
+            if (!this.showDelegate) return;
             this.delegateTaskDialog = true;
         },
         closeDelegateTask() {
@@ -2166,6 +2215,7 @@ export default {
         },
         delegateTask(delegateUser, assigneeUserInfo, reason) {
             var me = this;
+            if (!me.showDelegate) return;
 
             me.$try({
                 context: me,
@@ -2383,6 +2433,23 @@ export default {
                 //     this.beforeGenerateExample();
                 // });
                 console.log('[WorkItem] 브라우저 유즈 완료 - 자동 초안 생성 스킵');
+            }
+        },
+
+        // 「에이전트에 맡기기」 한 번으로 바로 시작한다 — 고르는 화면을 거치지 않는다.
+        async delegateToAgent() {
+            if (!this.isOwnWorkItem) return;
+            const choice = pickAgentDelegation({ selected: this.selectedAgent, last: readLastAgentDelegation() });
+            if (choice.orchestration === 'default') {
+                this.beforeGenerateExample(null);
+                return;
+            }
+            const run = { ...choice, agentMode: choice.agentMode.toUpperCase() };
+            this.selectedTab = 'agent-monitor';
+            await this.$nextTick();
+            if (this.$refs.agentMonitor) {
+                this.$refs.agentMonitor.selectOrchestrationMethod(run);
+                await this.$refs.agentMonitor.startTask(run);
             }
         },
 

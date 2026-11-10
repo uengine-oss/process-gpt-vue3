@@ -17,7 +17,9 @@ import {
     createRow,
     createField,
     allFields,
-    reuseUnchanged
+    reuseUnchanged,
+    uniqueAlias,
+    uniqueLabel
 } from './formModel.js';
 import { normalizeFormRowLayout, extractFields } from './formHtml.js';
 
@@ -203,6 +205,33 @@ test('이름이 겹치지 않게 만든다', () => {
     assert.ok(!taken.has(field.attrs.name));
     const again = createField(form, 'text-field', {}, [field.attrs.name]);
     assert.notEqual(again.attrs.name, field.attrs.name);
+});
+
+test('새 필드의 보이는 이름(alias)은 비우지 않고 겹치지 않게 붙인다 — 작업 화면에 text-field-2 같은 내부 이름이 라벨로 보이지 않게', () => {
+    const form = parseForm('', P);
+    form.sections.push({ id: 's', wrapped: true, blocks: [] });
+    const row = createRow(form, [12]);
+    form.sections[0].blocks.push(row);
+    const col = row.lines[0].items[0];
+
+    const first = createField(form, 'text-field', { alias: uniqueAlias(form, '텍스트'), type: 'text' });
+    col.items.push(first);
+    const second = createField(form, 'text-field', { alias: uniqueAlias(form, '텍스트'), type: 'text' });
+    col.items.push(second);
+    col.items.push(createField(form, 'boolean-field', { alias: uniqueAlias(form, '예/아니오') }));
+
+    assert.deepEqual(allFields(form).map((f) => [f.attrs.name, f.attrs.alias]), [
+        ['text', '텍스트'],
+        ['text_2', '텍스트 2'],
+        ['boolean', '예/아니오']
+    ]);
+    assert.equal(uniqueAlias(form, '텍스트', ['텍스트 3']), '텍스트 4', '끌어 놓는 중인 필드의 alias도 피한다');
+    assert.equal(uniqueAlias(form, ''), '', '라벨이 없으면 비운다(기존 동작)');
+    assert.match(serializeForm(form), /<text-field alias="텍스트 2" type="text" name="text_2"/);
+
+    // 예전 편집기(KEditor)는 폼 모델 없이 이미 붙은 alias 목록으로 고른다
+    assert.equal(uniqueLabel('예/아니오', ['자유입력', '텍스트', undefined, '']), '예/아니오');
+    assert.equal(uniqueLabel('텍스트', ['자유입력', '텍스트', '텍스트 2']), '텍스트 3');
 });
 
 // ---------------------------------------------------------------------------

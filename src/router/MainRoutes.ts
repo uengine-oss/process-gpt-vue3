@@ -92,9 +92,9 @@ const allRoutes: RouteRecordRaw[] = [
     {
         name: 'organization',
         path: '/organization',
-        // 개편된 조직도는 PAL 모드 전용. 비 PAL 모드는 기존 화면을 그대로 사용한다.
-        component: () =>
-            window.$pal ? import('@/views/organization/OrganizationChartView.vue') : import('@/components/OrganizationChartChat.vue')
+        // 개편된 조직도를 모든 모드에서 쓴다. PAL 전용 기능(가입 승인·사전등록·역할 관리)은 화면 안에서 모드별로 가린다.
+        // ?createAgent=1 이면 열자마자 에이전트 생성 창을 띄운다(사이드바 '에이전트 동료' + 버튼).
+        component: () => import('@/views/organization/OrganizationChartView.vue')
     },
     {
         name: 'Role Request',
@@ -113,9 +113,8 @@ const allRoutes: RouteRecordRaw[] = [
         name: 'organization-before',
         path: '/organization-before',
         // 개편 전 조직도 화면(읽기 전용). 사이드바 메뉴에는 노출하지 않고 URL 직접 접근만 지원한다.
-        // PAL 모드 전용이며 비 PAL 모드는 기존 /organization 으로 보낸다.
-        component: () =>
-            window.$pal ? import('@/views/organization/OrganizationChartBeforeView.vue') : import('@/components/OrganizationChartChat.vue'),
+        // PAL 모드 전용이며 비 PAL 모드는 /organization 으로 보낸다.
+        component: () => import('@/views/organization/OrganizationChartBeforeView.vue'),
         beforeEnter: (to: any, from: any, next: any) => {
             if (window.$pal) next();
             else next('/organization');

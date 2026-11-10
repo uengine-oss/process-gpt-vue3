@@ -40,6 +40,7 @@
                 </div>
 
                 <MainChatInput
+                    ref="mainChatInput"
                     :agentInfo="mainChatAgentInfo"
                     :userId="userInfo.uid || userInfo.id"
                     :compactTools="simpleUi"
@@ -57,6 +58,7 @@
             <!-- 헤더 영역 -->
             <div
                 v-if="componentName != 'SubProcessDetail' && (!simpleUi || showMapInSimple)"
+                ref="processMapHeader"
                 class="header-section"
                 style="position: sticky; top: 0; z-index: 2; background-color: var(--cds-surface-2); border-bottom: 1px solid rgba(0, 0, 0, 0.08)"
             >
@@ -1207,6 +1209,11 @@ export default {
         }
     },
     watch: {
+        // 사이드바에서 넘어올 때: ?focus=chat 새 대화 입력창 · ?focus=processes 프로세스 목록 · ?search=1 프로세스 검색
+        '$route.query'(query) {
+            if (!query || !(query.focus || query.search)) return;
+            this.applyEntryFocus({ focus: query.focus, search: query.search });
+        },
         enableEdit(newVal, oldVal) {
             if (newVal && newVal !== oldVal) {
                 this.copyValue = JSON.parse(JSON.stringify(this.value));
@@ -1267,6 +1274,8 @@ export default {
         });
     },
     mounted() {
+        const entry = this.$route?.query || {};
+        if (entry.focus || entry.search) this.applyEntryFocus({ focus: entry.focus, search: entry.search });
         window.addEventListener('localStorageChange', (event) => {
             if (event.detail.key === 'isAdmin') {
                 this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
@@ -1310,6 +1319,28 @@ export default {
             this.$router.push({ path: '/chats', query: { history: '1' } });
         },
 
+        async applyEntryFocus({ focus, search }) {
+            const rest = { ...this.$route.query };
+            delete rest.focus;
+            delete rest.search;
+            this.$router.replace({ query: rest });
+            if ((focus === 'processes' || search) && this.simpleUi && !this.showMapInSimple) {
+                await this.toggleProcessList();
+            }
+            await this.$nextTick();
+            if (focus === 'chat') {
+                // 사이드바 단추를 누른 직후에는 목록(v-list)과 툴팁이 포커스를 되가져가므로 한 박자 뒤에 옮긴다
+                setTimeout(() => {
+                    const areas = this.$refs.mainChatInput?.$el?.querySelectorAll('textarea') || [];
+                    const el = [...areas].find((e) => e.offsetWidth || e.offsetHeight);
+                    if (el) el.focus();
+                }, 300);
+                return;
+            }
+            const header = this.$refs.processMapHeader;
+            if (header && header.scrollIntoView) header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (search && !this.isSearchExpanded) this.toggleSearchExpand();
+        },
         async toggleProcessList() {
             if (this.showMapInSimple) {
                 this.showMapInSimple = false;

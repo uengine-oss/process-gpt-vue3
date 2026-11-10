@@ -212,6 +212,11 @@
         "subTitle": "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
     "headerMenu": {
+        "manage": "Manage",
+        "manageProcessArchitecture": "Process architecture",
+        "manageOrganization": "Organization · agents",
+        "manageSkills": "Manage skills",
+        "manageCompleted": "Completed instances",
         "sidebar": "Collapse/Expand Sidebar",
         "dashboard": "Dashboard",
         "todoList": "My Task List",
@@ -2568,6 +2573,8 @@
         "replace-with-adhoc-subprocess": "Replace with ad-hoc subprocess"
     },
     "WorkItem": {
+        "moreActions": "More",
+        "chooseAgent": "Choose how to delegate",
         "progress": "Progress",
         "history": "Work History",
         "chatbot": "Assistant",
@@ -2921,6 +2928,15 @@
         "delete": "Delete"
     },
     "VerticalSidebar": {
+        "searchChats": "Search chats",
+        "newChat": "New chat",
+        "searchInstances": "Search completed instances",
+        "runProcess": "Pick a process to run",
+        "searchAgents": "Search agents",
+        "searchUsers": "Search people",
+        "inviteUser": "Invite people",
+        "searchSkills": "Search skills",
+        "searchProcesses": "Search processes",
         "instanceList": "Instance",
         "projectList": "Project",
         "agentList": "Agent Colleagues",
@@ -3717,6 +3733,7 @@
         "submitProcessing": "Processing submission"
     },
     "agentMonitor": {
+        "ownerOnly": "Only the assignee can hand this task to an agent. When an agent works on it, its progress appears here.",
         "accept": "Accept",
         "request": "Request",
         "requestContent": "Request content has been sent.",
@@ -3958,6 +3975,8 @@
         "searchEmpty": "No search results"
     },
     "SkillList": {
+        "search": "Search skills",
+        "searchEmpty": "No results",
         "title": "Skill List",
         "loading": "Loading skills...",
         "empty": "No registered skills",

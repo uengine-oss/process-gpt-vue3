@@ -104,9 +104,10 @@ import {
     cloneField,
     allFields,
     reuseUnchanged,
+    uniqueAlias,
     uid
 } from '@/utils/formModel';
-import { FIELD_PALETTE, ROW_TEMPLATES } from './fieldRegistry';
+import { FIELD_PALETTE, ROW_TEMPLATES, fieldTypeLabel } from './fieldRegistry';
 
 /**
  * 폼 편집기 — KEditor(Mashup.vue) 대신.
@@ -259,7 +260,20 @@ export default {
 
         // ---- 필드 -------------------------------------------------------
         newFieldFromPalette(item) {
-            return createField(this.form, item.tag, item.defaults, this.pendingNames());
+            return createField(this.form, item.tag, this.newFieldDefaults(item), this.pendingNames());
+        },
+        /**
+         * 팔레트 기본 속성 + 보이는 이름(alias). alias를 비워 두면 작업 화면이 라벨 자리에
+         * 내부 이름(text_2, 예전 편집기는 text-field-2)을 보여 준다. 그래서 필드 종류 이름을
+         * 지금 언어로 넣어 두고(텍스트, 텍스트 2 …), 만든 사람이 설정에서 고치게 한다.
+         */
+        newFieldDefaults(item) {
+            const defaults = { ...item.defaults };
+            if ('alias' in defaults && !defaults.alias) {
+                const translate = (key) => (this.$te && this.$te(key) ? this.$t(key) : null);
+                defaults.alias = uniqueAlias(this.form, fieldTypeLabel(item.tag, translate));
+            }
+            return defaults;
         },
         /** 팔레트를 누르면 비어 있는 첫 칸에, 없으면 새 행에 넣는다 */
         appendField(item) {
@@ -277,7 +291,7 @@ export default {
                 const last = this.form.sections[this.form.sections.length - 1].blocks[0];
                 target = last.lines[0].items[0];
             }
-            target.items.push(createField(this.form, item.tag, item.defaults));
+            target.items.push(createField(this.form, item.tag, this.newFieldDefaults(item)));
         },
         duplicateField(col, field) {
             col.items.splice(col.items.indexOf(field) + 1, 0, cloneField(this.form, field));

@@ -63,6 +63,8 @@
 <script>
 import ListPage from '@/components/ui/common/ListPage.vue';
 import StatusChip from '@/components/ui/common/StatusChip.vue';
+import { formatKST } from '@/utils/datetime';
+import { isMissingDate } from '@/utils/instanceListDisplay';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -337,15 +339,9 @@ export default {
             return sortKey === 'start_date' ? 'asc' : 'desc';
         },
         formatDateTime(dateString) {
-            const date = new Date(dateString);
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            const seconds = String(date.getSeconds()).padStart(2, '0');
-
-            return `${year}년 ${month}월 ${day}일 ${hours}:${minutes}:${seconds}`;
+            // 날짜가 비어 있으면(null·0) new Date(null) 이 1970-01-01 09:00 으로 보였다 — "-" 로 둔다
+            if (isMissingDate(dateString)) return '-';
+            return formatKST(dateString, 'YYYY년 MM월 DD일 HH:mm:ss', '-');
         }
     }
 };

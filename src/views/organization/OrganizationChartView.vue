@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="10" class="rounded-xl sk-page-card org-page">
+    <v-card elevation="10" class="rounded-xl sk-page-card org-page" :class="{ 'org-page--standalone is-work-height': !isPal }">
         <!-- ───────────── 페이지 헤더 ───────────── -->
         <div class="page-header">
             <div class="page-header-left">
@@ -67,6 +67,18 @@
                         @click="openAddTeam(root)"
                     >
                         부서 추가
+                    </v-btn>
+
+                    <!-- 비 PAL 모드: 사이드바 '에이전트 동료' 와 같은 진입점. 부서를 고르지 않고도 만들 수 있다. -->
+                    <v-btn
+                        v-if="editable && !isPal"
+                        size="small"
+                        variant="tonal"
+                        class="text-none org-toolbar__create-agent"
+                        prepend-icon="mdi-robot-outline"
+                        @click="openAgentDialog(null)"
+                    >
+                        에이전트 추가
                     </v-btn>
 
                     <v-btn
@@ -217,6 +229,7 @@
                         :editable="editable"
                         :can-manage-roles="canManageRoles"
                         :current-user-id="currentUserId"
+                        :pal-roles="isPal"
                         @update-team="onUpdateTeam"
                         @add-team="openAddTeam"
                         @remove-team="confirmRemoveTeam"
@@ -373,7 +386,14 @@
 
         <!-- ───────────── 에이전트 생성 ───────────── -->
         <v-dialog v-model="agentDialog" max-width="720" :fullscreen="isMobile">
-            <AgentCreateDialog :teams="teamOptions" @assignToTeam="onAgentAssigned" @closeDialog="agentDialog = false" />
+            <AgentCreateDialog
+                :key="agentDialogKey"
+                :teams="teamOptions"
+                :default-team-id="agentTargetTeamId || ''"
+                @assignToTeam="onAgentAssigned"
+                @created="onAgentCreated"
+                @closeDialog="agentDialog = false"
+            />
         </v-dialog>
     </v-card>
 </template>
@@ -384,7 +404,7 @@ export default { name: 'OrganizationChartView' };
 
 <script setup>
 import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import BackendFactory from '@/components/api/BackendFactory';
 import { writeActivityLog } from '@/services/activityAuditLog';
 import AgentBadgesDiagram from '@/components/ui/AgentBadgesDiagram.vue';
@@ -423,7 +443,14 @@ import {
 const backend = BackendFactory.createBackend();
 const membershipRequests = useMembershipRequestsStore();
 const route = useRoute();
+const router = useRouter();
 const activeTab = ref('organization');
+/**
+ * PAL 모드 여부. 비 PAL(ProcessGPT) 모드에서는 PAL 전용 기능을 가린다.
+ *  - 가입 및 권한 승인 탭, 구성원 사전등록: PAL 가입 승인 흐름(membershipGate)·RPC 에 기대므로 숨긴다.
+ *  - 역할(admin/owner/editor/reviewer/viewer) 관리: 비 PAL 은 관리자 여부만 쓰고 계정 설정에서 바꾼다.
+ */
+const isPal = !!window.$pal;
 const instance = getCurrentInstance();
 const eventBus = instance?.appContext.config.globalProperties.EventBus;
 
@@ -461,6 +488,7 @@ const newTeamName = ref('');
 const removeTeamDialog = ref(false);
 const removeTeamTarget = ref(null);
 const agentDialog = ref(false);
+const agentDialogKey = ref(0);
 const agentTargetTeamId = ref(null);
 const agentDetail = ref(null);
 const agentEditDialog = ref(false);
@@ -480,8 +508,10 @@ const isAdminFlag = computed(() => getIsAdminClaim());
 
 /** 조직 구조(부서·배치) 편집 — owner 이상 */
 const editable = computed(() => isAdminRole(currentRole.value) || hasRoleAtLeast(currentRole.value, 'owner') || isAdminFlag.value);
-/** 사용자 역할 변경 — admin 이상 (ManageAccessTab 과 동일 기준) */
-const canManageRoles = computed(() => isAdminRole(currentRole.value) || hasRoleAtLeast(currentRole.value, 'admin') || isAdminFlag.value);
+/** 사용자 역할 변경·가입 승인·사전등록 — admin 이상 (ManageAccessTab 과 동일 기준). PAL 역할 체계 전용이다. */
+const canManageRoles = computed(
+    () => isPal && (isAdminRole(currentRole.value) || hasRoleAtLeast(currentRole.value, 'admin') || isAdminFlag.value)
+);
 
 watch(
     [() => route.query.approvals, canManageRoles],
@@ -601,6 +631,12 @@ function mergeUsers() {
 }
 
 async function loadPendingMembers() {
+    // 사전등록은 PAL 전용 기능이다. 비 PAL 백엔드에는 테이블·뷰가 없을 수 있어 조회하지 않는다.
+    if (!isPal) {
+        pendingMembers.value = [];
+        mergeUsers();
+        return;
+    }
     try {
         // 사전등록 인원은 이메일이 곧 표시 이름이다(아직 계정이 없어 username 이 없다).
         // 사전등록 자체는 admin(canManageRoles) 만 하고, admin 은 마스킹 뷰에서도
@@ -1217,10 +1253,43 @@ async function onUpdateRoles({ userIds, role }) {
 
 /* ── 에이전트 ───────────────────────────────────────── */
 
+/** team 을 주면 그 부서를 미리 고른 채로 연다. null 이면 부서 없이 연다(툴바·?createAgent=1). */
 function openAgentDialog(team) {
-    agentTargetTeamId.value = team?.id || selectedTeamId.value;
+    agentTargetTeamId.value = team?.id && team.id !== ROOT_ID ? team.id : null;
+    agentDialogKey.value += 1;
     agentDialog.value = true;
 }
+
+/** 저장 성공 — 부서 배치는 onAgentAssigned 가 맡고, 여기서는 창을 닫고 알린다. */
+function onAgentCreated({ agent, teamId } = {}) {
+    agentDialog.value = false;
+    if (!teamId) toast(`에이전트 '${agent?.name || ''}' 를 만들었습니다.`);
+}
+
+/**
+ * /organization?createAgent=1 — 열자마자 에이전트 생성 창을 띄운다.
+ * 새로고침해도 다시 열리지 않도록 쿼리에서 바로 지운다.
+ */
+function consumeCreateAgentQuery() {
+    if (!Object.prototype.hasOwnProperty.call(route.query, 'createAgent')) return;
+    const { createAgent, ...rest } = route.query;
+    router.replace({ query: rest });
+    if (createAgent === '0' || createAgent === 'false') return;
+    if (!editable.value) {
+        toast('에이전트를 만들 권한이 없습니다.', 'warning');
+        return;
+    }
+    activeTab.value = 'organization';
+    openAgentDialog(null);
+}
+
+// 이미 조직도 화면에 있을 때 사이드바 + 로 다시 들어오는 경우(같은 컴포넌트 재사용)
+watch(
+    () => route.query.createAgent,
+    (value) => {
+        if (value !== undefined && !loading.value) consumeCreateAgentQuery();
+    }
+);
 
 async function onAgentAssigned({ agent, teamId }) {
     agentDialog.value = false;
@@ -1413,6 +1482,7 @@ onMounted(async () => {
     if (isMobile.value) panelOpen.value = false;
     await Promise.all([loadUsers(), loadPendingMembers(), loadChart()]);
     loading.value = false;
+    consumeCreateAgentQuery();
 
     window.addEventListener('resize', onResize);
     eventBus?.on('user-deleted', onUserDeleted);
@@ -1434,13 +1504,50 @@ onBeforeUnmount(() => {
 /* ── 페이지 카드 박스 ─────────────────────────────────────────────
    레이아웃/타이포는 PAL 공통 디자인 시스템(SKGlobalStyle.scss) 의
    .sk-page-card / .page-header / .page-title / .page-subtitle 을 그대로 사용한다.
-   (이 화면은 PAL 모드 전용 라우트이므로 해당 전역 CSS 가 항상 로드된다.)
-   여기서는 이 페이지에만 필요한 값만 덮어쓴다. */
+   여기서는 이 페이지에만 필요한 값만 덮어쓴다.
+   비 PAL 모드는 SKGlobalStyle.scss 를 불러오지 않으므로(main.ts) 아래 .org-page--standalone 이
+   같은 레이아웃을 이 화면 안에서만 채운다. PAL 모드에는 붙지 않는다. */
 .org-page {
-    /* sk-page-card 의 height:100% 는 부모(page-wrapper) 높이가 auto 라 계산되지 않는다. */
-    height: calc(100vh - 40px) !important;
     min-height: 460px;
     background: var(--cds-surface-2) !important;
+}
+.org-page:not(.org-page--standalone) {
+    /* sk-page-card 의 height:100% 는 부모(page-wrapper) 높이가 auto 라 계산되지 않는다. */
+    height: calc(100vh - 40px) !important;
+}
+/* 비 PAL: 높이는 앱 공통 .is-work-height(상단바 유무·모바일 처리 포함)를 따른다. */
+.org-page--standalone {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+.org-page--standalone .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 16px 16px 0;
+    flex-shrink: 0;
+}
+.org-page--standalone .page-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.org-page--standalone .page-title {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 0;
+    color: var(--cds-text-primary);
+}
+.org-page--standalone .page-subtitle {
+    font-size: 12px;
+    margin: 0;
+    color: var(--cds-text-muted);
+}
+.org-page--standalone .page-header-right {
+    display: flex;
+    gap: 10px;
 }
 .page-header {
     flex-wrap: wrap;
@@ -1662,7 +1769,7 @@ onBeforeUnmount(() => {
     }
 }
 @media (max-width: 768px) {
-    .org-page {
+    .org-page:not(.org-page--standalone) {
         height: calc(100vh - 24px) !important;
     }
     .org-toolbar {

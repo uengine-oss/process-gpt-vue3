@@ -43,7 +43,8 @@ function isItemActive(item) {
                     </span>
                 </div>
             </template>
-            <v-tooltip bottom :text="useI18n ? $t(item.title) : item.title">
+            <!-- 긴 이름(인스턴스명 등)이 화면 폭 전체로 펼쳐지지 않게 폭을 묶고 줄바꿈한다 -->
+            <v-tooltip bottom :text="useI18n ? $t(item.title) : item.title" max-width="360" content-class="nav-item-tooltip">
                 <template v-slot:activator="{ props }">
                     <v-list-item-title
                         v-if="useI18n"
@@ -83,4 +84,11 @@ function isItemActive(item) {
     </div>
 </template>
 
-<style scoped></style>
+<style>
+/* v-tooltip 내용은 body 로 옮겨져 그려지므로 scoped 가 닿지 않는다 */
+.nav-item-tooltip {
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+</style>

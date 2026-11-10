@@ -109,9 +109,15 @@ export default {
         teams: {
             type: Array,
             default: () => []
+        },
+        // 처음 열 때 '팀원으로 생성'을 켜고 미리 고를 팀 id (조직도에서 부서를 정해 연 경우)
+        defaultTeamId: {
+            type: String,
+            default: ''
         }
     },
-    emits: ['closeDialog', 'assignToTeam'],
+    // created: 저장 성공 시 { agent, teamId } — 다이얼로그로 띄운 쪽이 닫을 때 쓴다
+    emits: ['closeDialog', 'assignToTeam', 'created'],
     data: () => ({
         assignToTeam: false,
         selectedTeamId: null,
@@ -168,6 +174,12 @@ export default {
             return this.newAgent && this.nameRules.every((rule) => rule(this.newAgent.name) === true);
         }
     },
+    created() {
+        if (this.defaultTeamId && this.teams.some((team) => team.id === this.defaultTeamId)) {
+            this.assignToTeam = true;
+            this.selectedTeamId = this.defaultTeamId;
+        }
+    },
     mounted() {
         this.EventBus.on('agentAdded', this.resetAgentCreateForm);
     },
@@ -185,9 +197,10 @@ export default {
             }
             const ok = await this.addAgent(agentToSave);
             if (ok && assignToTeam && teamId) {
-                // 차트에 팀원으로 추가 + 영속화는 부모(OrganizationChartChat)가 처리
+                // 차트에 팀원으로 추가 + 영속화는 부모(조직도 화면)가 처리
                 this.$emit('assignToTeam', { agent: agentToSave, teamId });
             }
+            if (ok) this.$emit('created', { agent: agentToSave, teamId: assignToTeam ? teamId : null });
         },
         resetAgentCreateForm() {
             Object.assign(this.newAgent, {
