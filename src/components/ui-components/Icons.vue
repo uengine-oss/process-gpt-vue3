@@ -69,6 +69,16 @@ export default {
             const response = await fetch(`/assets/images/icon/${this.icon}.svg`);
             let svg = await response.text();
 
+            // 없는 아이콘을 부르면 SPA 서버가 index.html 을 돌려준다. 그대로 v-html 로 넣으면 그 안의
+            // <meta name="viewport"> 까지 문서에 들어가 휴대폰 화면 폭이 기기 폭으로 돌아간다(2026-11-11).
+            // SVG 가 아니면 그리지도, 캐시에 남기지도 않는다(예전에 남은 것도 지운다).
+            if (!response.ok || !/<svg[\s>]/i.test(svg) || /<html[\s>]/i.test(svg)) {
+                localStorage.removeItem(storageKey);
+                localStorage.removeItem(hashKey);
+                this.svgContent = '';
+                return;
+            }
+
             // 해시 값 계산
             const hash = await this.calculateHash(svg);
 

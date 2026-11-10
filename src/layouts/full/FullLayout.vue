@@ -5,6 +5,7 @@ import VerticalHeaderVue from './vertical-header/VerticalHeader.vue';
 import HorizontalHeader from './horizontal-header/HorizontalHeader.vue';
 import HorizontalSidebar from './horizontal-sidebar/HorizontalSidebar.vue';
 import GlobalNoticeBanner from './GlobalNoticeBanner.vue';
+import MobileViewPrompt from '@/components/mobile/MobileViewPrompt.vue';
 import MobileTabBar from './MobileTabBar.vue';
 import MobileAppBar from './MobileAppBar.vue';
 import { useCustomizerStore } from '../../stores/customizer';
@@ -154,6 +155,7 @@ const openSidebar = () => {
                         ]"
                     >
                         <GlobalNoticeBanner />
+                        <MobileViewPrompt />
                         <div :class="{ 'pal-page-shell': isPalMode }">
                             <div :class="[customizer.boxed ? 'maxWidth' : '', { 'pal-page-frame': isPalMode }]">
                                 <RouterView />
@@ -228,6 +230,7 @@ const openSidebar = () => {
                         ]"
                     >
                         <GlobalNoticeBanner />
+                        <MobileViewPrompt />
                         <!-- 정의관련 maxWidth -->
                         <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize, { 'pal-page-frame': isPalMode }]">
                             <RouterView />

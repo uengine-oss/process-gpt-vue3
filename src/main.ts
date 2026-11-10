@@ -93,6 +93,7 @@ if ((window as any).$pal) {
 
 // 전역 관리 ts
 import globalState from '@/stores/globalState';
+import { setupWebAppInstall } from '@/utils/webAppInstall';
 
 // diff viewer
 import xml from 'highlight.js/lib/languages/xml';
@@ -253,6 +254,14 @@ Object.defineProperty(window, '$jms', {
     writable: false,
     configurable: false
 });
+
+// 휴대폰 데스크톱 화면(index.html __pgptViewport)과 홈 화면에 추가(웹앱)는 Process GPT 모드에서만 쓴다.
+// PAL · uEngine 은 이름과 아이콘이 다르고, 휴대폰 화면도 지금처럼 둔다.
+if (window.$mode === 'ProcessGPT' && !(window as any).$pal) {
+    setupWebAppInstall();
+} else {
+    (window as any).__pgptViewport?.disable?.();
+}
 
 async function setupSupabase() {
     // window.$mode = 'uEngine';

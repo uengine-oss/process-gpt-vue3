@@ -3,6 +3,9 @@ import { ref, onMounted } from 'vue';
 import { useCustomizerStore } from '@/stores/customizer';
 import { CheckIcon } from 'vue-tabler-icons';
 import { applyAppearance, appearanceFromTheme, THEME_BY_APPEARANCE, type Appearance } from '@/ds/appearance';
+import { isPhoneBrowser, viewportApi, savedMobileView, saveMobileView } from '@/shared/mobileView';
+import { webAppInstall } from '@/utils/webAppInstall';
+import AddToHomeScreen from '@/components/mobile/AddToHomeScreen.vue';
 
 const customizer = useCustomizerStore();
 
@@ -34,6 +37,18 @@ function saveSettings() {
             actTheme: customizer.actTheme
         })
     );
+}
+
+/**
+ * 휴대폰 화면 — 휴대폰 브라우저에서만 보인다(이 기기에 저장되고, 폭은 index.html 이 정한다).
+ * 답하지 않았으면 기본인 데스크톱으로 보인다.
+ */
+const showMobileView = isPhoneBrowser() && !!viewportApi()?.isEnabled?.();
+const mobileView = ref<'desktop' | 'light'>(savedMobileView() ?? 'desktop');
+
+function selectMobileView(view: 'desktop' | 'light') {
+    mobileView.value = view;
+    if (saveMobileView(view).reload) window.location.reload();
 }
 
 onMounted(() => {
@@ -93,6 +108,30 @@ onMounted(() => {
                 :label="customizer.simpleUi ? '켜짐' : '꺼짐'"
                 @update:model-value="(v) => customizer.SET_SIMPLE_UI(!!v)"
             ></v-switch>
+
+            <template v-if="showMobileView">
+                <v-divider class="my-6"></v-divider>
+
+                <h6 class="text-h6 mb-1">{{ $t('mobileView.settingTitle') }}</h6>
+                <p class="text-body-2 text-medium-emphasis mb-3">{{ $t('mobileView.settingDesc') }}</p>
+                <v-radio-group
+                    :model-value="mobileView"
+                    hide-details
+                    data-testid="mobile-view-setting"
+                    @update:model-value="(v) => selectMobileView(v as 'desktop' | 'light')"
+                >
+                    <v-radio value="desktop" :label="$t('mobileView.desktopOption')" color="primary" />
+                    <v-radio value="light" :label="$t('mobileView.lightOption')" color="primary" />
+                </v-radio-group>
+            </template>
+
+            <template v-if="webAppInstall.enabled && !webAppInstall.installed">
+                <v-divider class="my-6"></v-divider>
+
+                <h6 class="text-h6 mb-1">{{ $t('mobileView.addToHome') }}</h6>
+                <p class="text-body-2 text-medium-emphasis mb-3">{{ $t('mobileView.addToHomeHint') }}</p>
+                <AddToHomeScreen variant="outlined" />
+            </template>
         </div>
     </perfect-scrollbar>
 </template>

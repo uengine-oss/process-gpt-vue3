@@ -5869,5 +5869,29 @@
     "processIdentification": {
         "title": "Process Identification",
         "subtitle": "Discover new processes from handover logs"
+    },
+    "mobileView": {
+        "promptTitle": "A light version for phones is available",
+        "promptBody": "You are seeing the same desktop screen as on a computer. Pinch with two fingers to zoom in. The light version simplifies menus and screens to fit your phone. Switch to the light version?",
+        "promptSettingsHint": "We won't ask again once you choose. You can change this later in Settings › Appearance › Phone screen.",
+        "useLight": "Use the light version",
+        "keepDesktop": "Keep the desktop screen",
+        "addToHome": "Add to Home Screen",
+        "addToHomeHint": "Add it to your home screen to open it like an app with one tap.",
+        "settingTitle": "Phone screen",
+        "settingDesc": "The screen to use when you open Process GPT on this phone. Saved on this device only.",
+        "desktopOption": "Desktop version — the same screen as on a computer (default)",
+        "lightOption": "Light version — simplified to fit the phone",
+        "close": "Close",
+        "guide": {
+            "ios1": "Tap the Share button (a square with an arrow pointing up) at the bottom of Safari (at the top on iPad).",
+            "ios2": "Scroll down and tap “Add to Home Screen”.",
+            "ios3": "Tap “Add” at the top right.",
+            "android1": "Tap the browser menu (⋮) at the top right.",
+            "android2": "Tap “Add to Home screen” or “Install app”.",
+            "desktop1": "Click the install icon at the right of the address bar, or open the browser menu.",
+            "desktop2": "Choose “Install app” or “Add to Home screen”.",
+            "after": "Tap the Process GPT icon on your home screen to open it like an app, without the address bar."
+        }
     }
 }
