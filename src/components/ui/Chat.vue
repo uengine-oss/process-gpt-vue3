@@ -3179,7 +3179,8 @@
                                     variant="outlined"
                                     hide-details
                                     class="ml-2 orchestration-select"
-                                    style="max-width: 150px"
+                                    data-testid="orchestration-select"
+                                    style="max-width: 220px"
                                 />
                                 <!-- <v-btn v-if="orchestration === 'langchain-react'" icon variant="text" class="text-medium-emphasis" @click="openController()" v-bind="props"
                                     style="width:30px; height:30px;">
@@ -8397,8 +8398,9 @@ pre {
 }
 
 // Orchestration select (definition-map main input)
+/* 이름에 엔진을 함께 적는다(「딥 에이전트 (LangGraph)」) — 잘리지 않을 폭 */
 .orchestration-select {
-    width: 150px;
+    width: 220px;
     min-width: 120px;
 }
 

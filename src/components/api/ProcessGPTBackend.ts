@@ -2,6 +2,7 @@ import axios from '@/utils/axios';
 import deepagentsApi, { getAgentApiToken } from '@/utils/deepagentsApi';
 import { recordUsageEvent } from '@/services/usageAnalytics';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import { MY_OPEN_WORK_STATUSES, countMyOpenWorkByInstance } from '@/utils/instanceListDisplay';
 // 웹과 앱이 같은 규칙으로 기기를 구분한다. 자세한 이유는 그 파일에.
 import { deviceId, deviceType } from '@/shared/deviceIdentity/index.js';
 // Storage 에서 파일을 꺼내는 지점은 다운로드 이력에 남는다 (docs/security.md 3-3).
@@ -1500,6 +1501,22 @@ class ProcessGPTBackend implements Backend {
             //@ts-ignore
             throw new Error(error.message);
         }
+    }
+
+    /**
+     * 사이드바 인스턴스의 「내 업무 N」 칩 — 지금 내가 처리할 업무 수를 최상위 인스턴스별로.
+     * 세는 규칙은 utils/instanceListDisplay 의 countMyOpenWorkByInstance(「나의 업무」 진행 중 · 보류/반송 칸과 같다).
+     * 칩에 필요한 칸만 읽는다(업무 행의 output 은 클 수 있다).
+     */
+    async getMyOpenWorkCountByInstance(): Promise<Record<string, number>> {
+        const uid = localStorage.getItem('uid');
+        if (!uid) return {};
+        const filter: any = withTenantMatch({ match: {} });
+        filter.key = 'user_id,status,proc_inst_id,root_proc_inst_id,tool,description';
+        filter.inArray = { column: 'status', values: MY_OPEN_WORK_STATUSES };
+        filter.like = { key: 'user_id', value: `%${uid}%` };
+        const rows = await storage.list('todolist', filter);
+        return countMyOpenWorkByInstance(rows || [], uid);
     }
 
     async putWorkItem(taskId: string, workItem: any) {

@@ -978,7 +978,7 @@ export default {
                 return;
             }
             try {
-                this.notifyComponent(this.$t('processComponent.exporting') || '컴포넌트를 내보내는 중입니다...', 'info');
+                this.notifyComponent(this.$t('processComponent.exporting') || '프로세스를 내보내는 중입니다...', 'info');
                 const { blob, manifest } = await backend.exportProcessComponent(defId);
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -988,11 +988,11 @@ export default {
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                this.notifyComponent(this.$t('processComponent.exportSuccess') || '컴포넌트를 내보냈습니다.', 'success');
+                this.notifyComponent(this.$t('processComponent.exportSuccess') || '프로세스를 내보냈습니다.', 'success');
             } catch (error) {
                 console.error('[exportComponent] 실패:', error);
                 this.notifyComponent(
-                    (this.$t('processComponent.exportFailed') || '컴포넌트 내보내기에 실패했습니다.') + ' ' + (error?.message || ''),
+                    (this.$t('processComponent.exportFailed') || '프로세스 내보내기에 실패했습니다.') + ' ' + (error?.message || ''),
                     'error'
                 );
             }

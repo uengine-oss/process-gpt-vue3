@@ -57,6 +57,8 @@ export default {
     },
     async mounted() {
         this.EventBus.on('instances-updated', this.init);
+        // 업무를 끝내거나 넘기면 칩 수가 바뀐다
+        this.EventBus.on('todolist-updated', this.loadMyWorkChips);
 
         this.watchRef = await backend.watchInstanceList(
             () => {
@@ -67,6 +69,7 @@ export default {
     },
     beforeUnmount() {
         this.EventBus.off('instances-updated', this.init);
+        this.EventBus.off('todolist-updated', this.loadMyWorkChips);
         if (this.watchRef) {
             backend.watchOff(this.watchRef);
         }
@@ -116,6 +119,32 @@ export default {
             // 최근에 바뀐 것(updated_at, 없으면 start_date) 먼저, 삭제된 항목은 맨 아래(삭제일 내림차순)
             this.instanceList = sortSidebarInstances(processedInstances);
             this.$emit('update:instanceList', this.instanceList);
+            await this.loadMyWorkChips();
+        },
+        /**
+         * 내가 처리할 업무가 있는 인스턴스에 「내 업무 N」 칩을 단다. 상단의 「나의 업무」 목록을 없앤 대신
+         * 여기서 내 차례인 인스턴스를 알아보고 들어가 확인한다. 칩을 못 읽어도 목록은 그대로 보인다.
+         */
+        async loadMyWorkChips() {
+            if (typeof backend.getMyOpenWorkCountByInstance !== 'function') return;
+            let counts = {};
+            try {
+                counts = await backend.getMyOpenWorkCountByInstance();
+            } catch (e) {
+                console.warn('[ProcessInstanceList] 내 업무 수를 읽지 못했습니다:', e);
+                return;
+            }
+            this.instanceList = this.instanceList.map((item) => {
+                const n = counts[item.instId] || 0;
+                return {
+                    ...item,
+                    chip: n > 0 ? this.$t('ProcessInstanceList.myWork', { count: n }) : undefined,
+                    chipColor: n > 0 ? 'primary' : undefined,
+                    chipVariant: n > 0 ? 'flat' : undefined,
+                    chipTestId: n > 0 ? 'sidebar-instance-mywork' : undefined,
+                    myWorkCount: n
+                };
+            });
         },
         async loadInstancesByRole() {
             const roles = window.localStorage.getItem('roles');

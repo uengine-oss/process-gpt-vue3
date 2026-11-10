@@ -216,7 +216,7 @@
         "demo": "데모",
         "documentation": "사용 설명서",
         "support": "고객 지원",
-        "start": "사용해 보기",
+        "start": "시작하기",
         "title": "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
@@ -575,9 +575,9 @@
         "thursday": "목요일",
         "friday": "금요일",
         "saturday": "토요일",
-        "basicAgent": "기본 에이전트",
-        "deepAgent": "딥 에이전트",
-        "codexAgent": "코덱스"
+        "basicAgent": "기본 에이전트 (LangChain ReAct)",
+        "deepAgent": "딥 에이전트 (LangGraph)",
+        "codexAgent": "딥 에이전트 (Codex)"
     },
     "AssistantChats": {
         "document": "지시할 업무 내용을 입력하세요. 업무에 관한 정보를 주시면 업무를 받는 사람이 확인할 업무 미리보기가 좌측에 표시됩니다. 미리보기를 확인하고 부족한 부분을 개선합니다. 개선이 완료되었다면 '업무 지시하기'로 업무를 지시합니다."
@@ -3223,21 +3223,21 @@
     },
     "ProcessDefinitionChatHeader": {
         "addMarketplace": "마켓플레이스 등록",
-        "exportComponent": "컴포넌트 내보내기 (.zip)",
+        "exportComponent": "프로세스 내보내기 (.zip)",
         "processDefinitionName": "프로세스 정의명",
         "duplicateProcess": "프로세스 복제"
     },
     "processComponent": {
-        "importTitle": "컴포넌트 가져오기",
-        "importDescription": "프로세스 컴포넌트(.zip)를 업로드해 프로세스·에이전트·스킬을 한번에 설치합니다.",
-        "exporting": "컴포넌트를 내보내는 중입니다...",
-        "exportSuccess": "컴포넌트를 내보냈습니다.",
-        "exportFailed": "컴포넌트 내보내기에 실패했습니다.",
+        "importTitle": "프로세스 가져오기",
+        "importDescription": "내보낸 프로세스 파일(.zip)을 올려 프로세스와 그 에이전트·스킬·폼을 한 번에 설치합니다.",
+        "exporting": "프로세스를 내보내는 중입니다...",
+        "exportSuccess": "프로세스를 내보냈습니다.",
+        "exportFailed": "프로세스 내보내기에 실패했습니다.",
         "exportNoTarget": "내보낼 프로세스가 없습니다.",
-        "importing": "컴포넌트를 설치하는 중입니다...",
-        "importSuccess": "컴포넌트를 설치했습니다.",
-        "importFailed": "컴포넌트 설치에 실패했습니다.",
-        "importPreviewTitle": "컴포넌트 가져오기 미리보기",
+        "importing": "프로세스를 설치하는 중입니다...",
+        "importSuccess": "프로세스를 설치했습니다.",
+        "importFailed": "프로세스 설치에 실패했습니다.",
+        "importPreviewTitle": "프로세스 가져오기 미리보기",
         "forms": "폼",
         "agents": "에이전트",
         "skills": "스킬",
@@ -3246,7 +3246,7 @@
         "install": "설치",
         "externalToolsWarning": "아래 외부 툴은 패키지에 포함되지 않습니다. 대상 테넌트에 존재해야 합니다:",
         "skillMissingWarning": "SKILL.md 가 없는 스킬(설치에서 제외될 수 있음):",
-        "collisionWarning": "동일한 컴포넌트 ID가 이미 존재합니다. 새 사본으로 설치됩니다.",
+        "collisionWarning": "같은 ID의 프로세스가 이미 있습니다. 새 사본으로 설치됩니다.",
         "agentHandling": "에이전트 처리",
         "agentCreate": "생성/재사용",
         "agentSkip": "제외",
@@ -3422,7 +3422,7 @@
         "title1": "업무 프로세스를 정의하세요.",
         "title2": "실행은 Process GPT가 맡습니다.",
         "description1": "전략 목표에 맞춰 AI 에이전트들이 업무 흐름을 구성하고 실행합니다. 사람은 필요한 판단만 개입하고, 프로세스는 자동으로 이어집니다.",
-        "betaTestButton": "사용해 보기",
+        "betaTestButton": "시작하기",
         "galleryButton": "갤러리 보기",
         "educationButton": "교육과정 보기",
         "technicalReportLink": "Technical Report 보기"
@@ -3635,7 +3635,7 @@
     "CTASection": {
         "title": "지금 바로 Process GPT를 시작하세요",
         "subtitle": "AI 기반 프로세스 관리의 혁신을 경험해보세요",
-        "betaTestButton": "사용해 보기",
+        "betaTestButton": "시작하기",
         "contactButton": "문의하기",
         "name": "이름",
         "email": "이메일",
@@ -3970,7 +3970,8 @@
     },
     "ProcessInstanceList": {
         "loading": "인스턴스 로딩 중...",
-        "empty": "실행 중인 인스턴스가 없습니다"
+        "empty": "실행 중인 인스턴스가 없습니다",
+        "myWork": "내 업무 {count}"
     },
     "AgentList": {
         "title": "에이전트 목록",

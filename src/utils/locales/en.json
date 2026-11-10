@@ -566,9 +566,9 @@
         "thursday": "Thursday",
         "friday": "Friday",
         "saturday": "Saturday",
-        "basicAgent": "Basic Agent",
-        "deepAgent": "Deep Agent",
-        "codexAgent": "Codex"
+        "basicAgent": "Basic Agent (LangChain ReAct)",
+        "deepAgent": "Deep Agent (LangGraph)",
+        "codexAgent": "Deep Agent (Codex)"
     },
     "AssistantChats": {
         "document": "Enter the task details you want to assign. When you provide information about the task, a preview of the task that the recipient will see is displayed on the left. Review the preview and improve any lacking areas. Once the improvements are complete, use 'Assign Task' to give the task."
@@ -3208,21 +3208,21 @@
     },
     "ProcessDefinitionChatHeader": {
         "addMarketplace": "Register to Marketplace",
-        "exportComponent": "Export Component (.zip)",
+        "exportComponent": "Export Process (.zip)",
         "processDefinitionName": "Process Definition Name",
         "duplicateProcess": "Duplicate Process"
     },
     "processComponent": {
-        "importTitle": "Import Component",
-        "importDescription": "Upload a process component (.zip) to install its process, agents and skills at once.",
-        "exporting": "Exporting component...",
-        "exportSuccess": "Component exported.",
-        "exportFailed": "Failed to export component.",
+        "importTitle": "Import Process",
+        "importDescription": "Upload an exported process (.zip) to install the process with its agents, skills and forms at once.",
+        "exporting": "Exporting process...",
+        "exportSuccess": "Process exported.",
+        "exportFailed": "Failed to export process.",
         "exportNoTarget": "No process to export.",
-        "importing": "Installing component...",
-        "importSuccess": "Component installed.",
-        "importFailed": "Failed to install component.",
-        "importPreviewTitle": "Import Component Preview",
+        "importing": "Installing process...",
+        "importSuccess": "Process installed.",
+        "importFailed": "Failed to install process.",
+        "importPreviewTitle": "Import Process Preview",
         "forms": "Forms",
         "agents": "Agents",
         "skills": "Skills",
@@ -3231,7 +3231,7 @@
         "install": "Install",
         "externalToolsWarning": "The following external tools are not bundled. They must exist in the target tenant:",
         "skillMissingWarning": "Skills without SKILL.md (may be skipped on install):",
-        "collisionWarning": "A component with the same ID already exists. It will be installed as a new copy.",
+        "collisionWarning": "A process with the same ID already exists. It will be installed as a new copy.",
         "agentHandling": "Agent handling",
         "agentCreate": "Create/Reuse",
         "agentSkip": "Skip",
@@ -3407,7 +3407,7 @@
         "title1": "Define your business processes, and Process GPT will execute them.",
         "title2": "",
         "description1": "Elite agents tailored to strategic goals create work drafts and automate them. If agents make mistakes, teach them. Processes and knowledge will improve automatically.",
-        "betaTestButton": "Try Beta Test",
+        "betaTestButton": "Get Started",
         "galleryButton": "View Gallery",
         "educationButton": "View Education Course",
         "technicalReportLink": "View Technical Report"
@@ -3629,7 +3629,7 @@
     "CTASection": {
         "title": "Start Process GPT Right Now",
         "subtitle": "Experience the innovation of AI-based process management",
-        "betaTestButton": "Try Beta Test",
+        "betaTestButton": "Get Started",
         "contactButton": "Contact Us",
         "name": "Name",
         "email": "Email",
@@ -3964,7 +3964,8 @@
     },
     "ProcessInstanceList": {
         "loading": "Loading instances...",
-        "empty": "No running instances"
+        "empty": "No running instances",
+"myWork": "Mine {count}"
     },
     "AgentList": {
         "title": "Agent List",

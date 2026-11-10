@@ -12,7 +12,7 @@
                 </v-btn>
             </template>
             <v-list density="compact" min-width="190">
-                <v-list-item v-for="item in navItems" :key="item.to" :active="isOn(item)" :title="item.label" @click="go(item)">
+                <v-list-item v-for="item in desktopNavItems" :key="item.to" :active="isOn(item)" :title="item.label" @click="go(item)">
                     <template #prepend><Icons :icon="item.icon" class="pg-sidetools__navicon" /></template>
                 </v-list-item>
             </v-list>
@@ -179,6 +179,10 @@ export default {
         },
         todoItem() {
             return this.navItems.find((i) => i.to === '/todolist');
+        },
+        /** 데스크톱 '⋯' 메뉴. 「나의 업무」는 사이드바 인스턴스의 「내 업무」 칩으로 대신해 뺀다(휴대폰 줄에는 남긴다). */
+        desktopNavItems() {
+            return this.navItems.filter((i) => i.to !== '/todolist');
         },
         /** '더보기' 안에 접어 둘 곳. 위에 펴 둔 두 줄은 뺀다. */
         moreItems() {

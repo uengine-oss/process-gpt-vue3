@@ -187,11 +187,11 @@ test.describe('LIVE: 생성 → HITL(resume) → 검증/draft → 산출물(프�
         // 실제 열린 overlay 안에서 선택하고, 전송 전에 표시값까지 검증해 기본 에이전트 오실행을 막는다.
         const deepOption = page
             .locator('.v-overlay-container .v-list-item, .v-overlay-container [role="option"]')
-            .filter({ hasText: /딥\s*에이전트|deep\s*agent/i })
+            .filter({ hasText: /LangGraph/i }) // 「딥 에이전트 (Codex)」도 딥 에이전트라 엔진 이름으로 고른다
             .last();
         await expect(deepOption, '딥에이전트 선택 항목이 보여야 함').toBeVisible({ timeout: 10_000 });
         await deepOption.click();
-        await expect(select, '메시지 전송 전 딥에이전트가 실제 선택되어야 함').toContainText(/딥\s*에이전트|deep\s*agent/i);
+        await expect(select, '메시지 전송 전 딥에이전트가 실제 선택되어야 함').toContainText(/LangGraph/i);
         await input.click();
         await input.fill(REQUEST);
         await input.press('Enter');

@@ -1,5 +1,5 @@
 /**
- * 2026-11-09 사용성 검토 반영 회귀 묶음 (F-UX-01 ~ F-UX-09)
+ * 2026-11-09 · 11-10 사용성 검토 반영 회귀 묶음 (F-UX-01 ~ F-UX-16)
  *
  * 실제 백엔드(설치본)에 붙은 프런트를 화면으로 밟는다. 업무(todolist)에 쓰는 요청은 모두 가로채
  * 내용만 확인하므로 데이터는 바뀌지 않는다.
@@ -236,4 +236,68 @@ test('F-UX-12 완료된 인스턴스 목록은 빈 날짜를 1970년이 아닌 �
     await expect(page.getByText(/시작일:\s*-/).first()).toBeVisible();
     await expect(page.getByText(/1970년/)).toHaveCount(0);
     await expect(page.getByText(/2026년 06월 23일/).first()).toBeVisible();
+});
+
+// ── 2026-11-10 검토 반영 (F-UX-13 ~ F-UX-16) ─────────────────────────────────────────────
+
+test('F-UX-13 데스크톱 상단 줄에 「나의 업무」가 없고 /todolist 주소는 그대로 열린다', async ({ page }) => {
+    await login(page, 'admin');
+    await page.getByTestId('sidebar-instances').waitFor({ timeout: 30_000 });
+    const headerLinks = await page.locator('header a, .v-app-bar a').evaluateAll((as) => as.map((a) => a.getAttribute('href') || ''));
+    expect(headerLinks.filter((h) => h.startsWith('/todolist'))).toEqual([]);
+    await expect(page.locator('.v-tooltip').filter({ hasText: '나의 업무' })).toHaveCount(0);
+    await page.goto(`${BASE}/todolist`);
+    await expect(page.getByText('진행 중').first()).toBeVisible({ timeout: 30_000 });
+});
+
+test('F-UX-14 내가 처리할 업무가 있는 인스턴스에만 「내 업무 N」 칩이 붙는다', async ({ page }) => {
+    // 인스턴스 목록과 내 업무 조회 응답을 정해 둔다(설치본 데이터와 상관없이 칩 규칙만 본다).
+    const target = 'f_ux_14.11111111-2222-3333-4444-555555555555';
+    const now = new Date().toISOString();
+    await page.route(/\/rest\/v1\/bpm_proc_inst\?/, (route) => {
+        if (route.request().method() !== 'GET' || !/status=in\.%28NEW%2CRUNNING%29/.test(route.request().url())) return route.continue();
+        return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([
+                { proc_inst_id: target, proc_inst_name: '내 차례인 인스턴스', proc_def_id: 'f_ux_14', status: 'RUNNING', updated_at: now, start_date: now, participants: [] },
+                { proc_inst_id: 'f_ux_14_other.9', proc_inst_name: '남의 차례인 인스턴스', proc_def_id: 'f_ux_14_other', status: 'RUNNING', updated_at: now, start_date: now, participants: [] }
+            ])
+        });
+    });
+    let query = '';
+    await page.route(/\/rest\/v1\/todolist\?select=user_id%2Cstatus/, async (route) => {
+        query = route.request().url();
+        const uid = await page.evaluate(() => localStorage.getItem('uid'));
+        return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([
+                { user_id: uid, status: 'IN_PROGRESS', proc_inst_id: target, root_proc_inst_id: target, tool: 'formHandler:a', description: '' },
+                { user_id: `someone, ${uid}`, status: 'PENDING', proc_inst_id: `${target}.child`, root_proc_inst_id: target, tool: 'formHandler:b', description: '' }
+            ])
+        });
+    });
+    await login(page, 'admin');
+    const chip = page.getByTestId('sidebar-instance-mywork');
+    await expect(chip).toHaveCount(1, { timeout: 30_000 });
+    await expect(chip).toHaveText(/내 업무\s*2/);
+    // 예정(TODO) · 완료 업무는 묻지 않는다
+    expect(decodeURIComponent(query)).toContain('status=in.(IN_PROGRESS,SUBMITTED,PENDING)');
+});
+
+test('F-UX-15 에이전트 고르기는 엔진 이름을 함께 보이고 기본값은 딥 에이전트 (LangGraph)다', async ({ page }) => {
+    await login(page, 'admin');
+    const select = page.getByTestId('orchestration-select');
+    await expect(select).toContainText('딥 에이전트 (LangGraph)', { timeout: 30_000 });
+    await select.click();
+    const options = page.locator('.v-overlay--active .v-list-item');
+    await expect(options).toHaveText(['기본 에이전트 (LangChain ReAct)', '딥 에이전트 (LangGraph)', '딥 에이전트 (Codex)']);
+    await page.keyboard.press('Escape');
+});
+
+test('F-UX-16 정의 체계도의 가져오기는 「프로세스 가져오기」다 (컴포넌트라는 말을 쓰지 않는다)', async ({ page }) => {
+    await login(page, 'admin');
+    await expect(page.getByText('프로세스 가져오기').first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('컴포넌트 가져오기')).toHaveCount(0);
 });
