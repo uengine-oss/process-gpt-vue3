@@ -1106,10 +1106,10 @@ export default {
                 {
                     show: this.componentName === 'DefinitionMapList' && this.mode === 'ProcessGPT' && this.isAdmin,
                     icon: 'market',
-                    title: this.$t('processComponent.importTitle') || '컴포넌트 가져오기',
+                    title: this.$t('processComponent.importTitle') || '프로세스 가져오기',
                     description:
                         this.$t('processComponent.importDescription') ||
-                        '프로세스 컴포넌트(.zip)를 업로드해 프로세스·에이전트·스킬을 한번에 설치합니다.',
+                        '내보낸 프로세스 파일(.zip)을 올려 프로세스와 그 에이전트·스킬·폼을 한 번에 설치합니다.',
                     action: () => {
                         this.triggerImportComponent();
                     }
@@ -1921,7 +1921,7 @@ export default {
             } catch (error) {
                 console.error('[importProcessComponent] 파일 읽기 실패:', error);
                 this.notifyComponent(
-                    (this.$t('processComponent.importFailed') || '컴포넌트 설치에 실패했습니다.') + ' ' + (error?.message || ''),
+                    (this.$t('processComponent.importFailed') || '프로세스 설치에 실패했습니다.') + ' ' + (error?.message || ''),
                     'error'
                 );
             }
@@ -1931,7 +1931,7 @@ export default {
                 `${report.name} v${report.version} — ` +
                 `폼 ${report.forms}, 에이전트 ${report.agents.length}, 스킬 ${report.skills.length}` +
                 (report.skillsSkipped.length ? ` (기존 스킬 ${report.skillsSkipped.length} 재사용)` : '');
-            this.notifyComponent((this.$t('processComponent.importSuccess') || '컴포넌트를 설치했습니다.') + ' ' + summary, 'success');
+            this.notifyComponent((this.$t('processComponent.importSuccess') || '프로세스를 설치했습니다.') + ' ' + summary, 'success');
             if (report.warnings && report.warnings.length) {
                 console.warn('[importProcessComponent] warnings:', report.warnings);
             }

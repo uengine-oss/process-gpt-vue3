@@ -3,7 +3,7 @@
         <v-card>
             <v-card-title class="d-flex justify-space-between pa-4 pb-2">
                 <div class="d-flex align-center">
-                    {{ $t('processComponent.importPreviewTitle') || '컴포넌트 가져오기 미리보기' }}
+                    {{ $t('processComponent.importPreviewTitle') || '프로세스 가져오기 미리보기' }}
                 </div>
                 <v-btn @click="cancel" variant="text" density="compact" icon>
                     <v-icon>mdi-close</v-icon>
@@ -86,7 +86,7 @@
 
                     <!-- 충돌 처리 -->
                     <v-alert v-if="collisionDetected" type="warning" variant="tonal" density="compact" class="mb-2">
-                        {{ $t('processComponent.collisionWarning') || '동일한 컴포넌트 ID가 이미 존재합니다.' }}
+                        {{ $t('processComponent.collisionWarning') || '같은 ID의 프로세스가 이미 있습니다.' }}
                     </v-alert>
 
                     <!-- 에이전트 처리 -->

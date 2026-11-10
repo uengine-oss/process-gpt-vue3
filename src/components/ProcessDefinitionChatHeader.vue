@@ -300,7 +300,7 @@
                             </v-tooltip>
                         </div>
 
-                        <!-- 컴포넌트 내보내기(.zip) -->
+                        <!-- 프로세스 내보내기(.zip) -->
                         <div class="mr-4 d-flex" v-if="bpmn">
                             <v-tooltip location="bottom" :text="$t('ProcessDefinitionChatHeader.exportComponent')">
                                 <template v-slot:activator="{ props }">
