@@ -1,0 +1,42 @@
+/* ============================================================
+   pageHeaderStandalone.scss
+   비 Pal 모드의 페이지 헤더(page-header) 레이아웃
+   - page-header 계열은 Pal 공통 디자인 시스템(SKGlobalStyle.scss)에 정의되어 있고
+     Pal 모드에서만 로드된다(main.ts). 비 Pal 에서도 이 마크업을 쓰는 화면
+     (프로세스 체계도, 프로세스 변경 관리, 알림)은 정의가 없어 제목이 카드 테두리에
+     붙고 우측 액션이 제목 아래로 내려갔다.
+   - 같은 값을 비 Pal 모드에서만 채운다. 제목·부제는 .page-header 아래로만 잡아
+     다른 화면의 .page-title(예: 튜토리얼 사이드바)에는 닿지 않게 한다.
+   ============================================================ */
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 16px 0px 16px;
+    flex-shrink: 0;
+}
+.page-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.page-header .page-title {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 0;
+    color: var(--cds-text-primary);
+}
+.page-header .page-subtitle {
+    font-size: 12px;
+    margin: 0;
+    color: var(--cds-text-muted);
+}
+.page-header-right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
