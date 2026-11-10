@@ -78,6 +78,7 @@ interface SidebarItem {
     disable: boolean;
     isMobile?: boolean;
     isVisible?: boolean;
+    hideOnDesktop?: boolean;
 }
 
 const isAdmin = localStorage.getItem('isAdmin') === 'true';
@@ -99,12 +100,15 @@ const sidebarItems = ref<SidebarItem[]>([
     //     disable: false,
     //     isVisible: window.$mode === 'ProcessGPT' && !window.$pal
     // },
+    // 「나의 업무」는 데스크톱 상단 줄에서 뺀다(2026-11-10 검토). 할 일이 끝없이 쌓여 목록으로 쓰이지 않았고,
+    // 내가 맡은 일은 사이드바 「인스턴스」 항목의 「내 업무 N」 칩으로 찾아간다. 휴대폰 줄과 /todolist 주소는 그대로다.
     {
         title: 'headerMenu.todoList',
         icon: 'overview',
         to: '/todolist',
         disable: false,
-        isVisible: true
+        isVisible: true,
+        hideOnDesktop: true
     },
     {
         title: 'analytics.strategyBoard',
@@ -341,7 +345,7 @@ function handleNotificationBadgeUpdate(event: Event) {
                         </template>
                     </v-tooltip>
                     <template v-for="item in sidebarItems" :key="item.title">
-                        <v-tooltip v-if="!item.isMobile && item.isVisible" :text="$t(item.title)">
+                        <v-tooltip v-if="!item.isMobile && item.isVisible && !item.hideOnDesktop" :text="$t(item.title)">
                             <template v-slot:activator="{ props }">
                                 <v-btn icon v-bind="props" @click="navigateTo(item)" class="position-relative">
                                     <Icons

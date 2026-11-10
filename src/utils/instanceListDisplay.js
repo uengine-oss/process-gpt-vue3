@@ -64,3 +64,38 @@ export function compareSidebarInstances(a, b) {
 export function sortSidebarInstances(items) {
     return [...(items || [])].sort(compareSidebarInstances);
 }
+
+/**
+ * 사이드바 「내 업무 N」 칩 — 지금 내가 처리할 업무를 인스턴스(최상위)별로 센다.
+ *
+ * 「나의 업무」 화면의 진행 중(IN_PROGRESS · SUBMITTED)과 보류/반송(PENDING) 칸에 들어가던 업무와 같다.
+ * TODO 는 아직 차례가 오지 않은 예정 업무라 세지 않는다(인스턴스 칸반의 「예정업무」).
+ * user_id 는 쉼표로 여럿이 들어올 수 있어 정확히 같은 값이 있는지 본다(LIKE 검색은 후보만 고른다).
+ * 시작 이벤트 행(도구 없음 · description 'start event')은 업무가 아니다.
+ */
+export const MY_OPEN_WORK_STATUSES = ['IN_PROGRESS', 'SUBMITTED', 'PENDING'];
+
+/**
+ * @param {Array<Record<string, any>>} rows todolist 행
+ * @param {string | string[]} me 내 uid(또는 그 목록)
+ * @returns {Record<string, number>} 최상위 인스턴스 id → 내 업무 수
+ */
+export function countMyOpenWorkByInstance(rows, me) {
+    const ids = (Array.isArray(me) ? me : [me]).map((v) => String(v ?? '').trim()).filter(Boolean);
+    /** @type {Record<string, number>} */
+    const counts = {};
+    if (ids.length === 0) return counts;
+    for (const row of rows || []) {
+        if (!row || !MY_OPEN_WORK_STATUSES.includes(row.status)) continue;
+        if ((!row.tool || row.tool === '') && row.description === 'start event') continue;
+        const assignees = String(row.user_id ?? '')
+            .split(',')
+            .map((v) => v.trim())
+            .filter(Boolean);
+        if (!assignees.some((a) => ids.includes(a))) continue;
+        const instId = row.root_proc_inst_id || row.proc_inst_id;
+        if (!instId) continue;
+        counts[instId] = (counts[instId] || 0) + 1;
+    }
+    return counts;
+}

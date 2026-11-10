@@ -76,6 +76,7 @@ function isItemActive(item) {
                     :size="item.chipIcon ? 'x-small' : 'x-small'"
                     :variant="item.chipVariant"
                     :prepend-icon="item.chipIcon"
+                    :data-testid="item.chipTestId"
                 >
                     {{ item.chip }}
                 </v-chip>

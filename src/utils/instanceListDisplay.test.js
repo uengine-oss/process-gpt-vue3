@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { toEpochMs, isMissingDate, lastActivityMs, compareSidebarInstances, sortSidebarInstances } from './instanceListDisplay.js';
+import { toEpochMs, isMissingDate, lastActivityMs, compareSidebarInstances, sortSidebarInstances, countMyOpenWorkByInstance } from './instanceListDisplay.js';
 
 test('비어 있는 날짜(null·0·빈 문자열·읽을 수 없는 값)는 빈칸이다 — 1970년으로 보이지 않게', () => {
     for (const v of [null, undefined, '', '0', 0, 'not a date', '1970-01-01T09:00:00', '1970-01-01T00:00:00Z', new Date(NaN)]) {
@@ -59,4 +59,34 @@ test('시각이 같으면 받은 순서를 지킨다', () => {
     const list = [{ title: 'a', updatedAt: t }, { title: 'b', updatedAt: t }, { title: 'c', updatedAt: t }];
     assert.deepEqual(sortSidebarInstances(list).map((i) => i.title), ['a', 'b', 'c']);
     assert.equal(compareSidebarInstances(list[0], list[1]), 0);
+});
+
+test('내 업무 칩: 진행 중 · 제출 · 보류/반송만 세고 예정 · 완료는 뺀다', () => {
+    const rows = [
+        { status: 'IN_PROGRESS', user_id: 'me', root_proc_inst_id: 'a' },
+        { status: 'SUBMITTED', user_id: 'me', root_proc_inst_id: 'a' },
+        { status: 'PENDING', user_id: 'me', root_proc_inst_id: 'b' },
+        { status: 'TODO', user_id: 'me', root_proc_inst_id: 'a' },
+        { status: 'DONE', user_id: 'me', root_proc_inst_id: 'a' }
+    ];
+    assert.deepEqual(countMyOpenWorkByInstance(rows, 'me'), { a: 2, b: 1 });
+});
+
+test('내 업무 칩: 쉼표로 묶인 담당자 중 정확히 나인 것만, 이름이 겹치는 남의 업무는 아니다', () => {
+    const rows = [
+        { status: 'IN_PROGRESS', user_id: 'other, me', root_proc_inst_id: 'a' },
+        { status: 'IN_PROGRESS', user_id: 'me-not', root_proc_inst_id: 'a' },
+        { status: 'IN_PROGRESS', user_id: 'mail@x.io', root_proc_inst_id: 'c' }
+    ];
+    assert.deepEqual(countMyOpenWorkByInstance(rows, ['me', 'mail@x.io']), { a: 1, c: 1 });
+});
+
+test('내 업무 칩: 최상위 인스턴스로 묶고(없으면 자기 인스턴스), 시작 이벤트 행은 업무가 아니다', () => {
+    const rows = [
+        { status: 'IN_PROGRESS', user_id: 'me', root_proc_inst_id: 'root', proc_inst_id: 'child' },
+        { status: 'IN_PROGRESS', user_id: 'me', root_proc_inst_id: null, proc_inst_id: 'solo' },
+        { status: 'IN_PROGRESS', user_id: 'me', proc_inst_id: 'solo', tool: '', description: 'start event' }
+    ];
+    assert.deepEqual(countMyOpenWorkByInstance(rows, 'me'), { root: 1, solo: 1 });
+    assert.deepEqual(countMyOpenWorkByInstance(rows, ''), {});
 });
