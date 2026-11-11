@@ -41,10 +41,10 @@ function saveSettings() {
 
 /**
  * 휴대폰 화면 — 휴대폰 브라우저에서만 보인다(이 기기에 저장되고, 폭은 index.html 이 정한다).
- * 고르지 않았으면 기본인 라이트(휴대폰 웹)로 보인다.
+ * 고르지 않았으면 기본인 데스크톱 화면으로 보인다. 라이트를 고르면 휴대폰 웹(/m/)으로 간다.
  */
 const showMobileView = isPhoneBrowser() && !!viewportApi()?.isEnabled?.();
-const mobileView = ref<'desktop' | 'light'>(savedMobileView() ?? 'light');
+const mobileView = ref<'desktop' | 'light'>(savedMobileView() ?? 'desktop');
 
 function selectMobileView(view: 'desktop' | 'light') {
     mobileView.value = view;
