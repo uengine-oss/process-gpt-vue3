@@ -18,6 +18,7 @@ import { createApp } from 'vue';
 import axios from '@/utils/axios';
 import { authClaimsState, refreshAuthClaims } from '@/utils/authClaims';
 import { getValidToken } from '@/utils/supabaseAuth';
+import { setupWebAppInstall } from '@/utils/webAppInstall';
 
 import App from './App.vue';
 import { createMobileRouter } from './router';
@@ -119,6 +120,10 @@ export async function establishSession(session: any) {
 async function boot() {
     // 색을 먼저 잡는다. 화면이 뜬 뒤에 바꾸면 잠깐 다른 색이 번쩍인다.
     restoreAppearance();
+
+    // 휴대폰 웹이면 홈 화면에 추가할 수 있게 매니페스트를 붙이고 브라우저의 설치 신호를 붙잡아 둔다(포털과 같은 것).
+    // 화면이 뜨기 전에 해야 한다 — 설치 신호는 한 번만 오고, 붙잡지 않으면 크롬이 자체 설치 띠를 띄운다.
+    if (IS_WEB) setupWebAppInstall();
 
     // 재사용하는 코드는 `/memento/...` 같은 상대 경로로 부른다. 앱의 화면 주소는
     // https://localhost 라서 그대로 두면 **앱 자신에게** 요청하고, 앱 내부 서버는

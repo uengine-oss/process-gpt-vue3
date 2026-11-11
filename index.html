@@ -5,9 +5,9 @@
     <link rel="icon" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <script>
-        // 휴대폰 브라우저의 앱 화면은 기본으로 휴대폰 웹(/m/, 할 일 · 진행 · AI · 알림 · 나)으로 연다(2026-11-11 결정 D-1111-07).
-        // 「PC 화면으로 보기」(localStorage mobileView=desktop — 휴대폰 웹 「나」 탭 · 설정 › 테마 설정 「휴대폰 화면」)를
-        // 고른 휴대폰만 데스크톱 화면으로 연다 — 브라우저의 「데스크톱 사이트 요청」처럼 화면 폭을 1280px 로 잡는다.
+        // 휴대폰 브라우저의 앱 화면은 기본으로 데스크톱 화면(PC와 같은 화면)으로 연다(2026-11-11 결정 D-1111-09).
+        // 브라우저의 「데스크톱 사이트 요청」처럼 화면 폭을 1280px 로 잡는다. 라이트 버전(localStorage mobileView=light —
+        // 설정 › 테마 설정 「휴대폰 화면」)을 고른 휴대폰만 휴대폰 웹(/m/, 할 일 · 진행 · AI · 알림 · 나)으로 연다.
         // 옮기지 않는 경우:
         //   - 네이티브 앱(process-gpt-mobile, Capacitor) — 앱은 지금처럼 모바일 화면
         //   - 랜딩(/) · 로그인(/auth/*) · 외부 폼(/external-forms/*) · 조직 고르기 · 약관 — 포털이 기기 폭으로 그린다
@@ -61,12 +61,12 @@
                 isDeviceWidthPath: isDeviceWidthPath,
                 view: view,
                 wantsDesktop: function (path) {
-                    return enabled && isPhoneBrowser() && view() === 'desktop' && !isDeviceWidthPath(path);
+                    return enabled && isPhoneBrowser() && view() !== 'light' && !isDeviceWidthPath(path);
                 },
                 phoneWebHash: phoneWebHash,
-                // 휴대폰이면 앱 화면은 휴대폰 웹(/m/)으로 연다 — 「PC 화면으로 보기」를 고른 휴대폰은 빼고. 옮길 곳 또는 null.
+                // 라이트 버전을 고른 휴대폰이면 앱 화면은 휴대폰 웹(/m/)으로 연다. 옮길 곳 또는 null.
                 phoneWebUrl: function (path) {
-                    if (!enabled || !isPhoneBrowser() || view() === 'desktop' || staysOnPortal(path)) return null;
+                    if (!enabled || !isPhoneBrowser() || view() !== 'light' || staysOnPortal(path)) return null;
                     return '/m/' + phoneWebHash(path);
                 },
                 disable: function () {

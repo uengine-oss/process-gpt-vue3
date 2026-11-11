@@ -1,5 +1,6 @@
 <template>
     <div class="m-screen">
+        <InstallBar />
         <slot />
 
         <nav class="m-tabs" aria-label="주요 화면">
@@ -27,6 +28,7 @@ import { computed, onMounted, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 
 import Icon from '../components/Icon.vue';
+import InstallBar from '../components/InstallBar.vue';
 import { badges, refreshBadges, watchBadges } from '../lib/badges.js';
 
 /**

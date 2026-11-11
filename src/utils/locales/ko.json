@@ -6032,9 +6032,11 @@
         "addToHomeHint": "홈 화면에 추가하면 앱처럼 아이콘을 눌러 바로 열 수 있습니다.",
         "settingTitle": "휴대폰 화면",
         "settingDesc": "이 휴대폰에서 Process GPT를 열 때 쓸 화면입니다. 이 기기에만 저장됩니다.",
-        "desktopOption": "데스크톱 버전 — 컴퓨터와 같은 화면",
-        "lightOption": "라이트 버전 — 휴대폰에 맞춘 화면(기본)",
+        "desktopOption": "데스크톱 버전 — 컴퓨터와 같은 화면(기본)",
+        "lightOption": "라이트 버전 — 휴대폰에 맞춘 화면",
         "close": "닫기",
+        "installBarText": "홈 화면에 추가하면 앱처럼 바로 열 수 있습니다",
+        "installBarHide": "다시 보지 않기",
         "guide": {
             "ios1": "Safari 아래쪽(iPad는 위쪽)의 공유 단추(네모 위로 화살표가 나온 모양)를 누릅니다.",
             "ios2": "목록을 내려 「홈 화면에 추가」를 누릅니다.",

@@ -2,6 +2,7 @@
 import { RouterView, useRoute } from 'vue-router';
 import VerticalSidebarVue from './vertical-sidebar/VerticalSidebar.vue';
 import VerticalHeaderVue from './vertical-header/VerticalHeader.vue';
+import InstallAppBar from '@/components/mobile/InstallAppBar.vue';
 import HorizontalHeader from './horizontal-header/HorizontalHeader.vue';
 import HorizontalSidebar from './horizontal-sidebar/HorizontalSidebar.vue';
 import GlobalNoticeBanner from './GlobalNoticeBanner.vue';
@@ -107,6 +108,7 @@ const openSidebar = () => {
                 customizer.setBorderCard ? 'cardBordered' : ''
             ]"
         >
+            <InstallAppBar v-if="!isPalMode" />
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
             <MobileAppBar v-if="phoneShell && !isModelingTab" />
             <!--
@@ -177,6 +179,7 @@ const openSidebar = () => {
                 customizer.setBorderCard ? 'cardBordered' : ''
             ]"
         >
+            <InstallAppBar v-if="!isPalMode" />
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
             <MobileAppBar v-if="phoneShell && !isModelingTab" />
             <!--
