@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { feedState, isFinished, isWaitingForUser, latestText, toFeed, toFeedItem } from './agentEvents.js';
+import { feedState, isFinished, isWaitingForUser, latestText, loadEvents, toFeed, toFeedItem } from './agentEvents.js';
 
 const ev = (seq, type, message) => ({ id: `e${seq}`, seq, event_type: type, data: { message } });
 
@@ -80,5 +80,52 @@ describe('사람을 기다리는 상태', () => {
         assert.equal(feedState([ev(1, 'task_started', 'a')]), 'running');
         assert.equal(feedState([ev(1, 'task_started', 'a'), ev(2, 'task_completed', 'b')]), 'done');
         assert.equal(feedState([]), 'running');
+    });
+});
+
+describe('지금 표(timestamp) · 딥 에이전트 이벤트', () => {
+    const at = (s) => `2026-11-11T10:10:${String(s).padStart(2, '0')}+09:00`;
+    const rows = [
+        { id: 'b', event_type: 'task_completed', timestamp: at(24), data: { result: '함께 일할 에이전트: 제안서 문서 작성 에이전트\n이유…', team_agent_ids: ['x'] } },
+        { id: 'a', event_type: 'task_started', timestamp: at(21), data: { goal: '제안서 작성 및 발송 작업을 시작합니다.' } },
+        { id: 'c', event_type: 'tool_usage_started', timestamp: at(28), data: { tool_name: 'get_form_fields' } },
+        { id: 'd', event_type: 'task_completed', timestamp: at(53), data: { result: '{"form": {}}', agent_summary: '요약' } }
+    ];
+
+    it('seq 가 없으면 시간 순서로 세운다', () => {
+        assert.deepEqual(toFeed(rows).map((f) => f.id), ['a', 'b', 'c']);
+    });
+
+    it('goal · 도구 이름 · 팀 구성 첫 줄을 사람 말로 보여 주고, 폼 값 결과는 싣지 않는다', () => {
+        const feed = toFeed(rows);
+        assert.equal(feed[0].text, '제안서 작성 및 발송 작업을 시작합니다.');
+        assert.equal(feed[1].text, '함께 일할 에이전트: 제안서 문서 작성 에이전트');
+        assert.equal(feed[2].text, '폼 필드 조회 쓰는 중');
+    });
+
+    it('loadEvents 는 timestamp 로 읽고, 그 열이 없으면 seq 로 다시 읽는다', async () => {
+        const calls = [];
+        const fake = (failOn) => ({
+            from: () => ({
+                select: () => ({
+                    eq: () => {
+                        const q = {
+                            order: async (col) => {
+                                calls.push(col);
+                                return col === failOn ? { data: null, error: { message: `column events.${col} does not exist` } } : { data: rows, error: null };
+                            },
+                            then: (res) => res({ data: rows, error: null })
+                        };
+                        return q;
+                    }
+                })
+            })
+        });
+        const got = await loadEvents(fake('timestamp'), 't1');
+        assert.deepEqual(calls, ['timestamp', 'seq']);
+        assert.deepEqual(got.map((r) => r.id), ['a', 'b', 'c', 'd']);
+        calls.length = 0;
+        await loadEvents(fake('seq'), 't1');
+        assert.deepEqual(calls, ['timestamp']);
     });
 });

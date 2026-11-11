@@ -23,9 +23,56 @@ export function readableDescription(description) {
     return text.split(/\[(?:Instruction|InputData|ExecutionPolicy)\]/)[0].trim();
 }
 
-/** 사람 대신 에이전트가 하는 업무인가. 그렇다면 입력 폼을 보여 줄 이유가 없다. */
+/** 사람 일을 맡는 것이 아니라 그 자체가 에이전트의 일인 업무(프로세스 생성 등). */
+const AGENT_ONLY_ORCH = ['pdf2bpmn'];
+
+function upper(value) {
+    return (value || '').toString().trim().toUpperCase();
+}
+
+/** 그 자체가 에이전트의 일인가 — 사람이 채울 폼이 없다. */
+export function isAgentOnly(task) {
+    const orch = (task?.agent_orch || task?.agentOrch || '').toString().trim();
+    if (!orch) return false;
+    const name = (task?.activity_name || '').toString().trim();
+    return AGENT_ONLY_ORCH.includes(orch) || name === orch;
+}
+
+/**
+ * 에이전트와 얽힌 업무가 지금 어떤 상태인가.
+ *
+ *   none        에이전트가 손대지 않음 — 사람이 처리
+ *   agent-only  그 자체가 에이전트의 일(프로세스 생성 등)
+ *   running     사람이 「에이전트에 맡기기」 한 뒤 에이전트가 쓰는 중
+ *   draft-ready 에이전트가 초안을 다 썼다 — **사람 차례**(확인하고 제출)
+ *   failed · cancelled · done
+ *
+ * 예전에는 agent_orch 가 있기만 하면 "에이전트가 처리 중" 으로 보았다. 그러면 초안이 다 된
+ * 업무(agent_mode=DRAFT, draft_status=COMPLETED)도 「에이전트가 처리하고 있습니다」 로 보여
+ * 사람은 검토 · 제출할 길이 없었다(2026-11-11 휴대폰 웹 확인).
+ */
+export function agentState(task) {
+    const orch = (task?.agent_orch || task?.agentOrch || '').toString().trim();
+    if (!orch) return 'none';
+    const status = upper(task?.status);
+    if (status === 'DONE' || status === 'COMPLETED') return 'done';
+    const draft = upper(task?.draft_status);
+    if (draft === 'FAILED') return 'failed';
+    if (draft === 'CANCELLED' || status === 'CANCELLED') return 'cancelled';
+    if (isAgentOnly(task)) return 'agent-only';
+    if (draft === 'COMPLETED') return 'draft-ready';
+    return 'running'; // STARTED · FB_REQUESTED · 아직 집어 가지 않음
+}
+
+/** 사람 대신 에이전트가 하고 있는 업무인가. 그동안은 사람이 제출할 것이 없다. */
 export function runsByAgent(task) {
-    return Boolean(task?.agent_orch || task?.agentOrch);
+    const state = agentState(task);
+    return state === 'agent-only' || state === 'running';
+}
+
+/** 에이전트가 쓴 초안이 사람을 기다리는가. */
+export function draftReady(task) {
+    return agentState(task) === 'draft-ready';
 }
 
 /** 사용자에게 보여 줄 업무 이름. `pdf2bpmn` 같은 내부 이름은 뜻이 없다. */
