@@ -83,8 +83,8 @@ test('컴퓨터 · 네이티브 앱 · PAL · uEngine 은 옮기지 않는다', 
     assert.equal(boot({ view: 'light', env: { VITE_MODE: 'uEngine' } }).location.replaced, null);
 });
 
-test('로그인 · 랜딩 · 외부 폼 · 조직 고르기 · 약관은 포털에 남는다', () => {
-    for (const p of ['/', '/auth/login', '/auth/signup-pending', '/external-forms/f1', '/tenant/manage', '/tenant', '/privacy', '/terms']) {
+test('로그인 · 랜딩 · 외부 폼 · 조직 고르기 · 약관 · 계정 설정(2단계 인증 등록)은 포털에 남는다', () => {
+    for (const p of ['/', '/auth/login', '/auth/two-step', '/auth/signup-pending', '/external-forms/f1', '/tenant/manage', '/tenant', '/privacy', '/terms', '/account-settings']) {
         assert.equal(boot({ view: 'light', path: p }).location.replaced, null, p);
     }
 });
@@ -94,4 +94,13 @@ test('라우터가 쓰는 phoneWebUrl 은 같은 규칙을 그대로 부른다',
     assert.equal(phoneWebUrl('/notifications', win), '/m/#/notifications');
     assert.equal(phoneWebUrl('/auth/login', win), null);
     assert.equal(phoneWebUrl('/todolist', {}), null, '규칙이 없는 곳(앱 · 테스트)에서는 옮기지 않는다');
+});
+
+test('포털 라우터는 MFA 게이트를 지난 뒤에만 휴대폰 웹으로 옮긴다', () => {
+    // 앞에 두면 비밀번호만 통과한 세션(aal1)이 2단계 인증 없이 휴대폰 웹으로 간다.
+    const router = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../../router/index.ts'), 'utf8');
+    const gate = router.indexOf('await evaluateMfaGate(to.path)');
+    const move = router.indexOf('phoneWebUrl(to.path)');
+    assert.ok(gate > 0 && move > 0, '두 호출이 다 있다');
+    assert.ok(move > gate, 'phoneWebUrl 은 evaluateMfaGate 뒤');
 });

@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useCustomizerStore } from '@/stores/customizer';
 import { CheckIcon } from 'vue-tabler-icons';
 import { applyAppearance, appearanceFromTheme, THEME_BY_APPEARANCE, type Appearance } from '@/ds/appearance';
-import { isPhoneBrowser, viewportApi, savedMobileView, saveMobileView } from '@/shared/mobileView';
+import { isPhoneBrowser, viewportApi, savedMobileView, saveMobileView, phoneWebUrl } from '@/shared/mobileView';
 import { webAppInstall } from '@/utils/webAppInstall';
 import AddToHomeScreen from '@/components/mobile/AddToHomeScreen.vue';
 
@@ -48,7 +48,11 @@ const mobileView = ref<'desktop' | 'light'>(savedMobileView() ?? 'light');
 
 function selectMobileView(view: 'desktop' | 'light') {
     mobileView.value = view;
-    if (saveMobileView(view).reload) window.location.reload();
+    const { reload } = saveMobileView(view);
+    // 라이트는 휴대폰 웹으로 간다 — 계정 설정은 휴대폰에서도 포털에 남는 화면이라 새로 열기만 하면 그대로다.
+    const phoneWeb = view === 'light' ? phoneWebUrl('/todolist') : null;
+    if (phoneWeb) window.location.assign(phoneWeb);
+    else if (reload) window.location.reload();
 }
 
 onMounted(() => {

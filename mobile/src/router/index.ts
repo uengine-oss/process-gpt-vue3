@@ -1,5 +1,7 @@
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router';
-import { currentSession } from '../lib/session.js';
+import { evaluateMfaGate } from '@/utils/mfaGate';
+import { decide } from '../lib/authGate.js';
+import { currentSession, signOut } from '../lib/session.js';
 
 /**
  * 앱 안에서의 화면 이동.
@@ -99,15 +101,22 @@ export function createMobileRouter() {
         scrollBehavior: () => ({ top: 0 })
     });
 
+    // 로그인 · 2단계 인증은 포털과 같은 관문을 지난다(lib/authGate). 휴대폰 웹은 포털 화면으로 보내고,
+    // 앱은 자기 로그인 화면을 쓴다.
+    const web = !(window as any).Capacitor?.isNativePlatform?.();
     router.beforeEach(async (to) => {
-        if (to.meta?.public) return true;
-
-        const session = await currentSession();
-        if (session) return true;
-
-        // 로그인 후 원래 가려던 곳으로 돌려보낸다. 알림을 눌러 들어왔는데 로그인이
-        // 풀려 있으면, 로그인 후 목록이 아니라 그 건으로 가야 한다.
-        return { name: 'login', query: to.fullPath === '/tasks' ? {} : { next: to.fullPath } };
+        const go = await decide(to, {
+            web,
+            session: await currentSession(),
+            evaluate: evaluateMfaGate,
+            storage: window.sessionStorage
+        });
+        if (go.location) {
+            window.location.replace(go.location);
+            return false;
+        }
+        if (go.signOut) await signOut();
+        return go.route || true;
     });
 
     return router;
