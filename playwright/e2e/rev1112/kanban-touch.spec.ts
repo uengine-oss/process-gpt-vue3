@@ -155,6 +155,7 @@ test('F-RV-D03 휴대폰 PC 화면: 녹화와 같은 조건(폭 1280 · 손가�
         [2, 1]
     ]);
     await page.waitForURL(/\/todolist\//, { timeout: 15_000 });
+    await expect(page.getByText('해야 할 작업').first()).toBeVisible({ timeout: 30_000 });
     await shot(page, 'd01-opened');
 });
 
