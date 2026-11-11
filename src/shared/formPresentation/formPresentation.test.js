@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DOMParser as LinkedomParser } from 'linkedom';
-import { autoNameNumber, fallbackFieldLabel, presentFormHtml } from './index.js';
+import { autoNameNumber, fallbackFieldLabel, fieldLabelForKey, inferFieldTag, presentFormHtml, presentedFieldLabels } from './index.js';
 
 class DOMParser {
     parseFromString(html, type) {
@@ -9,7 +9,12 @@ class DOMParser {
         return new LinkedomParser().parseFromString(full, type);
     }
 }
-const ko = { 'formBuilder.type.text': '텍스트', 'formBuilder.type.boolean': '예/아니오', 'formBuilder.type.userSelect': '사용자 선택' };
+const ko = {
+    'formBuilder.type.text': '텍스트',
+    'formBuilder.type.boolean': '예/아니오',
+    'formBuilder.type.userSelect': '사용자 선택',
+    'formBuilder.type.select': '선택'
+};
 const translate = (key) => ko[key] || null;
 const parse = (html) => new DOMParser().parseFromString(html, 'text/html');
 
@@ -70,4 +75,40 @@ test('빈 HTML · "null" 은 그대로', () => {
     assert.equal(presentFormHtml('', { DOMParser }), '');
     assert.equal(presentFormHtml('null', { DOMParser }), 'null');
     assert.equal(presentFormHtml(null, { DOMParser }), null);
+});
+
+test('키만 있을 때(산출물 카드) — 키 모양으로 필드 종류를 짐작한다, 편집기 자동 이름일 때만', () => {
+    assert.equal(inferFieldTag('text-field-2'), 'text-field');
+    assert.equal(inferFieldTag('boolean-field-3-copy'), 'boolean-field');
+    assert.equal(inferFieldTag('boolean_3'), 'boolean-field');
+    assert.equal(inferFieldTag('user_select_2'), 'user-select-field');
+    assert.equal(inferFieldTag('select'), 'select-field');
+    assert.equal(inferFieldTag('customer_name'), '');
+    assert.equal(inferFieldTag('request_detail_2'), '');
+    assert.equal(inferFieldTag(''), '');
+});
+
+test('키만 있을 때의 이름도 업무 화면과 같은 규칙 — 「boolean 3」 이 아니라 「예/아니오 3」', () => {
+    const opts = { translate, freeInputTitle: '작업 내용' };
+    // 지금 편집기의 자동 이름(밑줄)
+    assert.equal(fieldLabelForKey('boolean_3', opts), '예/아니오 3');
+    assert.equal(fieldLabelForKey('user_select_2', opts), '사용자 선택 2');
+    assert.equal(fieldLabelForKey('select_4', opts), '선택 4');
+    // 예전 편집기의 자동 이름(하이픈)
+    assert.equal(fieldLabelForKey('text-field-2', opts), '텍스트 2');
+    assert.equal(fieldLabelForKey('boolean-field-3', opts), '예/아니오 3');
+    // 기본 자유입력 칸은 카드 제목
+    assert.equal(fieldLabelForKey('free_input', opts), '작업 내용');
+    assert.equal(fieldLabelForKey('free_input', { translate }), 'free input', '제목을 모르면 읽을 수 있는 이름');
+    // 직접 지은 키
+    assert.equal(fieldLabelForKey('customer_name', opts), 'customer name');
+});
+
+test('업무 화면에 보이는 칸 이름 — 빈 alias 는 「텍스트 2」, 이름을 숨긴 자유입력 칸은 카드 제목 「작업 내용」', () => {
+    const labels = presentedFieldLabels(REVIEW_FORM, { translate, freeInputTitle: '작업 내용', DOMParser });
+    assert.deepEqual(labels, { free_input: '작업 내용', 'text-field-2': '텍스트 2', 'boolean-field-3': '예/아니오 3' });
+    const named = `<section><row-layout name="review" alias="검토"><text-field name="title" alias="제목"></text-field></row-layout></section>`;
+    assert.deepEqual(presentedFieldLabels(named, { translate, DOMParser }), { title: '제목' });
+    assert.deepEqual(presentedFieldLabels('', { DOMParser }), {});
+    assert.deepEqual(presentedFieldLabels(null, { DOMParser }), {});
 });

@@ -4136,15 +4136,6 @@
         "fileTooLarge": "File is too large. (Maximum 50MB)",
         "fileDeleted": "File deleted successfully."
     },
-    "FormRealtimeAssistant": {
-        "title": "Voice Agent",
-        "connected": "Connected",
-        "connecting": "Connecting",
-        "disconnected": "Disconnected",
-        "responding": "Responding",
-        "micOn": "Mic ON",
-        "inputPlaceholder": "Type a message or speak with the microphone."
-    },
     "WorkItemDictation": {
         "start": "Dictate",
         "stop": "Stop",
@@ -4155,6 +4146,7 @@
         "filling": "Filling the fields from “{text}”…",
         "appended": "Added what you said to “{field}”.",
         "filled": "Filled {count} field(s) ({fields}). Review before submitting.",
+        "skippedTyping": "Left {count} field(s) you were editing untouched ({fields}).",
         "heard": "Heard: “{text}”",
         "reason": {
             "denied": "Allow microphone access (microphone permission in the address bar).",

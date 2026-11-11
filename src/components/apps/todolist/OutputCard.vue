@@ -107,7 +107,7 @@
 <script>
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import { fileNameOf, isWorkspacePath, workspaceFileUrl } from '@/utils/workspaceFile';
-import { fallbackFieldLabel, FREE_INPUT_FIELD, presentFormHtml } from '@/shared/formPresentation/index.js';
+import { fieldLabelForKey, presentFormHtml } from '@/shared/formPresentation/index.js';
 import { looksLikeMarkdown, renderMarkdown } from '@/shared/markdownText/index.js';
 
 /** 카드에 보일 항목 수와 값 길이. 넘치는 것은 원본 보기에서 본다. */
@@ -207,18 +207,15 @@ export default {
         },
 
         /**
-         * 항목 이름 — 폼에 적힌 이름이 있으면 그것. 없으면 업무 화면과 같은 규칙(fallbackFieldLabel)으로
-         * 편집기가 붙인 자동 이름은 「텍스트 2」 · 「예/아니오 3」, 직접 지은 키는 밑줄을 띄어 쓴 이름.
+         * 항목 이름 — 폼에 적힌 이름이 있으면 그것. 없으면 업무 화면과 같은 규칙(fieldLabelForKey)으로
+         * 편집기가 붙인 자동 이름은 「텍스트 2」 · 「예/아니오 3」(지금 편집기의 boolean_3 도), 기본 자유입력 칸은
+         * 「작업 내용」, 직접 지은 키는 밑줄을 띄어 쓴 이름.
          */
         labelOf(k) {
             if (this.labels && this.labels[k]) return this.labels[k];
             const key = String(k);
-            // 기본 자유입력 칸 — 업무 화면이 카드 제목으로 쓰는 「작업 내용」 과 같은 이름
-            if (key === FREE_INPUT_FIELD && this.$te && this.$te('FormWorkItem.freeInputTitle')) {
-                return this.$t('FormWorkItem.freeInputTitle');
-            }
-            const auto = /^([a-z]+(?:-[a-z]+)*-field)(?:-\d+)?(?:-copy)*$/.exec(key);
-            return fallbackFieldLabel(auto ? auto[1] : 'text-field', key, this.translate) || key.replace(/_/g, ' ');
+            const freeInputTitle = this.translate('FormWorkItem.freeInputTitle') || '';
+            return fieldLabelForKey(key, { translate: this.translate, freeInputTitle }) || key.replace(/_/g, ' ');
         },
 
         /** 카드 미리보기 — 줄바꿈 · 마크다운 머리표를 한 줄 글로 접고 길이를 자른다(나머지는 CSS 가 줄 수로 자른다). */

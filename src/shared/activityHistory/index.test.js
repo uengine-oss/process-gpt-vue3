@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { annotateHistory, branchLabelBetween, formatHistoryTime } from './index.js';
+import { annotateHistory, branchChoiceBetween, branchLabelBetween, formatHistoryTime } from './index.js';
 
 // VM 「영업 제안서 승인」 정의 — 검토 → 갈림길(반려) → 재작성 → 다시 작성
 const approval = {
@@ -98,6 +98,48 @@ test('제자리로 돌아오는 고리도 찾는다', () => {
     assert.deepEqual(notes[1].loop, { label: '보완 요청' });
     assert.equal(notes[1].nextRound, 2);
     assert.equal(notes[2].loop, null);
+});
+
+test('이름 없는 갈래로 되돌아가면 그 줄에 「다시 진행」 — 앞에서 앞으로 나간 줄의 갈래 이름을 빌려 오지 않는다', () => {
+    // 작성 →(XOR 「검토 필요」)→ 검토, 검토 →(XOR, 이름 없는 흐름)→ 작성
+    const def = {
+        gateways: [
+            { id: 'g_draft', type: 'exclusiveGateway' },
+            { id: 'g_review', type: 'exclusiveGateway' }
+        ],
+        sequences: [
+            { source: 'draft', target: 'g_draft' },
+            { source: 'g_draft', target: 'review', name: '검토 필요' },
+            { source: 'g_draft', target: 'done', name: '바로 완료' },
+            { source: 'review', target: 'g_review' },
+            { source: 'g_review', target: 'draft', condition: "result == 'rework'" },
+            { source: 'g_review', target: 'done', name: '승인' }
+        ]
+    };
+    assert.deepEqual(branchChoiceBetween(def, 'review', 'draft'), { chose: true, label: '' });
+    assert.deepEqual(branchChoiceBetween(def, 'draft', 'review'), { chose: true, label: '검토 필요' });
+    const rows = [row('draft', 'review'), row('review', 'draft'), row('draft', 'review')];
+    const notes = annotateHistory(rows, { definition: def, currentActivityIds: ['review'] });
+    const loops = notes.map((n, i) => (n.loop ? [i, n.loop.label] : null)).filter(Boolean);
+    // 표시는 검토(1) → 작성(2) 줄 하나, 이름 없이(「다시 진행」). 작성(1) → 검토(1) 줄에는 붙지 않는다.
+    assert.deepEqual(loops, [[1, '']]);
+});
+
+test('되돌아간 흐름에 이름이 있으면 그 줄에 그 이름', () => {
+    const def = {
+        gateways: [{ id: 'g_review', type: 'exclusiveGateway' }],
+        sequences: [
+            { source: 'draft', target: 'review' },
+            { source: 'review', target: 'g_review' },
+            { source: 'g_review', target: 'draft', name: '보완 필요' },
+            { source: 'g_review', target: 'done', name: '승인' }
+        ]
+    };
+    const notes = annotateHistory([row('draft', 'review'), row('review', 'draft')], { definition: def });
+    assert.deepEqual(
+        notes.map((n) => n.loop),
+        [null, { label: '보완 필요' }]
+    );
 });
 
 test('지금 단계는 그 단계를 가리킨 마지막 줄 하나다', () => {

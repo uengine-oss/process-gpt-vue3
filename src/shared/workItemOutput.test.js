@@ -90,3 +90,12 @@ test('폼 항목 키를 폼에 적힌 이름으로 읽는다', () => {
     // 키를 그대로 베낀 이름은 이름으로 치지 않는다
     assert.deepEqual(fieldLabelsOf({ fields_json: [{ key: 'text-field-2', text: 'text-field-2' }] }), {});
 });
+
+test('정의 전체의 이름 위에 업무의 폼 이름만 얹어도 업무 폼을 앞에 두고 다시 훑은 것과 같다(InstanceOutput)', () => {
+    const task = { id: 't', fields_json: [{ key: 'request_detail', text: '요청사항' }, { key: 'memo', text: 'memo' }] };
+    const other = { id: 'o', fields_json: [{ key: 'request_detail', text: '다른 이름' }, { key: 'memo', text: '메모' }, { key: 'proposal', text: '제안서' }] };
+    const formList = [other, task];
+    const base = fieldLabelsOf(formList);
+    assert.deepEqual({ ...base, ...fieldLabelsOf(task) }, fieldLabelsOf([task, ...formList]));
+    assert.deepEqual({ ...base, ...fieldLabelsOf(task) }, { request_detail: '요청사항', memo: '메모', proposal: '제안서' });
+});

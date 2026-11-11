@@ -4,6 +4,8 @@
  * 지키려는 것
  *   - 자유 입력(글 칸 하나)에는 말한 그대로, 적어 둔 글 뒤에 잇는다. LLM 이 다시 쓰지 않는다.
  *   - 칸이 여럿이면 말한 칸만 채운다. 말하지 않은 칸 · 양식에 없는 칸 · 읽기 전용 칸은 건드리지 않는다.
+ *   - LLM 답을 기다리는 동안 사람이 쓴 칸은 덮어쓰지 않는다.
+ *   - 여러 줄 글 칸의 이미 적힌 글은 한 글자도 바꾸지 않고 뒤에 잇기만 한다. 한 줄 칸은 말한 값으로 바꾼다.
  *   - 말하는 동안 미리 받아쓰기는 쌓이지 않고, 길어지면 멈춘다.
  *   - 녹음 중에도 지금까지의 소리를 꺼낼 수 있다(미리 보기).
  */
@@ -14,14 +16,17 @@ import {
     PARTIAL_EVERY_MS,
     PARTIAL_UNTIL_MS,
     appendTranscript,
+    awaitGeneration,
     buildFillMessages,
     dictationTarget,
     formatElapsed,
     isOnAttr,
+    mergeFill,
     normalizeSpokenValue,
     parseFillResponse,
     parseItemsAttr,
     partialDue,
+    snapshotValues,
     startRecording,
     tailText
 } from './index.js';
@@ -90,6 +95,20 @@ test('자유 입력 칸에는 적어 둔 글 뒤에 말한 그대로 잇는다',
     assert.equal(appendTranscript('', '검토 결과 조건부 적합입니다.'), '검토 결과 조건부 적합입니다.');
 });
 
+test('여러 줄 글이나 목록으로 끝나는 글 뒤에는 빈 줄을 두고 새 문단으로 잇는다 — 마지막 글머리 항목 안으로 들어가지 않게', () => {
+    const draft = ['반영 계획:', '1. 설비 연동 방식을 부록 A에 정리합니다.', '', '남은 확인 사항:', '- 견적과 일정은 10월 23일 미팅 뒤 확정합니다.'].join('\n');
+    const out = appendTranscript(`${draft}\n`, '검토 결과 조건부 적합입니다.');
+    assert.equal(out, `${draft}\n\n검토 결과 조건부 적합입니다.`);
+    // 마크다운으로 읽어도 말한 글이 목록 밖의 새 문단이다(마지막 줄이 글머리로 시작하지 않고 앞에 빈 줄)
+    const lines = out.split('\n');
+    assert.equal(lines[lines.length - 2], '');
+    assert.equal(lines[lines.length - 1], '검토 결과 조건부 적합입니다.');
+    // 한 줄이지만 글머리 항목이면 같은 까닭으로 새 문단
+    assert.equal(appendTranscript('- 첫 항목', '덧붙인 말'), '- 첫 항목\n\n덧붙인 말');
+    // 평범한 한 줄은 띄어 잇는다
+    assert.equal(appendTranscript('1차 검토 완료.', '덧붙인 말'), '1차 검토 완료. 덧붙인 말');
+});
+
 // ---------------------------------------------------------------------------
 // 칸이 여럿일 때 — LLM 에 보내는 글
 // ---------------------------------------------------------------------------
@@ -118,6 +137,17 @@ test('파일 칸 · 읽기 전용 칸은 LLM 에 알려 주지 않는다', () =>
     const [system] = buildFillMessages({ fields, transcript: 'x' });
     assert.doesNotMatch(system.content, /"attachment"/);
     assert.doesNotMatch(system.content, /"reviewer"/);
+});
+
+test('여러 줄 글 칸에는 새로 넣을 말만, 한 줄 칸 · 날짜 칸에는 값 전체를 달라고 칸마다 적는다', () => {
+    const fields = [...REQUEST_FORM, { name: 'visit', label: '방문일', type: 'date-field' }];
+    const [system] = buildFillMessages({ fields, values: { request_detail: '기존 메모' }, transcript: 'x' });
+    assert.match(system.content, /"name":"request_detail","label":"요청 상세 내용","type":"textarea-field","fill":"append"/);
+    assert.match(system.content, /"name":"customer_name","label":"고객명","type":"text-field","fill":"replace"/, '한 줄 칸은 바꾼다');
+    assert.match(system.content, /"name":"visit","label":"방문일","type":"date-field","fill":"replace"\}/, '날짜 칸은 바꾼다');
+    assert.match(system.content, /새로 넣을 말만/);
+    assert.match(system.content, /현재 값은 고치지 않는다/);
+    assert.doesNotMatch(system.content, /이어 쓴 전체 값을 돌려준다/);
 });
 
 // ---------------------------------------------------------------------------
@@ -173,10 +203,171 @@ test('말로 들은 날짜 · 시간을 칸 모양으로 바꾼다', () => {
     assert.equal(normalizeSpokenValue({ type: 'text-field' }, ' 그대로 ', now), '그대로');
 });
 
+test('적힌 날짜가 먼저고, 상대 날짜는 값 전체가 그 말일 때만 읽는다', () => {
+    const now = new Date(2026, 10, 11);
+    const date = { type: 'date-field' };
+    // 「내일」 이 들어 있지만 「내일모레」 다 — 하루가 틀리면 안 된다
+    assert.equal(normalizeSpokenValue(date, '내일모레', now), '2026-11-13');
+    assert.equal(normalizeSpokenValue(date, '모레', now), '2026-11-13');
+    // 설명에 「오늘」 이 섞여도 적힌 날짜를 쓴다
+    assert.equal(normalizeSpokenValue(date, '2026-11-20 (오늘부터 9일 뒤)', now), '2026-11-20');
+    assert.equal(normalizeSpokenValue(date, '12월 3일, 내일 말고', now), '2026-12-03');
+    // 조사가 붙은 상대 날짜
+    assert.equal(normalizeSpokenValue(date, '내일까지', now), '2026-11-12');
+    assert.equal(normalizeSpokenValue(date, '오늘이요.', now), '2026-11-11');
+    // 상대 날짜가 문장 속에 섞여 있으면 짐작하지 않는다
+    assert.equal(normalizeSpokenValue(date, '오늘 말고 다음 주', now), '오늘 말고 다음 주');
+});
+
 test('날짜 칸은 답을 받을 때 바로 맞춘다', () => {
     const fields = [{ name: 'visit', label: '방문일', type: 'date-field' }, ...REQUEST_FORM];
     const reply = '{"fields":[{"name":"visit","value":"내일"}]}';
     assert.deepEqual(parseFillResponse(reply, fields, { now: new Date(2026, 10, 11) }), { visit: '2026-11-12' });
+});
+
+// ---------------------------------------------------------------------------
+// 답을 넣을 때 — 기다리는 사이 사람이 쓴 글을 지킨다
+// ---------------------------------------------------------------------------
+
+test('답을 기다리는 동안 사람이 고친 칸은 덮어쓰지 않고 건너뛴다', () => {
+    const snapshot = snapshotValues(REQUEST_FORM, { customer_name: '', request_title: '', request_detail: '' });
+    // 요청을 보낸 뒤 사람이 제안 제목을 직접 쓰기 시작했다
+    const current = { customer_name: '', request_title: '사람이 쓰던 제목', request_detail: '' };
+    const patch = { customer_name: '한빛물산', request_title: '회의실 가구 교체' };
+    const merged = mergeFill(patch, { fields: REQUEST_FORM, snapshot, current });
+    assert.deepEqual(merged.values, { customer_name: '한빛물산' });
+    assert.deepEqual(merged.applied, ['customer_name']);
+    assert.deepEqual(merged.skipped, ['request_title']);
+});
+
+test('요청 때 값은 복사본이다 — 같은 폼 객체가 그 자리에서 바뀌어도 「바뀌었다」 를 안다', () => {
+    const formData = { request_detail: '처음 글', contact: '' };
+    const snapshot = snapshotValues(REQUEST_FORM, formData);
+    formData.request_detail = '처음 글 그리고 사람이 더 쓴 글';
+    const merged = mergeFill({ request_detail: '말한 글' }, { fields: REQUEST_FORM, snapshot, current: formData });
+    assert.deepEqual(merged.values, {});
+    assert.deepEqual(merged.skipped, ['request_detail']);
+    assert.equal(formData.request_detail, '처음 글 그리고 사람이 더 쓴 글');
+});
+
+test('이미 글이 있는 글 칸은 기존 글을 그대로 두고 새 말만 뒤에 잇는다', () => {
+    const values = { request_detail: '회의실 의자 12개 교체.' };
+    const snapshot = snapshotValues(REQUEST_FORM, values);
+    const merged = mergeFill({ request_detail: '책상도 4개 함께 바꿔 주세요.' }, { fields: REQUEST_FORM, snapshot, current: values });
+    assert.equal(merged.values.request_detail, '회의실 의자 12개 교체. 책상도 4개 함께 바꿔 주세요.');
+    assert.deepEqual(merged.applied, ['request_detail']);
+});
+
+test('LLM 이 기존 글을 앞에 붙여 돌려줘도 기존 글은 한 번만, 고쳐 쓴 글은 기존 글을 바꾸지 못한다', () => {
+    const values = { request_detail: '회의실 의자 12개 교채.' };
+    const snapshot = snapshotValues(REQUEST_FORM, values);
+    // 기존 글을 그대로 앞에 붙여 왔다 → 뒷부분만 잇는다
+    const echoed = mergeFill({ request_detail: '회의실 의자 12개 교채. 책상도요.' }, { fields: REQUEST_FORM, snapshot, current: values });
+    assert.equal(echoed.values.request_detail, '회의실 의자 12개 교채. 책상도요.');
+    // 맞춤법을 고친다며 기존 글을 다시 써 왔다 → 기존 글(「교채」)은 그대로 남는다
+    const rewritten = mergeFill({ request_detail: '회의실 의자 12개 교체. 책상도요.' }, { fields: REQUEST_FORM, snapshot, current: values });
+    assert.ok(rewritten.values.request_detail.startsWith('회의실 의자 12개 교채.'), rewritten.values.request_detail);
+    // 이미 적힌 말을 그대로 돌려줬다 → 넣을 것이 없다
+    const same = mergeFill({ request_detail: '회의실 의자 12개 교채.' }, { fields: REQUEST_FORM, snapshot, current: values });
+    assert.deepEqual(same, { values: {}, applied: [], skipped: [] });
+});
+
+test('한 줄 칸은 이미 값이 있어도 말한 값으로 바꾼다 — 「고객명은 한빛물산」 이 「홍길동 한빛물산」 이 되지 않게', () => {
+    const values = { customer_name: '홍길동', request_title: '신제품 공급 제안 요청', request_detail: '기존 상세' };
+    const snapshot = snapshotValues(REQUEST_FORM, values);
+    const merged = mergeFill(
+        { customer_name: '한빛물산', request_title: '회의실 가구 교체' },
+        { fields: REQUEST_FORM, snapshot, current: values }
+    );
+    assert.deepEqual(merged.values, { customer_name: '한빛물산', request_title: '회의실 가구 교체' });
+    // 바꾸는 칸도 답을 기다리는 사이 사람이 고쳤으면 건너뛴다
+    const typing = { ...values, request_title: '신제품 공급 제안 요청 (사람이 고쳐 씀)' };
+    const guarded = mergeFill({ request_title: '회의실 가구 교체' }, { fields: REQUEST_FORM, snapshot, current: typing });
+    assert.deepEqual(guarded, { values: {}, applied: [], skipped: ['request_title'] });
+});
+
+test('여러 줄 칸에 이을 때 기존 글이 목록으로 끝나면 새 문단으로 잇는다', () => {
+    const values = { request_detail: '요청 사항:\n- 의자 12개 교체' };
+    const snapshot = snapshotValues(REQUEST_FORM, values);
+    const merged = mergeFill({ request_detail: '책상도 4개 함께 바꿔 주세요.' }, { fields: REQUEST_FORM, snapshot, current: values });
+    assert.equal(merged.values.request_detail, '요청 사항:\n- 의자 12개 교체\n\n책상도 4개 함께 바꿔 주세요.');
+});
+
+test('빈 글 칸은 받은 값을 그대로, 날짜 · 선택 칸은 말한 값으로 바꾼다', () => {
+    const fields = [
+        ...REQUEST_FORM,
+        { name: 'visit', label: '방문일', type: 'date-field' },
+        { name: 'grade', label: '등급', type: 'select-field', options: [{ label: 'A', value: 'a' }] },
+        { name: 'qty', label: '수량', type: 'text-field', inputType: 'number' }
+    ];
+    const values = { customer_name: null, visit: '2026-11-12', grade: 'b', qty: '3' };
+    const snapshot = snapshotValues(fields, values);
+    const merged = mergeFill(
+        { customer_name: '한빛물산', visit: '2026-11-20', grade: 'a', qty: '5' },
+        { fields, snapshot, current: values }
+    );
+    assert.deepEqual(merged.values, { customer_name: '한빛물산', visit: '2026-11-20', grade: 'a', qty: '5' });
+    assert.deepEqual(merged.skipped, []);
+});
+
+test('빈 값의 모양이 달라도(null · \'\' · undefined) 바뀐 것으로 보지 않는다', () => {
+    const snapshot = snapshotValues(REQUEST_FORM, { customer_name: null });
+    const merged = mergeFill({ customer_name: '한빛물산' }, { fields: REQUEST_FORM, snapshot, current: { customer_name: '' } });
+    assert.deepEqual(merged.applied, ['customer_name']);
+    // 여러 값 칸(배열)은 안까지 견준다
+    const fields = [{ name: 'tags', type: 'checkbox-field' }];
+    const snap = snapshotValues(fields, { tags: ['a'] });
+    assert.deepEqual(mergeFill({ tags: ['b'] }, { fields, snapshot: snap, current: { tags: ['a'] } }).applied, ['tags']);
+    assert.deepEqual(mergeFill({ tags: ['b'] }, { fields, snapshot: snap, current: { tags: ['a', 'c'] } }).skipped, ['tags']);
+});
+
+// ---------------------------------------------------------------------------
+// LLM 요청 하나를 기다린다
+// ---------------------------------------------------------------------------
+
+test('generate() 가 XHR 을 열기 전에 던지면 바로 실패로 돌린다 — 60초 기다리지 않는다', async () => {
+    const started = Date.now();
+    const unhandled = [];
+    const onUnhandled = (e) => unhandled.push(e);
+    process.on('unhandledRejection', onUnhandled);
+    try {
+        await assert.rejects(
+            awaitGeneration(
+                () => ({
+                    generate: async () => {
+                        throw new Error('config read failed');
+                    }
+                }),
+                { timeoutMs: 60000 }
+            ),
+            /config read failed/
+        );
+        // 동기로 던져도 같다
+        await assert.rejects(
+            awaitGeneration(() => {
+                throw new Error('constructor failed');
+            }),
+            /constructor failed/
+        );
+        await new Promise((r) => setTimeout(r, 10));
+    } finally {
+        process.off('unhandledRejection', onUnhandled);
+    }
+    assert.ok(Date.now() - started < 1000, '시간 초과까지 기다리지 않았다');
+    assert.deepEqual(unhandled, [], '처리 안 된 거부가 남지 않는다');
+});
+
+test('답 · 빈 답 · 오류 · 시간 초과', async () => {
+    const reply = (fn) => (client) => ({ generate: async () => fn(client), stop: () => undefined });
+    assert.equal(await awaitGeneration(reply((c) => c.onGenerationFinished('{"fields":[]}'))), '{"fields":[]}');
+    await assert.rejects(awaitGeneration(reply((c) => c.onGenerationFinished(''))), /empty reply/);
+    await assert.rejects(awaitGeneration(reply((c) => c.onError({ message: '502' }))), /502/);
+    let stopped = false;
+    await assert.rejects(
+        awaitGeneration(() => ({ generate: async () => undefined, stop: () => (stopped = true) }), { timeoutMs: 20 }),
+        /timeout/
+    );
+    assert.equal(stopped, true, '시간이 지나면 요청을 멈춘다');
 });
 
 // ---------------------------------------------------------------------------

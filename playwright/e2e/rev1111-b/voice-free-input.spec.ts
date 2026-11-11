@@ -1,5 +1,5 @@
 /**
- * 2026-11-11 화면 검토(1:50~2:35) — 업무 화면 음성 입력: 글 칸 하나짜리 양식 (F-RV-B01 · F-RV-B03)
+ * 2026-11-11 화면 검토(1:50~2:35) — 업무 화면 음성 입력: 글 칸 하나짜리 양식 (F-RV-B01 · F-RV-B03 · F-RV-B07)
  *
  * 지적: 마이크를 눌러 말해도 아무것도 안 들어간다. 「음성 에이전트 · 연결됨」 창이 뜨는 방식이 아니라,
  * 창 없이 이 폼에 바로 들어가야 한다. 무엇이 진짜이고 무엇을 흉내 내는지는 voice-helpers.ts 머리말.
@@ -19,6 +19,8 @@ import {
     voiceBrowser,
     watchForPopups
 } from './voice-helpers';
+// @ts-ignore — 시험 데이터 도우미(.mjs). 기본 자유입력 폼 업무를 VM 에 만들고 지운다(rev1111-a 와 같은 데이터)
+import { seed as seedFreeInputTask, cleanup as cleanupFreeInputTask, TASK_ID as FREE_INPUT_TASK } from '../rev1111-a/seed-vm.mjs';
 
 const WAV = speechWav('review', '검토 결과 조건부 적합입니다');
 
@@ -101,4 +103,29 @@ test('F-RV-B03 받아쓰기 서버가 안 되거나 마이크를 막으면 한 �
     await expect(page.getByTestId('workitem-dictation-mic')).toHaveAttribute('aria-pressed', 'false');
     await shot(page, 'after-4-mic-denied');
     await expectNoPopup(page, seen);
+});
+
+test('F-RV-B07 기본 자유입력 폼에 넣었다는 한 줄은 화면에 보이는 이름 「작업 내용」 으로 말한다', async ({ page }) => {
+    // 폼 정의의 칸 이름은 「자유입력」 이지만 화면은 그 칸을 카드 제목 「작업 내용」 으로 보여 준다(presentFormHtml)
+    seedFreeInputTask();
+    try {
+        const seen = watchForPopups(page);
+        const writes = await trapTodoWrites(page);
+        await login(page, 'admin');
+        await openTask(page, FREE_INPUT_TASK);
+        await expect(page.locator('.dynamic-form .form-layout-card .v-card-title').first()).toHaveText('작업 내용', { timeout: 30_000 });
+
+        await page.getByTestId('workitem-dictation-mic').click();
+        await expect(page.getByTestId('workitem-dictation-bar')).toHaveAttribute('data-state', 'recording');
+        await page.waitForTimeout(4000);
+        await page.getByTestId('workitem-dictation-stop').click();
+        const note = page.getByTestId('workitem-dictation-note');
+        await expect(note).toContainText('「작업 내용」 칸에 넣었습니다', { timeout: 30_000 });
+        await expect(note).not.toContainText('자유입력');
+        await shot(page, 'after-9-free-input-label');
+        expect(writes).toEqual([]);
+        await expectNoPopup(page, seen);
+    } finally {
+        cleanupFreeInputTask();
+    }
 });

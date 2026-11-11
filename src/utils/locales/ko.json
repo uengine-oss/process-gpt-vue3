@@ -4142,15 +4142,6 @@
         "fileTooLarge": "파일이 너무 큽니다. (최대 50MB)",
         "fileDeleted": "파일이 삭제되었습니다."
     },
-    "FormRealtimeAssistant": {
-        "title": "음성 에이전트",
-        "connected": "연결됨",
-        "connecting": "연결 중",
-        "disconnected": "연결 안 됨",
-        "responding": "응답 중",
-        "micOn": "마이크 ON",
-        "inputPlaceholder": "메시지를 입력하거나 마이크로 말해보세요."
-    },
     "WorkItemDictation": {
         "start": "말로 입력하기",
         "stop": "멈춤",
@@ -4161,6 +4152,7 @@
         "filling": "「{text}」 로 칸을 채우는 중…",
         "appended": "받아쓴 글을 「{field}」 칸에 넣었습니다.",
         "filled": "{count}개 칸을 채웠습니다 ({fields}). 확인한 뒤 제출하세요.",
+        "skippedTyping": "입력 중이던 칸 {count}개는 건드리지 않았습니다 ({fields}).",
         "heard": "받아쓴 글: 「{text}」",
         "reason": {
             "denied": "마이크 사용을 허용해 주세요 (브라우저 주소창의 마이크 권한).",

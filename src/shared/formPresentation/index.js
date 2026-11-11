@@ -140,3 +140,71 @@ export function presentFormHtml(
 
     return changed ? doc.body.innerHTML : html;
 }
+
+/**
+ * 폼 없이 값의 키만 있을 때 키 모양으로 필드 종류를 짐작한다. 편집기가 붙인 자동 이름일 때만.
+ *   예전 편집기 'boolean-field-3' → boolean-field, 지금 편집기 'boolean_3' · 'user_select_2' → boolean-field · user-select-field
+ * 직접 지은 이름(customer_name)이면 ''.
+ */
+export function inferFieldTag(key) {
+    const k = String(key || '').trim();
+    const legacy = k.match(/^([a-z]+(?:-[a-z]+)*-field)(?:-\d+)?(?:-copy)*$/);
+    if (legacy) return legacy[1];
+    const current = k.match(/^([a-z_]+?)(?:_\d+)?$/);
+    if (current) {
+        const tag = `${current[1].replace(/_/g, '-')}-field`;
+        if (LABELLED_FIELDS.includes(tag)) return tag;
+    }
+    return '';
+}
+
+/**
+ * 값의 키만 있을 때(산출물 카드 · 폼 정의를 못 받은 값 목록)의 항목 이름. 업무 화면(presentFormHtml)과 같은 규칙 —
+ * 자동 이름은 「예/아니오 3」, 기본 자유입력 칸은 카드 제목(「작업 내용」), 직접 지은 키는 밑줄을 띄어 쓴 이름.
+ * 한쪽만 「boolean 3」 으로 보이지 않게 두 화면이 이 함수 하나를 쓴다.
+ *
+ * @param {string} key
+ * @param {{translate?: (key: string) => string|null, freeInputTitle?: string}} [opts]
+ */
+export function fieldLabelForKey(key, { translate, freeInputTitle = '' } = {}) {
+    const k = String(key ?? '');
+    if (k === FREE_INPUT_FIELD && freeInputTitle) return freeInputTitle;
+    return fallbackFieldLabel(inferFieldTag(k) || 'text-field', k, translate);
+}
+
+/**
+ * 업무 화면에 보이는 그대로의 칸 이름 — 칸 name → 이름.
+ * presentFormHtml 을 거친 폼에서 읽는다(빈 alias → 「텍스트 2」). 이름을 숨긴 기본 자유입력 칸은
+ * 화면에서 카드 제목(「작업 내용」)으로 보이므로 그 제목을 쓴다.
+ * 받아쓰기 결과 한 줄(「텍스트 2, 작업 내용 칸을 채웠습니다」)이 화면과 다른 이름을 말하지 않게 한다.
+ *
+ * @param {string} html  폼 정의 HTML(저장된 원본)
+ * @param {Parameters<typeof presentFormHtml>[1]} [opts]  presentFormHtml 과 같은 옵션
+ * @returns {Record<string, string>}
+ */
+export function presentedFieldLabels(html, opts = {}) {
+    const Parser = opts.DOMParser || (typeof window !== 'undefined' ? window.DOMParser : undefined);
+    const labels = {};
+    if (!html || typeof html !== 'string' || html === 'null' || !Parser) return labels;
+    let doc;
+    try {
+        doc = new Parser().parseFromString(presentFormHtml(html, { ...opts, DOMParser: Parser }), 'text/html');
+    } catch (e) {
+        return labels;
+    }
+    doc.querySelectorAll(LABELLED_FIELDS.join(',')).forEach((el) => {
+        const name = el.getAttribute('name') || '';
+        if (!name || labels[name]) return;
+        if (el.getAttribute('hide_label') === 'true') {
+            const row = el.closest('row-layout');
+            const title = row && String(row.getAttribute('alias') || '').trim();
+            if (title) {
+                labels[name] = title;
+                return;
+            }
+        }
+        const alias = String(el.getAttribute('alias') || el.getAttribute('label') || '').trim();
+        labels[name] = alias || fallbackFieldLabel(el.tagName.toLowerCase(), name, opts.translate);
+    });
+    return labels;
+}

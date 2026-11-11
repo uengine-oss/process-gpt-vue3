@@ -38,15 +38,19 @@ function branchLabelOf(seq) {
 }
 
 /**
- * 정의에서 '한 단계 → 다음 단계' 사이를 잇는 길을 찾아 그 길에서 고른 갈래 이름을 돌려준다.
+ * 정의에서 '한 단계 → 다음 단계' 사이를 잇는 길을 찾아, 그 길에서 갈래를 골랐는지와 마지막으로 고른 갈래 이름.
  * 사이에는 게이트웨이 · 중간 이벤트만 있을 수 있다(다른 업무를 지나면 그 길이 아니다).
  *
- * @returns {string} 갈래 이름. 갈림길을 지나지 않았거나 이름이 없으면 ''.
+ * 「골랐는가」 를 이름과 따로 돌려주는 까닭: 이름 없는 갈래(조건만 있는 흐름)로 되돌아간 줄도 그 줄이 고른 것이다.
+ * 이름만 보면 그 줄을 지나쳐 앞의 다른 갈래 이름을 가져와 엉뚱한 줄에 표시하게 된다.
+ *
+ * @returns {{chose: boolean, label: string}} 갈림길을 지나지 않았으면 chose=false. 고른 갈래에 이름이 없으면 label=''.
  */
-export function branchLabelBetween(definition, fromId, toId) {
-    if (!definition || !fromId || !toId) return '';
+export function branchChoiceBetween(definition, fromId, toId) {
+    const none = { chose: false, label: '' };
+    if (!definition || !fromId || !toId) return none;
     const sequences = Array.isArray(definition.sequences) ? definition.sequences : [];
-    if (!sequences.length) return '';
+    if (!sequences.length) return none;
 
     const gatewayType = new Map();
     (Array.isArray(definition.gateways) ? definition.gateways : []).forEach((g) => {
@@ -66,22 +70,30 @@ export function branchLabelBetween(definition, fromId, toId) {
         out.get(src).push(s);
     });
 
-    // 너비 우선. 사이 마디는 게이트웨이 · 중간 이벤트만 지난다.
-    const queue = [{ id: String(fromId), labels: [] }];
+    // 너비 우선. 사이 마디는 게이트웨이 · 중간 이벤트만 지난다. 지나며 고른 갈래(이름이 없어도)를 쌓는다.
+    const queue = [{ id: String(fromId), choices: [] }];
     const seen = new Set([String(fromId)]);
     while (queue.length) {
-        const { id, labels } = queue.shift();
+        const { id, choices } = queue.shift();
         for (const seq of out.get(id) || []) {
             const target = String(seq.target);
-            const label = CHOOSING_GATEWAYS.has(gatewayType.get(id)) ? branchLabelOf(seq) : '';
-            const nextLabels = label ? [...labels, label] : labels;
-            if (target === String(toId)) return clip(nextLabels[nextLabels.length - 1] || '');
+            const nextChoices = CHOOSING_GATEWAYS.has(gatewayType.get(id)) ? [...choices, branchLabelOf(seq)] : choices;
+            if (target === String(toId)) {
+                return nextChoices.length ? { chose: true, label: clip(nextChoices[nextChoices.length - 1]) } : none;
+            }
             if (!passable.has(target) || seen.has(target)) continue;
             seen.add(target);
-            queue.push({ id: target, labels: nextLabels });
+            queue.push({ id: target, choices: nextChoices });
         }
     }
-    return '';
+    return none;
+}
+
+/**
+ * '한 단계 → 다음 단계' 사이에서 고른 갈래 이름. 갈림길을 지나지 않았거나 고른 갈래에 이름이 없으면 ''.
+ */
+export function branchLabelBetween(definition, fromId, toId) {
+    return branchChoiceBetween(definition, fromId, toId).label;
 }
 
 /**
@@ -118,21 +130,24 @@ export function annotateHistory(rows, opts = {}) {
         //    도는 중일 뿐이라 표시하지 않는다 — 그 줄마다 붙이면 표 전체가 「다시 진행」 이 된다.
         //    제자리로 돌아오는 고리(검토 → 「보완 요청」 → 검토)는 이 줄에서 마친 단계가 곧 다음 업무다.
         if (nx && notes[i].nextRound > (notes[i].completedRound || 1) && (lastDoneAt.has(nx) || nx === c)) {
-            const from = nx === c ? i : lastDoneAt.get(nx);
-            // 돌려보낸 결정은 그 사이에서 가장 늦게 고른 갈래다(검토 → 「반려」 → 재작성 → 다시 작성).
-            let decided = -1;
+            // 돌려보낸 결정은 돌아온 단계를 떠난 뒤 이 줄까지 사이에서 가장 늦게 갈래를 고른 줄이다
+            // (검토 → 「반려」 → 재작성 → 다시 작성 이면 검토 줄). 갈래를 고른 줄을 만나면 이름이 없어도 거기서 멈춘다 —
+            // 이름 있는 갈래만 찾으면 이름 없는 흐름으로 되돌아간 줄을 지나쳐, 돌아온 단계에서 앞으로 나간 줄
+            // (작성 → 「검토 필요」 → 검토)에 표시가 붙었다. 돌아온 단계를 떠난 줄 자체는 앞으로 나간 줄이라 보지 않는다.
+            const stop = nx === c ? i : lastDoneAt.get(nx) + 1;
+            let decided = i;
             let label = '';
-            for (let k = i; k >= from; k -= 1) {
+            for (let k = i; k >= stop; k -= 1) {
                 const r = list[k];
-                const l = branchLabelBetween(definition, r && r.completedActivityId, r && r.nextActivityId);
-                if (l) {
+                const choice = branchChoiceBetween(definition, r && r.completedActivityId, r && r.nextActivityId);
+                if (choice.chose) {
                     decided = k;
-                    label = l;
+                    label = choice.label;
                     break;
                 }
             }
-            if (decided >= 0) notes[decided].loop = { label };
-            else notes[i].loop = { label: '' };
+            // 이름이 없으면 「다시 진행」 으로 보인다(label '')
+            notes[decided].loop = { label };
         }
         if (c) lastDoneAt.set(c, i);
     });

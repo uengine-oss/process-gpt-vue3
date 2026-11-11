@@ -161,6 +161,9 @@ export default {
                 formIds: taskList.map(formIdOf)
             });
             const sortedTaskList = taskList.sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
+            // 항목 키 → 폼에 적힌 이름. 정의의 모든 폼에서 한 번 만들고, 업무마다 그 업무의 폼 이름만 위에 얹는다
+            // (업무마다 모든 폼을 다시 훑으면 업무 수 × 폼 수만큼 돈다).
+            const baseLabels = fieldLabelsOf(formList);
 
             const outputList = [];
             sortedTaskList.forEach(async (item) => {
@@ -180,8 +183,8 @@ export default {
                 }
                 const formId = (item.tool || '').replace('formHandler:', '');
                 const form = formList.find((form) => form.id === formId);
-                // 항목 키 → 폼에 적힌 이름. 이 업무의 폼을 앞에 두고, 폼을 못 찾은 값은 정의의 다른 폼에서라도 이름을 찾는다.
-                const labels = fieldLabelsOf(form ? [form, ...formList] : formList);
+                // 이 업무의 폼 이름이 먼저고, 폼에 없는 값은 정의의 다른 폼에서라도 이름을 찾는다.
+                const labels = form ? { ...baseLabels, ...fieldLabelsOf(form) } : baseLabels;
                 if (!form) {
                     // 폼으로 만들어지지 않은 산출물(에이전트가 내놓은 값 등)도 남긴다.
                     // 이걸 빼 두면 사람이 채운 폼 하나만 보이고, 정작 에이전트가

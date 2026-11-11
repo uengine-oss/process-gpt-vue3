@@ -40,12 +40,12 @@
                                     </v-avatar>
                                     <span class="received-output__who">{{ getAssignee(field.formId).name }}</span>
                                 </template>
-                                <span v-if="previewOf(field).count" class="received-output__count" data-testid="received-output-count">
-                                    · {{ $t('ActivityInputData.fieldCount', { count: previewOf(field).count }) }}
+                                <span v-if="previews[field.formId].count" class="received-output__count" data-testid="received-output-count">
+                                    · {{ $t('ActivityInputData.fieldCount', { count: previews[field.formId].count }) }}
                                 </span>
                             </span>
                             <span v-if="!isOpen(field.formId)" class="received-output__preview" data-testid="received-output-preview">{{
-                                previewOf(field).text || $t('ActivityInputData.empty')
+                                previews[field.formId].text || $t('ActivityInputData.empty')
                             }}</span>
                         </span>
                         <span class="received-output__toggle" data-testid="received-output-toggle">
@@ -110,7 +110,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import { outputPreview, hasValue } from '@/shared/workItemOutput.js';
-import { fallbackFieldLabel, presentFormHtml } from '@/shared/formPresentation/index.js';
+import { fallbackFieldLabel, fieldLabelForKey, presentFormHtml } from '@/shared/formPresentation/index.js';
 
 export default {
     components: {
@@ -123,7 +123,6 @@ export default {
     },
     data() {
         return {
-            expanded: true, // 기본적으로 펼쳐진 상태
             backend: null,
             fieldMetadata: {}, // 폼별 필드 메타데이터 저장 (레이지 로딩)
             activityMetadata: null, // proc_def의 activities 정보 (레이지 로딩)
@@ -159,6 +158,20 @@ export default {
         }
     },
     computed: {
+        /**
+         * 접힌 칸에 보일 한 줄 미리보기와 값이 든 항목 수(폼 id → {text, count}) — 폼 정의의 필드 순서를 따른다.
+         * 줄마다 세 곳(항목 수 · 미리보기)에서 쓰므로 그릴 때마다 다시 셈하지 않게 한 번에 만들어 둔다.
+         */
+        previews() {
+            const out = {};
+            (Array.isArray(this.inputFields) ? this.inputFields : []).forEach((field) => {
+                if (!field || out[field.formId]) return;
+                const meta = this.fieldMetadata[field.formId];
+                const order = Array.isArray(meta) ? meta.map((m) => m && m.key).filter(Boolean) : [];
+                out[field.formId] = outputPreview(field.formValue, { order });
+            });
+            return out;
+        },
         /** 업무 화면용으로 보이는 이름을 고친 폼 HTML(빈 alias → 「텍스트 2」, 자유입력 → 「작업 내용」) */
         presentedHtml() {
             const translate = (key) => (this.$te && this.$te(key) ? this.$t(key) : null);
@@ -199,20 +212,11 @@ export default {
         }
     },
     methods: {
-        toggleExpanded() {
-            this.expanded = !this.expanded;
-        },
         isOpen(formId) {
             return !!this.openForms[formId];
         },
         toggle(formId) {
             this.openForms = { ...this.openForms, [formId]: !this.openForms[formId] };
-        },
-        /** 접힌 칸에 보일 한 줄 미리보기와 값이 든 항목 수 — 폼 정의의 필드 순서를 따른다 */
-        previewOf(field) {
-            const meta = this.fieldMetadata[field.formId];
-            const order = Array.isArray(meta) ? meta.map((m) => m && m.key).filter(Boolean) : [];
-            return outputPreview(field.formValue, { order });
         },
         /** 폼 HTML 이 없을 때의 값 목록(이름은 폼 정의의 text, 없으면 읽을 수 있는 이름) */
         plainRows(field) {
@@ -223,8 +227,12 @@ export default {
                 .filter((key) => hasValue(values[key]))
                 .map((key) => {
                     const m = meta.find((item) => item && item.key === key);
-                    const tag = m && m.type ? `${m.type}-field` : 'text-field';
-                    const label = (m && m.text) || fallbackFieldLabel(tag, key, translate);
+                    // 폼 정의에 종류가 있으면 그 종류로, 없으면 산출물 카드와 같은 규칙(키 모양으로 짐작)으로
+                    const label =
+                        (m && m.text) ||
+                        (m && m.type
+                            ? fallbackFieldLabel(`${m.type}-field`, key, translate)
+                            : fieldLabelForKey(key, { translate, freeInputTitle: this.$t('FormWorkItem.freeInputTitle') }));
                     const v = values[key];
                     return { key, label, value: typeof v === 'object' ? JSON.stringify(v) : String(v) };
                 });

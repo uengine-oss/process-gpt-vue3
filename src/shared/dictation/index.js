@@ -11,6 +11,9 @@
  *     "조건부 적합입니다" 한 줄이 세 문장짜리 보고서로 바뀌어 돌아온다(2026-11-11 VM 에서 확인).
  *   - 칸이 여럿이면 말한 내용을 칸에 나눠 넣는다. 예전 「음성 에이전트」 창이 update_form_fields 로
  *     하던 일을, 창 없이 서버 LLM 한 번으로 한다. 말하지 않은 칸은 건드리지 않는다.
+ *     LLM 답을 기다리는 동안(최대 60초) 사람이 계속 쓸 수 있으므로, 넣기 직전에 칸마다 요청 때 값과
+ *     견줘 그새 바뀐 칸은 건너뛴다(mergeFill). 여러 줄 글 칸은 LLM 이 다시 쓰지 못하게 새로 넣을 말만
+ *     받아 우리가 뒤에 잇고, 한 줄 칸 · 날짜 · 선택 칸은 말한 값으로 바꾼다.
  */
 
 // ---------------------------------------------------------------------------
@@ -126,16 +129,25 @@ export async function transcribe(blob, { post }) {
     }
 }
 
+/** 마지막 줄이 마크다운 목록 · 번호 · 제목 · 인용 줄인가. 그 뒤에 띄어 이으면 말이 그 항목 안으로 들어간다. */
+const BLOCK_LINE = /^\s*(?:[-*+•·]\s+|\d{1,3}[.)]\s+|#{1,6}\s+|>\s*)/;
+
 /**
  * 받아쓴 글을 지금 쓰고 있던 글 뒤에 잇는다.
  *
  * 덮어쓰면 이미 적어 둔 것이 사라진다. 말로 덧붙이는 쓰임이 더 흔하다.
+ * 한 줄 글이면 띄어 잇고, 여러 줄 글이거나 목록 · 제목 줄로 끝나면 빈 줄을 두고 새 문단으로 잇는다 —
+ * 띄어 이으면 말한 내용이 마지막 글머리 항목 안으로 들어갔다(2026-11-11 VM, 에이전트 초안 뒤에 말한 글).
+ * 줄바꿈 하나만 두면 마크다운에서는 여전히 앞 항목에 이어 붙으므로 빈 줄을 둔다.
  */
 export function appendTranscript(current, text) {
     const before = (current || '').toString().trimEnd();
     const added = (text || '').toString().trim();
     if (!added) return current || '';
-    return before ? `${before} ${added}` : added;
+    if (!before) return added;
+    const lines = before.split(/\r?\n/);
+    const block = lines.length > 1 || BLOCK_LINE.test(lines[lines.length - 1]);
+    return block ? `${before}\n\n${added}` : `${before} ${added}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -230,6 +242,19 @@ function isFreeText(field) {
     return !t || t === 'text';
 }
 
+/**
+ * 이미 적힌 글을 고쳐 쓰지 않고 뒤에 잇기만 하는 칸인가 — 여러 줄 글 칸(textarea · 자유 입력)과 문서 칸.
+ *
+ * 2026-11-11 결정(위임, 리뷰 반영): 한 줄 칸(<input> — 고객명 · 제안 제목)은 말한 값으로 **바꾼다**.
+ * 「고객명은 한빛물산」 은 「그 값으로 해 달라」 는 뜻이라, 뒤에 이으면 「홍길동 한빛물산」 이 된다.
+ * 여러 줄 칸만 「새로 넣을 말만 받아 뒤에 잇기」 를 지킨다(초안 · 사람이 쓴 긴 글을 LLM 이 다시 쓰지 못하게).
+ * 날짜 · 선택 · 예/아니오 · 숫자 칸도 말한 값으로 바꾼다. 어느 쪽이든 답을 기다리는 사이 사람이 고친 칸은
+ * 건너뛴다(mergeFill).
+ */
+function isAppendOnly(field) {
+    return field.type === 'textarea-field' || field.type === 'report-field';
+}
+
 function editableFields(fields) {
     const seen = new Set();
     return (Array.isArray(fields) ? fields : []).filter((f) => {
@@ -265,11 +290,16 @@ export function dictationTarget(fields) {
 const pad = (n) => (n < 10 ? `0${n}` : `${n}`);
 const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-/** LLM 에 넘길 칸 설명. 지금 값과 고를 수 있는 값까지 — 이름만 주면 엉뚱한 칸에 넣는다. */
+/**
+ * LLM 에 넘길 칸 설명. 지금 값과 고를 수 있는 값까지 — 이름만 주면 엉뚱한 칸에 넣는다.
+ * 칸마다 fill: "append"(여러 줄 — 새 말만) 또는 "replace"(값 전체)를 적는다 — 칸 종류로 짐작하게 두면
+ * 한 줄 글 칸과 여러 줄 글 칸을 헷갈린다.
+ */
 function fieldSpec(field) {
     const spec = { name: field.name, label: field.label || field.name, type: field.type };
     if (field.inputType) spec.inputType = field.inputType;
     if (Array.isArray(field.options) && field.options.length) spec.options = field.options;
+    spec.fill = isAppendOnly(field) ? 'append' : 'replace';
     return spec;
 }
 
@@ -278,6 +308,11 @@ function fieldSpec(field) {
  *
  * 규칙은 예전 「음성 에이전트」 창의 지침을 그대로 옮겼다 — 스키마에 없는 칸 금지, 모르면 비워 둠.
  * 다른 점: 창은 대화하며 되물었지만 여기서는 한 번에 끝나므로, 말하지 않은 칸은 아예 돌려주지 않게 한다.
+ *
+ * 여러 줄 글 칸은 「새로 넣을 말만」 받는다. 전에는 「기존 값 + 새 말」 전체를 받아 그대로 덮어써서, LLM 이
+ * 맞춤법을 고친다며 이미 적힌 글을 다시 쓰면 그대로 바뀌었다. 잇는 일은 mergeFill 이 한다.
+ * (전체 값을 받아 앞부분이 기존 값과 같은지 보는 방법도 있지만, 앞부분이 한 글자라도 고쳐지면 새 말만
+ * 떼어 낼 수 없어 기존 글이 두 번 들어간다. 새 말만 받으면 그런 경우가 없다.)
  */
 export function buildFillMessages({
     fields,
@@ -301,8 +336,10 @@ export function buildFillMessages({
         '- name 은 아래 양식 칸의 name 만 쓴다. 칸을 새로 만들지 않는다.',
         '- options 가 있는 칸은 options 의 value 중에서 고른다.',
         `- 날짜는 YYYY-MM-DD, 시간은 HH:mm 로 쓴다. 오늘은 ${isoDate(now)} 이다.`,
-        '- 이미 값이 있는 칸은 말한 내용이 그 칸을 바꾸거나 덧붙이라는 뜻일 때만 돌려준다. 덧붙일 때는 기존 값 뒤에 이어 쓴 전체 값을 돌려준다.',
-        '- 말한 내용을 부풀리거나 다시 쓰지 않는다. 맞춤법과 띄어쓰기만 고친다.',
+        '- 이미 값이 있는 칸은 말한 내용이 그 칸에 대한 것일 때만 돌려준다.',
+        '- fill 이 "append" 인 칸(여러 줄 글 칸)은 새로 넣을 말만 value 로 돌려준다. 현재 값을 되풀이하거나 고쳐 쓰지 않는다 — 현재 값 뒤에 잇는 것은 화면이 한다.',
+        '- fill 이 "replace" 인 칸(한 줄 글 · 날짜 · 시간 · 선택 · 예/아니오 · 숫자 등)은 말한 값으로 그 칸에 들어갈 값 전체를 돌려준다. 현재 값은 그 값으로 바뀐다.',
+        '- 말한 내용을 부풀리거나 다시 쓰지 않는다. 새로 넣을 말의 맞춤법과 띄어쓰기만 고친다. append 칸의 현재 값은 고치지 않는다.',
         '- 답은 JSON 하나만 쓴다: {"fields":[{"name":"칸 name","value":"값"}]}. 넣을 칸이 없으면 {"fields":[]}.',
         `프로세스: ${processName || '없음'} / 활동: ${activityName || '없음'}`,
         instruction ? `활동 지침: ${instruction}` : '',
@@ -334,6 +371,10 @@ function extractJson(text) {
     }
 }
 
+/** 말로 하는 상대 날짜. 「내일모레」 는 모레와 같은 날이다. */
+const RELATIVE_DAYS = { 오늘: 0, 내일: 1, 모레: 2, 내일모레: 2 };
+const RELATIVE_DAY = /^(오늘|내일모레|내일|모레)\s*(?:까지|에|요|이요|이에요|예요|입니다|로|으로|부터)?\s*[.!]?$/;
+
 /**
  * 말로 들은 날짜 · 시간을 칸 모양으로. 예전 「음성 에이전트」 창(WorkItem.handleAssistantApply)의 규칙.
  * 칸 이름이 아니라 칸 종류로 판단한다 — 이름에 date 가 없는 날짜 칸이 흔하다.
@@ -343,16 +384,18 @@ export function normalizeSpokenValue(field, value, now = new Date()) {
     const raw = value.trim();
     const type = field?.type;
     if (type === 'date-field') {
-        if (/오늘/.test(raw)) return isoDate(now);
-        if (/내일/.test(raw)) {
-            const d = new Date(now);
-            d.setDate(d.getDate() + 1);
-            return isoDate(d);
-        }
+        // 적힌 날짜가 먼저다 — 「2026-11-20 (오늘부터 9일 뒤)」 처럼 설명에 「오늘」 이 섞여도 적힌 날짜를 쓴다
         const ymd = raw.match(/(\d{4})\s*[./년-]\s*(\d{1,2})\s*[./월-]\s*(\d{1,2})/);
         if (ymd) return `${ymd[1]}-${pad(Number(ymd[2]))}-${pad(Number(ymd[3]))}`;
         const md = raw.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
         if (md) return `${now.getFullYear()}-${pad(Number(md[1]))}-${pad(Number(md[2]))}`;
+        // 상대 날짜는 값 전체가 그 말일 때만 — 「내일모레」 에서 「내일」 만 읽으면 하루가 틀린다
+        const rel = raw.match(RELATIVE_DAY);
+        if (rel) {
+            const d = new Date(now);
+            d.setDate(d.getDate() + RELATIVE_DAYS[rel[1]]);
+            return isoDate(d);
+        }
         return raw;
     }
     if (type === 'time-field') {
@@ -404,4 +447,156 @@ export function parseFillResponse(text, fields, { now = new Date() } = {}) {
         patch[name] = normalizeSpokenValue(field, value, now);
     });
     return patch;
+}
+
+// ---------------------------------------------------------------------------
+// 답을 넣을 때 — 기다리는 사이 사람이 쓴 글을 지킨다
+// ---------------------------------------------------------------------------
+
+/** 빈 값끼리는 같다(null · undefined · '' · 빈 배열). 폼은 빈 칸을 이 넷 중 아무것으로나 둔다. */
+function isBlank(v) {
+    if (v === null || v === undefined) return true;
+    if (typeof v === 'string') return v.trim() === '';
+    if (Array.isArray(v)) return v.length === 0;
+    return false;
+}
+
+function sameValue(a, b) {
+    if (isBlank(a) && isBlank(b)) return true;
+    if (a === b) return true;
+    if (typeof a === 'object' || typeof b === 'object') {
+        try {
+            return JSON.stringify(a) === JSON.stringify(b);
+        } catch (_e) {
+            return false;
+        }
+    }
+    return String(a) === String(b);
+}
+
+function copyValue(v) {
+    if (v && typeof v === 'object') {
+        try {
+            return JSON.parse(JSON.stringify(v));
+        } catch (_e) {
+            return v;
+        }
+    }
+    return v;
+}
+
+/**
+ * 요청을 보낼 때의 칸 값(복사본). 폼 값 객체는 사람이 쓰는 대로 그 자리에서 바뀌므로 복사해 둬야
+ * 답이 왔을 때 「그새 바뀌었나」 를 알 수 있다.
+ */
+export function snapshotValues(fields, values) {
+    const snap = {};
+    editableFields(fields)
+        .filter((f) => FILLABLE_TYPES.has(f.type))
+        .forEach((f) => {
+            snap[f.name] = copyValue(values ? values[f.name] : undefined);
+        });
+    return snap;
+}
+
+/**
+ * 글 칸에 넣을 새 말. LLM 에게 새 말만 달라고 해도 기존 값을 앞에 그대로 붙여 오기도 한다 —
+ * 그 앞부분은 떼어 낸다. 기존 값의 끝과 같으면(이미 적힌 말) 넣을 것이 없다.
+ */
+function additionTo(existing, value) {
+    const before = String(existing).trim();
+    let added = String(value).trim();
+    if (added.startsWith(before)) added = added.slice(before.length).trim();
+    if (!added || before.endsWith(added)) return '';
+    return added;
+}
+
+/**
+ * LLM 답(parseFillResponse)을 지금 폼에 넣을 값으로 바꾼다.
+ *
+ * - 요청 때 값(snapshot)과 지금 값(current)이 다른 칸은 건너뛴다. 답을 기다리는 동안(최대 60초) 사람이 그 칸에
+ *   쓴 글을 덮어쓰지 않는다. 건너뛴 칸은 skipped 로 알려 화면이 말해 준다.
+ * - 이미 글이 있는 여러 줄 글 칸(isAppendOnly)은 기존 글을 한 글자도 바꾸지 않고 새 말만 뒤에 잇는다.
+ * - 한 줄 글 · 날짜 · 선택처럼 값 하나를 갖는 칸은 말한 값으로 바꾼다(isAppendOnly 의 2026-11-11 결정).
+ *
+ * @param {Record<string, any>} patch  칸 → LLM 이 준 값
+ * @param {{fields: Array, snapshot: Record<string, any>, current: Record<string, any>}} p
+ * @returns {{values: Record<string, any>, applied: string[], skipped: string[]}}
+ */
+export function mergeFill(patch, { fields, snapshot = {}, current = {} } = {}) {
+    const byName = new Map(editableFields(fields).map((f) => [f.name, f]));
+    const values = {};
+    const applied = [];
+    const skipped = [];
+    Object.keys(patch || {}).forEach((name) => {
+        const field = byName.get(name);
+        if (!field) return;
+        const now = current ? current[name] : undefined;
+        if (!sameValue(now, snapshot ? snapshot[name] : undefined)) {
+            skipped.push(name);
+            return;
+        }
+        let next = patch[name];
+        if (isAppendOnly(field) && typeof now === 'string' && now.trim() && typeof next === 'string') {
+            const added = additionTo(now, next);
+            if (!added) return;
+            next = appendTranscript(now, added);
+        }
+        if (sameValue(now, next)) return;
+        values[name] = next;
+        applied.push(name);
+    });
+    return { values, applied, skipped };
+}
+
+// ---------------------------------------------------------------------------
+// LLM 요청 하나를 약속(Promise)으로
+// ---------------------------------------------------------------------------
+
+/** 이 시간 안에 답이 없으면 실패로 본다 — 멈춤을 누른 사람이 막연히 기다리지 않게. */
+export const FORM_FILL_TIMEOUT_MS = 60000;
+
+/**
+ * 생성기(AIGenerator 꼴: generate · stop, client.onGenerationFinished · onError 로 답한다)를 돌려 답을 기다린다.
+ * 생성기를 밖에서 받는 까닭은 이 판단을 node 시험으로 확인하기 위해서다(AIGenerator 는 '@/…' 를 읽어 node 에서 못 연다).
+ *
+ * generate() 는 async 라 XHR 을 열기 전에 던지면(설정 읽기 · 메시지 만들기) 거부된 약속만 남는다.
+ * 그 거부를 받아 바로 실패로 돌린다 — 받지 않으면 막대가 60초 동안 「채우는 중」 에 머물고
+ * 처리 안 된 거부가 콘솔에 남는다.
+ *
+ * @param {(client: {onGenerationFinished: Function, onError: Function}) => {generate: Function, stop?: Function}} createGenerator
+ * @returns {Promise<string>}
+ */
+export function awaitGeneration(createGenerator, { timeoutMs = FORM_FILL_TIMEOUT_MS } = {}) {
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        let generator = null;
+        let timer = null;
+        const settle = (fn, value) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            fn(value);
+        };
+        const fail = (error, fallback) => settle(reject, new Error((error && error.message) || fallback));
+        const client = {
+            // 빈 답은 서버 문제다 — 「말한 내용에서 못 찾았다」 로 알리면 사용자가 말을 바꿔 다시 하게 된다
+            onGenerationFinished: (model) => (model ? settle(resolve, model) : settle(reject, new Error('empty reply'))),
+            onError: (error) => fail(error, 'form fill failed')
+        };
+        timer = setTimeout(() => {
+            try {
+                if (generator && generator.stop) generator.stop();
+            } catch (_e) {
+                // 이미 끝난 요청
+            }
+            settle(reject, new Error('timeout'));
+        }, timeoutMs);
+        try {
+            generator = createGenerator(client);
+            Promise.resolve(generator.generate()).catch((e) => fail(e, 'form fill failed'));
+        } catch (e) {
+            fail(e, 'form fill failed');
+        }
+    });
 }

@@ -543,7 +543,7 @@
                                     </template>
                                     <template v-else>
                                         <v-icon size="18" color="success">mdi-check-circle-outline</v-icon>
-                                        <span class="workitem-dictation-text" data-testid="workitem-dictation-note">{{
+                                        <span class="workitem-dictation-text" :title="dictation.note" data-testid="workitem-dictation-note">{{
                                             dictation.note
                                         }}</span>
                                     </template>
@@ -631,14 +631,17 @@ import {
     dictationTarget,
     formatElapsed,
     isOnAttr,
+    mergeFill,
     parseFillResponse,
     parseItemsAttr,
     partialDue,
+    snapshotValues,
     startRecording,
     tailText,
     transcribe
 } from '@/shared/dictation';
 import { requestFormFill } from '@/components/ai/FormFillGenerator';
+import { presentedFieldLabels } from '@/shared/formPresentation/index.js';
 
 import JSON5 from 'json5';
 import partialParse from 'partial-json-parser';
@@ -748,9 +751,6 @@ export default {
         imgKeyList: [],
         isVisionMode: false,
         isGeneratingExample: false,
-
-        // 빠른 초안에 함께 넘기는 글(예전 마이크가 받아쓴 글을 여기 넣었다)
-        newMessage: '',
 
         // 받아쓰기(머리의 마이크). state: idle · starting · recording · transcribing · filling
         dictation: { state: 'idle', partial: '', transcript: '', elapsedMs: 0, note: '', error: '' },
@@ -967,9 +967,6 @@ export default {
 
             // generator가 있고 이전 메시지가 있는 경우
             if (this.generator && this.generator.previousMessages && this.generator.previousMessages.length > 0) return true;
-
-            // 오디오 메시지가 있는 경우
-            if (this.newMessage && this.newMessage.trim()) return true;
 
             // formData에 실제 값이 있는지 확인
             if (this.formData && typeof this.formData === 'object') {
@@ -1394,10 +1391,14 @@ export default {
         async applyDictation(text, run) {
             const fields = this.extractFieldSchema(this.html, this.formData || {});
             const target = dictationTarget(fields);
+            // 결과 한 줄의 칸 이름은 화면에 보이는 그대로(FormWorkItem 과 같은 presentFormHtml) — 「text-field-2」 · 「자유입력」 이 아니라
+            // 「텍스트 2」 · 「작업 내용」
+            const shown = this.dictationFieldLabels();
+            const labelOf = (name) => shown[name] || (fields.find((f) => f.name === name) || {}).label || name;
             if (target.mode === 'append') {
                 const current = this.formData ? this.formData[target.name] : '';
                 this.EventBus.emit('form-values-updated', { [target.name]: appendTranscript(current, text) });
-                this.finishDictation(this.$t('WorkItemDictation.appended', { field: target.label }));
+                this.finishDictation(this.$t('WorkItemDictation.appended', { field: labelOf(target.name) }));
                 return;
             }
             if (target.mode === 'none') {
@@ -1406,9 +1407,11 @@ export default {
             }
             this.dictation.state = 'filling';
             this.dictation.transcript = text;
+            // 보낼 때의 값을 복사해 둔다 — 답을 기다리는 동안(최대 60초) 사람이 계속 쓰므로, 넣기 전에 이 값과 견준다
+            const snapshot = snapshotValues(fields, this.formData || {});
             const messages = buildFillMessages({
                 fields,
-                values: this.formData || {},
+                values: snapshot,
                 transcript: text,
                 processName: this.processDefinition ? this.processDefinition.processDefinitionName : '',
                 activityName: this.activityName || '',
@@ -1422,14 +1425,34 @@ export default {
                 return;
             }
             if (this.dictationRun !== run) return;
-            const names = Object.keys(patch);
-            if (!names.length) {
+            // 그새 사람이 고친 칸은 건너뛰고, 글이 있는 글 칸은 뒤에 잇기만 한다(mergeFill)
+            const { values, applied, skipped } = mergeFill(patch, { fields, snapshot, current: this.formData || {} });
+            if (!applied.length && !skipped.length) {
                 this.failDictation('noMatch', text);
                 return;
             }
-            this.EventBus.emit('form-values-updated', patch);
-            const labels = names.map((n) => (fields.find((f) => f.name === n) || {}).label || n);
-            this.finishDictation(this.$t('WorkItemDictation.filled', { count: names.length, fields: labels.join(', ') }));
+            if (applied.length) this.EventBus.emit('form-values-updated', values);
+            // 건너뛴 칸을 먼저 말한다 — 막대는 한 줄이라 뒤에 두면 말줄임으로 잘려 안 보인다
+            const parts = [];
+            if (skipped.length) {
+                parts.push(this.$t('WorkItemDictation.skippedTyping', { count: skipped.length, fields: skipped.map(labelOf).join(', ') }));
+            }
+            if (applied.length) {
+                parts.push(this.$t('WorkItemDictation.filled', { count: applied.length, fields: applied.map(labelOf).join(', ') }));
+            } else {
+                // 아무 칸에도 못 넣었으면 받아쓴 글을 남긴다 — 말한 것을 다시 하지 않아도 되게
+                parts.push(this.$t('WorkItemDictation.heard', { text }));
+            }
+            this.finishDictation(parts.join(' '));
+        },
+        /** 업무 화면에 보이는 칸 이름(name → 이름). 폼 정의 HTML 이 아니라 화면에 그린 이름을 쓴다. */
+        dictationFieldLabels() {
+            const translate = (key) => (this.$te && this.$te(key) ? this.$t(key) : null);
+            return presentedFieldLabels(this.html, {
+                translate,
+                freeInputTitle: this.$t('FormWorkItem.freeInputTitle'),
+                freeInputPlaceholder: this.$t('FormWorkItem.freeInputPlaceholder')
+            });
         },
         finishDictation(note) {
             this.releaseDictation();
@@ -1730,11 +1753,7 @@ export default {
             if (this.isVisionMode) {
                 this.generator.generate();
             } else {
-                if (this.newMessage) {
-                    this.generateExample(this.newMessage, 'audio');
-                } else {
-                    this.generateExample();
-                }
+                this.generateExample();
             }
         },
         resetGeneratedContent() {
@@ -1750,9 +1769,6 @@ export default {
                 this.generator.previousMessages = [];
                 this.generator = null;
             }
-
-            // 오디오 메시지 초기화
-            this.newMessage = '';
 
             // 폼 데이터에서 이미지 데이터 제거
             if (this.formData && typeof this.formData === 'object') {
@@ -1780,23 +1796,11 @@ export default {
 
             this.generator.model = 'gpt-4o';
 
-            if (response) {
-                if (type == 'audio') {
-                    this.generator.previousMessages.push({
-                        content:
-                            '오디오 내용을 보고 오디오 내용을 개선해서 예시를 생성해. 오디오 내용을 기반으로 생성해야하고 오디오에 관한 언급은 하면 안돼. 오디오 내용과 생성될 내용이 달라서도 안돼. 적당한 수준의 보완, 정리만 해서 생성해.',
-                        role: 'user'
-                    });
-                    this.generator.previousMessages.push({
-                        content: '오디오 내용: ' + response,
-                        role: 'user'
-                    });
-                } else if (type == 'vision') {
-                    this.generator.previousMessages.push({
-                        content: '첨부된 이미지에 대한 설명: ' + response,
-                        role: 'user'
-                    });
-                }
+            if (response && type == 'vision') {
+                this.generator.previousMessages.push({
+                    content: '첨부된 이미지에 대한 설명: ' + response,
+                    role: 'user'
+                });
             }
             if (this.inputData) {
                 this.generator.previousMessages.push({
@@ -1964,7 +1968,6 @@ export default {
                             me.agentGenerationFinished(null);
                         }
                         me.isGeneratingExample = false;
-                        me.newMessage = null;
 
                         // 순차적 폼 채우기 상태 초기화
                         me.appliedFormFields = {};
@@ -1974,7 +1977,6 @@ export default {
                 errorMsg: '초안 생성을 실패하였습니다. 잠시 후 다시 시도해주세요.',
                 finalAction: () => {
                     me.isGeneratingExample = false;
-                    me.newMessage = null;
                     me.appliedFormFields = {};
                 }
             });
