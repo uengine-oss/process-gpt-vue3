@@ -271,7 +271,7 @@ import ChatModule from '@/components/ChatModule.vue';
 import MainChatInput from '@/components/MainChatInput.vue';
 import { startMainChat, hasSomethingToSend } from '@/composables/useMainChatStart';
 import { processGptAgent } from '@/constants/processGptAgent';
-import { findStartActivity } from '@/utils/processStart';
+import { findStartActivity, hasDanglingStartEvent } from '@/utils/processStart';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import CompanyQueryGenerator from '@/components/ai/CompanyQueryGenerator.js';
@@ -846,10 +846,14 @@ export default {
                         // 시작 액티비티는 실행 엔진에게 물어본다.
                         // (예전에는 화면마다 규칙이 달라, 시작 이벤트 id 나 타입 표기가 조금만 달라도
                         //  엉뚱한 액티비티가 첫 번째로 잡혔다)
-                        const resolvedStart = await me.backend.getStartActivity({
-                            process_definition_id: processDef.id || processDef.definition.processDefinitionId,
-                            definition: processDef.definition
-                        });
+                        // 단, 정의 JSON 의 시작 이벤트에서 나가는 연결선이 없으면 엔진도 첫 단계를 건너뛴다 —
+                        // 그때는 묻지 않고 XML·구조로 찾는 로컬 판별을 쓴다.
+                        const resolvedStart = hasDanglingStartEvent(processDef.definition)
+                            ? null
+                            : await me.backend.getStartActivity({
+                                  process_definition_id: processDef.id || processDef.definition.processDefinitionId,
+                                  definition: processDef.definition
+                              });
                         const definitionActivities = Array.isArray(processDef.definition.activities)
                             ? processDef.definition.activities
                             : [];
@@ -858,7 +862,7 @@ export default {
                                 (definitionActivities.find((a) => a && a.id === resolvedStart.activityId) ||
                                     resolvedStart.activity)) ||
                             // 엔진 조회 실패 시에만 동일 규칙의 로컬 구현으로 폴백한다.
-                            findStartActivity(processDef.definition);
+                            findStartActivity(processDef.definition, { bpmn: processDef.bpmn });
 
                         if (firstActivity && firstActivity.tool && firstActivity.tool.startsWith('formHandler:')) {
                             const formKey = firstActivity.tool.replace('formHandler:', '');
