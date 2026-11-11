@@ -155,7 +155,8 @@ test('F-MV-06 홈 화면에 추가: 매니페스트가 있고 iPhone 에는 공�
 
     await page.goto(`${BASE}/account-settings`);
     await page.getByText('테마 설정', { exact: true }).first().click();
-    await page.getByTestId('add-to-home-screen').click();
+    // 맨 위 띠에도 같은 단추가 있다 — 설정의 것을 누른다
+    await page.getByTestId('add-to-home-screen').last().click();
     const guide = page.getByTestId('add-to-home-guide');
     await expect(guide).toBeVisible();
     await expect(guide).toContainText('공유 단추');
