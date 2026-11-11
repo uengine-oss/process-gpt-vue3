@@ -42,7 +42,8 @@ const confirmOpen = ref(false);
 const confirmTarget = ref<Provider | null>(null);
 
 function rowOf(provider: Provider): StatusRow {
-    return status.value.find((r) => r.provider === provider) || normalizeStatus([])[0];
+    // 상태에 그 공급자 줄이 없으면 그 공급자의 「설정 안 됨」 줄(첫 줄을 쓰면 다른 공급자 이름으로 보인다).
+    return status.value.find((r) => r.provider === provider) || normalizeStatus([]).find((r) => r.provider === provider)!;
 }
 
 function agentOf(provider: Provider | null) {
@@ -111,10 +112,15 @@ function askDelete(provider: Provider) {
     confirmOpen.value = true;
 }
 
+/** 지우는 중인 공급자가 있나 — 확인 단추를 막는 데 쓴다(두 번 눌러 두 번 지우지 않게). */
+function confirmBusy() {
+    return !!confirmTarget.value && busy[confirmTarget.value];
+}
+
 async function confirmDelete() {
     const provider = confirmTarget.value;
+    if (!provider || busy[provider]) return;
     confirmOpen.value = false;
-    if (!provider) return;
     busy[provider] = true;
     rowError[provider] = '';
     try {
@@ -236,7 +242,7 @@ onMounted(reload);
                 <v-card-actions>
                     <v-spacer />
                     <v-btn variant="text" @click="confirmOpen = false">{{ $t('cliAgentKeys.cancel') }}</v-btn>
-                    <v-btn color="error" variant="flat" data-testid="cli-key-confirm-delete-ok" @click="confirmDelete">
+                    <v-btn color="error" variant="flat" data-testid="cli-key-confirm-delete-ok" :disabled="confirmBusy()" @click="confirmDelete">
                         {{ $t('cliAgentKeys.delete') }}
                     </v-btn>
                 </v-card-actions>

@@ -13,8 +13,10 @@
 --
 -- 함수
 --   cli_agent_credential_set(p_provider, p_secret)  관리자만. 빈 문자열이면 지운다. 테넌트는 호출자 JWT 에서 정한다.
---   cli_agent_credential_status()                   같은 테넌트의 승인된 사용자 누구나. 비밀 값은 돌려주지 않는다.
+--   cli_agent_credential_status()                   같은 테넌트의 승인된 사용자 누구나. 비밀 값은 돌려주지 않는다
+--                                                   (끝 네 자리 · 바꾼 사람 · 때는 관리자에게만).
 --   cli_agent_credential_get(p_tenant, p_provider)  service_role 만(cli-agent 가 서비스 롤 키로 부른다).
+--   세 함수 모두 지운 테넌트(tenants.is_deleted)로는 쓰이지 않는다.
 --
 -- 관리자 판정
 --   이 저장소의 가입 승인 표준 헬퍼 public.membership_admin() 을 그대로 쓴다
@@ -35,6 +37,10 @@ BEGIN
        OR to_regprocedure('public.membership_approved()') IS NULL
        OR to_regprocedure('public.tenant_id()') IS NULL THEN
         RAISE EXCEPTION 'public.membership_admin() · membership_approved() · tenant_id() 가 없습니다. 20260908000001_membership_approvals.sql 을 먼저 적용하세요.';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'tenants' AND column_name = 'is_deleted') THEN
+        RAISE EXCEPTION 'public.tenants.is_deleted 가 없습니다. 지운 테넌트를 걸러 낼 수 없어 멈춥니다(20260101_base_schema.sql).';
     END IF;
 END $$;
 
@@ -100,6 +106,10 @@ BEGIN
     IF v_tenant IS NULL THEN
         RAISE EXCEPTION '테넌트를 알 수 없습니다.' USING ERRCODE = '42501';
     END IF;
+    -- 왜: 지운 회사(is_deleted)로는 넣지도 바꾸지도 못한다. 토큰이 아직 살아 있어도 그 회사는 더 쓰이지 않는다.
+    IF NOT EXISTS (SELECT 1 FROM public.tenants t WHERE t.id = v_tenant AND t.is_deleted IS NOT TRUE) THEN
+        RAISE EXCEPTION '사용할 수 없는 테넌트입니다.' USING ERRCODE = '42501';
+    END IF;
     -- 왜 membership_admin(): 이 저장소의 관리자 판정 한 곳(승인된 회원 + is_admin 또는 admin · superadmin)을 그대로 따른다.
     IF NOT public.membership_admin() THEN
         RAISE EXCEPTION '관리자만 CLI 에이전트 API 키를 바꿀 수 있습니다.' USING ERRCODE = '42501';
@@ -137,13 +147,18 @@ BEGIN
         v_id := NULL;  -- 메타는 있는데 암호문이 사라졌다(누가 vault 에서 지웠다). 새로 만든다.
     END IF;
     IF v_id IS NULL THEN
-        SELECT s.id INTO v_id FROM vault.secrets s WHERE s.name = v_name;  -- 이름으로 남은 것이 있으면 다시 쓴다(이름은 유일).
+        -- 메타 없이 이 이름으로 남은 비밀(예전 실패의 찌꺼기)이 있으면 그것을 다시 쓴다. 이름은 유일이라 새로 만들면 부딪친다.
+        SELECT s.id INTO v_id FROM vault.secrets s WHERE s.name = v_name;
+    ELSE
+        -- 메타가 가리키는 비밀이 따로 있는데 같은 이름의 찌꺼기가 또 있으면 지운다 — 옛 키 암호문이 주인 없이 남지 않게.
+        DELETE FROM vault.secrets WHERE name = v_name AND id <> v_id;
     END IF;
 
     IF v_id IS NULL THEN
         v_id := vault.create_secret(v_secret, v_name, v_desc);
     ELSE
-        PERFORM vault.update_secret(v_id, v_secret, v_name, v_desc);
+        -- 값만 바꾼다. 이름 · 설명은 그대로 둔다 — 이름을 바꾸려 들면 같은 이름의 비밀과 부딪쳐(이름 유일) 바꾸기가 실패한다.
+        PERFORM vault.update_secret(v_id, v_secret);
     END IF;
 
     INSERT INTO public.cli_agent_credentials AS c (tenant_id, provider, vault_secret_id, last4, updated_by, updated_at)
@@ -170,12 +185,13 @@ SECURITY DEFINER
 SET search_path = public, vault, pg_temp
 AS $$
     -- 왜 누구나: 채팅의 「CLI 코딩 에이전트」 선택지는 회사 키가 있을 때 모두에게 열린다. 일반 사용자는 「있다 · 없다」만 알면 된다.
-    -- 왜 관리자에게만 끝 네 자리 · 바꾼 사람: 어느 키가 들어 있는지 대조하는 것은 관리자 일이다.
+    -- 왜 관리자에게만 끝 네 자리 · 바꾼 사람 · 때: 어느 키가 언제 들어왔는지 대조하는 것은 관리자 일이다.
+    -- 지운 회사(is_deleted)면 아무 줄도 돌려주지 않는다.
     -- 공급자 둘을 늘 돌려준다(없으면 configured=false) — 화면이 빈 줄을 따로 지어내지 않게.
     SELECT p.provider,
            (c.vault_secret_id IS NOT NULL AND EXISTS (SELECT 1 FROM vault.secrets s WHERE s.id = c.vault_secret_id)) AS configured,
            CASE WHEN public.membership_admin() THEN c.last4 END AS last4,
-           c.updated_at,
+           CASE WHEN public.membership_admin() THEN c.updated_at END AS updated_at,
            CASE WHEN public.membership_admin() THEN u.username END AS updated_by_name
       FROM (VALUES ('anthropic'), ('openai')) AS p(provider)
       LEFT JOIN public.cli_agent_credentials c
@@ -184,11 +200,12 @@ AS $$
              ON u.id = c.updated_by AND u.tenant_id = c.tenant_id
      WHERE public.tenant_id() IS NOT NULL
        AND public.membership_approved()
+       AND EXISTS (SELECT 1 FROM public.tenants t WHERE t.id = public.tenant_id() AND t.is_deleted IS NOT TRUE)
      ORDER BY p.provider;
 $$;
 COMMENT ON FUNCTION public.cli_agent_credential_status() IS
 '회사 키가 설정됐는지 같은 테넌트의 승인된 사용자 누구나 본다(채팅의 CLI 코딩 에이전트 선택지). 비밀 값은 돌려주지 않고, '
-'끝 네 자리 · 바꾼 사람은 관리자에게만 보인다.';
+'끝 네 자리 · 바꾼 사람 · 때는 관리자에게만 보인다. 지운 테넌트는 아무 줄도 받지 않는다.';
 REVOKE ALL ON FUNCTION public.cli_agent_credential_status() FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.cli_agent_credential_status() TO authenticated;
 
@@ -202,8 +219,10 @@ SET search_path = public, vault, pg_temp
 AS $$
     -- 왜 서비스 롤만: 평문 키가 나가는 유일한 길이다. cli-agent 가 실행 직전에 서비스 롤 키로 읽어 CLI 환경에만 넣는다.
     -- 사용자 토큰(anon · authenticated)으로는 관리자라도 다시 볼 수 없다 — 화면은 쓰기 전용이다.
+    -- 지운 회사(is_deleted)의 키는 내주지 않는다 — 회사를 지웠는데 그 회사 업무가 남아 키로 돌면 안 된다.
     SELECT d.decrypted_secret
       FROM public.cli_agent_credentials c
+      JOIN public.tenants t ON t.id = c.tenant_id AND t.is_deleted IS NOT TRUE
       JOIN vault.decrypted_secrets d ON d.id = c.vault_secret_id
      WHERE c.tenant_id = p_tenant
        AND c.provider = lower(btrim(coalesce(p_provider, '')));

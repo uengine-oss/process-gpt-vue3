@@ -103,12 +103,20 @@ export function cliRoomContext(orchestration, agentCli) {
  *   cli_not_selected  CLI 를 고르지 않았다(available 에 고를 수 있는 것)
  *   cli_unavailable   고른 CLI 가 이 서버에 설치되어 있지 않다
  *   empty_message     보낼 내용이 비어 있다
+ *   company_key_required      그 CLI 에 쓸 회사 API 키가 없다(또는 키 저장소가 아직 없다) — 관리자에게 설정 자리를 알린다
+ *   company_key_check_failed  회사 키를 잠깐 확인하지 못했다 — 다시 보내면 된다
+ * 회사 키 둘은 cli-agent 가 개인 구독 자격 증명으로 채팅을 돌리지 않으려고 거절할 때 온다(2026-11-11).
  */
 export const CLI_ERROR_KEYS = {
     cli_not_selected: 'chats.agentErrors.cliNotSelected',
     cli_unavailable: 'chats.agentErrors.cliUnavailable',
-    empty_message: 'chats.agentErrors.emptyMessage'
+    empty_message: 'chats.agentErrors.emptyMessage',
+    company_key_required: 'chats.agentErrors.companyKeyRequired',
+    company_key_check_failed: 'chats.agentErrors.companyKeyCheckFailed'
 };
+
+/** company_key_required 뒤에 붙이는 한 줄 — 누가 어디서 고치는지. */
+export const COMPANY_KEY_ADMIN_HINT_KEY = 'chats.agentErrors.companyKeyAdminHint';
 
 /**
  * 휴대폰 웹(한국어만)이 쓰는 같은 문구. 포털은 locale(ko.json · en.json)의 같은 키를 쓴다 —
@@ -117,7 +125,10 @@ export const CLI_ERROR_KEYS = {
 const KO_TEXT = {
     'chats.agentErrors.cliNotSelected': '실행할 CLI를 먼저 고르세요.',
     'chats.agentErrors.cliUnavailable': '고른 CLI가 이 서버에 설치되어 있지 않습니다. 다른 CLI를 고르세요.',
-    'chats.agentErrors.emptyMessage': '보낼 내용이 비어 있습니다.'
+    'chats.agentErrors.emptyMessage': '보낼 내용이 비어 있습니다.',
+    'chats.agentErrors.companyKeyRequired': '이 CLI에 쓸 회사 API 키가 없습니다.',
+    'chats.agentErrors.companyKeyAdminHint': '관리자는 설정 › CLI 에이전트 API 키에서 회사 키를 넣을 수 있습니다.',
+    'chats.agentErrors.companyKeyCheckFailed': '회사 API 키를 확인하지 못했습니다. 잠시 뒤 다시 보내 주세요.'
 };
 
 /**
@@ -140,6 +151,8 @@ export function readableAgentError(err, t) {
     }
     // 설치되지 않은 CLI 는 서버 글에 어느 CLI 인지 · 어떻게 설치하는지가 들어 있다. 버리지 않는다.
     if (err.code === 'cli_unavailable' && raw && raw !== 'Agent error') text += ` — ${raw}`;
+    // 회사 키가 없으면 보낸 사람이 고칠 수 없다 — 관리자가 어디서 넣는지 한 줄 덧붙인다.
+    if (err.code === 'company_key_required') text += ` ${translate(COMPANY_KEY_ADMIN_HINT_KEY)}`;
     return text;
 }
 

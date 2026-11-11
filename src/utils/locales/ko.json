@@ -582,7 +582,10 @@
         "agentErrors": {
             "cliNotSelected": "실행할 CLI를 먼저 고르세요.",
             "cliUnavailable": "고른 CLI가 이 서버에 설치되어 있지 않습니다. 다른 CLI를 고르세요.",
-            "emptyMessage": "보낼 내용이 비어 있습니다."
+            "emptyMessage": "보낼 내용이 비어 있습니다.",
+            "companyKeyRequired": "이 CLI에 쓸 회사 API 키가 없습니다.",
+            "companyKeyAdminHint": "관리자는 설정 › CLI 에이전트 API 키에서 회사 키를 넣을 수 있습니다.",
+            "companyKeyCheckFailed": "회사 API 키를 확인하지 못했습니다. 잠시 뒤 다시 보내 주세요."
         }
     },
     "AssistantChats": {

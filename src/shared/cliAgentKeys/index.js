@@ -12,20 +12,26 @@
  *                                                    (끝 네 자리 · 바꾼 사람은 관리자에게만).
  *   화면은 키를 다시 읽을 길이 없다(쓰기 전용). 꺼내는 함수는 service_role 만 부른다.
  *
+ * 공급자마다 그 키로 도는 CLI 가 하나다 — anthropic → claude-code, openai → codex. 채팅은 키가 있는 CLI 만 고르게 한다.
+ * OpenAI 키만 넣은 회사에서 기본값(claude-code)으로 돌면 결국 공용 개인 구독으로 Claude 가 돈다 — 이 기능이 막으려는 일이다.
+ *
  * 이 파일은 Vue 를 모른다. supabase 클라이언트는 인자로 받을 수 있다(단위 시험은 가짜를 넘긴다).
  */
+import { KNOWN_CLI_AGENTS, agentCliOf } from '../../utils/cliAgents.js';
 
 /** 공급자 — 화면의 줄 순서이기도 하다. 값은 서버 check 제약과 같아야 한다. */
 export const CLI_KEY_PROVIDERS = Object.freeze([
     Object.freeze({
         provider: 'anthropic',
         agent: 'Claude Code',
+        cli: 'claude-code',
         prefix: 'sk-ant-',
         consoleUrl: 'https://console.anthropic.com/settings/keys'
     }),
     Object.freeze({
         provider: 'openai',
         agent: 'Codex',
+        cli: 'codex',
         prefix: 'sk-',
         consoleUrl: 'https://platform.openai.com/api-keys'
     })
@@ -67,19 +73,23 @@ function requireProvider(provider) {
 }
 
 /**
- * 서버 행을 화면 모양으로. 공급자 둘을 늘 같은 순서로 돌려준다 — 서버가 행을 빠뜨려도 「설정 안 됨」 줄이 남는다.
- * 서버가 혹시 secret 같은 칸을 실어 보내도 여기서 버린다(화면 상태에 평문이 머물지 않게).
- */
-/**
  * 키 저장소(DB 함수)가 아직 없는 서버인가 — 운영 DB 에는 SQL 을 사람이 적용하므로, 화면이 먼저 배포되면
- * 함수가 없다(PostgREST PGRST202 · Postgres 42883 · 표 없음 42P01). 그때는 오류가 아니라 「준비 안 됨」으로 보인다.
+ * 함수가 없다. 그때는 오류가 아니라 「준비 안 됨」으로 보인다.
+ * 이 기능의 함수 · 표가 없을 때만이다(PGRST202 · 42883 + cli_agent_credential…, 42P01 + cli_agent_credentials).
+ * 다른 것이 없다는 오류(예: 함수 안에서 쓰는 다른 표)는 진짜 오류라 그대로 보여 준다.
  */
 export function isStoreMissing(error) {
     const code = String(error?.code || '');
     const msg = String(error?.message || '');
-    return ['PGRST202', '42883', '42P01', '3F000'].includes(code) || /could not find the function|does not exist/i.test(msg);
+    if ((code === 'PGRST202' || code === '42883') && /cli_agent_credential/i.test(msg)) return true;
+    if (code === '42P01' && /cli_agent_credentials/i.test(msg)) return true;
+    return false;
 }
 
+/**
+ * 서버 행을 화면 모양으로. 공급자 둘을 늘 같은 순서로 돌려준다 — 서버가 행을 빠뜨려도 「설정 안 됨」 줄이 남는다.
+ * 서버가 혹시 secret 같은 칸을 실어 보내도 여기서 버린다(화면 상태에 평문이 머물지 않게).
+ */
 export function normalizeStatus(rows) {
     const byProvider = new Map();
     for (const row of Array.isArray(rows) ? rows : []) {
@@ -99,9 +109,41 @@ export function normalizeStatus(rows) {
     });
 }
 
-/** 회사 키가 하나라도 있나 — 채팅의 「CLI 코딩 에이전트」를 열지 정한다. */
+/** 회사 키가 하나라도 있나. */
 export function anyKeyConfigured(rows) {
     return normalizeStatus(rows).some((r) => r.configured);
+}
+
+/** 회사 키가 있는 CLI(agent_id) — 공급자 순서(claude-code, codex). 채팅의 「CLI 코딩 에이전트」는 이것이 있을 때 열린다. */
+export function configuredCliAgents(rows) {
+    const configured = new Set(normalizeStatus(rows).filter((r) => r.configured).map((r) => r.provider));
+    return CLI_KEY_PROVIDERS.filter((p) => configured.has(p.provider)).map((p) => p.cli);
+}
+
+/**
+ * 채팅에서 고를 수 있는 CLI 와 지금 보낼 CLI.
+ *
+ *   items         서버 목록(GET /process-gpt-cli-agent/agents → toCliAgentItems). 비어 있으면 아는 둘.
+ *   companyClis   회사 키가 있는 CLI(configuredCliAgents)
+ *   current       지금 고른 값(방에 기억된 값)
+ *
+ * 회사 키가 있으면 키가 있는 CLI 만 고르게 하고, 지금 값이 그중에 없으면 첫째(키가 있는 첫 CLI)로 바꾼다.
+ * 서버 목록에 없는 CLI 라도 키가 있으면 아는 이름으로 보여 준다(설치 여부는 서버가 답한다).
+ * 회사 키가 없으면(플래그로 연 배포) 지금처럼 — 목록 그대로, 방에 기억된 값이 목록에 없으면 그것도 덧붙인다.
+ */
+export function cliChoicesFor(items, companyClis, current) {
+    const base = Array.isArray(items) && items.length ? items : KNOWN_CLI_AGENTS;
+    const cur = agentCliOf(current);
+    const allowed = (Array.isArray(companyClis) ? companyClis : []).filter(Boolean);
+    if (!allowed.length) {
+        const list = base.some((i) => i?.value === cur) ? base : [...base, { value: cur, title: cur, installed: true, hint: '' }];
+        return { items: list, value: cur };
+    }
+    const list = base.filter((i) => allowed.includes(i?.value));
+    for (const v of allowed) {
+        if (!list.some((i) => i.value === v)) list.push(KNOWN_CLI_AGENTS.find((k) => k.value === v) || { value: v, title: v, installed: true, hint: '' });
+    }
+    return { items: list, value: allowed.includes(cur) ? cur : allowed[0] };
 }
 
 /** 상태를 읽는다. 실패하면 던진다(설정 화면이 오류를 보여 준다). */
@@ -110,7 +152,7 @@ export async function fetchCliKeyStatus({ client } = {}) {
     const { data, error } = await supabase.rpc(CLI_KEY_RPC.status);
     if (error) throw toError(error);
     const rows = normalizeStatus(data);
-    remember(rows);
+    await remember(supabase, rows);
     return rows;
 }
 
@@ -181,45 +223,88 @@ export function statusDetails(row) {
     return [maskedLast4(row.last4), row.updatedByName || '', formatUpdatedAt(row.updatedAt)].filter(Boolean);
 }
 
-// ── 채팅 선택지용: 회사 키가 있는지만, 짧게 기억한다 ────────────────────────────────
+// ── 채팅 선택지용: 회사 키가 있는 CLI 를 짧게 기억한다 ────────────────────────────────
+//
+// 기억은 「사용자 + 테넌트」 하나에만 묶는다(세션의 user id 와 app_metadata.tenant_id). 로그아웃 · 다른 사람으로 로그인 ·
+// 조직 바꾸기로 열쇠가 달라지면 기억을 버리고 새로 읽는다 — 앞 사람 회사의 답이 다음 사람에게 쓰이지 않게.
+// 세션을 모르면(로그인 전 · SSO 헤더 교환 등) 기억하지 않고 매번 읽는다.
 
-let cached = { at: 0, value: null, pending: null };
+let cache = { key: '', at: 0, agents: null, pending: null };
 // 저장 · 지우기마다 올린다. 그 전에 떠난 읽기가 늦게 돌아와 옛 값을 기억하지 않게 한다.
 let generation = 0;
 
-function remember(rows) {
-    cached = { at: Date.now(), value: anyKeyConfigured(rows), pending: null };
+async function sessionKey(supabase) {
+    try {
+        const { data } = await supabase.auth.getSession();
+        const user = data?.session?.user;
+        if (!user?.id) return '';
+        return `${user.id}|${user.app_metadata?.tenant_id || ''}`;
+    } catch (_e) {
+        return '';
+    }
 }
 
-/** 저장 · 지우기 뒤에는 다음 물음에서 새로 읽는다. */
+/** 이 열쇠의 기억. 열쇠가 바뀌었으면 앞의 기억을 버린다. */
+function entryFor(key) {
+    if (cache.key !== key) cache = { key, at: 0, agents: null, pending: null };
+    return cache;
+}
+
+async function remember(supabase, rows) {
+    const key = await sessionKey(supabase);
+    if (!key) return;
+    const entry = entryFor(key);
+    entry.at = Date.now();
+    entry.agents = configuredCliAgents(rows);
+}
+
+/** 상태를 읽어 키가 있는 CLI 로. 못 읽으면 null(기억하지 않는다). */
+async function readCompanyClis(supabase) {
+    try {
+        const { data, error } = await supabase.rpc(CLI_KEY_RPC.status);
+        if (error) return null;
+        return configuredCliAgents(data);
+    } catch (_e) {
+        return null;
+    }
+}
+
+/** 저장 · 지우기 · 로그아웃 뒤에는 다음 물음에서 새로 읽는다. */
 export function invalidateCliKeyStatus() {
     generation += 1;
-    cached = { at: 0, value: null, pending: null };
+    cache = { key: '', at: 0, agents: null, pending: null };
 }
 
 /**
- * 회사 키가 하나라도 설정돼 있나(채팅의 「CLI 코딩 에이전트」 선택지). 절대 던지지 않는다 — 못 읽으면 false
+ * 회사 키가 있는 CLI 목록(채팅의 「CLI 코딩 에이전트」와 실행 CLI 고르기). 절대 던지지 않는다 — 못 읽으면 []
  * (선택지가 없던 지금 상태 그대로). 실패는 기억하지 않는다(다음에 다시 묻는다).
- * 60초 안에는 다시 묻지 않고, 동시에 여러 번 물어도 요청은 하나다.
+ * 같은 사용자 · 테넌트면 60초 안에는 다시 묻지 않고, 동시에 여러 번 물어도 요청은 하나다.
  */
-export function companyCliKeyConfigured({ client, ttlMs = STATUS_TTL_MS, now = Date.now() } = {}) {
-    if (cached.value !== null && now - cached.at < ttlMs) return Promise.resolve(cached.value);
-    if (cached.pending) return cached.pending;
+export async function companyCliAgents({ client, ttlMs = STATUS_TTL_MS, now = Date.now() } = {}) {
+    const supabase = clientOf(client);
+    if (!supabase || typeof supabase.rpc !== 'function') return [];
+    const key = await sessionKey(supabase);
+    if (!key) return (await readCompanyClis(supabase)) || [];
+    const entry = entryFor(key);
+    if (entry.agents && now - entry.at < ttlMs) return entry.agents;
+    if (entry.pending) return entry.pending;
     const startedAt = generation;
-    const ask = async () => {
-        const supabase = clientOf(client);
-        if (!supabase || typeof supabase.rpc !== 'function') return false;
-        const { data, error } = await supabase.rpc(CLI_KEY_RPC.status);
-        if (error) return false;
-        const value = anyKeyConfigured(data);
-        if (startedAt === generation) cached = { at: Date.now(), value, pending: null };
-        return value;
-    };
-    const pending = ask()
-        .catch(() => false)
+    const pending = readCompanyClis(supabase)
+        .then((agents) => {
+            if (agents && cache === entry && startedAt === generation) {
+                entry.at = Date.now();
+                entry.agents = agents;
+            }
+            return agents || [];
+        })
         .finally(() => {
-            if (cached.pending === pending) cached.pending = null;
+            if (entry.pending === pending) entry.pending = null;
         });
-    cached.pending = pending;
+    entry.pending = pending;
     return pending;
+}
+
+/** 회사 키가 하나라도 있나(companyCliAgents 를 참/거짓으로). */
+export async function companyCliKeyConfigured(options = {}) {
+    return (await companyCliAgents(options)).length > 0;
 }

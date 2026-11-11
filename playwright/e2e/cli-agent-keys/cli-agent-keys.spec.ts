@@ -32,6 +32,7 @@ const LAUNCH_ARGS = process.env.UX_HOST_MAP ? [`--host-resolver-rules=${process.
 // 누가 봐도 가짜. 끝 네 자리로 화면 상태를 맞춰 본다.
 const FAKE_ANTHROPIC = `sk-ant-test-clikey-e2e-${Date.now().toString(36)}-QA7Z`;
 const LAST4 = FAKE_ANTHROPIC.slice(-4);
+const FAKE_OPENAI = `sk-test-clikey-e2e-openai-${Date.now().toString(36)}-QB8Y`;
 const CLI_OPTION = 'CLI 코딩 에이전트';
 
 test.use({
@@ -109,6 +110,26 @@ async function pickerHasCliOption(page: Page, shotName = '') {
     }
     await page.keyboard.press('Escape');
     return has;
+}
+
+/** 새 대화에서 「CLI 코딩 에이전트」를 고르고, 실행 CLI 칸의 값과 목록(이름들)을 돌려준다. */
+async function cliPickerChoices(page: Page, shotName = '') {
+    await page.getByTestId('orchestration-select').click();
+    await page.locator('.v-overlay--active .v-list-item').filter({ hasText: CLI_OPTION }).click();
+    const cli = page.getByTestId('agent-cli-select');
+    await expect(cli).toBeVisible();
+    // 회사 키에 맞춰 기본값이 바뀌는 것(claude-code → codex)까지 기다릴 수 있게, 값은 목록을 연 뒤에 읽는다.
+    await cli.click();
+    const items = page.locator('.v-overlay--active .v-list-item');
+    await expect(items.first()).toBeVisible();
+    const names = (await items.allInnerTexts()).map((t) => t.trim());
+    if (shotName) {
+        await page.waitForTimeout(300);
+        await shot(page, shotName);
+    }
+    await page.keyboard.press('Escape');
+    const value = ((await cli.innerText()) || '').trim();
+    return { value, names };
 }
 
 /** 탭 창(v-window)이 미끄러지는 중이면 사진에 두 탭이 겹쳐 찍힌다. 끝날 때까지 기다린다. */
@@ -217,10 +238,10 @@ test('F-CK-03 좁은 화면(390)에서도 줄이 넘치지 않고 쓸 수 있다
 test('F-CK-04 회사 키가 있으면 플래그가 꺼져 있어도 새 대화에 「CLI 코딩 에이전트」가 있다(관리자)', async () => {
     test.setTimeout(120_000);
     expect(await pickerHasCliOption(adminPage, 'picker-with-key.png')).toBe(true);
-    // 고르면 실행 CLI 칸이 나온다(기존 흐름 그대로)
-    await adminPage.getByTestId('orchestration-select').click();
-    await adminPage.locator('.v-overlay--active .v-list-item').filter({ hasText: CLI_OPTION }).click();
-    await expect(adminPage.getByTestId('agent-cli-select')).toBeVisible();
+    // 고르면 실행 CLI 칸이 나온다. Anthropic 키만 있으니 Claude Code 하나뿐이다.
+    const { value, names } = await cliPickerChoices(adminPage);
+    expect(names).toEqual(['Claude Code']);
+    expect(value).toContain('Claude Code');
 });
 
 test('F-CK-05 관리자가 아니면 칸이 없다 — 주소로 와도 계정 탭, 서버도 거절. 선택지는 일반 사용자에게도 열린다', async ({ browser }) => {
@@ -251,7 +272,7 @@ test('F-CK-05 관리자가 아니면 칸이 없다 — 주소로 와도 계정 �
         expect(denied.set).toBe('42501');
         expect(denied.get).toBe('42501');
         const anth = denied.status.find((r: any) => r.provider === 'anthropic');
-        expect(anth).toMatchObject({ configured: true, last4: null, updated_by_name: null });
+        expect(anth).toMatchObject({ configured: true, last4: null, updated_at: null, updated_by_name: null });
 
         // 회사 키는 회사 사람 모두의 것 — 일반 사용자 새 대화에도 선택지가 있다
         expect(await pickerHasCliOption(page)).toBe(true);
@@ -275,4 +296,22 @@ test('F-CK-06 지우기(확인 한 번) → 「설정 안 됨」, 새 대화 선
 
     // 새 대화 화면을 열면 선택지도 다시 숨는다
     expect(await pickerHasCliOption(page)).toBe(false);
+});
+
+test('F-CK-07 OpenAI 키만 있으면 실행 CLI 는 Codex 뿐이고 기본값도 Codex — 공용 개인 구독(Claude)으로 돌지 않게', async () => {
+    test.setTimeout(180_000);
+    const page = adminPage;
+    // 화면으로 넣는다(Codex 줄)
+    await openKeySettings(page);
+    const input = page.getByTestId('cli-key-input-openai').locator('input');
+    await input.fill(FAKE_OPENAI);
+    await page.getByTestId('cli-key-save-openai').click();
+    await expect(page.getByTestId('cli-key-status-openai')).toContainText(`••••${FAKE_OPENAI.slice(-4)}`, { timeout: 30_000 });
+    await expect(page.getByTestId('cli-key-status-anthropic')).toHaveText('설정 안 됨');
+
+    expect(await pickerHasCliOption(page)).toBe(true);
+    const { value, names } = await cliPickerChoices(page, 'picker-openai-only.png');
+    expect(names).toEqual(['Codex']);
+    expect(value).toContain('Codex');
+    expect(value).not.toContain('Claude');
 });

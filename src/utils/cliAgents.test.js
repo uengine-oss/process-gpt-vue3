@@ -125,3 +125,42 @@ test('서버가 목록이 아닌 것을 주면(서비스 없는 설치본의 HTM
     assert.deepEqual(toCliAgentItems(undefined), []);
     assert.deepEqual(toCliAgentItems('<!DOCTYPE html>'), []);
 });
+
+test('회사 키 없음(company_key_required) — 무엇이 없는지와, 관리자가 어디서 넣는지 한 줄', async () => {
+    const { COMPANY_KEY_ADMIN_HINT_KEY } = await import('./cliAgents.js');
+    const err = agentStreamError('회사 API 키가 없어 claude-code 를 돌리지 않습니다. 관리자에게 설정 › CLI 에이전트 API 키를 요청하세요.', {
+        type: 'error',
+        code: 'company_key_required'
+    });
+    assert.equal(err.code, 'company_key_required');
+    assert.equal(
+        readableAgentError(err),
+        '이 CLI에 쓸 회사 API 키가 없습니다. 관리자는 설정 › CLI 에이전트 API 키에서 회사 키를 넣을 수 있습니다.'
+    );
+    // 포털: locale 키 둘(본문 · 관리자 안내)을 그 순서로 쓴다
+    assert.equal(readableAgentError(err, (k) => `[${k}]`), '[chats.agentErrors.companyKeyRequired] [chats.agentErrors.companyKeyAdminHint]');
+    assert.equal(COMPANY_KEY_ADMIN_HINT_KEY, 'chats.agentErrors.companyKeyAdminHint');
+});
+
+test('회사 키 확인 실패(company_key_check_failed) — 잠시 뒤 다시 보내라고만(관리자 안내 없음)', () => {
+    const err = agentStreamError('lookup timeout', { type: 'error', code: 'company_key_check_failed' });
+    assert.equal(readableAgentError(err), '회사 API 키를 확인하지 못했습니다. 잠시 뒤 다시 보내 주세요.');
+    assert.equal(readableAgentError(err, (k) => `[${k}]`), '[chats.agentErrors.companyKeyCheckFailed]');
+});
+
+test('회사 키 문구는 휴대폰(한국어 내장) · 포털(ko.json · en.json) 모두에 있다', async () => {
+    const fs = await import('node:fs');
+    const { CLI_ERROR_KEYS, COMPANY_KEY_ADMIN_HINT_KEY } = await import('./cliAgents.js');
+    const keys = [CLI_ERROR_KEYS.company_key_required, CLI_ERROR_KEYS.company_key_check_failed, COMPANY_KEY_ADMIN_HINT_KEY];
+    for (const lang of ['ko', 'en']) {
+        const msgs = JSON.parse(fs.readFileSync(new URL(`./locales/${lang}.json`, import.meta.url), 'utf8'));
+        for (const key of keys) {
+            const value = key.split('.').reduce((o, k) => o?.[k], msgs);
+            assert.ok(typeof value === 'string' && value.length > 0, `${lang}.json 에 ${key} 가 없다`);
+        }
+    }
+    // 휴대폰(t 없이)은 내장 한국어 — 키 이름이 그대로 보이지 않는다
+    for (const code of ['company_key_required', 'company_key_check_failed']) {
+        assert.ok(!readableAgentError({ code, message: 'x' }).includes('chats.agentErrors'), code);
+    }
+});

@@ -573,7 +573,10 @@
         "agentErrors": {
             "cliNotSelected": "Choose a CLI first.",
             "cliUnavailable": "The selected CLI isn't installed on this server. Choose another CLI.",
-            "emptyMessage": "There is nothing to send."
+            "emptyMessage": "There is nothing to send.",
+            "companyKeyRequired": "There is no company API key for this CLI.",
+            "companyKeyAdminHint": "An admin can add one in Settings › CLI Agent API Keys.",
+            "companyKeyCheckFailed": "Couldn't check the company API key. Please send again in a moment."
         }
     },
     "AssistantChats": {
