@@ -1,8 +1,8 @@
 <template>
     <div v-if="visible" class="install-bar" data-testid="install-bar">
         <div class="install-bar__row">
-            <span class="install-bar__text">홈 화면에 추가하면 앱처럼 바로 열 수 있습니다</span>
-            <button class="install-bar__add" type="button" data-testid="add-to-home-screen" @click="add">홈 화면에 추가</button>
+            <span class="install-bar__text">홈 화면에서 앱처럼 열기</span>
+            <button class="install-bar__add" type="button" data-testid="add-to-home-screen" @click="add">추가</button>
             <button class="install-bar__hide" type="button" data-testid="install-bar-hide" @click="hide">다시 보지 않기</button>
         </div>
         <ol v-if="steps.length" class="install-bar__steps" data-testid="add-to-home-guide">

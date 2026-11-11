@@ -8,11 +8,15 @@ import { ref } from 'vue';
 import { installGuide, phoneZoom } from '@/shared/mobileView';
 import { webAppInstall, promptInstall } from '@/utils/webAppInstall';
 
-withDefaults(defineProps<{ variant?: 'flat' | 'tonal' | 'outlined' | 'text'; block?: boolean; size?: 'small' | 'default' }>(), {
-    variant: 'tonal',
-    block: false,
-    size: 'default'
-});
+withDefaults(
+    defineProps<{ variant?: 'flat' | 'tonal' | 'outlined' | 'text'; block?: boolean; size?: 'small' | 'default'; label?: string }>(),
+    {
+        variant: 'tonal',
+        block: false,
+        size: 'default',
+        label: ''
+    }
+);
 
 const guideOpen = ref(false);
 const guide = ref<'ios' | 'android' | 'desktop'>('desktop');
@@ -41,7 +45,7 @@ async function add() {
             data-testid="add-to-home-screen"
             @click="add"
         >
-            {{ $t('mobileView.addToHome') }}
+            {{ label || $t('mobileView.addToHome') }}
         </v-btn>
         <v-dialog v-model="guideOpen" :width="width">
             <v-card class="phone-sized-card" :style="{ transform: `scale(${zoom})` }" data-testid="add-to-home-guide">

@@ -5886,7 +5886,8 @@
         "desktopOption": "Desktop version — the same screen as on a computer (default)",
         "lightOption": "Light version — made for the phone",
         "close": "Close",
-        "installBarText": "Add to your home screen to open it like an app",
+        "installBarText": "Open it like an app",
+        "installBarAdd": "Add",
         "installBarHide": "Don't show again",
         "guide": {
             "ios1": "Tap the Share button (a square with an arrow pointing up) at the bottom of Safari (at the top on iPad).",

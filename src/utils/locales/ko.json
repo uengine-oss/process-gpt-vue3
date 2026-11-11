@@ -6035,7 +6035,8 @@
         "desktopOption": "데스크톱 버전 — 컴퓨터와 같은 화면(기본)",
         "lightOption": "라이트 버전 — 휴대폰에 맞춘 화면",
         "close": "닫기",
-        "installBarText": "홈 화면에 추가하면 앱처럼 바로 열 수 있습니다",
+        "installBarText": "홈 화면에서 앱처럼 열기",
+        "installBarAdd": "추가",
         "installBarHide": "다시 보지 않기",
         "guide": {
             "ios1": "Safari 아래쪽(iPad는 위쪽)의 공유 단추(네모 위로 화살표가 나온 모양)를 누릅니다.",

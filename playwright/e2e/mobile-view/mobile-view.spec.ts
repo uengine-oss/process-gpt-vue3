@@ -305,7 +305,7 @@ test('F-MV-15 데스크톱 화면 맨 위의 「홈 화면에 추가」 띠 — 
     await expect.poll(() => viewport(page), { timeout: 30_000 }).toEqual({ mode: 'desktop', width: 1280 });
     const bar = page.getByTestId('install-bar');
     await expect(bar).toBeVisible({ timeout: 30_000 });
-    await expect(bar).toContainText('홈 화면에 추가');
+    await expect(bar).toContainText('앱처럼');
     // 띠가 머리를 가리지 않는다 — 위쪽 막대가 띠 아래에서 시작한다
     const barBox = (await bar.boundingBox())!;
     const header = (await page.locator('header.v-app-bar, .v-app-bar').first().boundingBox())!;

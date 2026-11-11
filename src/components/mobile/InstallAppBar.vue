@@ -40,7 +40,7 @@ function hide() {
         <div class="install-bar__inner" :style="{ transform: `scale(${zoom})`, width: `${100 / zoom}%` }">
             <v-icon size="18" class="install-bar__icon">mdi-cellphone-arrow-down</v-icon>
             <span class="install-bar__text">{{ $t('mobileView.installBarText') }}</span>
-            <AddToHomeScreen variant="flat" size="small" />
+            <AddToHomeScreen variant="flat" size="small" :label="$t('mobileView.installBarAdd')" />
             <v-btn variant="text" size="small" class="text-none" data-testid="install-bar-hide" @click="hide">
                 {{ $t('mobileView.installBarHide') }}
             </v-btn>
