@@ -4807,7 +4807,19 @@
         "userInput": "사용자 입력",
         "noFormContent": "입력 폼 내용이 없습니다.",
         "stepFeedback": "이 단계에 대한 피드백",
-        "processing": "처리중..."
+        "processing": "처리중...",
+        "round": "{n}회차",
+        "loopBack": "되돌아감",
+        "rerun": "다시 진행",
+        "current": "진행 중",
+        "loopBackHint": "이 단계에서 흐름이 앞 단계로 돌아갔습니다",
+        "rerunHint": "앞에서 마친 단계를 다시 진행합니다"
+    },
+    "OutputCard": {
+        "empty": "아직 산출물이 없습니다",
+        "openOriginal": "원본 보기",
+        "moreFields": "외 {n}개 항목",
+        "openLink": "산출물 링크 열기"
     },
     "SkillsManagement": {
         "title": "스킬 목록 관리",

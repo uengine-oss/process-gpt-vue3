@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fetchFormDefs, formIdOf, hasValue, outputPreview, stripScopeSuffix } from './workItemOutput.js';
+import { fetchFormDefs, fieldLabelsOf, formIdOf, hasValue, outputPreview, stripScopeSuffix } from './workItemOutput.js';
 
 test('서브 프로세스 단계 이름의 실행 범위 표시를 뗀다', () => {
     assert.equal(stripScopeSuffix('현장조사: (:0)'), '현장조사');
@@ -73,4 +73,20 @@ test('전달받은 산출물 미리보기: 폼 순서의 첫 글을 한 줄로, 
     assert.deepEqual(outputPreview(null), { text: '', count: 0 });
     // 태그는 글로 보이지 않게
     assert.equal(outputPreview({ a: '<img src=x onerror=alert(1)>본문' }).text, '본문');
+});
+
+test('폼 항목 키를 폼에 적힌 이름으로 읽는다', () => {
+    const task = {
+        id: 'task1_form',
+        fields_json: [
+            { key: 'request_detail', text: '요청사항' },
+            { key: 'memo', text: '' }
+        ]
+    };
+    const other = { id: 'task2_form', fields_json: '[{"key":"request_detail","text":"다른 이름"},{"key":"proposal","text":"제안서"}]' };
+    assert.deepEqual(fieldLabelsOf([task, other]), { request_detail: '요청사항', proposal: '제안서' });
+    assert.deepEqual(fieldLabelsOf(task), { request_detail: '요청사항' });
+    assert.deepEqual(fieldLabelsOf([{ fields_json: 'not json' }, null]), {});
+    // 키를 그대로 베낀 이름은 이름으로 치지 않는다
+    assert.deepEqual(fieldLabelsOf({ fields_json: [{ key: 'text-field-2', text: 'text-field-2' }] }), {});
 });

@@ -1,7 +1,13 @@
 <template>
-    <v-card elevation="10" :class="'bg-' + column.cardbg">
+    <!--
+        열은 상태와 상관없이 같은 중립 바탕이다. 상태는 머리의 작은 점 하나로만 보인다.
+        전에는 열마다 다른 옅은 바탕(column.cardbg: 회색 · 하늘 · 연두)이라 화면이 얼룩져 보였고,
+        다크 테마에서는 그 바탕이 짙은 파랑 · 초록이 됐다(2026-11-11 검토).
+    -->
+    <v-card elevation="0" class="pg-kanban-col" data-testid="kanban-column" :data-status="column.id" :style="{ '--pg-tone': toneColor }">
         <v-row class="ma-0 pa-0 pa-3 pb-2 pt-2 align-center">
-            <h6 class="text-h6 font-weight-semibold">{{ $t(column.title) }}</h6>
+            <span class="pg-kanban-col__dot" data-testid="kanban-column-dot" aria-hidden="true"></span>
+            <h6 class="pg-kanban-col__title">{{ $t(column.title) }}</h6>
             <v-spacer></v-spacer>
             <Icons v-if="!todoTaskColumnBtnStatus" @click="todoTaskColumnFold(column.id)" :icon="'fold'" class="todo-task-fold-btn" />
             <Icons v-else @click="todoTaskColumnUnfold(column.id)" :icon="'unfold'" class="todo-task-unfold-btn" />
@@ -67,6 +73,7 @@ import WorkItemDialog from './WorkItemDialog.vue';
 import ReworkDialog from './ReworkDialog.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
+import { kanbanTone, TONE_COLOR } from '@/shared/kanbanTone';
 const backend = BackendFactory.createBackend();
 export default {
     components: {
@@ -111,6 +118,10 @@ export default {
         currentDraggedTask: null
     }),
     computed: {
+        /** 열 머리 점의 색 — 카드 왼쪽 띠와 같은 규칙(kanbanTone). */
+        toneColor() {
+            return TONE_COLOR[kanbanTone(this.column && this.column.id)];
+        },
         isMobile() {
             return window.innerWidth <= 768;
         },
@@ -375,3 +386,27 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.pg-kanban-col {
+    background: var(--cds-bg-neutral) !important;
+    border: 1px solid var(--cds-border);
+    border-radius: 12px;
+}
+
+.pg-kanban-col__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--pg-tone);
+    margin-right: 8px;
+    flex: 0 0 auto;
+}
+
+.pg-kanban-col__title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--cds-text-primary);
+    margin: 0;
+}
+</style>

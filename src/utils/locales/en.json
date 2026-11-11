@@ -4829,7 +4829,19 @@
         "userInput": "User Input",
         "noFormContent": "No form content available.",
         "stepFeedback": "Feedback for this step",
-        "processing": "Processing..."
+        "processing": "Processing...",
+        "round": "Round {n}",
+        "loopBack": "Sent back",
+        "rerun": "Runs again",
+        "current": "In progress",
+        "loopBackHint": "The flow went back to an earlier step here",
+        "rerunHint": "This step was done before and runs again"
+    },
+    "OutputCard": {
+        "empty": "No output yet",
+        "openOriginal": "Open original",
+        "moreFields": "+{n} more fields",
+        "openLink": "Open output link"
     },
     "SkillsManagement": {
         "title": "Skills List Management",
