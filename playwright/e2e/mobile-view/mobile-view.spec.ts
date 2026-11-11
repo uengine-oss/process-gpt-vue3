@@ -1,5 +1,6 @@
 /**
  * 휴대폰 화면: 기본은 데스크톱 화면, 라이트 버전은 한 번만 묻기, 설정에서 바꾸기, 홈 화면에 추가 (F-MV-01 ~ F-MV-07)
+ * 휴대폰에서는 내 일만: 관리 · 설계 · 분석 숨김과 막기, 에이전트에 맡기기, 결정 칸 (F-MV-08 ~ F-MV-11)
  * — 2026-11-11 사용자 요청
  *
  * 실제 백엔드(설치본)에 붙은 프런트를 휴대폰처럼(터치 · 390px 폭) 연다. 데이터는 바꾸지 않는다.
@@ -155,5 +156,75 @@ test('F-MV-07 컴퓨터(마우스)에서는 묻지 않고 화면 폭도 바꾸�
     await page.waitForTimeout(3_000);
     await expect(prompt(page)).toHaveCount(0);
     expect(await viewport(page)).toEqual({ mode: 'device', width: 1440 });
+    await ctx.close();
+});
+
+// ── 휴대폰에서는 내 일만 (2026-11-11 휴대폰 점검 1단계) ───────────────────────────────────
+// MV_TASK_ID: 김민지의 진행 중 업무 id, MV_APPROVAL_TASK_ID: 장진영의 승인/반려 업무 id (없으면 그 시험은 건너뛴다)
+
+async function loginAs(page: Page, who: 'admin' | 'minji') {
+    const a = accounts[who];
+    await page.goto(`${BASE}/auth/login`);
+    await page.locator('input[type="password"]').waitFor({ timeout: 30_000 });
+    await page.locator('input[type="text"], input[type="email"]').first().fill(a.email);
+    await page.locator('input[type="password"]').first().fill(a.password);
+    await page.locator('button').filter({ hasText: /^\s*(로그인|Sign In|Log In|Login)\s*$/i }).first().click();
+    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 60_000 });
+}
+
+test('F-MV-08 휴대폰(라이트) 사이드바에는 관리 · 설계 · 분석 메뉴가 없다', async ({ browser }) => {
+    const ctx = await phoneContext(browser, {}, 'light');
+    const page = await ctx.newPage();
+    await loginAs(page, 'admin');
+    await page.waitForTimeout(4_000);
+    const drawer = (await page.locator('nav.v-navigation-drawer').first().textContent()) || '';
+    expect(drawer).toContain('인스턴스');
+    for (const hidden of ['에이전트 동료', '스킬', '대시보드', '요청 Top List', 'Heatmap', 'Strategy Board']) {
+        expect(drawer, hidden).not.toContain(hidden);
+    }
+    await ctx.close();
+});
+
+test('F-MV-09 휴대폰에서 관리 주소로 가면 PC 안내로 가고, 「PC 화면으로 보기」로 연다', async ({ browser }) => {
+    const ctx = await phoneContext(browser, {}, 'light');
+    const page = await ctx.newPage();
+    await loginAs(page, 'admin');
+    await page.goto(`${BASE}/skills`);
+    await expect(page.getByTestId('desktop-only')).toBeVisible({ timeout: 30_000 });
+    expect(new URL(page.url()).pathname).toBe('/desktop-only');
+    expect(new URL(page.url()).searchParams.get('from')).toBe('/skills');
+    await Promise.all([page.waitForEvent('load'), page.getByTestId('desktop-only-open').click()]);
+    await expect.poll(() => viewport(page)).toEqual({ mode: 'desktop', width: 1280 });
+    expect(new URL(page.url()).pathname).toBe('/skills');
+    await ctx.close();
+});
+
+test('F-MV-10 휴대폰 업무 화면에도 「에이전트에 맡기기」가 있다', async ({ browser }) => {
+    test.skip(!process.env.MV_TASK_ID, 'MV_TASK_ID 없음');
+    const ctx = await phoneContext(browser, {}, 'light');
+    const page = await ctx.newPage();
+    await loginAs(page, 'minji');
+    await page.goto(`${BASE}/todolist/${process.env.MV_TASK_ID}`);
+    await expect(page.getByTestId('workitem-delegate-agent').first()).toBeVisible({ timeout: 30_000 });
+    await ctx.close();
+});
+
+test('F-MV-11 승인 · 반려 칸은 미리 고르지 않고, 고르지 않으면 제출되지 않는다', async ({ browser }) => {
+    test.skip(!process.env.MV_APPROVAL_TASK_ID, 'MV_APPROVAL_TASK_ID 없음');
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await ctx.newPage();
+    let submitted = false;
+    page.on('request', (r) => {
+        if (r.method() !== 'GET' && /complete|submit|putWorkItem|todolist/.test(r.url()) && /COMPLETED|SUBMITTED/.test(r.postData() || '')) submitted = true;
+    });
+    await loginAs(page, 'admin');
+    await page.goto(`${BASE}/todolist/${process.env.MV_APPROVAL_TASK_ID}`);
+    const select = page.locator('.form-select-field .v-select').first();
+    await expect(select).toBeVisible({ timeout: 30_000 });
+    // 빈 값이어도 Vuetify 는 빈 선택 글자 칸을 그린다 — 글자로 확인한다
+    await expect(select).not.toContainText(/승인|반려/);
+    await page.locator('.v-main button:visible').filter({ hasText: /제출 완료/ }).first().click();
+    await expect(page.getByText(/칸에서 하나를 골라 주세요/)).toBeVisible({ timeout: 10_000 });
+    expect(submitted).toBe(false);
     await ctx.close();
 });
