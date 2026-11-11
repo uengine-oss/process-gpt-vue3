@@ -25,6 +25,10 @@
                 <input id="password" v-model="password" type="password" autocomplete="current-password" required />
             </div>
 
+            <!-- 2단계 인증 화면은 아직 앱에 없다(lib/authGate). 비밀번호만으로 들이지 않고 웹 포털로 안내한다. -->
+            <p v-if="mfaBlocked && !error" class="m-note m-note--danger" data-testid="login-mfa-blocked">
+                이 계정은 2단계 인증을 써야 합니다. 앱에서는 아직 2단계 인증을 할 수 없으니 휴대폰 브라우저로 웹 포털에 들어가 주세요.
+            </p>
             <p v-if="error" class="m-note m-note--danger">{{ error }}</p>
 
             <button class="m-btn m-btn--primary m-btn--block" type="submit" :disabled="busy">
@@ -44,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { signIn } from '../lib/session.js';
 import { establishSession } from '../main';
@@ -56,6 +60,7 @@ const email = ref('');
 const password = ref('');
 const busy = ref(false);
 const error = ref('');
+const mfaBlocked = computed(() => route.query.mfa === '1');
 
 /**
  * 실패 이유를 사용자가 할 수 있는 일로 바꿔 말한다.

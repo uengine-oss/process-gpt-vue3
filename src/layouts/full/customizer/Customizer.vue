@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useCustomizerStore } from '@/stores/customizer';
 import { CheckIcon } from 'vue-tabler-icons';
 import { applyAppearance, appearanceFromTheme, THEME_BY_APPEARANCE, type Appearance } from '@/ds/appearance';
-import { isPhoneBrowser, viewportApi, savedMobileView, saveMobileView } from '@/shared/mobileView';
+import { isPhoneBrowser, viewportApi, savedMobileView, saveMobileView, phoneWebUrl } from '@/shared/mobileView';
 import { webAppInstall } from '@/utils/webAppInstall';
 import AddToHomeScreen from '@/components/mobile/AddToHomeScreen.vue';
 
@@ -41,14 +41,18 @@ function saveSettings() {
 
 /**
  * 휴대폰 화면 — 휴대폰 브라우저에서만 보인다(이 기기에 저장되고, 폭은 index.html 이 정한다).
- * 고르지 않았으면 기본인 라이트(휴대폰 웹)로 보인다.
+ * 고르지 않았으면 기본인 데스크톱 화면으로 보인다. 라이트를 고르면 휴대폰 웹(/m/)으로 간다.
  */
 const showMobileView = isPhoneBrowser() && !!viewportApi()?.isEnabled?.();
-const mobileView = ref<'desktop' | 'light'>(savedMobileView() ?? 'light');
+const mobileView = ref<'desktop' | 'light'>(savedMobileView() ?? 'desktop');
 
 function selectMobileView(view: 'desktop' | 'light') {
     mobileView.value = view;
-    if (saveMobileView(view).reload) window.location.reload();
+    const { reload } = saveMobileView(view);
+    // 라이트는 휴대폰 웹으로 간다 — 계정 설정은 휴대폰에서도 포털에 남는 화면이라 새로 열기만 하면 그대로다.
+    const phoneWeb = view === 'light' ? phoneWebUrl('/todolist') : null;
+    if (phoneWeb) window.location.assign(phoneWeb);
+    else if (reload) window.location.reload();
 }
 
 onMounted(() => {

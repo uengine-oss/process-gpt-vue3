@@ -1,6 +1,9 @@
 /**
- * 휴대폰 화면 (F-MV-01 ~ F-MV-12) — 2026-11-11
- *   - 휴대폰은 앱 화면을 휴대폰 웹(/m/ — 할 일 · 진행 · AI · 알림 · 나)으로 연다. 「PC 화면으로 보기」를 고른 휴대폰만 데스크톱 화면(1280px).
+ * 휴대폰 화면 (F-MV-01 ~ F-MV-16) — 2026-11-11
+ *   - 휴대폰은 기본으로 데스크톱 화면(1280px — PC와 같은 화면)으로 연다. 설정에서 라이트를 고른 휴대폰만
+ *     휴대폰 웹(/m/ — 할 일 · 진행 · AI · 알림 · 나)으로 연다.
+ *   - 홈 화면에 추가하지 않은 휴대폰에는 맨 위 「홈 화면에 추가」 띠, 「다시 보지 않기」 뒤로는 보이지 않는다(F-MV-15 · 16).
+ *   - 휴대폰 웹도 포털과 같은 로그인 · 2단계 인증(TOTP)을 거친다(F-MV-13 · 14).
  *   - 홈 화면에 추가(매니페스트 · iPhone 안내), 좁은 화면의 관리 · 설계 · 분석 숨김 · 막기, 결정 칸.
  *
  * 실제 백엔드(설치본)에 붙은 프런트를 휴대폰처럼(터치 · 390px 폭) 연다. 휴대폰 웹(/m/)도 같은 서버가 낸다.
@@ -10,9 +13,11 @@
  *   UX_ACCOUNTS=~/.config/pgtut/local-accounts.json npx playwright test playwright/e2e/mobile-view
  *   (MV_TASK_ID: 김민지의 진행 중 업무 id, MV_APPROVAL_TASK_ID: 장진영의 처음 연 승인/반려 업무 id — 없으면 그 시험은 건너뛴다)
  *
- * 계정 파일: { admin: {email,password}, minji: {...} } — ux-review 묶음과 같은 파일.
+ * 계정 파일: { admin: {email,password}, minji: {...}, mfa: {email,password,totp} } — ux-review 묶음과 같은 파일.
+ *   mfa 는 TOTP 를 등록한 계정(totp: base32 비밀). 없으면 F-MV-14 를 건너뛴다.
  */
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 
@@ -52,6 +57,26 @@ async function login(page: Page) {
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 60_000 });
 }
 
+/** RFC 6238 TOTP(30초 · 6자리 · SHA-1) — 인증 앱이 보여 주는 코드 */
+function totp(secret: string, at = Date.now()): string {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let bits = '';
+    for (const c of secret.replace(/=+$/, '').toUpperCase()) bits += alphabet.indexOf(c).toString(2).padStart(5, '0');
+    const key = Buffer.from(bits.match(/.{8}/g)!.map((b) => parseInt(b, 2)));
+    const counter = Buffer.alloc(8);
+    counter.writeBigUInt64BE(BigInt(Math.floor(at / 30_000)));
+    const h = crypto.createHmac('sha1', key).update(counter).digest();
+    const o = h[h.length - 1] & 15;
+    return String((h.readUInt32BE(o) & 0x7fffffff) % 1_000_000).padStart(6, '0');
+}
+
+async function fillLogin(page: Page, a: { email: string; password: string }) {
+    await page.locator('input[type="password"]').waitFor({ timeout: 30_000 });
+    await page.locator('input[type="text"], input[type="email"]').first().fill(a.email);
+    await page.locator('input[type="password"]').first().fill(a.password);
+    await page.locator('button').filter({ hasText: /^\s*(로그인|Sign In|Log In|Login)\s*$/i }).first().click();
+}
+
 const viewport = (page: Page) => page.evaluate(() => ({ mode: document.documentElement.dataset.viewport, width: window.innerWidth }));
 const tabs = (page: Page) => page.locator('nav.m-tabs');
 
@@ -67,7 +92,7 @@ async function phoneContext(browser: any, extra: Record<string, unknown> = {}, s
     return ctx;
 }
 
-test('F-MV-01 휴대폰으로 로그인하면 휴대폰 웹(/m/)의 할 일로 열린다', async ({ browser }) => {
+test('F-MV-01 휴대폰으로 로그인하면 데스크톱 화면(PC와 같은 화면)으로 열린다', async ({ browser }) => {
     const ctx = await phoneContext(browser);
     const page = await ctx.newPage();
     await page.goto(`${BASE}/auth/login`);
@@ -77,15 +102,15 @@ test('F-MV-01 휴대폰으로 로그인하면 휴대폰 웹(/m/)의 할 일로 �
     await page.locator('input[type="text"], input[type="email"]').first().fill(accounts.admin.email);
     await page.locator('input[type="password"]').first().fill(accounts.admin.password);
     await page.locator('button').filter({ hasText: /^\s*(로그인|Sign In|Log In|Login)\s*$/i }).first().click();
-    await page.waitForURL((u) => u.pathname === '/m/', { timeout: 60_000 });
-    await expect(tabs(page)).toBeVisible({ timeout: 30_000 });
-    for (const label of ['할 일', '진행', 'AI', '알림', '나']) await expect(tabs(page)).toContainText(label);
-    expect(new URL(page.url()).hash).toMatch(/^#\/tasks/);
+    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 60_000 });
+    await expect.poll(() => viewport(page), { timeout: 30_000 }).toEqual({ mode: 'desktop', width: 1280 });
+    expect(new URL(page.url()).pathname).not.toBe('/m/');
+    await expect(tabs(page)).toHaveCount(0);
     await ctx.close();
 });
 
 test('F-MV-02 휴대폰 웹 「나」의 「PC 화면으로 보기」는 포털 데스크톱 화면을 열고, 다시 열어도 그대로다', async ({ browser }) => {
-    const ctx = await phoneContext(browser);
+    const ctx = await phoneContext(browser, {}, 'light');
     const page = await ctx.newPage();
     await login(page);
     await page.waitForURL((u) => u.pathname === '/m/', { timeout: 60_000 });
@@ -101,8 +126,8 @@ test('F-MV-02 휴대폰 웹 「나」의 「PC 화면으로 보기」는 포털 
     await ctx.close();
 });
 
-test('F-MV-03 설정 › 테마 설정 「휴대폰 화면」에서 라이트를 고르면 휴대폰 웹으로 돌아간다', async ({ browser }) => {
-    const ctx = await phoneContext(browser, {}, 'desktop');
+test('F-MV-03 설정 › 테마 설정 「휴대폰 화면」에서 라이트를 고르면 휴대폰 웹으로 간다', async ({ browser }) => {
+    const ctx = await phoneContext(browser);
     const page = await ctx.newPage();
     await login(page);
     expect((await viewport(page)).mode).toBe('desktop');
@@ -130,7 +155,8 @@ test('F-MV-06 홈 화면에 추가: 매니페스트가 있고 iPhone 에는 공�
 
     await page.goto(`${BASE}/account-settings`);
     await page.getByText('테마 설정', { exact: true }).first().click();
-    await page.getByTestId('add-to-home-screen').click();
+    // 맨 위 띠에도 같은 단추가 있다 — 설정의 것을 누른다
+    await page.getByTestId('add-to-home-screen').last().click();
     const guide = page.getByTestId('add-to-home-guide');
     await expect(guide).toBeVisible();
     await expect(guide).toContainText('공유 단추');
@@ -189,7 +215,7 @@ test('F-MV-09 좁은 화면에서 관리 주소로 가면 PC 안내로 간다', 
 
 test('F-MV-10 휴대폰 웹 업무 화면에 「에이전트에 맡기기」가 있다', async ({ browser }) => {
     test.skip(!process.env.MV_TASK_ID, 'MV_TASK_ID 없음');
-    const ctx = await phoneContext(browser);
+    const ctx = await phoneContext(browser, {}, 'light');
     const page = await ctx.newPage();
     await loginAs(page, 'minji');
     await page.goto(`${BASE}/todolist/${process.env.MV_TASK_ID}`);
@@ -221,7 +247,7 @@ test('F-MV-11 승인 · 반려 칸은 미리 고르지 않고, 고르지 않으�
 
 test('F-MV-12 휴대폰 웹 승인 화면: 미리 고른 값 없이 반려 · 승인 두 단추, 반려는 의견이 있어야 눌린다', async ({ browser }) => {
     test.skip(!process.env.MV_APPROVAL_TASK_ID, 'MV_APPROVAL_TASK_ID 없음');
-    const ctx = await phoneContext(browser);
+    const ctx = await phoneContext(browser, {}, 'light');
     const page = await ctx.newPage();
     await loginAs(page, 'admin');
     await page.goto(`${BASE}/m/#/tasks/${process.env.MV_APPROVAL_TASK_ID}`);
@@ -233,3 +259,94 @@ test('F-MV-12 휴대폰 웹 승인 화면: 미리 고른 값 없이 반려 · �
     await ctx.close();
 });
 
+
+test('F-MV-13 로그인 전에 휴대폰 웹 주소를 열면 포털 로그인을 거쳐 그 화면으로 돌아온다', async ({ browser }) => {
+    const ctx = await phoneContext(browser, {}, 'light');
+    const page = await ctx.newPage();
+    await page.goto(`${BASE}/m/#/notifications`);
+    // 휴대폰 웹에는 자기 로그인 화면이 없다 — 포털 로그인(소셜 로그인 · 2단계 인증이 있는 곳)으로 간다
+    await page.waitForURL((u) => u.pathname === '/auth/login', { timeout: 30_000 });
+    await fillLogin(page, accounts.admin);
+    await page.waitForURL((u) => u.pathname === '/m/' && u.hash === '#/notifications', { timeout: 60_000 });
+    await expect(tabs(page)).toBeVisible();
+    await ctx.close();
+});
+
+test('F-MV-14 2단계 인증 계정은 비밀번호만으로 휴대폰 웹에 들어가지 못한다', async ({ browser }) => {
+    test.skip(!accounts.mfa, '계정 파일에 mfa(TOTP 등록 계정)가 없습니다');
+    const ctx = await phoneContext(browser, {}, 'light');
+    const page = await ctx.newPage();
+    await page.goto(`${BASE}/auth/login`);
+    await fillLogin(page, accounts.mfa);
+    await page.waitForURL((u) => u.pathname === '/auth/two-step', { timeout: 60_000 });
+
+    // 코드를 넣지 않고 휴대폰 웹 · 포털 업무 주소로 바로 가 본다 — 둘 다 2단계 인증으로 돌아와야 한다
+    await page.goto(`${BASE}/m/#/tasks`);
+    await page.waitForURL((u) => u.pathname === '/auth/two-step', { timeout: 30_000 });
+    expect(new URL(page.url()).searchParams.get('redirect')).toBe('/todolist');
+    await page.goto(`${BASE}/notifications`);
+    await page.waitForURL((u) => u.pathname === '/auth/two-step', { timeout: 30_000 });
+    await expect(tabs(page)).toHaveCount(0);
+
+    // 코드를 넣으면 가려던 화면(알림)이 휴대폰 웹으로 열린다
+    const digits = page.locator('.verification input');
+    await expect(digits.first()).toBeEnabled({ timeout: 30_000 });
+    const code = totp(accounts.mfa.totp);
+    for (let i = 0; i < 6; i++) await digits.nth(i).fill(code[i]);
+    await page.waitForURL((u) => u.pathname === '/m/' && u.hash === '#/notifications', { timeout: 60_000 });
+    await expect(tabs(page)).toBeVisible();
+    await ctx.close();
+});
+
+test('F-MV-15 데스크톱 화면 맨 위의 「홈 화면에 추가」 띠 — 누르면 안내, 「다시 보지 않기」 뒤로는 보이지 않는다', async ({ browser }) => {
+    const ctx = await phoneContext(browser, { userAgent: IPHONE_UA });
+    const page = await ctx.newPage();
+    await login(page);
+    await expect.poll(() => viewport(page), { timeout: 30_000 }).toEqual({ mode: 'desktop', width: 1280 });
+    const bar = page.getByTestId('install-bar');
+    await expect(bar).toBeVisible({ timeout: 30_000 });
+    await expect(bar).toContainText('앱처럼');
+    // 띠가 머리를 가리지 않는다 — 위쪽 막대가 띠 아래에서 시작한다
+    const barBox = (await bar.boundingBox())!;
+    const header = (await page.locator('header.v-app-bar, .v-app-bar').first().boundingBox())!;
+    expect(header.y).toBeGreaterThanOrEqual(barBox.y + barBox.height - 1);
+    await page.screenshot({ path: 'playwright/test-results/mv-install-bar-desktop.png' });
+
+    await bar.getByTestId('add-to-home-screen').click();
+    const guide = page.getByTestId('add-to-home-guide');
+    await expect(guide).toBeVisible();
+    await expect(guide).toContainText('공유 단추');
+    await page.keyboard.press('Escape');
+
+    await bar.getByTestId('install-bar-hide').click();
+    await expect(bar).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem('installBarHidden'))).toBe('1');
+    await page.reload();
+    await page.waitForTimeout(4_000);
+    await expect(page.getByTestId('install-bar')).toHaveCount(0);
+    await ctx.close();
+});
+
+test('F-MV-16 휴대폰 웹(/m/) 맨 위에도 같은 띠가 있고, 「다시 보지 않기」는 포털과 같이 기억한다', async ({ browser }) => {
+    const ctx = await phoneContext(browser, { userAgent: IPHONE_UA }, 'light');
+    const page = await ctx.newPage();
+    await login(page);
+    await page.waitForURL((u) => u.pathname === '/m/', { timeout: 60_000 });
+    const bar = page.getByTestId('install-bar');
+    await expect(bar).toBeVisible({ timeout: 30_000 });
+    await page.screenshot({ path: 'playwright/test-results/mv-install-bar-light.png' });
+    await bar.getByTestId('add-to-home-screen').click();
+    await expect(page.getByTestId('add-to-home-guide')).toContainText('공유 단추');
+    await bar.getByTestId('install-bar-hide').click();
+    await expect(bar).toHaveCount(0);
+    await page.reload();
+    await expect(tabs(page)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId('install-bar')).toHaveCount(0);
+    // 포털(데스크톱 화면)에서도 보이지 않는다
+    await page.evaluate(() => localStorage.setItem('mobileView', 'desktop'));
+    await page.goto(`${BASE}/definition-map`);
+    await expect.poll(() => viewport(page), { timeout: 30_000 }).toEqual({ mode: 'desktop', width: 1280 });
+    await page.waitForTimeout(3_000);
+    await expect(page.getByTestId('install-bar')).toHaveCount(0);
+    await ctx.close();
+});

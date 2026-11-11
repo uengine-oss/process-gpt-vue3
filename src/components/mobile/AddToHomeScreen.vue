@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 「홈 화면에 추가」 단추 — 휴대폰 화면 질문 창과 설정 › 테마 설정에서 쓴다.
+ * 「홈 화면에 추가」 단추 — 맨 위 「홈 화면에 추가」 띠(InstallAppBar)와 설정 › 테마 설정에서 쓴다.
  * 브라우저가 설치 창을 띄울 수 있으면 띄우고, 아니면(iOS 사파리 등) 기기별로 누를 곳을 안내한다.
  * 이미 홈 화면에서 연 앱이면 보이지 않는다.
  */
@@ -8,10 +8,15 @@ import { ref } from 'vue';
 import { installGuide, phoneZoom } from '@/shared/mobileView';
 import { webAppInstall, promptInstall } from '@/utils/webAppInstall';
 
-withDefaults(defineProps<{ variant?: 'flat' | 'tonal' | 'outlined' | 'text'; block?: boolean }>(), {
-    variant: 'tonal',
-    block: false
-});
+withDefaults(
+    defineProps<{ variant?: 'flat' | 'tonal' | 'outlined' | 'text'; block?: boolean; size?: 'small' | 'default'; label?: string }>(),
+    {
+        variant: 'tonal',
+        block: false,
+        size: 'default',
+        label: ''
+    }
+);
 
 const guideOpen = ref(false);
 const guide = ref<'ios' | 'android' | 'desktop'>('desktop');
@@ -33,13 +38,14 @@ async function add() {
         <v-btn
             :variant="variant"
             :block="block"
+            :size="size"
             color="primary"
             prepend-icon="mdi-cellphone-arrow-down"
             class="text-none"
             data-testid="add-to-home-screen"
             @click="add"
         >
-            {{ $t('mobileView.addToHome') }}
+            {{ label || $t('mobileView.addToHome') }}
         </v-btn>
         <v-dialog v-model="guideOpen" :width="width">
             <v-card class="phone-sized-card" :style="{ transform: `scale(${zoom})` }" data-testid="add-to-home-guide">

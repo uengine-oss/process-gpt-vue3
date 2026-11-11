@@ -1,8 +1,8 @@
 /**
- * 휴대폰은 앱 화면을 휴대폰 웹(/m/)으로 연다 — 「PC 화면으로 보기」(desktop)를 고른 휴대폰만 빼고.
+ * 라이트를 고른 휴대폰은 앱 화면을 휴대폰 웹(/m/)으로 연다. 기본(고르지 않음)과 desktop 은 데스크톱 화면.
  *
  * 지키려는 것: 포털 주소 → 휴대폰 주소 규칙이 index.html 한 곳에 있고, 그 규칙이
- *   - 휴대폰에서 옮기며(데스크톱을 고른 사람 · 컴퓨터 · 앱 · PAL 은 그대로),
+ *   - 라이트를 고른 휴대폰에서만 옮기며(기본 · 데스크톱 · 컴퓨터 · 앱 · PAL 은 그대로),
  *   - 로그인 · 랜딩 · 외부 폼 · 조직 고르기는 포털에 남기고,
  *   - 할 일 · 인스턴스 · 대화 · 알림은 휴대폰의 같은 화면으로 보낸다.
  * 규칙은 index.html 의 인라인 스크립트를 그대로 떼어 가짜 브라우저에서 돌려 확인한다.
@@ -67,13 +67,16 @@ test('식별자에 든 특수 문자는 한 번만 인코딩한다', () => {
     assert.equal(api.phoneWebHash('/todolist/a b'), '#/tasks/a%20b');
 });
 
-test('휴대폰은 기본(안 고름)이든 라이트든 첫 렌더 전에 휴대폰 웹으로 옮긴다', () => {
-    assert.equal(boot({ view: null, path: '/todolist/t-1' }).location.replaced, '/m/#/tasks/t-1');
+test('라이트를 고른 휴대폰만 첫 렌더 전에 휴대폰 웹으로 옮긴다', () => {
     assert.equal(boot({ view: 'light', path: '/todolist/t-1' }).location.replaced, '/m/#/tasks/t-1');
 });
 
-test('「PC 화면으로 보기」(desktop)를 고른 휴대폰은 옮기지 않는다', () => {
-    assert.equal(boot({ view: 'desktop' }).location.replaced, null);
+test('기본(고르지 않음)과 「PC 화면으로 보기」(desktop)는 옮기지 않고 데스크톱 폭으로 그린다', () => {
+    for (const view of [null, 'desktop']) {
+        const win = boot({ view, path: '/todolist/t-1' });
+        assert.equal(win.location.replaced, null, String(view));
+        assert.equal(win.__pgptViewport.desktop, true, String(view));
+    }
 });
 
 test('컴퓨터 · 네이티브 앱 · PAL · uEngine 은 옮기지 않는다', () => {
@@ -83,8 +86,8 @@ test('컴퓨터 · 네이티브 앱 · PAL · uEngine 은 옮기지 않는다', 
     assert.equal(boot({ view: 'light', env: { VITE_MODE: 'uEngine' } }).location.replaced, null);
 });
 
-test('로그인 · 랜딩 · 외부 폼 · 조직 고르기 · 약관은 포털에 남는다', () => {
-    for (const p of ['/', '/auth/login', '/auth/signup-pending', '/external-forms/f1', '/tenant/manage', '/tenant', '/privacy', '/terms']) {
+test('로그인 · 랜딩 · 외부 폼 · 조직 고르기 · 약관 · 계정 설정(2단계 인증 등록)은 포털에 남는다', () => {
+    for (const p of ['/', '/auth/login', '/auth/two-step', '/auth/signup-pending', '/external-forms/f1', '/tenant/manage', '/tenant', '/privacy', '/terms', '/account-settings']) {
         assert.equal(boot({ view: 'light', path: p }).location.replaced, null, p);
     }
 });
@@ -94,4 +97,13 @@ test('라우터가 쓰는 phoneWebUrl 은 같은 규칙을 그대로 부른다',
     assert.equal(phoneWebUrl('/notifications', win), '/m/#/notifications');
     assert.equal(phoneWebUrl('/auth/login', win), null);
     assert.equal(phoneWebUrl('/todolist', {}), null, '규칙이 없는 곳(앱 · 테스트)에서는 옮기지 않는다');
+});
+
+test('포털 라우터는 MFA 게이트를 지난 뒤에만 휴대폰 웹으로 옮긴다', () => {
+    // 앞에 두면 비밀번호만 통과한 세션(aal1)이 2단계 인증 없이 휴대폰 웹으로 간다.
+    const router = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../../router/index.ts'), 'utf8');
+    const gate = router.indexOf('await evaluateMfaGate(to.path)');
+    const move = router.indexOf('phoneWebUrl(to.path)');
+    assert.ok(gate > 0 && move > 0, '두 호출이 다 있다');
+    assert.ok(move > gate, 'phoneWebUrl 은 evaluateMfaGate 뒤');
 });
