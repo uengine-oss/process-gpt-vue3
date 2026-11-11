@@ -20,10 +20,14 @@
         <span>불러오는 중…</span>
     </div>
 
+    <!--
+      주소의 경로가 바뀌면(업무 A → 업무 B, 건 A → 건 B) 화면을 새로 만든다. 같은 화면 컴포넌트를
+      다시 쓰면 처음 열 때만 읽어서, 알림이나 타임라인에서 다른 건으로 옮겨도 이전 건이 그대로 남는다.
+    -->
     <MobileShell v-else-if="showsTabs">
-        <RouterView />
+        <RouterView :key="route.path" />
     </MobileShell>
-    <RouterView v-else />
+    <RouterView v-else :key="route.path" />
 
     <!-- 앱을 보고 있는 동안 온 알림. 화면 위에 잠깐 뜬다. -->
     <PushBanner ref="pushBanner" />

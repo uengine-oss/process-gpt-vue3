@@ -7,6 +7,8 @@ RUN npm ci --no-audit --no-fund --legacy-peer-deps
 
 COPY . .
 RUN NODE_OPTIONS=--max-old-space-size=4096 npm run build
+# 휴대폰 웹을 같은 산출물의 /m/ 으로 (포털 빌드가 dist/ 를 비우므로 반드시 그 뒤에)
+RUN npm run build:mobile:web
 
 FROM sanghoon01/spa-http-server:v1
 

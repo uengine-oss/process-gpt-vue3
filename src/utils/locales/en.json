@@ -5883,8 +5883,8 @@
         "addToHomeHint": "Add it to your home screen to open it like an app with one tap.",
         "settingTitle": "Phone screen",
         "settingDesc": "The screen to use when you open Process GPT on this phone. Saved on this device only.",
-        "desktopOption": "Desktop version — the same screen as on a computer (default)",
-        "lightOption": "Light version — simplified to fit the phone",
+        "desktopOption": "Desktop version — the same screen as on a computer",
+        "lightOption": "Light version — made for the phone (default)",
         "close": "Close",
         "guide": {
             "ios1": "Tap the Share button (a square with an arrow pointing up) at the bottom of Safari (at the top on iPad).",
@@ -5902,6 +5902,8 @@
         "body": "On a phone you use tasks, progress, chat and notifications. Admin, design and analytics screens open on a computer.",
         "goTodo": "Go to my tasks",
         "openOnDesktop": "Use the desktop view",
+        "reopenWide": "Reopen after widening the window",
+        "hintWide": "Admin, design and analytics screens open in a wide window. Widen the window, then reopen.",
         "hint": "“Use the desktop view” switches this phone to the desktop screen. You can switch back in Settings › Appearance › Phone screen."
     }
 }

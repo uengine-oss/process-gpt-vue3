@@ -1,95 +1,183 @@
 <template>
     <div class="m-screen">
-        <header class="m-appbar"><h1>내 정보</h1></header>
-
-        <div class="m-body">
-            <div class="m-card">
-                <span class="m-muted">계정</span>
-                <strong>{{ email || '—' }}</strong>
+        <header class="m-head"><h1>나</h1></header>
+        <div class="m-body me">
+            <div class="m-card m-card--lg profile">
+                <span class="profile__avatar" aria-hidden="true">{{ initial }}</span>
+                <span class="profile__body">
+                    <strong>{{ name || email || '—' }}</strong>
+                    <span class="m-muted">{{ [roleText, email].filter(Boolean).join(' · ') }}</span>
+                    <span v-if="tenant" class="m-muted">조직 {{ tenant }}</span>
+                </span>
             </div>
 
-            <div class="m-card">
-                <span class="m-muted">소속 조직</span>
-                <strong>{{ tenant || '확인되지 않음' }}</strong>
-                <p v-if="!tenant" class="m-muted">
-                    조직을 확인하지 못했습니다. 이 상태에서는 목록이 비어 보입니다.
-                </p>
-                <!--
-                  앱은 로그인 세션에 적힌 조직 하나로 고정된다. 조직을 여러 개
-                  가진 사람은 여기서 바꿀 방법이 없는데, 아무 말이 없으면
-                  "왜 다른 조직 일이 안 보이지" 로만 남는다. 어디로 가면 되는지
-                  말해 준다.
-                -->
-                <p class="m-muted">
-                    조직 전환·생성·삭제는 웹 포털에서 합니다. 앱은 로그인한 조직 하나만 보여 줍니다.
-                </p>
+            <nav class="m-card m-card--lg menu" aria-label="내 일">
+                <RouterLink class="menu__row" to="/progress?view=mine">
+                    <Icon name="progress" /><span class="menu__label">내가 올린 요청</span>
+                    <span v-if="counts" class="menu__value">{{ counts.requests }}</span><Icon name="chevron-right" class="menu__go" />
+                </RouterLink>
+                <RouterLink class="menu__row" to="/tasks?view=delegated">
+                    <Icon name="robot" /><span class="menu__label">에이전트에 맡긴 일</span>
+                    <span v-if="counts" class="menu__value">{{ counts.delegated }}</span><Icon name="chevron-right" class="menu__go" />
+                </RouterLink>
+                <RouterLink class="menu__row" to="/progress?view=done">
+                    <Icon name="file" /><span class="menu__label">끝난 일</span>
+                    <span v-if="counts" class="menu__value">{{ counts.done }}</span><Icon name="chevron-right" class="menu__go" />
+                </RouterLink>
+            </nav>
+
+            <div class="m-card m-card--lg menu">
+                <div class="menu__row">
+                    <Icon name="bell" />
+                    <span class="menu__label menu__label--stack">
+                        휴대폰 알림
+                        <span class="m-muted">{{ pushHint }}</span>
+                    </span>
+                    <label class="switch" :class="{ 'switch--off': !onPhone }">
+                        <input type="checkbox" :checked="pushOn" :disabled="!onPhone || pushBusy" aria-label="휴대폰 알림" @change="togglePush" />
+                        <span class="switch__track"><span class="switch__knob"></span></span>
+                    </label>
+                </div>
+                <button type="button" class="menu__row" @click="sheet = 'lang'">
+                    <Icon name="globe" /><span class="menu__label">언어</span>
+                    <span class="menu__value">{{ locale === 'en' ? 'English' : '한국어' }}</span>
+                </button>
+                <button type="button" class="menu__row" @click="sheet = 'theme'">
+                    <Icon name="brightness" /><span class="menu__label">화면 밝기</span>
+                    <span class="menu__value">{{ APPEARANCE_LABELS[appearance]?.label }}</span>
+                </button>
+                <button v-if="!onPhone" type="button" class="menu__row" @click="toDesktop">
+                    <Icon name="monitor" /><span class="menu__label">PC 화면으로 보기</span>
+                    <Icon name="chevron-right" class="menu__go" />
+                </button>
+                <button type="button" class="menu__row menu__row--danger" @click="leave">
+                    <Icon name="logout" /><span class="menu__label">로그아웃</span>
+                </button>
             </div>
 
-            <!-- 색상 테마. 포털 "테마 설정" 과 같은 세 장이다. -->
-            <div class="m-card">
-                <span class="m-muted">색상 테마</span>
-                <div class="themes">
+            <p class="m-note info">
+                <Icon name="info" :size="20" />
+                <span>프로세스 설계 · 조직도 · 관리 설정 · 분석은 PC에서 쓸 수 있습니다. 휴대폰에서는 메뉴에 나오지 않습니다.</span>
+            </p>
+        </div>
+
+        <div v-if="sheet" class="sheet" @click.self="sheet = ''">
+            <div class="sheet__panel" role="dialog" :aria-label="sheet === 'lang' ? '언어' : '화면 밝기'">
+                <h2 class="sheet__title">{{ sheet === 'lang' ? '언어' : '화면 밝기' }}</h2>
+                <template v-if="sheet === 'lang'">
+                    <button
+                        v-for="opt in LOCALES"
+                        :key="opt.value"
+                        type="button"
+                        class="sheet__item"
+                        :class="{ 'sheet__item--on': locale === opt.value }"
+                        @click="chooseLocale(opt.value)"
+                    >
+                        <strong>{{ opt.label }}</strong>
+                    </button>
+                    <p class="m-muted">휴대폰 화면은 지금 한국어로만 나옵니다. 고른 언어는 PC 화면에 씁니다.</p>
+                </template>
+                <template v-else>
                     <button
                         v-for="opt in APPEARANCES"
                         :key="opt"
                         type="button"
-                        class="theme"
-                        :class="{ 'theme--on': appearance === opt }"
+                        class="sheet__item"
+                        :class="{ 'sheet__item--on': appearance === opt }"
                         @click="chooseTheme(opt)"
                     >
-                        <span class="theme__swatch" :style="{ background: APPEARANCE_LABELS[opt].swatch }">
-                            <span class="theme__dot" :style="{ background: APPEARANCE_LABELS[opt].dot }" />
-                        </span>
-                        <span>{{ APPEARANCE_LABELS[opt].label }}</span>
+                        <strong>{{ APPEARANCE_LABELS[opt].label }}</strong>
                     </button>
-                </div>
-                <p class="m-muted">
-                    웹에서 고른 테마는 그 브라우저에만 저장되어 앱이 읽지 못합니다. 여기서 고른 값은 이 기기에 남습니다.
-                </p>
+                </template>
             </div>
-
-            <!-- 알림 -->
-            <div class="m-card">
-                <span class="m-muted">알림</span>
-                <strong>{{ pushOn ? '켜짐' : '꺼짐' }}</strong>
-                <p class="m-muted">{{ pushHint }}</p>
-
-                <button
-                    v-if="onPhone"
-                    class="m-btn"
-                    type="button"
-                    :disabled="pushBusy"
-                    @click="togglePush"
-                >
-                    {{ pushBusy ? '처리 중…' : pushOn ? '알림 끄기' : '알림 켜기' }}
-                </button>
-            </div>
-
-            <div class="m-card">
-                <span class="m-muted">연결된 서버</span>
-                <strong>{{ origin }}</strong>
-            </div>
-
-            <button class="m-btn m-btn--danger m-btn--block" type="button" @click="leave">로그아웃</button>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, ref } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
+
+import Icon from '../components/Icon.vue';
+import { loadHome, loadProgress } from '../lib/data.js';
+import { homeModel, startedBy } from '../lib/workspace.js';
 
 import { APPEARANCES, APPEARANCE_LABELS, apply, saved } from '../lib/appearance.js';
 import { enablePush, isNativeApp, isRegistered, unregisterDevice } from '../lib/push.js';
 import { currentSession, signOut } from '../lib/session.js';
-import { apiBase } from '../main';
 
 const router = useRouter();
 const email = ref('');
 const tenant = ref<string | null>(null);
-const origin = ref(apiBase.origin);
 
 const appearance = ref(saved());
+const name = ref('');
+const role = ref('');
+const sheet = ref<'' | 'lang' | 'theme'>('');
+const counts = ref<{ requests: number; delegated: number; done: number } | null>(null);
+const LOCALES = [
+    { value: 'ko', label: '한국어' },
+    { value: 'en', label: 'English' }
+];
+const locale = ref(readLocale());
+// 'user' · 'admin' 같은 내부 값은 보이지 않는다(사람이 붙인 이름만)
+const roleText = computed(() => (/^[a-z_-]+$/i.test(role.value) ? '' : role.value));
+const initial = computed(() => (name.value || email.value || '?').trim().charAt(0).toUpperCase());
+
+function readLocale() {
+    try {
+        return localStorage.getItem('locale') || 'ko';
+    } catch (_e) {
+        return 'ko';
+    }
+}
+
+/** 포털과 같은 저장 칸(locale)에 둔다 — 같은 주소라 PC 화면이 이 값을 읽는다. */
+function chooseLocale(value: string) {
+    try {
+        localStorage.setItem('locale', value);
+    } catch (_e) {
+        // 저장을 막은 브라우저
+    }
+    locale.value = value;
+    sheet.value = '';
+}
+
+/**
+ * PC 화면으로 — 이 기기에서 「데스크톱 화면」을 고른 것으로 남기고 포털 첫 화면을 연다.
+ * 포털(index.html)이 그 값을 읽어 1280px 데스크톱 화면으로 그린다. 다시 휴대폰 화면으로 오려면
+ * PC 화면의 설정 › 테마 설정 「휴대폰 화면」에서 라이트를 고른다.
+ */
+function toDesktop() {
+    try {
+        localStorage.setItem('mobileView', 'desktop');
+    } catch (_e) {
+        // 저장을 막은 브라우저 — 포털이 다시 물어본다
+    }
+    window.location.assign('/definition-map');
+}
+
+async function loadCounts() {
+    try {
+        const uid = localStorage.getItem('uid') || '';
+        const supabase = (window as any).$supabase;
+        const tenant = (window as any).$tenantName || null;
+        const [home, progress] = await Promise.all([loadHome(supabase, { uid, tenant }), loadProgress(supabase, { uid, tenant })]);
+        if (!home || !progress) return;
+        const m = homeModel({ ...home, uid });
+        // 「내가 올린 요청」은 누르면 가는 진행 › 내가 올린 과 같은 수
+        const mine = progress.instances.filter(
+            (i: any) =>
+                String(i.status || '').toUpperCase() === 'RUNNING' &&
+                startedBy(progress.instRows.filter((r: any) => r.proc_inst_id === i.proc_inst_id), uid)
+        );
+        // 「끝난 일」은 누르면 가는 진행 › 끝난 건 과 같은 수
+        const done = progress.instances.filter((i: any) => String(i.status || '').toUpperCase() !== 'RUNNING');
+        counts.value = { requests: mine.length, delegated: m.delegated.length, done: done.length };
+    } catch (e) {
+        console.warn('[me] 수 세기 실패', e);
+    }
+}
 const onPhone = ref(false);
 const pushOn = ref(false);
 const pushBusy = ref(false);
@@ -100,8 +188,10 @@ let session: any = null;
 onMounted(async () => {
     session = await currentSession();
     email.value = session?.user?.email || '';
+    name.value = localStorage.getItem('userName') || '';
+    role.value = localStorage.getItem('role') || '';
+    void loadCounts();
     tenant.value = (window as any).$tenantName || null;
-    origin.value = apiBase.origin;
 
     onPhone.value = isNativeApp();
     if (!onPhone.value) {
@@ -119,6 +209,7 @@ onMounted(async () => {
 
 function chooseTheme(next: string) {
     appearance.value = apply(next);
+    sheet.value = '';
 }
 
 async function togglePush() {
@@ -172,47 +263,138 @@ async function leave() {
 </script>
 
 <style scoped>
-.themes {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin: 4px 0 2px;
+.me {
+    padding: 4px 16px 20px;
 }
 
-.theme {
-    min-height: var(--tap);
-    padding: 12px 6px;
-    border: 1px solid var(--rule);
-    border-radius: var(--radius);
+.profile {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+}
+
+.profile__avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--brand-wash);
+    color: var(--brand);
+    display: grid;
+    place-items: center;
+    font-size: 1.4rem;
+    font-weight: 800;
+    flex: none;
+}
+
+.profile__body {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+}
+
+.profile__body strong {
+    font-size: 1.2rem;
+}
+
+.menu {
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+}
+
+.menu__row {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    gap: 14px;
+    min-height: 54px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink);
+    width: 100%;
+    text-align: left;
+}
+
+.menu__row:last-child {
+    border-bottom: none;
+}
+
+.menu__row > .icon:first-child {
     color: var(--ink-soft);
 }
 
-/* 포털 카드와 같은 모양 — 배경색 원 안에 강조색 점. */
-.theme__swatch {
-    width: 28px;
-    height: 28px;
+.menu__label {
+    flex: 1;
+    font-size: 1rem;
+}
+
+.menu__value {
+    color: var(--ink-faint);
+}
+
+.menu__go {
+    color: var(--ink-faint);
+}
+
+.menu__row--danger,
+.menu__row--danger > .icon:first-child {
+    color: var(--danger);
+}
+
+.menu__label--stack {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 0;
+    line-height: 1.35;
+}
+
+.menu__label--stack .m-muted {
+    font-size: 0.8rem;
+}
+
+.switch input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.switch__track {
+    display: block;
+    width: 50px;
+    height: 30px;
+    border-radius: 15px;
+    background: var(--rule);
+    position: relative;
+    transition: background 0.15s ease;
+}
+
+.switch__knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    display: grid;
-    place-items: center;
-    box-shadow: inset 0 0 0 1px var(--rule);
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.15s ease;
 }
 
-.theme__dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+.switch input:checked + .switch__track {
+    background: var(--ok);
 }
 
-.theme--on {
-    border-color: var(--brand);
-    background: var(--brand-wash);
-    color: var(--brand);
+.switch input:checked + .switch__track .switch__knob {
+    transform: translateX(20px);
 }
 
+.switch--off {
+    opacity: 0.6;
+}
+
+.info {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
 </style>

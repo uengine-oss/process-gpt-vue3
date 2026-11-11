@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /**
- * 휴대폰에서 관리 · 설계 · 분석 화면을 열면 여기로 온다(shared/phoneScope).
- * 휴대폰에서는 내 일을 처리하는 화면만 쓴다. 꼭 열어야 하면 「PC 화면으로 보기」로 이 기기를
- * 데스크톱 버전으로 바꾸고 원래 주소를 연다(설정 › 테마 설정 「휴대폰 화면」과 같은 값).
+ * 좁은 화면(폭 768px 이하)에서 관리 · 설계 · 분석 화면을 열면 여기로 온다(shared/phoneScope).
+ * 휴대폰은 보통 휴대폰 웹(/m/)으로 가므로 여기에는 거의 오지 않는다. 휴대폰이면 「PC 화면으로 보기」로 이 기기를
+ * 데스크톱 버전으로 바꾸고 원래 주소를 연다. 컴퓨터의 좁은 창이면 창을 넓힌 뒤 다시 연다.
  */
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { saveMobileView } from '@/shared/mobileView';
+import { saveMobileView, isPhoneBrowser } from '@/shared/mobileView';
 
 const route = useRoute();
 const router = useRouter();
@@ -19,9 +19,16 @@ function goTodo() {
     router.push('/todolist');
 }
 
+// 휴대폰이면 이 기기를 데스크톱 화면으로 바꿔 연다. 컴퓨터의 좁은 창이면 창을 넓힌 뒤 다시 연다(폭이 넓으면 그대로 열린다).
+const phone = isPhoneBrowser();
+
 function openOnDesktop() {
-    saveMobileView('desktop');
-    window.location.assign(from.value);
+    if (phone) {
+        saveMobileView('desktop');
+        window.location.assign(from.value);
+    } else {
+        router.push(from.value);
+    }
 }
 </script>
 
@@ -35,10 +42,10 @@ function openOnDesktop() {
                 {{ $t('desktopOnly.goTodo') }}
             </v-btn>
             <v-btn variant="outlined" block size="large" class="text-none" data-testid="desktop-only-open" @click="openOnDesktop">
-                {{ $t('desktopOnly.openOnDesktop') }}
+                {{ phone ? $t('desktopOnly.openOnDesktop') : $t('desktopOnly.reopenWide') }}
             </v-btn>
         </div>
-        <p class="desktop-only__hint">{{ $t('desktopOnly.hint') }}</p>
+        <p class="desktop-only__hint">{{ phone ? $t('desktopOnly.hint') : $t('desktopOnly.hintWide') }}</p>
     </div>
 </template>
 

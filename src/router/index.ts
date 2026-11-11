@@ -8,7 +8,7 @@ import { evaluateMfaGate, MFA_CHALLENGE_PATH, MFA_ENROLL_PATH, MFA_ENROLL_QUERY 
 import { withCallActivityHistory } from '@/components/customDrilldown/drilldownHistory';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 import { homePath, isMobileViewport, MOBILE_HOME } from '@/utils/homePath';
-import { isPhoneBrowser, needsViewportReload } from '@/shared/mobileView';
+import { isPhoneBrowser, needsViewportReload, phoneWebUrl } from '@/shared/mobileView';
 import { phoneRedirect } from '@/shared/phoneScope';
 
 declare global {
@@ -152,6 +152,12 @@ router.beforeEach(async (to: any, from: any, next: any) => {
     // 폭은 화면이 처음 그려지기 전에만 정할 수 있으므로 그 주소를 새로 연다(index.html 의 __pgptViewport).
     if (needsViewportReload(to.path)) {
         window.location.assign(to.fullPath);
+        return next(false);
+    }
+    // 휴대폰 화면(라이트)을 고른 휴대폰: 앱 화면은 휴대폰 웹(/m/)으로 — 로그인 뒤처럼 앱 안에서 옮겨 갈 때.
+    const phoneWeb = phoneWebUrl(to.path);
+    if (phoneWeb) {
+        window.location.replace(phoneWeb);
         return next(false);
     }
     // 휴대폰(라이트 버전)에서는 관리 · 설계 · 분석 화면을 열지 않는다 — 주소로 바로 와도(알림 링크 등) 안내로 보낸다.
