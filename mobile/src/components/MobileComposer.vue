@@ -175,7 +175,7 @@
             <div class="sheet__panel" role="dialog" aria-label="에이전트 선택">
                 <h2 class="sheet__title">에이전트</h2>
                 <button
-                    v-for="opt in AGENTS"
+                    v-for="opt in agentChoices"
                     :key="opt.value"
                     type="button"
                     class="sheet__item"
@@ -235,6 +235,7 @@ import {
 } from '../lib/attachments.js';
 import { applyMention, mentionDraft, resolveMentions, suggest } from '@/shared/mentions/index.js';
 import { KNOWN_CLI_AGENTS, agentCliOf, agentCliTitle } from '@/utils/cliAgents';
+import { selectableOrchestrations } from '@/utils/orchestration';
 import Icon from './Icon.vue';
 import VoiceButton from './VoiceButton.vue';
 
@@ -249,6 +250,8 @@ const AGENTS = [
     { value: 'deepagents', label: '딥 에이전트', hint: '여러 단계를 스스로 밟는 작업' },
     { value: 'cliagents', label: 'CLI 코딩 에이전트', hint: 'Claude Code · Codex 로 파일을 만들거나 고치는 작업' }
 ] as const;
+/** 고를 수 있는 것만(CLI 코딩 에이전트는 운영에 열기 전까지 숨긴다 — utils/orchestration 의 cliAgentChatEnabled). */
+const agentChoices = AGENTS.filter((a) => selectableOrchestrations().includes(a.value));
 
 const props = defineProps<{
     modelValue?: string;

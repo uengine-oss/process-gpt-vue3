@@ -50,3 +50,12 @@ test('목록의 모든 값에 경로가 있다 — 하나를 더할 때 경로�
         assert.ok(ORCHESTRATION_BASE_PATHS[o], `${o} 의 경로가 없다`);
     }
 });
+
+test('CLI 코딩 에이전트는 켜기 전까지 새 대화에서 고를 수 없다', async () => {
+    const { selectableOrchestrations, cliAgentChatEnabled } = await import('./orchestration.js');
+    assert.equal(cliAgentChatEnabled({}), false);
+    assert.deepEqual(selectableOrchestrations({}), ['langchain-react', 'deepagents', 'codex']);
+    assert.equal(cliAgentChatEnabled({ VITE_FF_CLI_AGENT_CHAT: 'true' }), true);
+    assert.ok(selectableOrchestrations({ VITE_FF_CLI_AGENT_CHAT: 'true' }).includes('cliagents'));
+    assert.equal(cliAgentChatEnabled({ VITE_FF_CLI_AGENT_CHAT: 'false' }), false);
+});

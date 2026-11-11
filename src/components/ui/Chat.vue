@@ -3629,7 +3629,7 @@ import { isExecuteProcessTool, processLaunchesOf } from '@/shared/processLaunch'
 import BackendFactory from '@/components/api/BackendFactory';
 import { usePhoneShell } from '@/shared/phoneShell';
 import { getTenantId } from '@/utils/tenant';
-import { normalizeOrchestration } from '@/utils/orchestration';
+import { normalizeOrchestration, selectableOrchestrations } from '@/utils/orchestration';
 import { DEFAULT_AGENT_CLI, KNOWN_CLI_AGENTS, agentCliOf, toCliAgentItems } from '@/utils/cliAgents';
 // 첨부 이미지·파일 주소는 비공개 버킷의 서명 URL 이라 그릴 때 만들어야 한다.
 import { storageUrlMixin } from '@/utils/storageUrl';
@@ -4180,9 +4180,9 @@ export default {
                 { label: this.$t('chats.basicAgent'), value: 'langchain-react' },
                 { label: this.$t('chats.deepAgent'), value: 'deepagents' },
                 { label: this.$t('chats.codexAgent'), value: 'codex' },
-                // 업무 설정(AgentSelectField)과 같은 이름표를 쓴다.
+                // 업무 설정(AgentSelectField)과 같은 이름표를 쓴다. 운영에 열기 전에는 숨긴다(cliAgentChatEnabled).
                 { label: this.$t('AgentSelectInfo.orchestration.cliagents.title'), value: 'cliagents' }
-            ];
+            ].filter((o) => selectableOrchestrations().includes(o.value) || o.value === this.orchestration);
         },
         /**
          * CLI 선택 목록. 서버 목록을 받았으면 그것(설치 · 인증 여부 포함), 못 받았으면 아는 둘.

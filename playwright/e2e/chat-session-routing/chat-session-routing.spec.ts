@@ -99,6 +99,24 @@ async function routeAgentStream(page: Page, stubUrl: string) {
     await page.route(/\/(agent|process-gpt-[a-z-]+)\/chat\/stream(\?.*)?$/, (route) => route.continue({ url: stubUrl }));
 }
 
+/**
+ * CLI 코딩 에이전트 채팅은 운영에 열기 전까지 숨겨 둔다(VITE_FF_CLI_AGENT_CHAT, 기본 끔 — D-1111-10).
+ * 이 시험에서만 켠다: index.html 의 `window._env_ = {…}` 가 대입될 때 그 값을 덧붙인다(포털 · /m/ 공통).
+ * 문서 요청을 page.route 로 가로채면 Chrome 의 사설망 접근 검사가 Supabase(localhost→VM) 호출을 막는다 — 그래서 가로채지 않는다.
+ */
+async function enableCliAgentChat(target: Page | BrowserContext) {
+    await target.addInitScript(() => {
+        let env: any;
+        Object.defineProperty(window, '_env_', {
+            configurable: true,
+            get: () => env,
+            set: (v) => {
+                env = { ...(v || {}), VITE_FF_CLI_AGENT_CHAT: 'true' };
+            }
+        });
+    });
+}
+
 async function fillLogin(page: Page) {
     const a = accounts.admin;
     await page.locator('input[type="password"]').waitFor({ timeout: 60_000 });
@@ -132,6 +150,7 @@ test('F-CR-01 포털: CLI 코딩 에이전트 · Codex 로 새 대화 — 준비
     test.setTimeout(180_000);
     const stub = await startRouterStub();
     try {
+        await enableCliAgentChat(page);
         await login(page);
         await routeAgentStream(page, stub.url);
         await page.goto(`${BASE}/definition-map`);
@@ -254,6 +273,7 @@ test('F-CR-02 휴대폰 웹(/m/): 같은 방을 열면 Codex 가 골라져 있�
     test.skip(!roomId, 'F-CR-01 에서 만든 방이 없다');
     const stub = await startRouterStub();
     const ctx: BrowserContext = await browser.newContext({ ...phone });
+    await enableCliAgentChat(ctx);
     await ctx.addInitScript(() => {
         if (sessionStorage.getItem('cr-seeded')) return;
         localStorage.setItem('mobileView', 'light');
@@ -306,4 +326,17 @@ test.afterAll(async ({ browser }) => {
     } finally {
         await page.close();
     }
+});
+
+test('F-CR-04 포털: 켜지 않은 배포에서는 새 대화에 「CLI 코딩 에이전트」가 없다', async ({ page }) => {
+    test.setTimeout(120_000);
+    await login(page);
+    await page.goto(`${BASE}/definition-map`);
+    const orch = page.getByTestId('orchestration-select');
+    await orch.waitFor({ timeout: 60_000 });
+    await orch.click();
+    const items = page.locator('.v-overlay--active .v-list-item');
+    await expect(items.filter({ hasText: '딥 에이전트' }).first()).toBeVisible();
+    await expect(items.filter({ hasText: 'CLI 코딩 에이전트' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
 });

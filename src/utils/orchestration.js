@@ -43,3 +43,28 @@ export function basePathForOrchestration(value) {
     const v = (value ?? '').toString().trim();
     return Object.prototype.hasOwnProperty.call(ORCHESTRATION_BASE_PATHS, v) ? ORCHESTRATION_BASE_PATHS[v] : null;
 }
+
+/**
+ * 채팅에서 「CLI 코딩 에이전트」를 고를 수 있게 할지(VITE_FF_CLI_AGENT_CHAT, 기본 끔).
+ *
+ * 화면과 서버는 준비됐지만 운영에 열지 않는다 — CLI 가 한 사람의 Claude 구독 토큰으로 돌고(약관상
+ * 여러 사람이 나눠 쓸 수 없다), CLI 셸이 파드의 자격 증명을 물려받는 문제가 남았다(D-1111-10).
+ * 회사 API 키 · 게이트웨이 가상 키로 바꾼 배포에서만 켠다. 이미 cliagents 로 시작한 방은 그대로 돈다.
+ * 런타임(window._env_) → 빌드타임(import.meta.env) 순으로 읽는다(aiFeatureGate 와 같은 규칙, 단 기본은 끔).
+ */
+export function cliAgentChatEnabled(env = typeof window !== 'undefined' ? window._env_ : undefined) {
+    const runtime = env?.VITE_FF_CLI_AGENT_CHAT;
+    let build;
+    try {
+        build = import.meta.env?.VITE_FF_CLI_AGENT_CHAT;
+    } catch (_e) {
+        build = undefined;
+    }
+    const raw = runtime !== undefined && runtime !== '' ? runtime : build;
+    return raw === true || raw === 'true';
+}
+
+/** 새 대화에서 고를 수 있는 오케스트레이션(꺼진 것은 뺀다). */
+export function selectableOrchestrations(env) {
+    return ORCHESTRATIONS.filter((v) => v !== 'cliagents' || cliAgentChatEnabled(env));
+}
