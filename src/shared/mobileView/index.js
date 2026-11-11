@@ -45,6 +45,15 @@ export function needsViewportReload(path, win = globalThis) {
 }
 
 /**
+ * 휴대폰 화면(라이트)을 고른 휴대폰이면 앱 화면은 휴대폰 웹(/m/#/…)으로 연다. 옮길 주소 또는 null.
+ * 규칙(포털 주소 → 휴대폰 주소)은 index.html 의 window.__pgptViewport 한 곳에 있다 —
+ * 첫 렌더 전에는 index.html 이, 앱 안에서 옮겨 갈 때(로그인 뒤 등)는 라우터가 이것으로 같은 규칙을 쓴다.
+ */
+export function phoneWebUrl(path, win = globalThis) {
+    return viewportApi(win)?.phoneWebUrl?.(path) || null;
+}
+
+/**
  * 답을 저장한다. 지금 화면의 폭이 바뀌어야 하면 reload: true 를 돌려준다(부르는 쪽이 새로 연다).
  * 휴대폰이 아닌 기기에서는 저장만 하고 폭은 그대로다.
  */
