@@ -1,11 +1,12 @@
 <template>
     <div class="kbm">
-        <header class="kbm__head">
-            <div class="kbm__head-text">
-                <h2 class="kbm__title">지식 베이스</h2>
-                <p class="kbm__subtitle">문서를 올리면 본문을 저장하고 카드로 지도를 만듭니다. 채팅에서 폴더를 고르면 에이전트가 이 지도로 문서를 찾습니다.</p>
+        <!-- 공통 페이지 머리(page-header) — 제목 크기 · 여백이 다른 화면과 같다 -->
+        <header class="page-header kbm__head">
+            <div class="page-header-left">
+                <h1 class="page-title">지식 베이스</h1>
+                <p class="page-subtitle">문서를 올리면 본문을 저장하고 카드로 지도를 만듭니다. 채팅에서 폴더를 고르면 에이전트가 이 지도로 문서를 찾습니다.</p>
             </div>
-            <div class="kbm__head-actions">
+            <div class="page-header-right">
                 <v-chip v-if="queue.active" size="small" color="info" variant="tonal">
                     <v-progress-circular indeterminate size="12" width="2" class="mr-2" />처리 중 {{ queue.active }}
                 </v-chip>
@@ -417,33 +418,13 @@ export default {
     flex-direction: column;
     height: 100%;
     min-height: 0;
-    background: var(--cds-surface-1, transparent);
+    /* 카드 면(흰색)을 그대로 쓴다 — 바탕색과 같은 면이면 카드가 보이지 않는다 */
+    background: transparent;
 }
+/* 머리는 공통 page-header 를 쓰고 본문과의 간격만 둔다 */
 .kbm__head {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 14px 16px 6px;
-}
-.kbm__head-text {
-    flex: 1;
-    min-width: 0;
-}
-.kbm__title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--cds-text-primary);
-}
-.kbm__subtitle {
-    margin: 2px 0 0;
-    font-size: 12.5px;
-    color: var(--cds-text-muted);
-}
-.kbm__head-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--cds-border);
 }
 .kbm__body {
     flex: 1;

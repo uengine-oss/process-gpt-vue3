@@ -1,7 +1,8 @@
 <template>
-    <div class="kb-page">
+    <!-- 다른 관리 화면(프로세스 체계도 · 조직도 · 스킬)과 같은 흰 카드 틀 — 높이는 앱 공통 .is-work-height -->
+    <v-card elevation="10" class="rounded-xl kb-page is-work-height">
         <KnowledgeMap />
-    </div>
+    </v-card>
 </template>
 
 <script>
@@ -15,12 +16,9 @@ export default {
 
 <style scoped>
 .kb-page {
-    height: calc(100vh - 88px);
     min-height: 480px;
-    margin: 0 12px 12px;
-    border: 1px solid var(--cds-border);
-    border-radius: var(--cds-radius, 10px);
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    background: var(--cds-surface-2, #fff);
 }
 </style>
