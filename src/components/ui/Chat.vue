@@ -3630,7 +3630,8 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { usePhoneShell } from '@/shared/phoneShell';
 import { getTenantId } from '@/utils/tenant';
 import { normalizeOrchestration, selectableOrchestrations } from '@/utils/orchestration';
-import { DEFAULT_AGENT_CLI, KNOWN_CLI_AGENTS, agentCliOf, toCliAgentItems } from '@/utils/cliAgents';
+import { cliChoicesFor, companyCliAgents } from '@/shared/cliAgentKeys';
+import { DEFAULT_AGENT_CLI, agentCliOf, toCliAgentItems } from '@/utils/cliAgents';
 // 첨부 이미지·파일 주소는 비공개 버킷의 서명 URL 이라 그릴 때 만들어야 한다.
 import { storageUrlMixin } from '@/utils/storageUrl';
 const backend = BackendFactory.createBackend();
@@ -3870,6 +3871,9 @@ export default {
             agentCli: DEFAULT_AGENT_CLI,
             // 서버(GET /process-gpt-cli-agent/agents)가 알려 준 CLI 목록. 못 받으면 비어 있다.
             cliAgentItems: [],
+            // 회사 키가 있는 CLI(anthropic → claude-code, openai → codex). 하나라도 있으면 플래그와 상관없이
+            // 「CLI 코딩 에이전트」를 고를 수 있고, 실행 CLI 는 이 안에서만 고른다(src/shared/cliAgentKeys).
+            companyKeyClis: [],
             cliAgentsLoading: false,
             cliAgentsLoaded: false,
             isDragOverTextarea: false,
@@ -4025,6 +4029,10 @@ export default {
         };
         document.addEventListener('click', this._autocompleteOutsideClickHandler);
 
+        // 새 대화를 시작하는 화면에서 묻는다(CLI 코딩 에이전트 방은 watch(orchestration) 이 묻는다). 같은 사용자 · 테넌트면
+        // 60초 동안 기억한 값을 쓴다. 화면을 옮겨 들어올 때는 watch($route.path) 가 다시 묻는다.
+        if (this.isOrchestrationSelectableRoute) this.refreshCompanyKeyClis();
+
         this.EventBus.on('scroll_update', () => {
             if (this.$refs && this.$refs.scrollContainer) {
                 setTimeout(() => {
@@ -4092,8 +4100,24 @@ export default {
         orchestration: {
             immediate: true,
             handler(value) {
-                if (value === 'cliagents') this.loadCliAgentItems();
+                if (value === 'cliagents') {
+                    this.loadCliAgentItems();
+                    // CLI 코딩 에이전트 방 · 새 대화에서 고른 때 — 실행 CLI 를 회사 키가 있는 것으로 맞추려고 묻는다.
+                    this.refreshCompanyKeyClis();
+                }
             }
+        },
+        // 다른 화면에서 새 대화 화면(/definition-map …)으로 옮겨 오면 회사 키를 다시 묻는다 — mounted 만으로는
+        // 컴포넌트가 재사용될 때 처음 값에 머문다.
+        '$route.path'() {
+            if (this.isOrchestrationSelectableRoute) this.refreshCompanyKeyClis();
+        },
+        // 방을 바꾸면(기억된 CLI) · 회사 키 목록이 오면, 고른 CLI 가 키 있는 CLI 인지 맞춘다.
+        agentCli() {
+            this.alignAgentCliToCompanyKeys();
+        },
+        companyKeyClis() {
+            this.alignAgentCliToCompanyKeys();
         },
         prompt(newVal, oldVal) {
             if (newVal !== oldVal) {
@@ -4180,20 +4204,21 @@ export default {
                 { label: this.$t('chats.basicAgent'), value: 'langchain-react' },
                 { label: this.$t('chats.deepAgent'), value: 'deepagents' },
                 { label: this.$t('chats.codexAgent'), value: 'codex' },
-                // 업무 설정(AgentSelectField)과 같은 이름표를 쓴다. 운영에 열기 전에는 숨긴다(cliAgentChatEnabled).
+                // 업무 설정(AgentSelectField)과 같은 이름표를 쓴다. 플래그(cliAgentChatEnabled)나 회사 키(companyKeyClis)가 있을 때만.
                 { label: this.$t('AgentSelectInfo.orchestration.cliagents.title'), value: 'cliagents' }
-            ].filter((o) => selectableOrchestrations().includes(o.value) || o.value === this.orchestration);
+            ].filter(
+                (o) =>
+                    selectableOrchestrations(undefined, { companyCliKey: this.companyKeyClis.length > 0 }).includes(o.value) ||
+                    o.value === this.orchestration
+            );
         },
         /**
          * CLI 선택 목록. 서버 목록을 받았으면 그것(설치 · 인증 여부 포함), 못 받았으면 아는 둘.
-         * 목록이 비어 고를 수 없게 되면 사용자는 무엇으로 도는지 알 수 없다.
+         * 회사 키가 있으면 키가 있는 CLI 만 — OpenAI 키만 있는 회사에서 Claude Code 를 고르면 공용 개인 구독으로 돈다.
+         * 회사 키가 없으면(플래그로 연 배포) 지금처럼: 방에 기억된 값이 목록에 없으면 그 값도 보여 준다.
          */
         cliAgentOptions() {
-            const items = this.cliAgentItems.length ? this.cliAgentItems : KNOWN_CLI_AGENTS;
-            // 방에 기억된 값이 목록에 없으면(지금 서버에 없는 CLI) 그 값도 보여 준다. 안 그러면 빈 칸으로 보인다.
-            const current = agentCliOf(this.agentCli);
-            if (items.some((i) => i.value === current)) return items;
-            return [...items, { value: current, title: current, installed: true, hint: '' }];
+            return cliChoicesFor(this.cliAgentItems, this.companyKeyClis, this.agentCli).items;
         },
         isSystemMentioned() {
             return (
@@ -4889,6 +4914,20 @@ export default {
         },
         getLoadingLabel(message) {
             return message?.content || '생각 중...';
+        },
+        /** 회사 키가 있는 CLI 를 다시 묻는다(같은 사용자 · 테넌트면 60초 동안 기억한 값). 실패하면 [] — 지금 상태 그대로. */
+        async refreshCompanyKeyClis() {
+            const clis = await companyCliAgents();
+            if (JSON.stringify(clis) !== JSON.stringify(this.companyKeyClis)) this.companyKeyClis = clis;
+        },
+        /**
+         * 회사 키가 있으면 고른 CLI 를 그 안으로 — 기본값(claude-code)이나 방에 기억된 CLI 에 키가 없으면 키가 있는 첫 CLI 로.
+         * 회사 키가 없으면(플래그로 연 배포) 건드리지 않는다.
+         */
+        alignAgentCliToCompanyKeys() {
+            if (!this.companyKeyClis.length) return;
+            const { value } = cliChoicesFor(this.cliAgentItems, this.companyKeyClis, this.agentCli);
+            if (value !== agentCliOf(this.agentCli)) this.agentCli = value;
         },
         /** 보낼 메시지에 실을 CLI. cliagents 가 아니면 null — 다른 런타임에는 의미가 없다. */
         selectedAgentCli() {

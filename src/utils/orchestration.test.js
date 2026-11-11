@@ -59,3 +59,12 @@ test('CLI 코딩 에이전트는 켜기 전까지 새 대화에서 고를 수 �
     assert.ok(selectableOrchestrations({ VITE_FF_CLI_AGENT_CHAT: 'true' }).includes('cliagents'));
     assert.equal(cliAgentChatEnabled({ VITE_FF_CLI_AGENT_CHAT: 'false' }), false);
 });
+
+test('회사 CLI 키가 있으면 플래그가 꺼져 있어도 「CLI 코딩 에이전트」를 고를 수 있다', async () => {
+    const { selectableOrchestrations } = await import('./orchestration.js');
+    assert.ok(selectableOrchestrations({}, { companyCliKey: true }).includes('cliagents'));
+    assert.ok(selectableOrchestrations({ VITE_FF_CLI_AGENT_CHAT: 'false' }, { companyCliKey: true }).includes('cliagents'));
+    assert.ok(!selectableOrchestrations({}, { companyCliKey: false }).includes('cliagents'), '키도 플래그도 없으면 지금처럼 숨긴다');
+    assert.ok(!selectableOrchestrations({}, { companyCliKey: 'true' }).includes('cliagents'), '참/거짓만 받는다');
+    assert.ok(selectableOrchestrations({ VITE_FF_CLI_AGENT_CHAT: 'true' }, { companyCliKey: false }).includes('cliagents'), '플래그만 켜도 연다');
+});

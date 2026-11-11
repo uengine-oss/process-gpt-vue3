@@ -234,8 +234,9 @@ import {
     tooBig
 } from '../lib/attachments.js';
 import { applyMention, mentionDraft, resolveMentions, suggest } from '@/shared/mentions/index.js';
-import { KNOWN_CLI_AGENTS, agentCliOf, agentCliTitle } from '@/utils/cliAgents';
+import { agentCliOf, agentCliTitle } from '@/utils/cliAgents';
 import { selectableOrchestrations } from '@/utils/orchestration';
+import { cliChoicesFor, companyCliAgents } from '@/shared/cliAgentKeys';
 import Icon from './Icon.vue';
 import VoiceButton from './VoiceButton.vue';
 
@@ -250,8 +251,15 @@ const AGENTS = [
     { value: 'deepagents', label: '딥 에이전트', hint: '여러 단계를 스스로 밟는 작업' },
     { value: 'cliagents', label: 'CLI 코딩 에이전트', hint: 'Claude Code · Codex 로 파일을 만들거나 고치는 작업' }
 ] as const;
-/** 고를 수 있는 것만(CLI 코딩 에이전트는 운영에 열기 전까지 숨긴다 — utils/orchestration 의 cliAgentChatEnabled). */
-const agentChoices = AGENTS.filter((a) => selectableOrchestrations().includes(a.value));
+/**
+ * 고를 수 있는 것만. CLI 코딩 에이전트는 플래그(utils/orchestration 의 cliAgentChatEnabled)가 켜졌거나
+ * 회사 관리자가 CLI 에이전트 API 키를 넣었을 때만(포털 Chat.vue 와 같은 규칙).
+ * companyKeyClis — 회사 키가 있는 CLI(anthropic → claude-code, openai → codex). 실행 CLI 도 이 안에서만 고른다.
+ */
+const companyKeyClis = ref<string[]>([]);
+const agentChoices = computed(() =>
+    AGENTS.filter((a) => selectableOrchestrations(undefined, { companyCliKey: companyKeyClis.value.length > 0 }).includes(a.value))
+);
 
 const props = defineProps<{
     modelValue?: string;
@@ -317,13 +325,25 @@ const currentAgentLabel = computed(
 const currentOrchestration = computed(() => (props.engines ? agent.value : props.orchestration || ''));
 
 const cliOpen = ref(false);
-const cliOptions = computed(() => {
-    const items = Array.isArray(props.cliChoices) && props.cliChoices.length ? props.cliChoices : KNOWN_CLI_AGENTS;
-    // 방에 기억된 값이 목록에 없으면 그것도 보여 준다. 안 그러면 무엇으로 도는지 알 수 없다.
-    const current = agentCliOf(props.agentCli);
-    return items.some((i: any) => i.value === current)
-        ? items
-        : [...items, { value: current, title: current, installed: true, hint: '' }];
+/**
+ * 실행 CLI 목록(포털과 같은 규칙, src/shared/cliAgentKeys 의 cliChoicesFor). 회사 키가 있으면 키가 있는 CLI 만.
+ * 회사 키가 없으면(플래그로 연 배포) 지금처럼 — 방에 기억된 값이 목록에 없으면 그것도 보여 준다.
+ */
+const cliOptions = computed(() => cliChoicesFor(props.cliChoices || [], companyKeyClis.value, props.agentCli).items);
+
+// 엔진을 고를 수 있거나 CLI 코딩 에이전트 방일 때만 회사 키를 묻는다(같은 사용자 · 테넌트면 60초 동안 기억한 값).
+watch(
+    currentOrchestration,
+    (value) => {
+        if (props.engines || value === 'cliagents') companyCliAgents().then((clis) => (companyKeyClis.value = clis));
+    },
+    { immediate: true }
+);
+// 방에 기억된 CLI · 기본값(claude-code)에 회사 키가 없으면 키가 있는 첫 CLI 로 바꾼다. 화면(ChatRoomView)이 방에 기억한다.
+watch([companyKeyClis, () => props.agentCli, currentOrchestration], () => {
+    if (currentOrchestration.value !== 'cliagents' || !companyKeyClis.value.length) return;
+    const { value } = cliChoicesFor(props.cliChoices || [], companyKeyClis.value, props.agentCli);
+    if (value !== agentCliOf(props.agentCli)) emit('update:agentCli', value);
 });
 const currentCli = computed(() => agentCliOf(props.agentCli));
 const currentCliLabel = computed(() => agentCliTitle(currentCli.value, cliOptions.value));

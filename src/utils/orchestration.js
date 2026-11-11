@@ -64,7 +64,13 @@ export function cliAgentChatEnabled(env = typeof window !== 'undefined' ? window
     return raw === true || raw === 'true';
 }
 
-/** 새 대화에서 고를 수 있는 오케스트레이션(꺼진 것은 뺀다). */
-export function selectableOrchestrations(env) {
-    return ORCHESTRATIONS.filter((v) => v !== 'cliagents' || cliAgentChatEnabled(env));
+/**
+ * 새 대화에서 고를 수 있는 오케스트레이션(꺼진 것은 뺀다).
+ *
+ * `companyCliKey` — 회사 관리자가 CLI 에이전트 API 키를 하나라도 넣었으면(설정 › CLI 에이전트 API 키,
+ * src/shared/cliAgentKeys 의 companyCliKeyConfigured) 플래그와 상관없이 「CLI 코딩 에이전트」를 연다.
+ * 그 회사의 CLI 는 개인 구독 토큰이 아니라 회사 키로 돌기 때문에 위의 약관 문제가 없다(2026-11-11).
+ */
+export function selectableOrchestrations(env, { companyCliKey = false } = {}) {
+    return ORCHESTRATIONS.filter((v) => v !== 'cliagents' || companyCliKey === true || cliAgentChatEnabled(env));
 }
