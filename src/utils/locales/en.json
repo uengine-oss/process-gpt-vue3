@@ -1726,6 +1726,7 @@
         "skills": "Skills",
         "taskCatalog": "Task Catalog",
         "orgChartGroup": "Org Groups",
+        "cliAgentKeys": "CLI Agent API Keys",
         "github": "GitHub Settings",
         "githubUsername": "GitHub Username",
         "githubToken": "GitHub Token (Personal Access Token)",
@@ -1748,6 +1749,35 @@
         "tokenHintGithub": "You can generate a token at GitHub → Settings → Developer settings → Personal access tokens. The repo scope is required.",
         "tokenHintGitlab": "You can generate a token at GitLab → User Settings → Access Tokens. The api or read_repository scope is required.",
         "tokenHintGitea": "You can generate a token at Gitea → Settings → Applications."
+    },
+    "cliAgentKeys": {
+        "title": "CLI Agent API Keys",
+        "description": "Company API keys that Claude Code and Codex CLI use for tasks and chats. Keys are stored encrypted and never shown again.",
+        "notice": "Use API keys created by your company. Sharing a personal subscription token among several people violates the terms.",
+        "anthropicConsole": "Create a key in Claude Console",
+        "openaiConsole": "Create a key on the OpenAI Platform",
+        "fallback": "Without a key, that CLI keeps running on the credentials configured on the server.",
+        "anthropicKey": "Anthropic API key",
+        "openaiKey": "OpenAI API key",
+        "configured": "Configured",
+        "notConfigured": "Not configured",
+        "inputLabel": "Paste a new key",
+        "replaceLabel": "Replace with a new key",
+        "save": "Save",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "saved": "Saved the {agent} key.",
+        "deleted": "Deleted the {agent} key.",
+        "confirmTitle": "Delete the {agent} key?",
+        "confirmText": "{agent} will go back to the credentials configured on the server. To use the same key again, paste it again.",
+        "loadFailed": "Couldn't load the status: {message}",
+        "storeMissing": "The key store isn't set up on this server yet. Once an operator applies the database setup (process-gpt-vue3 supabase/migrations/20261111000001_cli_agent_credentials.sql), you can add keys here.",
+        "warn": {
+            "whitespace": "The key contains spaces or line breaks. Check what you pasted.",
+            "anthropicPrefix": "Anthropic API keys usually start with sk-ant-. Make sure this is the right key.",
+            "openaiPrefix": "OpenAI API keys usually start with sk-. Make sure this is the right key.",
+            "looksAnthropic": "This looks like an Anthropic key (sk-ant-). Codex needs an OpenAI key."
+        }
     },
     "orgChartGroup": {
         "title": "Organization Group Management",

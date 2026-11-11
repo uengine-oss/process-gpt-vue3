@@ -236,6 +236,7 @@ import {
 import { applyMention, mentionDraft, resolveMentions, suggest } from '@/shared/mentions/index.js';
 import { KNOWN_CLI_AGENTS, agentCliOf, agentCliTitle } from '@/utils/cliAgents';
 import { selectableOrchestrations } from '@/utils/orchestration';
+import { companyCliKeyConfigured } from '@/shared/cliAgentKeys';
 import Icon from './Icon.vue';
 import VoiceButton from './VoiceButton.vue';
 
@@ -250,8 +251,14 @@ const AGENTS = [
     { value: 'deepagents', label: '딥 에이전트', hint: '여러 단계를 스스로 밟는 작업' },
     { value: 'cliagents', label: 'CLI 코딩 에이전트', hint: 'Claude Code · Codex 로 파일을 만들거나 고치는 작업' }
 ] as const;
-/** 고를 수 있는 것만(CLI 코딩 에이전트는 운영에 열기 전까지 숨긴다 — utils/orchestration 의 cliAgentChatEnabled). */
-const agentChoices = AGENTS.filter((a) => selectableOrchestrations().includes(a.value));
+/**
+ * 고를 수 있는 것만. CLI 코딩 에이전트는 플래그(utils/orchestration 의 cliAgentChatEnabled)가 켜졌거나
+ * 회사 관리자가 CLI 에이전트 API 키를 넣었을 때만(포털 Chat.vue 와 같은 규칙).
+ */
+const companyCliKey = ref(false);
+const agentChoices = computed(() =>
+    AGENTS.filter((a) => selectableOrchestrations(undefined, { companyCliKey: companyCliKey.value }).includes(a.value))
+);
 
 const props = defineProps<{
     modelValue?: string;
@@ -296,6 +303,8 @@ const emit = defineEmits<{
 const text = ref(props.modelValue || '');
 const agent = ref<string>(props.modelValue ? 'langchain-react' : 'langchain-react');
 const agentOpen = ref(false);
+// 엔진 고르기를 보이는 화면에서만 회사 키가 있는지 묻는다(지금 휴대폰 화면들은 엔진 고르기를 빼 둔다).
+if (props.engines) companyCliKeyConfigured().then((v) => (companyCliKey.value = v === true));
 const input = ref<HTMLTextAreaElement | null>(null);
 
 // 붙인 파일들. 올리는 것은 화면이 한다 — 입력창은 무엇을 붙였는지만 안다.

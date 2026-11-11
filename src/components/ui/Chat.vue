@@ -3630,6 +3630,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { usePhoneShell } from '@/shared/phoneShell';
 import { getTenantId } from '@/utils/tenant';
 import { normalizeOrchestration, selectableOrchestrations } from '@/utils/orchestration';
+import { companyCliKeyConfigured } from '@/shared/cliAgentKeys';
 import { DEFAULT_AGENT_CLI, KNOWN_CLI_AGENTS, agentCliOf, toCliAgentItems } from '@/utils/cliAgents';
 // 첨부 이미지·파일 주소는 비공개 버킷의 서명 URL 이라 그릴 때 만들어야 한다.
 import { storageUrlMixin } from '@/utils/storageUrl';
@@ -3870,6 +3871,8 @@ export default {
             agentCli: DEFAULT_AGENT_CLI,
             // 서버(GET /process-gpt-cli-agent/agents)가 알려 준 CLI 목록. 못 받으면 비어 있다.
             cliAgentItems: [],
+            // 회사 관리자가 CLI 에이전트 API 키를 넣었나 — 넣었으면 플래그와 상관없이 「CLI 코딩 에이전트」를 고를 수 있다.
+            companyCliKey: false,
             cliAgentsLoading: false,
             cliAgentsLoaded: false,
             isDragOverTextarea: false,
@@ -4024,6 +4027,13 @@ export default {
             me.skillDropdownStyle = {};
         };
         document.addEventListener('click', this._autocompleteOutsideClickHandler);
+
+        // 새 대화를 시작하는 화면에서만 묻는다(채팅방에서는 고르기가 없다). 60초 동안은 기억한 값을 쓴다.
+        if (this.isOrchestrationSelectableRoute) {
+            companyCliKeyConfigured().then((v) => {
+                this.companyCliKey = v === true;
+            });
+        }
 
         this.EventBus.on('scroll_update', () => {
             if (this.$refs && this.$refs.scrollContainer) {
@@ -4180,9 +4190,13 @@ export default {
                 { label: this.$t('chats.basicAgent'), value: 'langchain-react' },
                 { label: this.$t('chats.deepAgent'), value: 'deepagents' },
                 { label: this.$t('chats.codexAgent'), value: 'codex' },
-                // 업무 설정(AgentSelectField)과 같은 이름표를 쓴다. 운영에 열기 전에는 숨긴다(cliAgentChatEnabled).
+                // 업무 설정(AgentSelectField)과 같은 이름표를 쓴다. 플래그(cliAgentChatEnabled)나 회사 키(companyCliKey)가 있을 때만.
                 { label: this.$t('AgentSelectInfo.orchestration.cliagents.title'), value: 'cliagents' }
-            ].filter((o) => selectableOrchestrations().includes(o.value) || o.value === this.orchestration);
+            ].filter(
+                (o) =>
+                    selectableOrchestrations(undefined, { companyCliKey: this.companyCliKey }).includes(o.value) ||
+                    o.value === this.orchestration
+            );
         },
         /**
          * CLI 선택 목록. 서버 목록을 받았으면 그것(설치 · 인증 여부 포함), 못 받았으면 아는 둘.

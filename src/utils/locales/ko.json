@@ -1743,6 +1743,7 @@
         "skills": "스킬",
         "taskCatalog": "Task 설정",
         "orgChartGroup": "조직 그룹",
+        "cliAgentKeys": "CLI 에이전트 API 키",
         "github": "GitHub 설정",
         "githubUsername": "GitHub 사용자명",
         "githubToken": "GitHub 토큰 (Personal Access Token)",
@@ -1765,6 +1766,35 @@
         "tokenHintGithub": "토큰은 GitHub → Settings → Developer settings → Personal access tokens에서 발급받을 수 있습니다. repo 권한이 필요합니다.",
         "tokenHintGitlab": "토큰은 GitLab → User Settings → Access Tokens에서 발급받을 수 있습니다. api 또는 read_repository 권한이 필요합니다.",
         "tokenHintGitea": "토큰은 Gitea → Settings → Applications에서 발급받을 수 있습니다."
+    },
+    "cliAgentKeys": {
+        "title": "CLI 에이전트 API 키",
+        "description": "Claude Code · Codex CLI가 업무와 채팅을 처리할 때 쓰는 회사 API 키입니다. 넣은 키는 암호화해 보관하고 다시 보여 주지 않습니다.",
+        "notice": "회사가 직접 만든 API 키를 넣으세요. 개인 구독 토큰을 여러 사람이 나눠 쓰면 약관 위반입니다.",
+        "anthropicConsole": "Claude Console에서 키 만들기",
+        "openaiConsole": "OpenAI 플랫폼에서 키 만들기",
+        "fallback": "키가 없는 쪽은 지금처럼 서버에 설정된 자격 증명으로 실행됩니다.",
+        "anthropicKey": "Anthropic API 키",
+        "openaiKey": "OpenAI API 키",
+        "configured": "설정됨",
+        "notConfigured": "설정 안 됨",
+        "inputLabel": "새 키 붙여 넣기",
+        "replaceLabel": "새 키로 바꾸기",
+        "save": "저장",
+        "delete": "지우기",
+        "cancel": "취소",
+        "saved": "{agent} 키를 저장했습니다.",
+        "deleted": "{agent} 키를 지웠습니다.",
+        "confirmTitle": "{agent} 키를 지울까요?",
+        "confirmText": "지우면 {agent}는 서버에 설정된 자격 증명으로 돌아갑니다. 같은 키를 다시 쓰려면 다시 붙여 넣어야 합니다.",
+        "loadFailed": "상태를 불러오지 못했습니다: {message}",
+        "storeMissing": "이 서버에는 아직 키 저장소가 준비되지 않았습니다. 운영 관리자가 DB 설정(process-gpt-vue3 supabase/migrations/20261111000001_cli_agent_credentials.sql)을 적용하면 여기서 키를 넣을 수 있습니다.",
+        "warn": {
+            "whitespace": "키 가운데에 공백이나 줄바꿈이 있습니다. 붙여 넣은 값을 확인하세요.",
+            "anthropicPrefix": "Anthropic API 키는 보통 sk-ant- 로 시작합니다. 맞는 키인지 확인하세요.",
+            "openaiPrefix": "OpenAI API 키는 보통 sk- 로 시작합니다. 맞는 키인지 확인하세요.",
+            "looksAnthropic": "Anthropic 키(sk-ant-)로 보입니다. Codex에는 OpenAI 키를 넣으세요."
+        }
     },
     "orgChartGroup": {
         "title": "조직 그룹 관리",

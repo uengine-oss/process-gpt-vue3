@@ -36,6 +36,11 @@
                                         <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon>
                                         {{ $t('accountTab.environments') }}
                                     </v-tab>
+                                    <!-- CLI 에이전트 API 키 — 회사 키로 Claude Code · Codex 를 돌린다(관리자 전용, 2026-11-11) -->
+                                    <v-tab v-if="!isUEngineMode" value="CliAgentKeys" data-testid="tab-cli-agent-keys">
+                                        <v-icon class="mr-2" size="20">mdi-key-chain-variant</v-icon>
+                                        {{ $t('accountTab.cliAgentKeys') }}
+                                    </v-tab>
                                     <!-- <v-tab v-if="!isUEngineMode" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab> -->
                                     <!-- 결정론적 코드 / 보상 처리 코드 편집 -->
                                     <v-tab v-if="!isUEngineMode" value="CodeEdit">
@@ -180,6 +185,16 @@
                                     :class="{ 'selected-tab': tab === 'MCP-Environments' }"
                                 >
                                     {{ $t('accountTab.environments') }}
+                                </v-btn>
+                                <v-btn
+                                    v-if="!isUEngineMode"
+                                    variant="text"
+                                    color="default"
+                                    size="small"
+                                    @click="tab = 'CliAgentKeys'"
+                                    :class="{ 'selected-tab': tab === 'CliAgentKeys' }"
+                                >
+                                    <v-icon class="mr-2" size="16">mdi-key-chain-variant</v-icon>{{ $t('accountTab.cliAgentKeys') }}
                                 </v-btn>
                                 <v-btn
                                     v-if="!isUEngineMode"
@@ -348,6 +363,12 @@
                                 <MCPEnvSecretTab />
                             </div>
                         </v-window-item>
+                        <!-- CliAgentKeys: CLI 에이전트 API 키 (accountTab.cliAgentKeys) — 관리자에게만 그린다 -->
+                        <v-window-item v-if="!isUEngineMode && admin" value="CliAgentKeys">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                                <CliAgentKeysTab />
+                            </div>
+                        </v-window-item>
                         <!-- CodeEdit: 결정론적 코드 / 보상 처리 코드 편집 (accountTab.codeEdit) -->
                         <v-window-item v-if="!isUEngineMode" value="CodeEdit">
                             <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
@@ -401,6 +422,7 @@ import KnowledgeMap from '@/components/knowledge/map/KnowledgeMap.vue';
 import { phoneScopeMode } from '@/shared/phoneScope';
 import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
+import CliAgentKeysTab from '@/components/pages/account-settings/CliAgentKeysTab.vue';
 import CodeEditTab from '@/components/pages/account-settings/CodeEditTab.vue';
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
 import SkillsTab from '@/components/pages/account-settings/SkillsTab.vue';
@@ -426,6 +448,7 @@ export default {
         KnowledgeMap,
         MCPServerTab,
         MCPEnvSecretTab,
+        CliAgentKeysTab,
         CodeEditTab,
         ConnectionInfoTab,
         SkillsTab,
@@ -502,6 +525,7 @@ export default {
                 'Drive',
                 'MCP-Servers',
                 'MCP-Environments',
+                'CliAgentKeys',
                 'CodeEdit',
                 'ConnectionInfo',
                 'GlossaryManage',
@@ -511,6 +535,7 @@ export default {
                 'Drive',
                 'MCP-Servers',
                 'MCP-Environments',
+                'CliAgentKeys',
                 'CodeEdit',
                 'ConnectionInfo',
                 'GlossaryManage',
@@ -524,6 +549,7 @@ export default {
                 'KnowledgeFiles',
                 'MCP-Servers',
                 'MCP-Environments',
+                'CliAgentKeys',
                 'CodeEdit',
                 'ConnectionInfo',
                 'Github',
@@ -532,6 +558,11 @@ export default {
                 'OrgChartGroup'
             ]);
             if (!this.tab) {
+                this.tab = 'Account';
+                return;
+            }
+            // 회사 키 칸은 관리자 전용 — 관리자가 아니면 주소로 들어와도 계정 탭으로 보낸다(서버도 관리자만 쓰게 막는다).
+            if (!this.admin && this.tab === 'CliAgentKeys') {
                 this.tab = 'Account';
                 return;
             }
