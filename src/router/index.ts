@@ -9,6 +9,7 @@ import { withCallActivityHistory } from '@/components/customDrilldown/drilldownH
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 import { homePath, isMobileViewport, MOBILE_HOME } from '@/utils/homePath';
 import { isPhoneBrowser, needsViewportReload } from '@/shared/mobileView';
+import { phoneRedirect } from '@/shared/phoneScope';
 
 declare global {
     interface Window {
@@ -153,6 +154,9 @@ router.beforeEach(async (to: any, from: any, next: any) => {
         window.location.assign(to.fullPath);
         return next(false);
     }
+    // 휴대폰(라이트 버전)에서는 관리 · 설계 · 분석 화면을 열지 않는다 — 주소로 바로 와도(알림 링크 등) 안내로 보낸다.
+    const phoneTo = phoneRedirect(to.path, to.fullPath);
+    if (phoneTo) return next(phoneTo);
     // Approval lookup fails closed; a network error must not admit pending accounts.
     try {
         const redirect = await membershipRedirect(to.path);

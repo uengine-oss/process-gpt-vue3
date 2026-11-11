@@ -124,14 +124,12 @@
                         </v-btn>
 
                         <!--
-                            관리자 갈래는 접어 둔다.
-
-                            휴대폰 폭에서 이 버튼들이 세 줄을 차지해 정작 계정·테마가
-                            화면 밖으로 밀렸다. 지우지는 않는다 — 급할 때 여기서 들어갈
-                            길은 남겨 두고, 평소에는 접어 둔다.
+                            관리자 갈래는 Process GPT 휴대폰에서는 보이지 않는다(2026-11-11 결정 — 관리 기능은 PC에서만,
+                            shared/phoneScope). 휴대폰에서 꼭 써야 하면 「테마 설정 › 휴대폰 화면 › 데스크톱 버전」으로 연다.
+                            PAL 이 아닌 다른 모드(uEngine)는 예전처럼 접어 둔다.
                         -->
                         <v-btn
-                            v-if="admin && !isPalMode"
+                            v-if="admin && !isPalMode && !phoneScopeMode"
                             variant="text"
                             color="default"
                             size="small"
@@ -400,6 +398,7 @@ import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
 import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
 import KnowledgeMap from '@/components/knowledge/map/KnowledgeMap.vue';
+import { phoneScopeMode } from '@/shared/phoneScope';
 import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import CodeEditTab from '@/components/pages/account-settings/CodeEditTab.vue';
@@ -474,6 +473,9 @@ export default {
             return window.$mode === 'uEngine';
         },
         // PAL 모드는 관리 기능을 별도 메뉴(관리자 콘솔·조직도 등)로 분리 — 설정 페이지엔 계정/레이아웃만 남긴다
+        phoneScopeMode() {
+            return phoneScopeMode(window);
+        },
         isPalMode() {
             return !!window.$pal;
         },

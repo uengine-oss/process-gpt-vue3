@@ -58,7 +58,7 @@
                     <span class="pg-m-row__label">{{ item.label }}</span>
                 </button>
             </template>
-            <button type="button" class="pg-m-row pg-m-row--muted" :aria-expanded="moreOpen" @click="moreOpen = !moreOpen">
+            <button v-if="moreItems.length" type="button" class="pg-m-row pg-m-row--muted" :aria-expanded="moreOpen" @click="moreOpen = !moreOpen">
                 <span class="pg-m-row__icon"><v-icon size="18">{{ moreOpen ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon></span>
                 <span class="pg-m-row__label">{{ moreOpen ? '접기' : '더보기' }}</span>
             </button>
@@ -118,6 +118,7 @@ import NotificationDD from '../vertical-header/NotificationDD.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useCustomizerStore } from '@/stores/customizer';
 import { usePhoneShell } from '@/shared/phoneShell';
+import { isDesktopOnlyPath, phoneScopeMode } from '@/shared/phoneScope';
 
 export default {
     name: 'SimpleSidebarTools',
@@ -184,9 +185,12 @@ export default {
         desktopNavItems() {
             return this.navItems.filter((i) => i.to !== '/todolist');
         },
-        /** '더보기' 안에 접어 둘 곳. 위에 펴 둔 두 줄은 뺀다. */
+        /** '더보기' 안에 접어 둘 곳. 위에 펴 둔 두 줄은 뺀다. 휴대폰에서는 PC 전용 화면(관리 · 분석 등)도 뺀다. */
         moreItems() {
-            return this.navItems.filter((i) => i.to !== '/definition-map' && i.to !== '/todolist');
+            const phone = phoneScopeMode(window);
+            return this.navItems.filter(
+                (i) => i.to !== '/definition-map' && i.to !== '/todolist' && !(phone && isDesktopOnlyPath(i.to))
+            );
         }
     },
     methods: {

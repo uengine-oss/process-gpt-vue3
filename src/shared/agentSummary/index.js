@@ -43,3 +43,30 @@ export function stripAgentMeta(payload) {
     AGENT_META_KEYS.forEach((k) => delete out[k]);
     return out;
 }
+
+/**
+ * 에이전트가 만든 초안(todolist.draft)에서 폼 값을 꺼낸다 — 다시 열어도 초안이 보이게.
+ * 초안은 { <폼 id>: { 칸: 값 } } 이거나 칸 값 그대로다. 요약 · 팀 정보는 뺀다. 꺼낼 값이 없으면 null.
+ */
+export function agentDraftValues(draft, formDefId) {
+    let d = draft;
+    if (typeof d === 'string') {
+        try {
+            d = JSON.parse(d);
+        } catch (e) {
+            return null;
+        }
+    }
+    if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
+    let values = d;
+    if (formDefId && d[formDefId] && typeof d[formDefId] === 'object' && !Array.isArray(d[formDefId])) {
+        values = d[formDefId];
+    } else {
+        const keys = Object.keys(d).filter((k) => !AGENT_META_KEYS.includes(k) && k !== '_summary');
+        if (keys.length === 1 && d[keys[0]] && typeof d[keys[0]] === 'object' && !Array.isArray(d[keys[0]])) values = d[keys[0]];
+    }
+    const out = { ...stripAgentMeta(values) };
+    delete out._summary;
+    return Object.keys(out).length ? out : null;
+}
+

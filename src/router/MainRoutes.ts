@@ -767,6 +767,12 @@ const allRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/notifications/NotificationsPage.vue')
     },
     {
+        // 휴대폰에서 관리 · 설계 · 분석 화면을 열면 오는 안내(shared/phoneScope)
+        name: 'Desktop Only',
+        path: '/desktop-only',
+        component: () => import('@/views/pages/DesktopOnly.vue')
+    },
+    {
         name: 'My Feedback',
         path: '/my-feedback',
         component: () => import('@/views/feedback/MyFeedback.vue')

@@ -150,6 +150,7 @@
                     </v-col>
                 </div> -->
 
+                <!-- 휴대폰(phoneScope)에서는 대화목록 · 인스턴스만 — 에이전트 · 사람 · 스킬 · 정의 · 분석 · 회사 정보는 PC에서(shared/phoneScope) -->
                 <!-- 대화목록 -->
                 <ChatList v-if="!gs && !pal" />
 
@@ -169,7 +170,7 @@
                 </v-col>
 
                 <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
-                <div v-if="mode !== 'uEngine' && isAdmin && !pal" class="mb-4 mt-4">
+                <div v-if="mode !== 'uEngine' && isAdmin && !pal && !phoneScope" class="mb-4 mt-4">
                     <!-- ＋ 는 조직도 화면의 에이전트 생성 창을 연다(조직도 관리는 상단 「관리」 메뉴) -->
                     <SidebarSectionHeader
                         class="mt-0"
@@ -187,7 +188,7 @@
                 </div>
 
                 <!-- 사람 동료 -->
-                <div v-if="mode !== 'uEngine' && !gs && !pal" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !gs && !pal && !phoneScope" class="mb-4">
                     <!-- ＋ 는 관리자에게만 — 계정 설정의 사용자 초대 창을 연다 -->
                     <SidebarSectionHeader
                         class="mt-0"
@@ -206,7 +207,7 @@
                 </div>
 
                 <!-- 스킬 타이틀 + 목록 -->
-                <div v-if="mode !== 'uEngine' && !gs && isAdmin && !pal" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !gs && isAdmin && !pal && !phoneScope" class="mb-4">
                     <SidebarSectionHeader
                         class="mt-0"
                         :title="$t('VerticalSidebar.skills')"
@@ -279,7 +280,7 @@
                 </div>
 
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
-                <v-col v-if="isAdmin && !pal" class="pa-0">
+                <v-col v-if="isAdmin && !pal && !phoneScope" class="pa-0">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
                         <!-- Item Sub Header -->
@@ -354,7 +355,7 @@
                     </template>
                 </v-col>
                 <!-- 정의 목록 -->
-                <v-col v-if="isAdmin && !pal" class="pa-0">
+                <v-col v-if="isAdmin && !pal && !phoneScope" class="pa-0">
                     <div v-if="isDefinitionListLoading" class="list-skeleton-loading">
                         <v-skeleton-loader v-for="n in 3" :key="n" type="list-item" />
                     </div>
@@ -380,7 +381,7 @@
                 </v-col>
 
                 <!-- 분석(Analytics) 타이틀 + 목록 (PAL: 테넌트 메뉴 설정 반영) -->
-                <div v-if="displayedAnalyticsItems.length > 0 && !gs" class="mb-4 mt-8">
+                <div v-if="displayedAnalyticsItems.length > 0 && !gs && !phoneScope" class="mb-4 mt-8">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('VerticalSidebar.analytics') }}
                     </div>
@@ -426,7 +427,7 @@
                     </v-col>
                 </div>
             </v-list>
-            <Footer class="mt-2" />
+            <Footer v-if="!phoneScope" class="mt-2" />
         </div>
         <div class="pa-4 px-4 bg-containerBg">
             <!-- 간소화에서는 계정 줄 하나로 — 누르면 설정 · 로그아웃이 나온다. -->
@@ -481,6 +482,7 @@ import AgentCreateDialog from '@/components/ui/AgentCreateDialog.vue';
 
 import { useCustomizerStore } from '@/stores/customizer';
 import { usePhoneShell } from '@/shared/phoneShell';
+import { phoneScopeMode } from '@/shared/phoneScope';
 import { computed } from 'vue';
 import { buildDefinitionProposalMap } from '@/composables/useDefinitionProposals';
 
@@ -653,6 +655,10 @@ export default {
                 ],
                 'org'
             );
+        },
+        // 휴대폰(폭 768px 이하 · Process GPT 모드)에서는 내 일을 처리하는 메뉴만 남긴다
+        phoneScope() {
+            return !!this.globalIsMobile?.value && phoneScopeMode(window);
         },
         displayedAnalyticsItems() {
             if (!this.pal) return this.analyticsItem;
