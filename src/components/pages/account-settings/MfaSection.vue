@@ -24,6 +24,8 @@ import {
 } from '@/utils/mfa';
 import { invalidateMfaPolicyCache, isMfaRequired } from '@/utils/mfaGate';
 import { isSsoAuthenticated } from '@/utils/ssoAuth';
+import { homePath } from '@/utils/homePath';
+import { phoneWebUrl } from '@/shared/mobileView';
 
 const i18n = () => (window as any).$i18n?.global;
 const t = (key: string, params?: any): string => (params ? i18n()?.t(key, params) : i18n()?.t(key)) ?? key;
@@ -136,6 +138,9 @@ async function confirmEnroll() {
         invalidateMfaPolicyCache();
         await reload();
         notify(t('mfa.enrollSuccess'));
+        // 휴대폰 웹에서 등록하러 왔으면 끝난 뒤 휴대폰 웹으로 돌려보낸다(계정 설정만 포털에 남는다).
+        const back = forcedHere.value ? phoneWebUrl(homePath()) : null;
+        if (back) window.location.replace(back);
     } catch (e) {
         errorMessage.value = t('mfa.verifyFailed');
         enrollCode.value = '';

@@ -1,6 +1,7 @@
 /**
- * 휴대폰 화면 (F-MV-01 ~ F-MV-12) — 2026-11-11
+ * 휴대폰 화면 (F-MV-01 ~ F-MV-14) — 2026-11-11
  *   - 휴대폰은 앱 화면을 휴대폰 웹(/m/ — 할 일 · 진행 · AI · 알림 · 나)으로 연다. 「PC 화면으로 보기」를 고른 휴대폰만 데스크톱 화면(1280px).
+ *   - 휴대폰 웹도 포털과 같은 로그인 · 2단계 인증(TOTP)을 거친다(F-MV-13 · 14).
  *   - 홈 화면에 추가(매니페스트 · iPhone 안내), 좁은 화면의 관리 · 설계 · 분석 숨김 · 막기, 결정 칸.
  *
  * 실제 백엔드(설치본)에 붙은 프런트를 휴대폰처럼(터치 · 390px 폭) 연다. 휴대폰 웹(/m/)도 같은 서버가 낸다.
@@ -10,9 +11,11 @@
  *   UX_ACCOUNTS=~/.config/pgtut/local-accounts.json npx playwright test playwright/e2e/mobile-view
  *   (MV_TASK_ID: 김민지의 진행 중 업무 id, MV_APPROVAL_TASK_ID: 장진영의 처음 연 승인/반려 업무 id — 없으면 그 시험은 건너뛴다)
  *
- * 계정 파일: { admin: {email,password}, minji: {...} } — ux-review 묶음과 같은 파일.
+ * 계정 파일: { admin: {email,password}, minji: {...}, mfa: {email,password,totp} } — ux-review 묶음과 같은 파일.
+ *   mfa 는 TOTP 를 등록한 계정(totp: base32 비밀). 없으면 F-MV-14 를 건너뛴다.
  */
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 
@@ -50,6 +53,26 @@ async function login(page: Page) {
     await page.locator('input[type="password"]').first().fill(a.password);
     await page.locator('button').filter({ hasText: /^\s*(로그인|Sign In|Log In|Login)\s*$/i }).first().click();
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 60_000 });
+}
+
+/** RFC 6238 TOTP(30초 · 6자리 · SHA-1) — 인증 앱이 보여 주는 코드 */
+function totp(secret: string, at = Date.now()): string {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let bits = '';
+    for (const c of secret.replace(/=+$/, '').toUpperCase()) bits += alphabet.indexOf(c).toString(2).padStart(5, '0');
+    const key = Buffer.from(bits.match(/.{8}/g)!.map((b) => parseInt(b, 2)));
+    const counter = Buffer.alloc(8);
+    counter.writeBigUInt64BE(BigInt(Math.floor(at / 30_000)));
+    const h = crypto.createHmac('sha1', key).update(counter).digest();
+    const o = h[h.length - 1] & 15;
+    return String((h.readUInt32BE(o) & 0x7fffffff) % 1_000_000).padStart(6, '0');
+}
+
+async function fillLogin(page: Page, a: { email: string; password: string }) {
+    await page.locator('input[type="password"]').waitFor({ timeout: 30_000 });
+    await page.locator('input[type="text"], input[type="email"]').first().fill(a.email);
+    await page.locator('input[type="password"]').first().fill(a.password);
+    await page.locator('button').filter({ hasText: /^\s*(로그인|Sign In|Log In|Login)\s*$/i }).first().click();
 }
 
 const viewport = (page: Page) => page.evaluate(() => ({ mode: document.documentElement.dataset.viewport, width: window.innerWidth }));
@@ -233,3 +256,41 @@ test('F-MV-12 휴대폰 웹 승인 화면: 미리 고른 값 없이 반려 · �
     await ctx.close();
 });
 
+
+test('F-MV-13 로그인 전에 휴대폰 웹 주소를 열면 포털 로그인을 거쳐 그 화면으로 돌아온다', async ({ browser }) => {
+    const ctx = await phoneContext(browser);
+    const page = await ctx.newPage();
+    await page.goto(`${BASE}/m/#/notifications`);
+    // 휴대폰 웹에는 자기 로그인 화면이 없다 — 포털 로그인(소셜 로그인 · 2단계 인증이 있는 곳)으로 간다
+    await page.waitForURL((u) => u.pathname === '/auth/login', { timeout: 30_000 });
+    await fillLogin(page, accounts.admin);
+    await page.waitForURL((u) => u.pathname === '/m/' && u.hash === '#/notifications', { timeout: 60_000 });
+    await expect(tabs(page)).toBeVisible();
+    await ctx.close();
+});
+
+test('F-MV-14 2단계 인증 계정은 비밀번호만으로 휴대폰 웹에 들어가지 못한다', async ({ browser }) => {
+    test.skip(!accounts.mfa, '계정 파일에 mfa(TOTP 등록 계정)가 없습니다');
+    const ctx = await phoneContext(browser);
+    const page = await ctx.newPage();
+    await page.goto(`${BASE}/auth/login`);
+    await fillLogin(page, accounts.mfa);
+    await page.waitForURL((u) => u.pathname === '/auth/two-step', { timeout: 60_000 });
+
+    // 코드를 넣지 않고 휴대폰 웹 · 포털 업무 주소로 바로 가 본다 — 둘 다 2단계 인증으로 돌아와야 한다
+    await page.goto(`${BASE}/m/#/tasks`);
+    await page.waitForURL((u) => u.pathname === '/auth/two-step', { timeout: 30_000 });
+    expect(new URL(page.url()).searchParams.get('redirect')).toBe('/todolist');
+    await page.goto(`${BASE}/notifications`);
+    await page.waitForURL((u) => u.pathname === '/auth/two-step', { timeout: 30_000 });
+    await expect(tabs(page)).toHaveCount(0);
+
+    // 코드를 넣으면 가려던 화면(알림)이 휴대폰 웹으로 열린다
+    const digits = page.locator('.verification input');
+    await expect(digits.first()).toBeEnabled({ timeout: 30_000 });
+    const code = totp(accounts.mfa.totp);
+    for (let i = 0; i < 6; i++) await digits.nth(i).fill(code[i]);
+    await page.waitForURL((u) => u.pathname === '/m/' && u.hash === '#/notifications', { timeout: 60_000 });
+    await expect(tabs(page)).toBeVisible();
+    await ctx.close();
+});

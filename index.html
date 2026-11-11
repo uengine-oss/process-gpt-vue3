@@ -50,9 +50,9 @@
                 if (p === '/notifications') return '#/notifications';
                 return '#/tasks';
             }
-            // 포털에 남는 곳: 랜딩 · 로그인 · 외부 폼 · 조직 고르기/만들기 · 약관.
+            // 포털에 남는 곳: 랜딩 · 로그인 · 외부 폼 · 조직 고르기/만들기 · 약관 · 계정 설정(2단계 인증 등록).
             function staysOnPortal(path) {
-                return isDeviceWidthPath(path) || /^\/(?:auth|tenant|privacy|terms|m)(?:\/|$)/.test(path);
+                return isDeviceWidthPath(path) || /^\/(?:auth|tenant|privacy|terms|m|account-settings)(?:\/|$)/.test(path);
             }
             var api = {
                 KEY: KEY,
