@@ -1,5 +1,5 @@
 /**
- * 2026-11-09 · 11-10 · 11-11 사용성 검토 반영 회귀 묶음 (F-UX-01 ~ F-UX-17)
+ * 2026-11-09 · 11-10 · 11-11 사용성 검토 반영 회귀 묶음 (F-UX-01 ~ F-UX-18)
  *
  * 실제 백엔드(설치본)에 붙은 프런트를 화면으로 밟는다. 업무(todolist)에 쓰는 요청은 모두 가로채
  * 내용만 확인하므로 데이터는 바뀌지 않는다.
@@ -329,4 +329,21 @@ test('F-UX-17 비 PAL 화면의 페이지 머리는 카드 테두리에서 띄�
         expect(box.titleInsetTop, path).toBeGreaterThanOrEqual(12);
         if (box.rightTop !== null) expect(box.rightTop, path).toBeLessThan(box.titleBottom);
     }
+});
+
+test('F-UX-18 지식 베이스도 다른 관리 화면과 같은 흰 카드 · 페이지 머리다', async ({ page }) => {
+    await login(page, 'admin');
+    const look = async (path: string) => {
+        await page.goto(`${BASE}${path}`);
+        const title = page.locator('.v-main .page-title').first();
+        await expect(title).toBeVisible({ timeout: 30_000 });
+        return title.evaluate((el) => {
+            const card = el.closest('.v-card')!;
+            const cs = getComputedStyle(card);
+            return { titleSize: getComputedStyle(el).fontSize, cardBg: cs.backgroundColor, shadow: cs.boxShadow !== 'none' };
+        });
+    };
+    const reference = await look('/process-architecture');
+    const knowledge = await look('/knowledge');
+    expect(knowledge).toEqual(reference);
 });
