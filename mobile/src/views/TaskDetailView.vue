@@ -84,7 +84,7 @@
                         :summary="prevSummary"
                         :history="history"
                         :comment-label="approval.commentLabel"
-                        :warn="rejectTried && !comment.trim()"
+                        :warn="!comment.trim()"
                     />
                     <MobileForm
                         v-if="approval.others.length"
@@ -200,7 +200,8 @@
 
         <!-- 아래에 늘 붙어 있는 단추 -->
         <div v-if="item && !finished && !agentOnly && approval" class="m-actions m-actions--decide">
-            <button type="button" class="m-btn m-btn--lg m-btn--outline-danger" :disabled="submitting" :aria-disabled="!canReject" @click="decide('reject')">
+            <!-- 반려는 의견이 있어야 눌린다(받는 사람이 무엇을 고칠지 알아야 한다) -->
+            <button type="button" class="m-btn m-btn--lg m-btn--outline-danger" :disabled="submitting || !canReject" @click="decide('reject')">
                 <Icon name="close" :size="20" /> 반려
             </button>
             <button type="button" class="m-btn m-btn--lg m-btn--primary" :disabled="submitting" @click="decide('approve')">
