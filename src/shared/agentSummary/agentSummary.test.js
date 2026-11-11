@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { latestAgentSummary, stripAgentMeta } from './index.js';
+import { latestAgentSummary, stripAgentMeta, agentDraftValues } from './index.js';
 
 const ev = (type, data, timestamp) => ({ event_type: type, data, timestamp });
 
@@ -37,3 +37,14 @@ test('폼 값에서는 요약 · 팀 정보를 뺀다', () => {
     assert.equal(stripAgentMeta(plain), plain);
     assert.equal(stripAgentMeta('text'), 'text');
 });
+
+test('에이전트 초안에서 폼 값을 꺼낸다(다시 열어도 보이게)', () => {
+    const draft = { wp_form: { proposal_title: '회의실 가구 제안', proposal_content: '본문' } };
+    assert.deepEqual(agentDraftValues(draft, 'wp_form'), { proposal_title: '회의실 가구 제안', proposal_content: '본문' });
+    assert.deepEqual(agentDraftValues(JSON.stringify(draft), 'other_id'), { proposal_title: '회의실 가구 제안', proposal_content: '본문' }, '폼 키 하나면 id 가 달라도');
+    assert.deepEqual(agentDraftValues({ a: 1, agent_summary: 'x', _summary: 'y' }, 'f'), { a: 1 });
+    assert.equal(agentDraftValues('그냥 글', 'f'), null);
+    assert.equal(agentDraftValues(null, 'f'), null);
+    assert.equal(agentDraftValues({}, 'f'), null);
+});
+

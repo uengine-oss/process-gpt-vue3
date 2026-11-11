@@ -249,7 +249,7 @@ import Checkpoints from '@/components/ui/Checkpoints.vue';
 import DelegateTaskForm from '@/components/apps/todolist/DelegateTaskForm.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { awaitingUserInput } from '@/shared/awaitingUserInput';
-import { latestAgentSummary } from '@/shared/agentSummary/index.js';
+import { latestAgentSummary, agentDraftValues } from '@/shared/agentSummary/index.js';
 import { missingDecisions } from '@/shared/decisionField';
 const backend = BackendFactory.createBackend();
 
@@ -813,6 +813,19 @@ export default {
 
                     if (outVariable.valueMap['user_input_text']) {
                         me.newMessage = outVariable.valueMap['user_input_text'];
+                    }
+                }
+
+                // 에이전트가 만든 초안은 다시 열어도 폼에 보인다 — 빈 칸만 채운다(사람이 저장 · 수정한 값은 그대로)
+                if (me.workItem?.raw?.draft_status === 'COMPLETED') {
+                    const draftValues = agentDraftValues(me.workItem.raw.draft, me.formDefId || outFormName);
+                    if (draftValues) {
+                        const empty = (v) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
+                        const fill = {};
+                        Object.keys(draftValues).forEach((key) => {
+                            if (empty(me.formData[key])) fill[key] = draftValues[key];
+                        });
+                        if (Object.keys(fill).length > 0) me.EventBus.emit('form-values-updated', fill);
                     }
                 }
 
