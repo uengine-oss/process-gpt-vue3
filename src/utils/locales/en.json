@@ -4099,6 +4099,8 @@
         "knowledgeSetupInProgress": "Setting up knowledge"
     },
     "FormWorkItem": {
+        "agentSummaryTitle": "Agent work summary",
+        "agentSummaryHint": "Review the form the agent filled in below, edit it if needed, then submit.",
         "previous": "Previous Step",
         "save": "Save Draft",
         "submitComplete": "Submit Complete",
