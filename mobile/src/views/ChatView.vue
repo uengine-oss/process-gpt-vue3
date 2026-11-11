@@ -1,7 +1,7 @@
 <template>
     <div class="m-screen">
         <header class="m-appbar">
-            <h1>채팅</h1>
+            <h1>AI</h1>
             <button type="button" aria-label="지난 대화" @click="router.push('/chat/history')"><Icon name="history" /></button>
         </header>
 
@@ -10,7 +10,7 @@
             <div class="start__hello">
                 <img class="start__logo" src="/process-gpt-favicon.png" alt="Process-GPT" />
                 <h2 class="start__title">무엇을 도와드릴까요?</h2>
-                <p class="m-muted">프로세스 생성 · 실행 · 조회를 말로 요청하세요.</p>
+                <p class="m-muted">할 일 · 진행 · 프로세스 실행을 말로 물어보세요.</p>
             </div>
 
             <div class="start__examples">
@@ -65,10 +65,10 @@ import { currentSession } from '../lib/session.js';
 
 /** 포털 메인 채팅과 같은 예시. 무엇을 물어도 되는지 알려 주는 역할이다. */
 const EXAMPLES = [
-    '휴가 신청 프로세스를 만들어줘',
-    '프로세스 실행',
-    '내 휴가 신청 현황 알려줘',
-    '우리 회사 조직도 알려줘'
+    '내가 지금 처리해야 할 일 알려줘',
+    '이번 주 마감 알려줘',
+    '반려된 건 보여줘',
+    '프로세스 실행'
 ];
 
 const router = useRouter();

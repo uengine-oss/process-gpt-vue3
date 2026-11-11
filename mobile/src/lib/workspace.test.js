@@ -120,3 +120,21 @@ describe('진행', () => {
         assert.equal(subjectOf('요청사항 입력', '영업 제안서 승인'), '요청사항 입력');
     });
 });
+
+describe('다시 열린 검토 단계', () => {
+    it('지난번 반려를 타임라인에 남기고(재작성 앞), 반려 수에 센다', () => {
+        const rows2 = [
+            row('a', 'task1', '요청사항 입력', 'DONE', ME, { end_date: '2026-11-10T22:59:00+09:00' }),
+            row('b', 'task4_reject', '제안서 재작성', 'DONE', ME, { end_date: '2026-11-11T10:16:00+09:00' }),
+            row('c', 'task2', '제안서 작성', 'DONE', ME, { end_date: '2026-11-11T10:17:00+09:00' }),
+            row('d', 'task3', '제안서 검토', 'IN_PROGRESS', BOSS, {
+                output: { f: { review_result: 'reject', review_comment: '제안서 본문이 비어 있습니다.' } },
+                gateway_decisions: { gateway1: { selected: ['s1'], sequences: { s1: { target: 'task4_reject' } } } }
+            })
+        ];
+        const t = timelineModel(rows2, ME);
+        assert.deepEqual(t.map((s) => s.state), ['done', 'rejected', 'done', 'done', 'current']);
+        assert.equal(t[1].comment, '제안서 본문이 비어 있습니다.');
+        assert.equal(progressOf(rows2).rejections, 1);
+    });
+});

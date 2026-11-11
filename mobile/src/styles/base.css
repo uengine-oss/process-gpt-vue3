@@ -37,6 +37,14 @@
     --warn: #8a6516;
     --warn-wash: #f7eeda;
 
+    /* 에이전트(맡기기 · 초안) · 승인 */
+    --agent: #6a4fd6;
+    --agent-wash: #efeafd;
+    --agent-rule: #d9cff8;
+    --ok: #1e7f4a;
+    --ok-wash: #e4f3ea;
+    --radius-lg: 16px;
+
     --tap: 44px;
     --radius: 10px;
     --gap: 12px;
@@ -78,6 +86,11 @@
     --danger-wash: #2b1a15;
     --warn: #d2a852;
     --warn-wash: #2a2214;
+    --agent: #b4a2f5;
+    --agent-wash: #29243a;
+    --agent-rule: #3d3557;
+    --ok: #7dcb9c;
+    --ok-wash: #1c2b22;
 }
 
 /* 아무것도 고르지 않았는데 기기가 다크면 다크로 맞춘다. */
@@ -95,6 +108,11 @@
         --rule: hsl(51 16.5% 84.5% / 0.18);
         --danger: #e08c74;
         --danger-wash: #2b1a15;
+        --agent: #b4a2f5;
+        --agent-wash: #29243a;
+        --agent-rule: #3d3557;
+        --ok: #7dcb9c;
+        --ok-wash: #1c2b22;
     }
 }
 
@@ -206,6 +224,11 @@ a {
     gap: var(--gap);
 }
 
+/* 본문 안의 덩어리는 줄어들지 않는다 — 내용이 길면 줄이는 대신 본문이 스크롤된다(칩 줄 · 카드가 잘리던 것). */
+.m-body > * {
+    flex-shrink: 0;
+}
+
 .m-card {
     background: var(--surface);
     border: 1px solid var(--rule);
@@ -315,7 +338,7 @@ a {
 
 .m-tabs {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(var(--tab-count, 5), 1fr);
     background: var(--surface);
     border-top: 1px solid var(--rule);
     flex: none;
@@ -409,3 +432,193 @@ a {
     color: var(--brand);
 }
 
+
+
+/* ---------------------------------------------------------------------------
+ * 휴대폰 웹 화면들이 함께 쓰는 조각 — 탭 숫자 · 칩 · 꼬리표 · 아래 고정 단추 줄
+ * ------------------------------------------------------------------------- */
+.m-tab {
+    position: relative;
+}
+
+.m-tab__icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+}
+
+.m-tab__badge {
+    position: absolute;
+    top: -7px;
+    left: 13px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: #d32f2f;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    border: 2px solid var(--surface);
+    box-sizing: content-box;
+}
+
+.m-head {
+    padding: calc(var(--safe-top) + 14px) 16px 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--ground);
+    flex: none;
+}
+
+.m-head h1 {
+    margin: 0;
+    flex: 1;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.m-head__icon {
+    min-width: var(--tap);
+    min-height: var(--tap);
+    display: grid;
+    place-items: center;
+    color: var(--ink-soft);
+    border-radius: 10px;
+}
+
+.m-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 0;
+    scrollbar-width: none;
+}
+
+.m-chip {
+    flex: none;
+    min-height: 38px;
+    padding: 0 16px;
+    border-radius: 19px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    color: var(--ink-soft);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.m-chip strong {
+    font-weight: 800;
+}
+
+.m-chip--on {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--surface);
+}
+
+.m-tag {
+    white-space: nowrap;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    padding: 2px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: var(--sunk);
+    color: var(--ink-soft);
+}
+
+.m-tag--danger { background: var(--danger-wash); color: var(--danger); }
+.m-tag--brand { background: var(--brand-wash); color: var(--brand); }
+.m-tag--agent { background: var(--agent-wash); color: var(--agent); }
+.m-tag--ok { background: var(--ok-wash); color: var(--ok); }
+
+.m-section {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 6px 2px -2px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--ink-faint);
+}
+
+.m-section a,
+.m-section button {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+
+.m-card--lg {
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    gap: 6px;
+}
+
+.m-btn--agent {
+    background: var(--agent-wash);
+    color: var(--agent);
+    border-color: transparent;
+}
+
+.m-btn--agent-solid {
+    background: var(--agent);
+    color: #fff;
+    border-color: transparent;
+}
+
+.m-btn--outline-danger {
+    background: var(--surface);
+    color: var(--danger);
+    border: 1.5px solid color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+.m-btn--lg {
+    min-height: 52px;
+    border-radius: 14px;
+    font-size: 1rem;
+    padding: 0 10px;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+/* 화면 아래에 늘 붙어 있는 단추 줄(맡기기 · 제출, 반려 · 승인) */
+.m-actions {
+    flex: none;
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 10px;
+    padding: 10px 16px calc(10px + var(--safe-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--rule);
+}
+
+.m-actions--one {
+    grid-template-columns: 1fr;
+}
+
+.m-spin {
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    animation: m-spin 0.8s linear infinite;
+    flex: none;
+}
+
+@keyframes m-spin {
+    to { transform: rotate(360deg); }
+}

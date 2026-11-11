@@ -1,270 +1,432 @@
 <template>
     <div class="m-screen">
-        <header class="m-appbar">
-            <h1>할 일</h1>
-            <button type="button" aria-label="새로고침" @click="load"><Icon name="refresh" /></button>
-            <button type="button" aria-label="프로세스 시작" @click="router.push('/start')"><Icon name="plus" /></button>
-        </header>
+        <div class="m-body home">
+            <div class="home__top">
+                <span class="home__date">{{ today }}</span>
+                <button type="button" class="m-head__icon" aria-label="찾기" @click="toggleSearch">
+                    <Icon name="search" />
+                </button>
+                <button type="button" class="m-btn m-btn--primary home__new" @click="router.push('/start')">
+                    <Icon name="plus" :size="20" /> 새 요청
+                </button>
+            </div>
 
-        <div class="tabs">
-            <button
-                v-for="opt in FILTERS"
-                :key="opt.value"
-                type="button"
-                class="tabs__item"
-                :class="{ 'tabs__item--on': filter === opt.value }"
-                @click="filter = opt.value"
-            >
-                {{ opt.label }}
-                <span v-if="opt.value === 'open' && openCount" class="tabs__count">{{ openCount }}</span>
-            </button>
-        </div>
+            <h1 class="home__title">{{ greeting }}</h1>
 
-        <div class="m-body">
+            <div class="m-chips" role="tablist" aria-label="할 일 보기">
+                <button
+                    v-for="opt in filters"
+                    :key="opt.value"
+                    type="button"
+                    role="tab"
+                    class="m-chip"
+                    :class="{ 'm-chip--on': filter === opt.value }"
+                    :aria-selected="filter === opt.value"
+                    @click="filter = opt.value"
+                >
+                    {{ opt.label }} <strong>{{ opt.count }}</strong>
+                </button>
+            </div>
+
+            <div v-if="searching" class="m-field">
+                <input v-model="query" type="search" placeholder="업무 · 건 이름으로 찾기" aria-label="찾기" />
+            </div>
+
             <p v-if="error" class="m-note m-note--danger">{{ error }}</p>
-            <p v-if="loading" class="m-muted">불러오는 중…</p>
+            <p v-if="notice" class="m-note">{{ notice }}</p>
+            <p v-if="loading && !model" class="m-muted">불러오는 중…</p>
 
-            <!-- 내 차례인 일 / 끝난 일 -->
-            <template v-else-if="filter !== 'running'">
-                <template v-if="visible.length">
+            <template v-if="model">
+                <!-- 내 차례 · 승인 대기 -->
+                <template v-if="filter !== 'delegated'">
+                    <article v-for="card in shownCards" :key="card.id" class="m-card m-card--lg tcard">
+                        <span v-if="card.badge === 'rejected'" class="m-tag m-tag--danger">반려됨 · 다시 써 주세요</span>
+                        <span v-else-if="card.badge === 'approval'" class="m-tag m-tag--brand">승인 요청</span>
+                        <span v-else-if="card.badge === 'new'" class="m-tag m-tag--brand">새 업무</span>
+                        <button type="button" class="tcard__main" @click="open(card)">
+                            <strong class="tcard__title">{{ card.title }}</strong>
+                            <span v-if="contextOf(card)" class="tcard__sub">{{ contextOf(card) }}</span>
+                        </button>
+                        <p v-if="card.rejection" class="tcard__reject">
+                            {{ card.rejection.who ? `${card.rejection.who}: ` : '' }}{{ card.rejection.comment || '반려되었습니다.' }}
+                        </p>
+                        <div class="tcard__foot">
+                            <span class="tcard__meta" :class="{ late: card.overdue }">{{ metaOf(card) }}</span>
+                            <button
+                                v-if="!card.approval"
+                                type="button"
+                                class="m-btn m-btn--agent tcard__btn"
+                                :disabled="busyId === card.id"
+                                @click="delegateCard(card)"
+                            >
+                                <span v-if="busyId === card.id" class="m-spin" aria-hidden="true"></span>
+                                <Icon v-else name="robot" :size="20" />
+                                맡기기
+                            </button>
+                            <button type="button" class="m-btn m-btn--primary tcard__btn" @click="open(card)">열기</button>
+                        </div>
+                    </article>
+                    <div v-if="!shownCards.length" class="m-empty home__empty">
+                        <p>{{ filter === 'approval' ? '승인할 일이 없습니다.' : '지금 처리할 일이 없습니다.' }}</p>
+                    </div>
+                </template>
+
+                <!-- 에이전트에 맡긴 일 -->
+                <template v-if="shownDelegated.length || filter === 'delegated'">
+                    <h2 class="m-section"><span>에이전트에 맡긴 일</span></h2>
                     <button
-                        v-for="item in visible"
-                        :key="item.taskId"
+                        v-for="d in shownDelegated"
+                        :key="d.id"
                         type="button"
-                        class="m-card task"
-                        @click="open(item)"
+                        class="m-card m-card--lg row"
+                        @click="open(d)"
                     >
-                        <span class="task__title">{{ cardLines(item).title }}</span>
-                        <span class="task__sub" :class="{ 'task__sub--late': isOverdue(item.dueDate, undefined, item) }">
-                            {{ cardLines(item).subtitle || '기한 없음' }}
+                        <span class="row__icon row__icon--agent"><Icon name="robot" /></span>
+                        <span class="row__body">
+                            <strong>{{ d.title }}</strong>
+                            <span class="m-muted">{{ [d.subject, d.text].filter(Boolean).join(' · ') }}</span>
                         </span>
+                        <span v-if="d.state === 'draft-ready'" class="m-tag m-tag--agent">확인</span>
+                        <span v-else-if="d.state === 'running'" class="m-spin row__spin" aria-label="쓰는 중"></span>
+                        <span v-else class="m-tag m-tag--danger">실패</span>
                     </button>
+                    <p v-if="filter === 'delegated' && !shownDelegated.length" class="m-muted">맡긴 일이 없습니다.</p>
                 </template>
-                <div v-else class="m-empty">
-                    <p>{{ filter === 'open' ? '할 일이 없습니다.' : '완료한 업무가 없습니다.' }}</p>
-                </div>
-            </template>
 
-            <!-- 내가 관련됐지만 지금 내 차례가 아닌 건 -->
-            <template v-else>
-                <p class="m-muted">내가 관련된 건이 지금 어디까지 갔는지 보여 줍니다.</p>
-                <template v-if="instances.length">
+                <!-- 내가 올린 요청 -->
+                <template v-if="filter !== 'delegated' && model.requests.length">
+                    <h2 class="m-section">
+                        <span>내가 올린 요청</span>
+                        <RouterLink to="/progress">모두 보기</RouterLink>
+                    </h2>
                     <button
-                        v-for="inst in instances"
-                        :key="inst.instId"
+                        v-for="r in model.requests.slice(0, 3)"
+                        :key="r.instId"
                         type="button"
-                        class="m-card"
-                        @click="openInstance(inst)"
+                        class="m-card m-card--lg row"
+                        @click="router.push(`/instances/${encodeURIComponent(r.instId)}`)"
                     >
-                        <span class="m-muted">{{ statusLabel(inst.status) }}</span>
-                        <strong>{{ inst.name || inst.defId }}</strong>
-                        <span class="m-muted">{{ stepLabel(inst) }}</span>
+                        <span class="row__icon"><Icon name="progress" /></span>
+                        <span class="row__body">
+                            <strong>{{ r.subject }}</strong>
+                            <span class="m-muted">
+                                <template v-if="r.progress.current">지금 {{ r.progress.current.name }} · </template>{{ r.progress.no }}/{{ r.progress.total }}단계
+                            </span>
+                            <span class="bar" role="img" :aria-label="`${r.progress.percent}퍼센트 진행`">
+                                <span class="bar__fill" :style="{ width: r.progress.percent + '%' }"></span>
+                            </span>
+                        </span>
+                        <Icon name="chevron-right" class="row__go" />
                     </button>
                 </template>
-                <div v-else class="m-empty">
-                    <p>진행 중인 건이 없습니다.</p>
-                </div>
             </template>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import Icon from '../components/Icon.vue';
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 
+import Icon from '../components/Icon.vue';
+import { badges, refreshBadges } from '../lib/badges.js';
 import { backend } from '../lib/backend.js';
-import { visibleInstances } from '../lib/instances.js';
-import { activityNameOf } from '../lib/progress.js';
-import { currentSession } from '../lib/session.js';
-import { assignedTo, cardLines, isDone, isOpen, isOverdue, needsMe, sortForMobile } from '../lib/tasks.js';
+import { loadHome } from '../lib/data.js';
+import { delegate } from '../lib/delegation.js';
+import { homeModel } from '../lib/workspace.js';
 
 /**
- * 세 갈래로 나눈 이유
- *   해야 할 일 : 지금 내 차례인 단계
- *   진행 중    : 내가 관련됐지만 지금은 남의 차례인 건 — 내가 낸 신청이 어떻게
- *                되고 있는지 보는 곳이다. 제출하는 순간 할 일에서는 사라진다.
- *   완료       : 끝난 것
+ * 할 일 — 첫 화면.
+ *
+ * 열자마자 내 차례 건수와 카드. 반려된 건은 카드에서 바로 반려 사유를 보고,
+ * 단추는 「맡기기」 · 「열기」 둘만 둔다. 새 요청은 오른쪽 위.
+ * 에이전트에 맡긴 일은 따로 모아 「초안 준비됨」 을 바로 알 수 있게 한다.
  */
-const FILTERS = [
-    { value: 'open', label: '해야 할 일' },
-    { value: 'running', label: '진행 중' },
-    { value: 'done', label: '완료' }
-] as const;
-
-const STATUS: Record<string, string> = {
-    RUNNING: '진행 중',
-    COMPLETED: '완료',
-    CANCELLED: '취소됨',
-    PENDING: '대기'
-};
 
 const route = useRoute();
 const router = useRouter();
-const items = ref<any[]>([]);
-const instances = ref<any[]>([]);
+
+const data = ref<any>(null);
 const loading = ref(true);
 const error = ref('');
-const filter = ref<'open' | 'running' | 'done'>('open');
-
-/**
- * 에이전트가 대신 하는 업무는 목록에서 뺀다.
- * "내가 처리해야 할 것" 이라는 목록의 뜻을 지키기 위해서다.
- * 그 작업이 나에게 물으며 멈춘 경우에만 올라온다(needsMe).
- */
-const mine = computed(() => items.value.filter(needsMe));
-
-const openCount = computed(() => mine.value.filter(isOpen).length);
-const visible = computed(() =>
-    sortForMobile(mine.value.filter(filter.value === 'open' ? isOpen : isDone))
+const notice = ref('');
+const busyId = ref('');
+const searching = ref(false);
+const query = ref('');
+const filter = ref<'turn' | 'approval' | 'delegated'>(
+    route.query.view === 'delegated' ? 'delegated' : route.query.view === 'approval' ? 'approval' : 'turn'
 );
 
-function statusLabel(status: string) {
-    return STATUS[(status || '').toUpperCase()] || status || '상태 없음';
+const uid = () => localStorage.getItem('uid') || '';
+
+const model = computed(() =>
+    data.value ? homeModel({ ...data.value, uid: uid(), now: Date.now() }) : null
+);
+
+const filters = computed(() => [
+    { value: 'turn' as const, label: '내 차례', count: model.value?.turn.length ?? 0 },
+    { value: 'approval' as const, label: '승인 대기', count: model.value?.approvals.length ?? 0 },
+    { value: 'delegated' as const, label: '맡긴 일', count: model.value?.delegated.length ?? 0 }
+]);
+
+const today = computed(() => {
+    const d = new Date();
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    return `${d.getMonth() + 1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
+});
+
+const greeting = computed(() => {
+    const name = (localStorage.getItem('userName') || '').trim();
+    const n = model.value?.turn.length ?? 0;
+    return `${name ? `${name}님, ` : ''}처리할 일 ${n}건`;
+});
+
+function matches(card: any) {
+    const q = query.value.trim();
+    if (!q) return true;
+    return [card.title, card.subject, card.process].some((t) => (t || '').includes(q));
 }
 
-/**
- * 지금 어느 단계인지. 여러 갈래로 갈렸으면 개수로 말한다.
- *
- * 인스턴스 행에는 활동 **id** 만 들어 있다. 그대로 내면
- * "현재 단계: Activity_0ijzbru" 가 되어 사용자에게 아무 뜻이 없다 — 실제로
- * 그렇게 보였다. 그 건의 업무 목록에 같은 id 의 이름이 있으면 그것을 쓰고,
- * 없으면 기계 이름을 보여 주느니 이 줄을 통째로 비운다.
- */
-function stepLabel(inst: any) {
-    const ids = Array.isArray(inst.currentActivityIds) ? inst.currentActivityIds.filter(Boolean) : [];
-    if (!ids.length) return '';
-    if (ids.length > 1) return `동시에 ${ids.length}개 단계 진행 중`;
+const shownCards = computed(() => {
+    const list = filter.value === 'approval' ? model.value?.approvals || [] : model.value?.turn || [];
+    return list.filter(matches);
+});
 
-    const ofThisInstance = items.value.filter(
-        (i: any) => (i?.task?.proc_inst_id || i?.instId) === inst.instId
-    );
-    const name = activityNameOf(ids[0], ofThisInstance);
-    return name && name !== ids[0] ? `현재 단계: ${name}` : '';
+const shownDelegated = computed(() => (model.value?.delegated || []).filter(matches));
+
+function contextOf(card: any) {
+    return [card.process, card.subject].filter(Boolean).join(' · ');
+}
+
+function metaOf(card: any) {
+    const parts: string[] = [];
+    if (card.due) parts.push(/마감|지남/.test(card.due) ? card.due : `마감 ${card.due}`);
+    else if (card.since) {
+        const d = new Date(card.since);
+        if (!Number.isNaN(d.getTime())) {
+            const sameDay = new Date().toDateString() === d.toDateString();
+            const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            parts.push(sameDay ? `오늘 ${hm}` : `${d.getMonth() + 1}월 ${d.getDate()}일`);
+        }
+    }
+    if (card.step) parts.push(`${card.step.no}/${card.step.total}단계`);
+    return parts.join(' · ');
+}
+
+function toggleSearch() {
+    searching.value = !searching.value;
+    if (!searching.value) query.value = '';
+}
+
+function open(card: any) {
+    router.push(`/tasks/${encodeURIComponent(card.id)}`);
+}
+
+/** 카드에서 바로 맡긴다 — 포털과 같은 방식으로, 담당자는 그대로. */
+async function delegateCard(card: any) {
+    const row = (data.value?.rows || []).find((r: any) => r.id === card.id);
+    if (!row) return;
+    busyId.value = card.id;
+    error.value = '';
+    try {
+        await delegate(backend(), row);
+        notice.value = `「${card.title}」을(를) 에이전트에 맡겼습니다. 초안이 오면 「맡긴 일」에서 확인해 주세요.`;
+        await load();
+        void refreshBadges();
+    } catch (e) {
+        console.error('[tasks] 맡기기 실패', e);
+        error.value = '에이전트에 맡기지 못했습니다. 다시 시도해 주세요.';
+    } finally {
+        busyId.value = '';
+    }
 }
 
 async function load() {
     loading.value = true;
     error.value = '';
     try {
-        // 업무의 담당자 칸에는 이메일이 아니라 식별자(UUID)가 들어간다.
-        // 이메일로 찾으면 아무것도 나오지 않는다.
-        const uid = localStorage.getItem('uid');
-        if (!uid) {
+        const supabase = (window as any).$supabase;
+        const id = uid();
+        if (!id) {
             error.value = '로그인 정보를 확인하지 못했습니다.';
             return;
         }
-
-        const list = (await backend().getWorkList({ userId: uid })) || [];
-        // 조회는 부분 일치라, 내 식별자를 일부로 포함하는 남의 업무가 섞일 수 있다.
-        items.value = list.filter((item: any) => assignedTo(item, uid));
-    } catch (e: any) {
-        error.value = '목록을 불러오지 못했습니다. 다시 시도해 주세요.';
+        data.value = await loadHome(supabase, { uid: id, tenant: (window as any).$tenantName || null });
+    } catch (e) {
         console.error('[tasks] 목록 조회 실패', e);
+        error.value = '목록을 불러오지 못했습니다. 다시 시도해 주세요.';
     } finally {
         loading.value = false;
     }
 }
 
-/** 진행 중 탭을 처음 열 때만 불러온다 — 평소에는 필요 없는 조회다. */
-async function loadInstances() {
-    if (instances.value.length) return;
-    try {
-        const all = (await backend().getInstanceList({ orderBy: 'start_date', sort: 'desc' })) || [];
-        const session = await currentSession();
-        instances.value = visibleInstances(all, {
-            uid: localStorage.getItem('uid'),
-            email: session?.user?.email
-        });
-    } catch (e: any) {
-        error.value = '진행 현황을 불러오지 못했습니다.';
-        console.error('[tasks] 현황 조회 실패', e);
-    }
-}
+// 새 업무가 오거나 끝나면(탭 숫자가 바뀌면) 다시 읽는다.
+watch(() => badges.tasks, () => void load());
 
-watch(filter, (next) => {
-    if (next === 'running') void loadInstances();
-});
-
-/** 그 건의 단계별 진행 상황으로 들어간다. */
-function openInstance(inst: any) {
-    router.push({
-        path: `/instances/${encodeURIComponent(inst.instId)}`,
-        query: { name: inst.name || inst.defId || '' }
-    });
-}
-
-function open(item: any) {
-    router.push(`/tasks/${encodeURIComponent(item.taskId)}`);
-}
-
+let timer: any = null;
 onMounted(() => {
-    // 옛 /status 링크로 들어온 경우 곧바로 그 화면을 보여 준다.
-    if (route.query.view === 'running') {
-        filter.value = 'running';
-        void loadInstances();
-    }
     void load();
+    // 맡긴 일의 초안이 오는 것은 할 일 수를 바꾸지 않는다 — 맡긴 것이 있으면 잠깐씩 다시 본다.
+    timer = setInterval(() => {
+        if ((model.value?.delegated || []).some((d: any) => d.state === 'running')) void load();
+    }, 15000);
 });
+onUnmounted(() => clearInterval(timer));
 </script>
 
 <style scoped>
-.tabs {
-    display: flex;
-    gap: 6px;
-    padding: 10px 12px 0;
-    background: var(--surface);
-    border-bottom: 1px solid var(--rule);
-    overflow-x: auto;
+.home {
+    padding: calc(var(--safe-top) + 10px) 16px 16px;
+    gap: 12px;
 }
 
-.tabs__item {
-    min-height: var(--tap);
-    padding: 0 14px;
-    border-radius: 999px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--ink-faint);
-    display: inline-flex;
+.home__top {
+    display: flex;
     align-items: center;
     gap: 6px;
-    margin-bottom: 10px;
-    white-space: nowrap;
 }
 
-.tabs__item--on {
+.home__date {
+    flex: 1;
+    color: var(--ink-faint);
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.home__new {
+    min-height: 42px;
+    border-radius: 12px;
+    padding: 0 14px;
+}
+
+.home__title {
+    margin: 0 0 2px;
+    font-size: 1.45rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+}
+
+.home__empty {
+    padding: 28px 12px;
+}
+
+.tcard {
+    gap: 6px;
+}
+
+.tcard__main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+}
+
+.tcard__title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+}
+
+.tcard__sub {
+    color: var(--ink-faint);
+    font-size: 0.9rem;
+}
+
+.tcard__reject {
+    margin: 4px 0 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--danger-wash);
+    color: var(--danger);
+    font-size: 0.92rem;
+}
+
+.tcard__foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.tcard__meta {
+    flex: 1;
+    min-width: 0;
+    color: var(--ink-faint);
+    font-size: 0.86rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tcard__meta.late {
+    color: var(--danger);
+}
+
+.tcard__btn {
+    min-height: 42px;
+    border-radius: 12px;
+    padding: 0 12px;
+    flex: none;
+}
+
+.row {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.row__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
     background: var(--brand-wash);
     color: var(--brand);
+    flex: none;
 }
 
-.tabs__count {
-    background: var(--brand);
-    color: var(--brand-ink);
-    border-radius: 999px;
-    min-width: 20px;
-    padding: 0 6px;
-    font-size: 0.72rem;
-    line-height: 20px;
-    text-align: center;
+.row__icon--agent {
+    background: var(--agent-wash);
+    color: var(--agent);
 }
 
-.task {
-    gap: 3px;
+.row__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.task__title {
-    font-weight: 600;
-    line-height: 1.4;
+.row__body strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.task__sub {
-    font-size: 0.85rem;
+.row__go {
     color: var(--ink-faint);
 }
 
-.task__sub--late {
-    color: var(--danger);
-    font-weight: 600;
+.row__spin {
+    color: var(--agent);
+}
+
+.bar {
+    display: block;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--sunk);
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.bar__fill {
+    display: block;
+    height: 100%;
+    background: var(--brand);
+    border-radius: 3px;
 }
 </style>

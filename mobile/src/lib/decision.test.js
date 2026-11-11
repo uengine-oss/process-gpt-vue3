@@ -12,7 +12,8 @@ import {
     isNegative,
     isPositive,
     lastRejection,
-    outputDecision
+    outputDecision,
+    priorRoundDecision
 } from './decision.js';
 
 const FIELDS = [
@@ -93,5 +94,19 @@ describe('끝난 단계에서 결정 읽기', () => {
     it('마지막 결정이 승인이면 반려 사유를 보이지 않는다', () => {
         const ok = [...rows.slice(0, 2), { ...rows[2], output: { f3: { review_result: 'approve' } } }];
         assert.equal(lastRejection(ok, { id: 'x', activity_id: 'task4_approve' }), null);
+    });
+});
+
+describe('같은 행이 다시 열린 경우(엔진은 반복 단계를 새 행으로 만들지 않는다)', () => {
+    const reopened = { id: 'r3', activity_id: 'task3', status: 'IN_PROGRESS', username: '장진영', output: { f3: { review_result: 'reject', review_comment: '제안서 본문이 비어 있습니다.' } } };
+    it('그 행에 남은 지난번 반려를 이력의 마지막 회차로 남긴다', () => {
+        const h = decisionHistory([reopened], reopened);
+        assert.equal(h.length, 1);
+        assert.equal(h[0].decision, 'reject');
+        assert.equal(h[0].comment, '제안서 본문이 비어 있습니다.');
+    });
+    it('끝난 행에는 해당 없음', () => {
+        assert.equal(priorRoundDecision({ ...reopened, status: 'DONE' }), null);
+        assert.equal(priorRoundDecision({ ...reopened, output: {} }), null);
     });
 });

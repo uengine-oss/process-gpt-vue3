@@ -10,10 +10,17 @@ import { decisionFields } from '../../../src/shared/decisionField/index.js';
 import { SIMPLE_INBOX_ACTIONABLE_STATUSES } from '../../../src/shared/simpleInstanceInbox.js';
 import { formIdOf } from './outputs.js';
 
+/**
+ * 서버에 물을 때 쓰는 「지금 손댈 수 있는」 상태 — todolist.status 는 enum(todo_status)이라
+ * 그 안에 없는 값(DRAFT · RUNNING …)을 섞으면 질의 전체가 400 이 된다. 화면 쪽 판정은
+ * SIMPLE_INBOX_ACTIONABLE_STATUSES 로 그대로 한다.
+ */
+export const ACTIONABLE_DB_STATUSES = ['IN_PROGRESS', 'SUBMITTED', 'PENDING', 'NEW'];
+
 /** 목록에 쓰는 열 — 초안(draft)은 크고 목록에는 필요 없어 뺀다 */
 export const ROW_COLUMNS =
     'id, user_id, username, proc_inst_id, proc_def_id, activity_id, activity_name, status, start_date, end_date, ' +
-    'actual_start_date, updated_at, due_date, tool, output, agent_mode, agent_orch, draft_status, description';
+    'actual_start_date, updated_at, due_date, tool, output, agent_mode, agent_orch, draft_status, description, gateway_decisions';
 
 function scoped(query, tenant) {
     return tenant ? query.eq('tenant_id', tenant) : query;
@@ -122,7 +129,7 @@ export async function countMyTurn(supabase, { uid, tenant }) {
             .from('todolist')
             .select('id', { count: 'exact', head: true })
             .ilike('user_id', `%${uid}%`)
-            .in('status', [...SIMPLE_INBOX_ACTIONABLE_STATUSES])
+            .in('status', ACTIONABLE_DB_STATUSES)
             .is('agent_orch', null),
         tenant
     );

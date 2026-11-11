@@ -103,6 +103,20 @@ function timeOf(value) {
     return Number.isFinite(t) ? t : 0;
 }
 
+/**
+ * 다시 열린 단계에 남은 지난번 결정.
+ *
+ * 엔진은 반복되는 단계(반려 → 다시 작성 → 다시 검토)를 새 행으로 만들지 않고 **같은 행을 다시 연다**
+ * (status 가 IN_PROGRESS 로 돌아가고 output 은 지난번 값 그대로). 그래서 지난번 반려는 지금 열린 행의
+ * output 에만 남아 있다 — 여기서 꺼내 이력 · 타임라인에 남긴다(지우지 않는다).
+ */
+export function priorRoundDecision(row) {
+    if (!row || ['DONE', 'COMPLETED'].includes(String(row.status || '').toUpperCase())) return null;
+    const d = outputDecision(row.output);
+    if (!d.decision) return null;
+    return { id: `${row.id}:prior`, activityId: row.activity_id || '', who: row.username || '', at: null, ...d };
+}
+
 function doneRows(rows) {
     return (Array.isArray(rows) ? rows : []).filter((r) => ['DONE', 'COMPLETED'].includes(String(r?.status || '').toUpperCase()));
 }
@@ -115,12 +129,15 @@ function doneRows(rows) {
 export function decisionHistory(rows, current) {
     const activity = current?.activity_id;
     if (!activity) return [];
-    return doneRows(rows)
+    const done = doneRows(rows)
         .filter((r) => r.id !== current.id && r.activity_id === activity)
         .map((r) => ({ id: r.id, at: r.end_date || r.updated_at || null, who: r.username || '', ...outputDecision(r.output) }))
         .filter((r) => r.decision)
-        .sort((a, b) => timeOf(a.at) - timeOf(b.at))
-        .map((r, i) => ({ ...r, round: i + 1 }));
+        .sort((a, b) => timeOf(a.at) - timeOf(b.at));
+    // 같은 행이 다시 열렸으면 그 행에 남은 지난번 결정이 가장 최근 회차다
+    const self = (rows || []).find((r) => r.id === current.id) || current;
+    const prior = priorRoundDecision(self);
+    return [...done, ...(prior ? [prior] : [])].map((r, i) => ({ ...r, round: i + 1 }));
 }
 
 /**

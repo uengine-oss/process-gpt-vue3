@@ -14,7 +14,7 @@ import { SIMPLE_INBOX_ACTIONABLE_STATUSES } from '../../../src/shared/simpleInst
 import { findStarterId } from '../../../src/utils/workItemAccess.js';
 import { isPaused } from '../../../src/shared/hitlFeedback/index.js';
 import { agentState } from './agentTask.js';
-import { lastRejection, outputDecision } from './decision.js';
+import { lastRejection, outputDecision, priorRoundDecision } from './decision.js';
 import { formIdOf } from './outputs.js';
 import { dueLabel, isOverdue } from './tasks.js';
 
@@ -98,7 +98,9 @@ export function progressOf(instRows) {
     const waiting = rows.some(isWaitingRow) ? 1 : 0;
     const total = Math.max(1, done + active.length + waiting);
     const current = active.sort((a, b) => timeOf(activeSince(a)) - timeOf(activeSince(b)))[0] || null;
-    const rejections = rows.filter((r) => isDoneRow(r) && outputDecision(r.output).decision === 'reject').length;
+    const rejections =
+        rows.filter((r) => isDoneRow(r) && outputDecision(r.output).decision === 'reject').length +
+        rows.filter((r) => priorRoundDecision(r)?.decision === 'reject').length;
     return {
         done,
         total,
@@ -202,6 +204,15 @@ export function homeModel({ rows = [], instRows = [], instances = {}, defNames =
     };
 }
 
+/** 이 건을 내가 시작했는가 — 가장 먼저 시작된 단계의 담당자(포털 findStarterId 와 같은 규칙) */
+export function startedBy(rows, uid) {
+    if (!uid) return false;
+    const starter = findStarterId(
+        (rows || []).map((r) => ({ endpoint: r.user_id, startDate: r.actual_start_date || r.start_date }))
+    );
+    return starter === uid;
+}
+
 /** 내가 올린 요청 — 내가 시작했고 아직 진행 중이며 지금은 남의 차례인 건 */
 export function myRequests({ instRows = [], instances = {}, defNames = {}, uid }) {
     const byInst = new Map();
@@ -214,10 +225,7 @@ export function myRequests({ instRows = [], instances = {}, defNames = {}, uid }
     for (const [instId, rows] of byInst) {
         const inst = instances[instId];
         if (!inst || upper(inst.status) !== 'RUNNING') continue;
-        const starter = findStarterId(
-            rows.map((r) => ({ endpoint: r.user_id, startDate: r.actual_start_date || r.start_date }))
-        );
-        if (starter !== uid) continue;
+        if (!startedBy(rows, uid)) continue;
         if (rows.some((r) => isActionable(r) && assignedTo(r, uid))) continue;
         out.push(instanceCard(inst, rows, defNames, uid));
     }
@@ -279,6 +287,24 @@ export function timelineModel(rows, uid) {
             mine: assignedTo(r, uid),
             due: r.due_date || null
         }));
+    // 다시 열린 단계의 지난번 결정 — 그 결정으로 간 단계(gateway_decisions 의 target) 바로 앞에 둔다.
+    const done2 = [...done];
+    for (const r of list.filter(isActionable)) {
+        const prior = priorRoundDecision(r);
+        if (!prior) continue;
+        const item = {
+            id: prior.id,
+            name: r.activity_name || '이름 없는 단계',
+            who: r.username || '',
+            at: null,
+            state: prior.decision === 'reject' ? 'rejected' : 'approved',
+            comment: prior.comment
+        };
+        const target = gatewayTarget(r);
+        const at = target ? done2.findIndex((s) => list.find((x) => x.id === s.id)?.activity_id === target) : -1;
+        if (at >= 0) done2.splice(at, 0, item);
+        else done2.push(item);
+    }
     const waitingRows = list.filter(isWaitingRow);
     const waiting = [];
     if (waitingRows.length) {
@@ -286,7 +312,21 @@ export function timelineModel(rows, uid) {
         const whos = [...new Set(waitingRows.map((r) => r.username).filter(Boolean))];
         waiting.push({ id: 'waiting', name: names.join(' · '), who: whos.join(' · '), state: 'waiting' });
     }
-    return [...done, ...current, ...waiting];
+    return [...done2, ...current, ...waiting];
+}
+
+/** 이 행의 결정이 보낸 다음 단계 id(gateway_decisions 의 선택된 흐름) */
+function gatewayTarget(row) {
+    const gd = row?.gateway_decisions;
+    if (!gd || typeof gd !== 'object') return '';
+    for (const g of Object.values(gd)) {
+        const selected = Array.isArray(g?.selected) ? g.selected : [];
+        for (const key of selected) {
+            const target = g?.sequences?.[key]?.target;
+            if (target) return String(target);
+        }
+    }
+    return '';
 }
 
 /** 끝난 단계들이 남긴 파일 — 산출물 */
