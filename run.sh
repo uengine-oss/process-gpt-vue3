@@ -20,8 +20,10 @@ else
 fi
 
 # HTML 파일에 환경 변수를 설정하는 스크립트 추가
-if [ -f /opt/www/index.html ]; then
-  echo "Injecting environment variables into index.html..."
+# 포털(/index.html)과 휴대폰 웹(/m/index.html) 둘 다에 같은 값을 넣는다.
+for INDEX_HTML in /opt/www/index.html /opt/www/m/index.html; do
+if [ -f "$INDEX_HTML" ]; then
+  echo "Injecting environment variables into $INDEX_HTML..."
   sed -i '/<head>/a \
   <script>\
   window._env_ = {\
@@ -42,10 +44,11 @@ if [ -f /opt/www/index.html ]; then
     VITE_FF_DEV_ROUTES: "'$VITE_FF_DEV_ROUTES'",\
   };\
   window.$mode = window._env_.VITE_MODE || window.$mode;\
-  </script>' /opt/www/index.html
+  </script>' "$INDEX_HTML"
 else
-  echo "Warning: index.html file not found at /opt/www/index.html"
+  echo "Warning: index.html file not found at $INDEX_HTML"
 fi
+done
 
 # HTTP 서버 실행
 #

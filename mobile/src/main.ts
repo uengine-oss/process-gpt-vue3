@@ -36,16 +36,30 @@ import { configure as configureHttp } from './lib/http.js';
 import { applyTenant, portalOriginFor, tenantFromSession } from './lib/tenant.js';
 import './styles/base.css';
 
-/** 조직 이름을 붙일 기준 주소. 빌드할 때 정한다. */
-export const PORTAL_BASE_URL: string =
-    (import.meta.env.VITE_PORTAL_BASE_URL as string) || 'https://process-gpt.io';
+/**
+ * 휴대폰 웹(포털과 같은 주소의 /m/)으로 열렸는가.
+ *
+ * 앱(Capacitor)이면 window.Capacitor 가 있다. 웹이면 포털 · 게이트웨이와 같은 주소에서 열리므로
+ * 서버 주소는 지금 페이지의 주소 그대로다 — 조직 이름을 붙여 다른 곳으로 보내면 안 된다
+ * (사용자 도메인이면 그런 주소는 없다). 개발 중에 VITE_PORTAL_BASE_URL 을 일부러 정했으면 그것을 따른다.
+ */
+const IS_WEB = !(window as any).Capacitor?.isNativePlatform?.();
+const SAME_ORIGIN = IS_WEB && !import.meta.env.VITE_PORTAL_BASE_URL;
+
+/** 포털처럼 run.sh 가 넣은 window._env_ 를 먼저 본다 — 이미지 하나를 여러 설치에 쓰기 위해서다. */
+const RUNTIME_ENV: Record<string, string> = (window as any)._env_ || {};
+
+/** 조직 이름을 붙일 기준 주소. 앱은 빌드할 때 정하고, 휴대폰 웹은 지금 주소다. */
+export const PORTAL_BASE_URL: string = SAME_ORIGIN
+    ? window.location.origin
+    : (import.meta.env.VITE_PORTAL_BASE_URL as string) || 'https://process-gpt.io';
 
 /** 이 조직의 서버 주소. 조직을 알아낸 뒤 정해진다. */
 export const apiBase = { origin: PORTAL_BASE_URL };
 
 function connectSupabase() {
-    const url = import.meta.env.VITE_SUPABASE_URL as string;
-    const key = import.meta.env.VITE_SUPABASE_KEY as string;
+    const url = RUNTIME_ENV.VITE_SUPABASE_URL || (import.meta.env.VITE_SUPABASE_URL as string);
+    const key = RUNTIME_ENV.VITE_SUPABASE_KEY || (import.meta.env.VITE_SUPABASE_KEY as string);
 
     if (!url || !key) {
         // 여기서 멈추는 편이 낫다. 없이 뜨면 모든 화면이 빈 채로 열리고,
@@ -81,7 +95,7 @@ export async function establishSession(session: any) {
     if (!session) {
         clearIdentity();
         applyTenant(null);
-        apiBase.origin = portalOriginFor(null, PORTAL_BASE_URL);
+        apiBase.origin = SAME_ORIGIN ? PORTAL_BASE_URL : portalOriginFor(null, PORTAL_BASE_URL);
         return null;
     }
 
@@ -90,7 +104,8 @@ export async function establishSession(session: any) {
     const tenant = tenantFromSession(session) || claims?.tenantId || authClaimsState.tenantId || null;
 
     applyTenant(tenant);
-    apiBase.origin = portalOriginFor(tenant, PORTAL_BASE_URL);
+    // 휴대폰 웹에서는 지금 주소가 곧 그 조직의 주소다(사용자 도메인이어도). 이름을 붙이지 않는다.
+    apiBase.origin = SAME_ORIGIN ? PORTAL_BASE_URL : portalOriginFor(tenant, PORTAL_BASE_URL);
 
     // 재사용하는 데이터 계층이 localStorage 에서 사용자 정보를 읽는다.
     // 비워 두면 업무 완료 요청이 "누가" 없이 나가고, 실패가 아니라 조용히
