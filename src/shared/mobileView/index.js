@@ -4,9 +4,9 @@
  * 화면 폭을 정하는 규칙은 index.html 의 window.__pgptViewport 한 곳에 있다(첫 렌더 전에 정해야 해서).
  * 여기서는 그 규칙을 읽어 "물어볼까", "다시 불러와야 하나", "어떻게 추가하라고 안내할까"를 정한다.
  *
- * - 기본은 데스크톱 화면(폭 1280px 로 그린 뒤 휴대폰 화면에 맞춰 줄임)이다.
- * - 라이트 버전은 지금까지의 모바일 화면(기기 폭에 맞춰 간소화)이다.
- * - 한 번 답하면 그 기기에 남기고 다시 묻지 않는다. 바꾸는 곳은 설정 › 테마 설정 「휴대폰 화면」.
+ * - 기본은 휴대폰 웹(/m/ — 할 일 · 진행 · AI · 알림 · 나)이다(2026-11-11 결정 D-1111-07).
+ * - 「PC 화면으로 보기」(mobileView=desktop)를 고르면 데스크톱 화면(폭 1280px 로 그린 뒤 줄임)으로 연다.
+ * - 고른 값은 그 기기에 남는다. 바꾸는 곳은 휴대폰 웹 「나」 탭과 설정 › 테마 설정 「휴대폰 화면」.
  */
 
 export const MOBILE_VIEWS = ['desktop', 'light'];
@@ -23,14 +23,6 @@ export function savedMobileView(win = globalThis) {
 
 export function isPhoneBrowser(win = globalThis) {
     return !!viewportApi(win)?.isPhoneBrowser?.();
-}
-
-/** 앱 화면(로그인 · 랜딩 · 외부 폼 제외)에 들어온 휴대폰 사용자가 아직 답하지 않았으면 묻는다. PAL · uEngine 은 묻지 않는다. */
-export function shouldAskMobileView(path, win = globalThis) {
-    const api = viewportApi(win);
-    if (!api || !api.isEnabled() || !api.isPhoneBrowser()) return false;
-    if (api.isDeviceWidthPath(path)) return false;
-    return savedMobileView(win) === null;
 }
 
 /**
