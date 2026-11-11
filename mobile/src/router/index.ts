@@ -10,7 +10,8 @@ import { currentSession } from '../lib/session.js';
  */
 
 const routes: RouteRecordRaw[] = [
-    { path: '/', redirect: '/chat' },
+    // 첫 화면은 할 일 — 열자마자 내 차례가 보여야 한다.
+    { path: '/', redirect: '/tasks' },
 
     {
         path: '/login',
@@ -19,6 +20,7 @@ const routes: RouteRecordRaw[] = [
         meta: { public: true }
     },
 
+    // 아래 탭 다섯 칸(meta.tab). 그 밖의 화면은 탭 없이 전체 화면 + 뒤로.
     {
         path: '/tasks',
         name: 'tasks',
@@ -28,24 +30,31 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/tasks/:id',
         name: 'task',
-        component: () => import('../views/TaskDetailView.vue'),
-        meta: { tab: 'tasks' }
+        component: () => import('../views/TaskDetailView.vue')
     },
     {
         path: '/start',
         name: 'start',
-        component: () => import('../views/StartView.vue'),
-        meta: { tab: 'tasks' }
+        component: () => import('../views/StartView.vue')
     },
-    // 진행 현황은 할 일 탭의 필터로 들어갔다. 옛 알림 링크가 이 주소로 와도
-    // 빈 화면이 되지 않게 넘겨 준다.
     {
         // 프로세스를 시작하기 전에 흐름·담당자·첫 입력을 확인하는 화면.
         path: '/start/:id',
-        component: () => import('../views/ProcessStartView.vue'),
-        meta: { tab: 'tasks' }
+        component: () => import('../views/ProcessStartView.vue')
     },
-    { path: '/status', redirect: '/tasks?view=running' },
+    {
+        path: '/progress',
+        name: 'progress',
+        component: () => import('../views/ProgressView.vue'),
+        meta: { tab: 'progress' }
+    },
+    // 옛 알림 링크 · 옛 「진행 중」 필터 주소
+    { path: '/status', redirect: '/progress' },
+    {
+        path: '/instances/:id',
+        name: 'instance',
+        component: () => import('../views/InstanceView.vue')
+    },
     {
         path: '/chat',
         name: 'chat',
@@ -66,10 +75,10 @@ const routes: RouteRecordRaw[] = [
         meta: { tab: 'chat' }
     },
     {
-        path: '/instances/:id',
-        name: 'instance',
-        component: () => import('../views/InstanceView.vue'),
-        meta: { tab: 'tasks' }
+        path: '/notifications',
+        name: 'notifications',
+        component: () => import('../views/NotificationsView.vue'),
+        meta: { tab: 'notifications' }
     },
     {
         path: '/me',
@@ -80,7 +89,7 @@ const routes: RouteRecordRaw[] = [
 
     // 알 수 없는 주소는 할 일로 보낸다. 알림 링크가 옛 형식이어도 앱이 빈 화면으로
     // 멈추지 않게.
-    { path: '/:pathMatch(.*)*', redirect: '/chat' }
+    { path: '/:pathMatch(.*)*', redirect: '/tasks' }
 ];
 
 export function createMobileRouter() {
@@ -98,7 +107,7 @@ export function createMobileRouter() {
 
         // 로그인 후 원래 가려던 곳으로 돌려보낸다. 알림을 눌러 들어왔는데 로그인이
         // 풀려 있으면, 로그인 후 목록이 아니라 그 건으로 가야 한다.
-        return { name: 'login', query: to.fullPath === '/chat' ? {} : { next: to.fullPath } };
+        return { name: 'login', query: to.fullPath === '/tasks' ? {} : { next: to.fullPath } };
     });
 
     return router;

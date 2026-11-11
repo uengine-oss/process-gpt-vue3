@@ -62,7 +62,8 @@
                 </button>
 
                 <!-- 에이전트 고르기 -->
-                <button type="button" class="composer__chip" :disabled="busy" @click="agentOpen = true">
+                <!-- 엔진 고르기(LangGraph · Codex …)는 휴대폰에서 빼 둔다 — 기본 에이전트로 묻는다(engines 로 켤 수 있다) -->
+                <button v-if="engines" type="button" class="composer__chip" :disabled="busy" @click="agentOpen = true">
                     {{ currentAgentLabel }}
                     <Icon class="composer__caret" name="chevron-down" :size="16" />
                 </button>
@@ -221,6 +222,8 @@ const props = defineProps<{
     canTalk?: boolean;
     /** 지금 말로 대화 중인가. */
     talking?: boolean;
+    /** 엔진(오케스트레이션) 고르기를 보일까. 휴대폰 화면안에서는 뺀다. */
+    engines?: boolean;
 }>();
 
 const emit = defineEmits<{

@@ -1,15 +1,14 @@
 /**
  * 휴대폰 화면 고르기 · 홈 화면에 추가.
  *
- * 지키려는 것: 휴대폰에서 앱 화면에 처음 들어온 사람에게만 한 번 묻고, 답한 뒤에는 다시 묻지 않는 것.
- * 로그인 · 랜딩 · 외부 폼과 컴퓨터에서는 묻지 않는다. 화면 폭이 바뀌어야 할 때만 새로 연다.
+ * 지키려는 것: 휴대폰은 기본으로 휴대폰 웹(/m/)으로 열리고, 「PC 화면으로 보기」(desktop)를 고른 휴대폰만
+ * 데스크톱 폭으로 그리는 것. 로그인 · 랜딩 · 외부 폼과 컴퓨터는 폭을 바꾸지 않는다. 폭이 바뀌어야 할 때만 새로 연다.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
     savedMobileView,
-    shouldAskMobileView,
     needsViewportReload,
     saveMobileView,
     phoneZoom,
@@ -38,7 +37,7 @@ function fakeWin({ phone = true, saved = {}, path = '/definition-map', scale = 0
         isPhoneBrowser: () => phone,
         isDeviceWidthPath,
         view: () => win.localStorage.getItem('mobileView'),
-        wantsDesktop: (p) => enabled && phone && api.view() !== 'light' && !isDeviceWidthPath(p),
+        wantsDesktop: (p) => enabled && phone && api.view() === 'desktop' && !isDeviceWidthPath(p),
         desktop: false
     };
     api.desktop = api.wantsDesktop(path);
@@ -46,64 +45,46 @@ function fakeWin({ phone = true, saved = {}, path = '/definition-map', scale = 0
     return win;
 }
 
-test('휴대폰으로 앱 화면에 처음 들어오면 묻는다', () => {
-    assert.equal(shouldAskMobileView('/definition-map', fakeWin()), true);
-});
-
-test('한 번 답하면 다시 묻지 않는다(데스크톱 · 라이트 모두)', () => {
-    assert.equal(shouldAskMobileView('/definition-map', fakeWin({ saved: { mobileView: 'desktop' } })), false);
-    assert.equal(shouldAskMobileView('/definition-map', fakeWin({ saved: { mobileView: 'light' } })), false);
-});
-
-test('로그인 · 랜딩 · 외부 폼과 컴퓨터에서는 묻지 않는다', () => {
-    for (const p of ['/', '/auth/login', '/external-forms/abc']) {
-        assert.equal(shouldAskMobileView(p, fakeWin({ path: p })), false, p);
-    }
-    assert.equal(shouldAskMobileView('/definition-map', fakeWin({ phone: false })), false);
-});
-
-test('PAL · uEngine 모드(규칙 꺼짐)에서는 묻지도 폭을 바꾸지도 않는다', () => {
-    const win = fakeWin({ enabled: false });
-    assert.equal(shouldAskMobileView('/definition-map', win), false);
+test('PAL · uEngine 모드(규칙 꺼짐)에서는 폭을 바꾸지 않는다', () => {
+    const win = fakeWin({ enabled: false, saved: { mobileView: 'desktop' } });
     assert.equal(needsViewportReload('/auth/login', win), false);
+    assert.equal(needsViewportReload('/definition-map', win), false);
 });
 
 test('규칙(__pgptViewport)이 없으면 아무것도 하지 않는다', () => {
-    assert.equal(shouldAskMobileView('/definition-map', {}), false);
     assert.equal(needsViewportReload('/definition-map', {}), false);
     assert.equal(savedMobileView({}), null);
 });
 
-test('폭이 바뀌는 이동에만 새로 연다', () => {
-    const atLogin = fakeWin({ path: '/auth/login' });
+test('「PC 화면으로 보기」를 고른 휴대폰에서 폭이 바뀌는 이동에만 새로 연다', () => {
+    const desk = { mobileView: 'desktop' };
+    const atLogin = fakeWin({ path: '/auth/login', saved: desk });
     assert.equal(needsViewportReload('/auth/login', atLogin), false);
     assert.equal(needsViewportReload('/definition-map', atLogin), true, '로그인(기기 폭) → 앱(데스크톱 폭)');
 
-    const inApp = fakeWin({ path: '/definition-map' });
+    const inApp = fakeWin({ path: '/definition-map', saved: desk });
     assert.equal(needsViewportReload('/instancelist', inApp), false);
     assert.equal(needsViewportReload('/auth/login', inApp), true, '앱 → 로그인');
 
-    const light = fakeWin({ saved: { mobileView: 'light' } });
-    assert.equal(needsViewportReload('/auth/login', light), false, '라이트는 어디서나 기기 폭');
-    assert.equal(needsViewportReload('/definition-map', fakeWin({ phone: false, path: '/auth/login' })), false, '컴퓨터');
+    assert.equal(needsViewportReload('/auth/login', fakeWin()), false, '기본(휴대폰 웹)은 포털에서 늘 기기 폭');
+    assert.equal(needsViewportReload('/definition-map', fakeWin({ phone: false, path: '/auth/login', saved: desk })), false, '컴퓨터');
 });
 
-test('라이트로 답하면 저장하고 새로 열어 기기 폭으로 바꾼다', () => {
+test('데스크톱을 고르면 저장하고 새로 열어 데스크톱 폭으로 바꾼다', () => {
     const win = fakeWin();
+    assert.deepEqual(saveMobileView('desktop', win), { reload: true });
+    assert.equal(win.__store.mobileView, 'desktop');
+    assert.equal(savedMobileView(win), 'desktop');
+});
+
+test('데스크톱에서 라이트로 바꾸면 새로 연다(휴대폰 웹으로)', () => {
+    const win = fakeWin({ saved: { mobileView: 'desktop' } });
     assert.deepEqual(saveMobileView('light', win), { reload: true });
     assert.equal(win.__store.mobileView, 'light');
-    assert.equal(savedMobileView(win), 'light');
 });
 
-test('데스크톱으로 답하면 저장만 한다(이미 데스크톱 폭)', () => {
-    const win = fakeWin();
-    assert.deepEqual(saveMobileView('desktop', win), { reload: false });
-    assert.equal(win.__store.mobileView, 'desktop');
-});
-
-test('라이트에서 데스크톱으로 바꾸면 새로 연다', () => {
-    const win = fakeWin({ saved: { mobileView: 'light' } });
-    assert.deepEqual(saveMobileView('desktop', win), { reload: true });
+test('기본(고르지 않음)에서 라이트를 고르면 폭은 그대로다', () => {
+    assert.deepEqual(saveMobileView('light', fakeWin()), { reload: false });
 });
 
 test('모르는 값은 저장하지 않는다', () => {
@@ -112,10 +93,11 @@ test('모르는 값은 저장하지 않는다', () => {
 });
 
 test('데스크톱 폭에서만 대화상자를 휴대폰 글자 크기로 키운다', () => {
-    assert.equal(Math.round(phoneZoom(fakeWin({ scale: 0.3 })) * 100) / 100, 3.33);
-    assert.equal(phoneZoom(fakeWin({ scale: 0.1 })), 4, '너무 커지지 않게');
-    assert.equal(phoneZoom(fakeWin({ scale: 2 })), 1, '확대하면 키우지 않는다');
-    assert.equal(phoneZoom(fakeWin({ saved: { mobileView: 'light' }, scale: 1 })), 1, '기기 폭');
+    const desk = { mobileView: 'desktop' };
+    assert.equal(Math.round(phoneZoom(fakeWin({ scale: 0.3, saved: desk })) * 100) / 100, 3.33);
+    assert.equal(phoneZoom(fakeWin({ scale: 0.1, saved: desk })), 4, '너무 커지지 않게');
+    assert.equal(phoneZoom(fakeWin({ scale: 2, saved: desk })), 1, '확대하면 키우지 않는다');
+    assert.equal(phoneZoom(fakeWin({ scale: 1 })), 1, '기기 폭');
 });
 
 test('홈 화면에서 연 앱인지 안다', () => {

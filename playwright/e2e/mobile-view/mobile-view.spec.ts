@@ -1,15 +1,16 @@
 /**
- * 휴대폰 화면: 기본은 데스크톱 화면, 라이트 버전은 한 번만 묻기, 설정에서 바꾸기, 홈 화면에 추가 (F-MV-01 ~ F-MV-07)
- * 휴대폰에서는 내 일만: 관리 · 설계 · 분석 숨김과 막기, 에이전트에 맡기기, 결정 칸 (F-MV-08 ~ F-MV-11)
- * — 2026-11-11 사용자 요청
+ * 휴대폰 화면 (F-MV-01 ~ F-MV-12) — 2026-11-11
+ *   - 휴대폰은 앱 화면을 휴대폰 웹(/m/ — 할 일 · 진행 · AI · 알림 · 나)으로 연다. 「PC 화면으로 보기」를 고른 휴대폰만 데스크톱 화면(1280px).
+ *   - 홈 화면에 추가(매니페스트 · iPhone 안내), 좁은 화면의 관리 · 설계 · 분석 숨김 · 막기, 결정 칸.
  *
- * 실제 백엔드(설치본)에 붙은 프런트를 휴대폰처럼(터치 · 390px 폭) 연다. 데이터는 바꾸지 않는다.
+ * 실제 백엔드(설치본)에 붙은 프런트를 휴대폰처럼(터치 · 390px 폭) 연다. 휴대폰 웹(/m/)도 같은 서버가 낸다.
  *
  * 실행 (VM 설치본 예):
  *   UX_BASE_URL=http://localhost:8088 UX_HOST_MAP="MAP localhost 192.168.64.3" \
  *   UX_ACCOUNTS=~/.config/pgtut/local-accounts.json npx playwright test playwright/e2e/mobile-view
+ *   (MV_TASK_ID: 김민지의 진행 중 업무 id, MV_APPROVAL_TASK_ID: 장진영의 처음 연 승인/반려 업무 id — 없으면 그 시험은 건너뛴다)
  *
- * 계정 파일: { admin: {email,password}, ... } — ux-review 묶음과 같은 파일.
+ * 계정 파일: { admin: {email,password}, minji: {...} } — ux-review 묶음과 같은 파일.
  */
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 import fs from 'node:fs';
@@ -52,7 +53,7 @@ async function login(page: Page) {
 }
 
 const viewport = (page: Page) => page.evaluate(() => ({ mode: document.documentElement.dataset.viewport, width: window.innerWidth }));
-const prompt = (page: Page) => page.getByTestId('mobile-view-prompt');
+const tabs = (page: Page) => page.locator('nav.m-tabs');
 
 async function phoneContext(browser: any, extra: Record<string, unknown> = {}, saved?: 'desktop' | 'light'): Promise<BrowserContext> {
     const ctx = await browser.newContext({ ...phone, ...extra });
@@ -66,65 +67,53 @@ async function phoneContext(browser: any, extra: Record<string, unknown> = {}, s
     return ctx;
 }
 
-test('F-MV-01 휴대폰으로 로그인하면 데스크톱 화면(폭 1280)으로 열리고 라이트 버전을 묻는다', async ({ browser }) => {
+test('F-MV-01 휴대폰으로 로그인하면 휴대폰 웹(/m/)의 할 일로 열린다', async ({ browser }) => {
     const ctx = await phoneContext(browser);
     const page = await ctx.newPage();
     await page.goto(`${BASE}/auth/login`);
-    // F-MV-05 로그인 화면은 휴대폰 폭 그대로다
+    // F-MV-05 로그인 화면은 포털이 휴대폰 폭으로 그린다
     expect(await viewport(page)).toEqual({ mode: 'device', width: 390 });
-    await login(page);
-    await expect(prompt(page)).toBeVisible({ timeout: 30_000 });
-    expect(await viewport(page)).toEqual({ mode: 'desktop', width: 1280 });
-    // 데스크톱 상단 막대가 있고, 휴대폰 간소화 앱바는 없다
-    await expect(page.locator('.full-header #top.v-app-bar')).toBeVisible();
-    await expect(prompt(page)).toContainText('라이트 버전');
-    await expect(prompt(page)).toContainText('휴대폰 화면');
-    // 화면이 다 그려진 뒤에도 폭이 그대로다(문서에 다른 viewport meta 가 끼어들면 기기 폭으로 돌아간다)
-    await page.waitForTimeout(4_000);
-    expect(await viewport(page)).toEqual({ mode: 'desktop', width: 1280 });
-    expect(await page.locator('meta[name="viewport"]').count()).toBe(1);
+    await page.locator('input[type="password"]').waitFor({ timeout: 30_000 });
+    await page.locator('input[type="text"], input[type="email"]').first().fill(accounts.admin.email);
+    await page.locator('input[type="password"]').first().fill(accounts.admin.password);
+    await page.locator('button').filter({ hasText: /^\s*(로그인|Sign In|Log In|Login)\s*$/i }).first().click();
+    await page.waitForURL((u) => u.pathname === '/m/', { timeout: 60_000 });
+    await expect(tabs(page)).toBeVisible({ timeout: 30_000 });
+    for (const label of ['할 일', '진행', 'AI', '알림', '나']) await expect(tabs(page)).toContainText(label);
+    expect(new URL(page.url()).hash).toMatch(/^#\/tasks/);
     await ctx.close();
 });
 
-test('F-MV-02 「데스크톱 화면 유지」를 고르면 다시 묻지 않는다', async ({ browser }) => {
+test('F-MV-02 휴대폰 웹 「나」의 「PC 화면으로 보기」는 포털 데스크톱 화면을 열고, 다시 열어도 그대로다', async ({ browser }) => {
     const ctx = await phoneContext(browser);
     const page = await ctx.newPage();
     await login(page);
-    await page.getByTestId('mobile-view-desktop').click();
-    await expect(prompt(page)).toBeHidden();
+    await page.waitForURL((u) => u.pathname === '/m/', { timeout: 60_000 });
+    await page.goto(`${BASE}/m/#/me`);
+    await page.getByText('PC 화면으로 보기', { exact: true }).click();
+    await page.waitForURL((u) => u.pathname === '/definition-map', { timeout: 60_000 });
+    await expect.poll(() => viewport(page)).toEqual({ mode: 'desktop', width: 1280 });
     expect(await page.evaluate(() => localStorage.getItem('mobileView'))).toBe('desktop');
-    await page.reload();
+    await page.goto(`${BASE}/todolist`);
     await page.waitForTimeout(3_000);
-    await expect(prompt(page)).toHaveCount(0);
+    expect(new URL(page.url()).pathname).toBe('/todolist');
     expect((await viewport(page)).mode).toBe('desktop');
     await ctx.close();
 });
 
-test('F-MV-03 「라이트 버전 보기」를 고르면 휴대폰 폭 간소화 화면으로 바뀌고 다시 묻지 않는다', async ({ browser }) => {
-    const ctx = await phoneContext(browser);
+test('F-MV-03 설정 › 테마 설정 「휴대폰 화면」에서 라이트를 고르면 휴대폰 웹으로 돌아간다', async ({ browser }) => {
+    const ctx = await phoneContext(browser, {}, 'desktop');
     const page = await ctx.newPage();
     await login(page);
-    await Promise.all([page.waitForEvent('load'), page.getByTestId('mobile-view-light').click()]);
-    await expect.poll(() => viewport(page)).toEqual({ mode: 'device', width: 390 });
-    await page.waitForTimeout(3_000);
-    await expect(prompt(page)).toHaveCount(0);
-    expect(await page.evaluate(() => localStorage.getItem('mobileView'))).toBe('light');
-    await ctx.close();
-});
-
-test('F-MV-04 설정 › 테마 설정의 「휴대폰 화면」에서 라이트를 데스크톱으로 바꾼다', async ({ browser }) => {
-    const ctx = await phoneContext(browser, {}, 'light');
-    const page = await ctx.newPage();
-    await login(page);
-    expect((await viewport(page)).mode).toBe('device');
+    expect((await viewport(page)).mode).toBe('desktop');
     await page.goto(`${BASE}/account-settings`);
     await page.getByText('테마 설정', { exact: true }).first().click();
     const setting = page.getByTestId('mobile-view-setting');
     await expect(setting).toBeVisible({ timeout: 30_000 });
-    // 고르면 바로 새로 열리므로 check() 대신 누르기만 한다(check 는 새로 열린 뒤 상태를 다시 확인하려다 멈춘다)
-    await Promise.all([page.waitForEvent('load'), setting.getByText(/데스크톱 버전/).click()]);
-    await expect.poll(() => viewport(page)).toEqual({ mode: 'desktop', width: 1280 });
-    expect(await page.evaluate(() => localStorage.getItem('mobileView'))).toBe('desktop');
+    await setting.getByText(/라이트 버전/).click();
+    await page.waitForURL((u) => u.pathname === '/m/', { timeout: 60_000 });
+    await expect(tabs(page)).toBeVisible({ timeout: 30_000 });
+    expect(await page.evaluate(() => localStorage.getItem('mobileView'))).toBe('light');
     await ctx.close();
 });
 
@@ -149,18 +138,18 @@ test('F-MV-06 홈 화면에 추가: 매니페스트가 있고 iPhone 에는 공�
     await ctx.close();
 });
 
-test('F-MV-07 컴퓨터(마우스)에서는 묻지 않고 화면 폭도 바꾸지 않는다', async ({ browser }) => {
+test('F-MV-07 컴퓨터(마우스)에서는 휴대폰 웹으로 옮기지 않고 화면 폭도 바꾸지 않는다', async ({ browser }) => {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await ctx.newPage();
     await login(page);
     await page.waitForTimeout(3_000);
-    await expect(prompt(page)).toHaveCount(0);
+    expect(new URL(page.url()).pathname).not.toBe('/m/');
     expect(await viewport(page)).toEqual({ mode: 'device', width: 1440 });
     await ctx.close();
 });
 
-// ── 휴대폰에서는 내 일만 (2026-11-11 휴대폰 점검 1단계) ───────────────────────────────────
-// MV_TASK_ID: 김민지의 진행 중 업무 id, MV_APPROVAL_TASK_ID: 장진영의 승인/반려 업무 id (없으면 그 시험은 건너뛴다)
+// ── 좁은 화면(폭 768px 이하)에서는 내 일만 — 휴대폰 웹으로 가지 않는 좁은 창(컴퓨터)에서 확인한다 ─────────────
+// MV_TASK_ID: 김민지의 진행 중 업무 id, MV_APPROVAL_TASK_ID: 장진영의 처음 연 승인/반려 업무 id (없으면 그 시험은 건너뛴다)
 
 async function loginAs(page: Page, who: 'admin' | 'minji') {
     const a = accounts[who];
@@ -172,8 +161,10 @@ async function loginAs(page: Page, who: 'admin' | 'minji') {
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 60_000 });
 }
 
-test('F-MV-08 휴대폰(라이트) 사이드바에는 관리 · 설계 · 분석 메뉴가 없다', async ({ browser }) => {
-    const ctx = await phoneContext(browser, {}, 'light');
+const narrow = { viewport: { width: 700, height: 900 } };
+
+test('F-MV-08 좁은 화면 사이드바에는 관리 · 설계 · 분석 메뉴가 없다', async ({ browser }) => {
+    const ctx = await browser.newContext(narrow);
     const page = await ctx.newPage();
     await loginAs(page, 'admin');
     await page.waitForTimeout(4_000);
@@ -185,27 +176,26 @@ test('F-MV-08 휴대폰(라이트) 사이드바에는 관리 · 설계 · 분석
     await ctx.close();
 });
 
-test('F-MV-09 휴대폰에서 관리 주소로 가면 PC 안내로 가고, 「PC 화면으로 보기」로 연다', async ({ browser }) => {
-    const ctx = await phoneContext(browser, {}, 'light');
+test('F-MV-09 좁은 화면에서 관리 주소로 가면 PC 안내로 간다', async ({ browser }) => {
+    const ctx = await browser.newContext(narrow);
     const page = await ctx.newPage();
     await loginAs(page, 'admin');
     await page.goto(`${BASE}/skills`);
     await expect(page.getByTestId('desktop-only')).toBeVisible({ timeout: 30_000 });
-    expect(new URL(page.url()).pathname).toBe('/desktop-only');
     expect(new URL(page.url()).searchParams.get('from')).toBe('/skills');
-    await Promise.all([page.waitForEvent('load'), page.getByTestId('desktop-only-open').click()]);
-    await expect.poll(() => viewport(page)).toEqual({ mode: 'desktop', width: 1280 });
-    expect(new URL(page.url()).pathname).toBe('/skills');
+    await expect(page.getByTestId('desktop-only-open')).toContainText('창을 넓힌 뒤 다시 열기');
     await ctx.close();
 });
 
-test('F-MV-10 휴대폰 업무 화면에도 「에이전트에 맡기기」가 있다', async ({ browser }) => {
+test('F-MV-10 휴대폰 웹 업무 화면에 「에이전트에 맡기기」가 있다', async ({ browser }) => {
     test.skip(!process.env.MV_TASK_ID, 'MV_TASK_ID 없음');
-    const ctx = await phoneContext(browser, {}, 'light');
+    const ctx = await phoneContext(browser);
     const page = await ctx.newPage();
     await loginAs(page, 'minji');
     await page.goto(`${BASE}/todolist/${process.env.MV_TASK_ID}`);
-    await expect(page.getByTestId('workitem-delegate-agent').first()).toBeVisible({ timeout: 30_000 });
+    await page.waitForURL((u) => u.pathname === '/m/', { timeout: 60_000 });
+    expect(new URL(page.url()).hash).toBe(`#/tasks/${process.env.MV_TASK_ID}`);
+    await expect(page.getByRole('button', { name: /에이전트에 맡기기|다시 맡기기/ }).first()).toBeVisible({ timeout: 30_000 });
     await ctx.close();
 });
 
@@ -228,3 +218,18 @@ test('F-MV-11 승인 · 반려 칸은 미리 고르지 않고, 고르지 않으�
     expect(submitted).toBe(false);
     await ctx.close();
 });
+
+test('F-MV-12 휴대폰 웹 승인 화면: 미리 고른 값 없이 반려 · 승인 두 단추, 반려는 의견이 있어야 눌린다', async ({ browser }) => {
+    test.skip(!process.env.MV_APPROVAL_TASK_ID, 'MV_APPROVAL_TASK_ID 없음');
+    const ctx = await phoneContext(browser);
+    const page = await ctx.newPage();
+    await loginAs(page, 'admin');
+    await page.goto(`${BASE}/m/#/tasks/${process.env.MV_APPROVAL_TASK_ID}`);
+    const reject = page.getByRole('button', { name: /반려/ }).last();
+    const approve = page.getByRole('button', { name: /승인/ }).last();
+    await expect(reject).toBeVisible({ timeout: 30_000 });
+    await expect(approve).toBeVisible();
+    await expect(reject).toBeDisabled();
+    await ctx.close();
+});
+

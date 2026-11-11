@@ -89,7 +89,7 @@ async function submit() {
     // 빈 목록이 뜨고, 제출도 "누가" 없이 나간다.
     await establishSession(result.session);
 
-    const next = (route.query.next as string) || '/chat';
+    const next = (route.query.next as string) || '/tasks';
     busy.value = false;
     await router.replace(next);
 }

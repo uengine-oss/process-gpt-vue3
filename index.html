@@ -5,12 +5,12 @@
     <link rel="icon" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <script>
-        // 휴대폰 브라우저에서도 기본은 데스크톱 화면이다 — 브라우저의 「데스크톱 사이트 요청」처럼 화면 폭을
-        // 1280px 로 잡아, 폭으로 모바일 여부를 정하는 화면들(globalIsMobile 등)이 모두 데스크톱으로 그린다.
-        // 기기 폭(간소화한 모바일 화면) 그대로 두는 경우:
-        //   - 라이트 버전을 고른 사람(localStorage mobileView=light — 설정 › 테마 설정 「휴대폰 화면」)
+        // 휴대폰 브라우저의 앱 화면은 기본으로 휴대폰 웹(/m/, 할 일 · 진행 · AI · 알림 · 나)으로 연다(2026-11-11 결정 D-1111-07).
+        // 「PC 화면으로 보기」(localStorage mobileView=desktop — 휴대폰 웹 「나」 탭 · 설정 › 테마 설정 「휴대폰 화면」)를
+        // 고른 휴대폰만 데스크톱 화면으로 연다 — 브라우저의 「데스크톱 사이트 요청」처럼 화면 폭을 1280px 로 잡는다.
+        // 옮기지 않는 경우:
         //   - 네이티브 앱(process-gpt-mobile, Capacitor) — 앱은 지금처럼 모바일 화면
-        //   - 랜딩(/) · 로그인(/auth/*) · 외부 폼(/external-forms/*) — 반응형이라 기기 폭이 낫다
+        //   - 랜딩(/) · 로그인(/auth/*) · 외부 폼(/external-forms/*) · 조직 고르기 · 약관 — 포털이 기기 폭으로 그린다
         //   - PAL · uEngine 모드 — run.sh 가 head 첫머리에 넣는 window._env_ 로 알고, 빌드 때 정한 모드는
         //     main.ts 가 disable() 로 끈다
         // 앱은 이 규칙을 window.__pgptViewport 로만 쓴다(src/shared/mobileView). 규칙을 두 곳에 두지 않는다.
@@ -35,6 +35,25 @@
             function isDeviceWidthPath(path) {
                 return path === '/' || path.indexOf('/auth/') === 0 || path.indexOf('/external-forms/') === 0;
             }
+            // 휴대폰 웹(/m/, 해시 주소)에서 같은 화면. 포털 주소 → 휴대폰 주소 규칙은 여기 한 곳에만 둔다
+            // (첫 렌더 전에 옮겨야 해서 index.html, 앱 안에서 옮겨 갈 때는 라우터가 이것을 부른다).
+            function phoneWebHash(path) {
+                var p = String(path || '/');
+                var m;
+                function seg(s) {
+                    try { return encodeURIComponent(decodeURIComponent(s)); } catch (e) { return encodeURIComponent(s); }
+                }
+                if ((m = p.match(/^\/todolist\/([^/]+)/))) return '#/tasks/' + seg(m[1]);
+                if (p === '/instancelist/running') return '#/progress';
+                if ((m = p.match(/^\/(?:instancelist|instance-viewer)\/([^/]+)/))) return '#/instances/' + seg(m[1]);
+                if (/^\/(?:chat|chats|agent-chat)(?:\/|$)/.test(p)) return '#/chat';
+                if (p === '/notifications') return '#/notifications';
+                return '#/tasks';
+            }
+            // 포털에 남는 곳: 랜딩 · 로그인 · 외부 폼 · 조직 고르기/만들기 · 약관.
+            function staysOnPortal(path) {
+                return isDeviceWidthPath(path) || /^\/(?:auth|tenant|privacy|terms|m)(?:\/|$)/.test(path);
+            }
             var api = {
                 KEY: KEY,
                 isEnabled: function () { return enabled; },
@@ -42,7 +61,13 @@
                 isDeviceWidthPath: isDeviceWidthPath,
                 view: view,
                 wantsDesktop: function (path) {
-                    return enabled && isPhoneBrowser() && view() !== 'light' && !isDeviceWidthPath(path);
+                    return enabled && isPhoneBrowser() && view() === 'desktop' && !isDeviceWidthPath(path);
+                },
+                phoneWebHash: phoneWebHash,
+                // 휴대폰이면 앱 화면은 휴대폰 웹(/m/)으로 연다 — 「PC 화면으로 보기」를 고른 휴대폰은 빼고. 옮길 곳 또는 null.
+                phoneWebUrl: function (path) {
+                    if (!enabled || !isPhoneBrowser() || view() === 'desktop' || staysOnPortal(path)) return null;
+                    return '/m/' + phoneWebHash(path);
                 },
                 disable: function () {
                     enabled = false;
@@ -56,6 +81,11 @@
                 }
             };
             window.__pgptViewport = api;
+            var phoneWeb = api.phoneWebUrl(location.pathname);
+            if (phoneWeb) {
+                location.replace(phoneWeb);
+                return;
+            }
             api.apply(location.pathname);
         })();
     </script>

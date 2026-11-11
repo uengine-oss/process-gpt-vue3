@@ -54,7 +54,9 @@ export function routeForUrl(url) {
     const chatPath = path.match(/^\/chats?\/([^/?#]+)/);
     if (chatPath) return `/chat/${encodeURIComponent(decodeURIComponent(chatPath[1]))}`;
 
-    const inst = path.match(/^\/instances?\/([^/?#]+)/);
+    if (/^\/instancelist\/running(?:[/?#]|$)/.test(path)) return '/progress';
+    if (/^\/notifications(?:[/?#]|$)/.test(path)) return '/notifications';
+    const inst = path.match(/^\/(?:instances?|instancelist|instance-viewer)\/([^/?#]+)/);
     if (inst) return `/instances/${encodeURIComponent(decodeURIComponent(inst[1]))}`;
 
     return null;

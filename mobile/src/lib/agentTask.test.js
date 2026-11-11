@@ -3,7 +3,10 @@ import { describe, it } from 'node:test';
 
 import {
     agentFailed,
+    agentState,
     agentStatusText,
+    draftReady,
+    isAgentOnly,
     readableDescription,
     runsByAgent,
     stillRunning,
@@ -36,6 +39,33 @@ describe('runsByAgent', () => {
     it('에이전트가 맡은 업무를 알아본다 — 입력 폼을 보여 줄 이유가 없다', () => {
         assert.equal(runsByAgent({ agent_orch: 'pdf2bpmn' }), true);
         assert.equal(runsByAgent({ activity_name: '승인' }), false);
+    });
+
+    it('맡긴 뒤 쓰는 중이면 에이전트 일, 초안이 다 됐으면 사람 차례다', () => {
+        const base = { activity_name: '제안서 작성', agent_orch: 'deepagents', agent_mode: 'DRAFT', status: 'IN_PROGRESS' };
+        assert.equal(runsByAgent({ ...base, draft_status: 'STARTED' }), true);
+        assert.equal(runsByAgent({ ...base, draft_status: null }), true);
+        assert.equal(runsByAgent({ ...base, draft_status: 'COMPLETED' }), false, '초안이 다 된 업무는 사람이 확인한다');
+        assert.equal(draftReady({ ...base, draft_status: 'COMPLETED' }), true);
+    });
+});
+
+describe('agentState', () => {
+    const base = { activity_name: '제안서 작성', agent_orch: 'deepagents', agent_mode: 'DRAFT', status: 'IN_PROGRESS' };
+    it('상태를 하나로 정한다', () => {
+        assert.equal(agentState({ activity_name: '승인', status: 'IN_PROGRESS' }), 'none');
+        assert.equal(agentState({ ...base, draft_status: 'STARTED' }), 'running');
+        assert.equal(agentState({ ...base, draft_status: 'FB_REQUESTED' }), 'running');
+        assert.equal(agentState({ ...base, draft_status: 'COMPLETED' }), 'draft-ready');
+        assert.equal(agentState({ ...base, draft_status: 'FAILED' }), 'failed');
+        assert.equal(agentState({ ...base, draft_status: 'CANCELLED' }), 'cancelled');
+        assert.equal(agentState({ ...base, status: 'DONE', draft_status: 'COMPLETED' }), 'done');
+    });
+    it('프로세스 생성처럼 그 자체가 에이전트 일인 업무는 초안이 다 돼도 에이전트 일이다', () => {
+        const pdf = { activity_name: 'pdf2bpmn', agent_orch: 'pdf2bpmn', agent_mode: 'DRAFT', draft_status: 'COMPLETED', status: 'IN_PROGRESS' };
+        assert.equal(isAgentOnly(pdf), true);
+        assert.equal(agentState(pdf), 'agent-only');
+        assert.equal(runsByAgent(pdf), true);
     });
 });
 

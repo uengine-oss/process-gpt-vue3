@@ -1,165 +1,161 @@
 <template>
     <div class="m-screen">
-        <header class="m-appbar">
-            <button type="button" aria-label="뒤로" @click="router.back()"><Icon name="back" /></button>
-            <h1>{{ name || '진행 현황' }}</h1>
+        <header class="m-appbar task-bar">
+            <button type="button" aria-label="뒤로" @click="goBack"><Icon name="back" /></button>
+            <div class="task-bar__title">
+                <h1>{{ title }}</h1>
+                <span v-if="subline" class="m-muted">{{ subline }}</span>
+            </div>
         </header>
 
-        <div class="m-body">
+        <div class="m-body inst">
             <p v-if="error" class="m-note m-note--danger">{{ error }}</p>
-            <p v-if="loading" class="m-muted">불러오는 중…</p>
+            <p v-if="loading && !rows.length" class="m-muted">불러오는 중…</p>
 
             <template v-else>
-                <!-- 한눈 요약: 얼마나 왔고 지금 누구 차례인가 -->
-                <div class="m-card">
-                    <span class="m-muted">{{ summary.text }}</span>
-                    <div class="bar" role="img" :aria-label="`${summary.percent}퍼센트 진행`">
-                        <span class="bar__fill" :style="{ width: summary.percent + '%' }"></span>
-                    </div>
-                    <strong>{{ holder }}</strong>
+                <div class="m-card m-card--lg summary">
+                    <span class="summary__top">
+                        <span class="m-tag" :class="statusClass">{{ statusLabel }}</span>
+                        <strong>{{ holder }}</strong>
+                    </span>
+                    <span class="m-muted">{{ facts }}</span>
+                    <span class="bar" role="img" :aria-label="`${percent}퍼센트 진행`">
+                        <span class="bar__fill" :style="{ width: percent + '%' }"></span>
+                    </span>
                 </div>
 
-                <!--
-                    전체 흐름. 지금 어디까지 왔는지 한눈에 보이게 같은 그림을 쓴다
-                    (프로세스 생성 · 시작 화면과 동일).
-                -->
-                <section v-if="definition" class="m-card">
-                    <span class="m-muted">전체 흐름</span>
-                    <ProcessFlow :definition="definition" :current-id="currentActivityId" :done-ids="doneIds" />
-                </section>
-
-                <!-- 단계들 -->
-                <ol v-if="steps.length" class="steps">
-                    <li v-for="step in steps" :key="step.id" class="step" :class="`step--${step.state}`">
-                        <span class="step__dot" aria-hidden="true"></span>
-                        <span class="step__body">
-                            <strong>{{ step.name }}</strong>
-                            <span class="m-muted">
-                                {{ stateLabel(step.state) }}<template v-if="step.who"> · {{ step.who }}</template>
-                            </span>
-                            <span v-if="when(step)" class="m-muted">{{ when(step) }}</span>
-
-                            <!--
-                                그 단계에서 실제로 무엇이 정해졌는가.
-                                단계 이름과 상태만 보여 주면 "어디까지 왔는지" 는 알아도
-                                "무엇이 결정됐는지" 는 알 수 없다.
-                            -->
-                            <dl v-if="outputsOf(step).length" class="step__out">
-                                <template v-for="f in outputsOf(step)" :key="f.key">
-                                    <dt>{{ f.label }}</dt>
-                                    <dd>{{ f.value }}</dd>
-                                </template>
-                            </dl>
+                <ol v-if="timeline.length" class="tl">
+                    <li v-for="s in timeline" :key="s.id" class="tl__item" :class="`tl__item--${s.state}`">
+                        <span class="tl__dot" aria-hidden="true">
+                            <Icon v-if="s.state === 'done' || s.state === 'approved'" name="check" :size="16" />
+                            <Icon v-else-if="s.state === 'rejected'" name="close" :size="16" />
                         </span>
-                        <button
-                            v-if="isActionable(step) && mine(step)"
-                            type="button"
-                            class="m-btn step__go"
-                            @click="router.push(`/tasks/${encodeURIComponent(step.id)}`)"
-                        >
-                            처리
-                        </button>
+                        <div class="tl__body">
+                            <div class="tl__name">
+                                <button
+                                    v-if="s.state === 'current' && s.mine"
+                                    type="button"
+                                    class="tl__link"
+                                    @click="router.push(`/tasks/${encodeURIComponent(s.id)}`)"
+                                >
+                                    {{ s.name }}
+                                </button>
+                                <strong v-else>{{ s.name }}</strong>
+                                <span v-if="s.state === 'rejected'" class="m-tag m-tag--danger">반려</span>
+                                <span v-else-if="s.state === 'approved'" class="m-tag m-tag--ok">승인</span>
+                                <span v-else-if="s.state === 'current'" class="m-tag m-tag--brand">{{ s.mine ? '내 차례' : '진행 중' }}</span>
+                            </div>
+                            <span class="m-muted">{{ [s.who, s.state === 'waiting' ? '대기' : s.state === 'current' ? '지금' : when(s.at)].filter(Boolean).join(' · ') }}</span>
+                            <p v-if="s.comment" class="tl__comment" :class="{ 'tl__comment--ok': s.state === 'approved' }">{{ s.comment }}</p>
+                        </div>
                     </li>
                 </ol>
-
                 <div v-else class="m-empty"><p>아직 단계가 없습니다.</p></div>
+
+                <template v-if="files.length">
+                    <h2 class="m-section"><span>산출물</span></h2>
+                    <div class="files">
+                        <button v-for="f in files" :key="f.url" type="button" class="m-card file" @click="download(f)">
+                            <span class="file__icon" aria-hidden="true"><Icon name="file" /></span>
+                            <span class="file__body">
+                                <strong>{{ f.name }}</strong>
+                                <span class="m-muted">{{ [when(f.at), f.who].filter(Boolean).join(' · ') }}</span>
+                            </span>
+                        </button>
+                    </div>
+                </template>
             </template>
+        </div>
+
+        <div v-if="myTask" class="m-actions m-actions--one">
+            <button type="button" class="m-btn m-btn--lg m-btn--primary" @click="router.push(`/tasks/${encodeURIComponent(myTask.id)}`)">
+                내 차례 열기
+            </button>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-/**
- * 이 건이 지금 어디까지 왔는가.
- *
- * 목록에서 "진행 중" 만 보면 알 수 있는 게 없다. 여기서는 끝난 단계 · 지금 하는
- * 단계 · 남은 단계를 순서대로 보여 주고, 그 단계가 내 차례면 바로 처리로 넘어간다.
- */
-
-import Icon from '../components/Icon.vue';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { backend } from '../lib/backend.js';
-import ProcessFlow from '../components/ProcessFlow.vue';
-import { flattenOutput } from '../lib/outputs.js';
-import {
-    activityIdOf,
-    holderText,
-    isActionable,
-    stateLabel,
-    summarize,
-    toSteps
-} from '../lib/progress.js';
-import { assignedTo } from '../lib/tasks.js';
+import Icon from '../components/Icon.vue';
+import { loadInstance } from '../lib/data.js';
+import { download } from '../lib/download.js';
+import { dueLabel } from '../lib/tasks.js';
+import { fileOutputs, instanceStatusLabel, progressOf, subjectOf, timelineModel } from '../lib/workspace.js';
+
+/**
+ * 진행 상황 — BPMN 그림 대신 세로 타임라인.
+ *
+ * 같은 단계가 반복돼도(반려 → 다시 작성 → 다시 검토) 행마다 남겨 지난 결과(반려 사유)를 지우지 않는다.
+ * 영어 상태값 없이 「진행 중 · 반려 · 대기」 로만 말한다. 내 차례면 아래에서 바로 연다.
+ */
 
 const route = useRoute();
 const router = useRouter();
-
 const instId = decodeURIComponent(String(route.params.id || ''));
-const name = ref((route.query.name as string) || '');
-const items = ref<any[]>([]);
+
 const loading = ref(true);
 const error = ref('');
+const rows = ref<any[]>([]);
+const inst = ref<any>(null);
+const processName = ref('');
 
-const steps = computed(() => toSteps(items.value));
+const uid = () => localStorage.getItem('uid') || '';
+const timeline = computed(() => timelineModel(rows.value, uid()));
+const progress = computed(() => progressOf(rows.value));
+const files = computed(() => fileOutputs(rows.value));
+const myTask = computed(() => timeline.value.find((s: any) => s.state === 'current' && s.mine) || null);
+const running = computed(() => !inst.value || String(inst.value.status || '').toUpperCase() === 'RUNNING');
 
-// 전체 흐름을 그리기 위한 정의. 없으면 흐름도는 생략한다.
-const definition = ref<any>(null);
-
-/** 지금 진행 중인 단계의 활동 id. 흐름도에서 그 자리를 짚어 준다. */
-const currentActivityId = computed(() => {
-    const now = steps.value.find((s: any) => s.state === 'current' || s.state === 'waiting');
-    return activityIdOf(now);
-});
-
-/** 이미 끝난 단계들. */
-const doneIds = computed(() =>
-    steps.value.filter((s: any) => s.state === 'done').map(activityIdOf).filter(Boolean)
+const title = computed(
+    () => subjectOf(inst.value?.proc_inst_name, processName.value) || (route.query.name as string) || '진행 상황'
 );
-const summary = computed(() => summarize(steps.value));
-const holder = computed(() => holderText(steps.value));
+const subline = computed(() => {
+    const start = inst.value?.start_date ? new Date(inst.value.start_date) : null;
+    const when = start && !Number.isNaN(start.getTime()) ? `${start.getMonth() + 1}월 ${start.getDate()}일 시작` : '';
+    return [processName.value, when].filter(Boolean).join(' · ');
+});
+const statusLabel = computed(() => instanceStatusLabel(inst.value?.status || 'RUNNING'));
+const statusClass = computed(() => (running.value ? 'm-tag--brand' : 'm-tag--ok'));
+const holder = computed(() => {
+    const c = progress.value.current;
+    if (!running.value) return '모두 끝났습니다';
+    if (!c) return '다음 단계를 기다리고 있습니다';
+    return `지금 ${[c.who, c.name].filter(Boolean).join(' · ')}`;
+});
+const facts = computed(() => {
+    const p = progress.value;
+    const parts = [`${p.no}/${p.total}단계`];
+    if (p.rejections) parts.push(`반려 ${p.rejections}번`);
+    const due = p.current?.due ? dueLabel(p.current.due) : '';
+    if (due && running.value) parts.push(/마감|지남/.test(due) ? due : `마감 ${due}`);
+    return parts.join(' · ');
+});
+const percent = computed(() => (running.value ? progress.value.percent : 100));
 
-/** 그 단계에서 정해진 내용. 없으면 아무것도 그리지 않는다. */
-function outputsOf(step: any) {
-    return flattenOutput(step?.raw?.output);
-}
-
-/** 이 단계가 내 차례인가. 그럴 때만 [처리] 를 보여 준다. */
-function mine(step: any) {
-    return assignedTo(step.raw, localStorage.getItem('uid'));
-}
-
-function when(step: any) {
-    const at = step.endedAt || step.startedAt;
+function when(at: string) {
     if (!at) return '';
     const d = new Date(at);
     if (Number.isNaN(d.getTime())) return '';
-    return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function goBack() {
+    if (window.history.length > 1) router.back();
+    else void router.replace('/progress');
 }
 
 onMounted(async () => {
     try {
-        items.value = (await backend().getWorkListByRootInstId(instId)) || [];
-        if (!items.value.length) {
-            // 자식 인스턴스로 갈라진 건은 root 로 안 잡히는 경우가 있다.
-            items.value = (await backend().getWorkList({ instId })) || [];
-        }
-        // 흐름도용 정의. 실패해도 단계 목록은 그대로 보인다.
-        const defId = items.value[0]?.task?.proc_def_id || items.value[0]?.defId;
-        if (defId) {
-            try {
-                const row = await backend().getRawDefinition(String(defId), null);
-                // 행 전체가 오므로 정의 본문만 꺼낸다.
-                const body = row?.definition ?? row;
-                definition.value = typeof body === 'string' ? JSON.parse(body) : body;
-            } catch (_e) {
-                definition.value = null;
-            }
-        }
-    } catch (e: any) {
-        error.value = '진행 상황을 불러오지 못했습니다.';
+        const found = await loadInstance((window as any).$supabase, { instId, tenant: (window as any).$tenantName || null });
+        rows.value = found.rows;
+        inst.value = found.inst;
+        processName.value = found.processName;
+    } catch (e) {
         console.error('[instance] 조회 실패', e);
+        error.value = '진행 상황을 불러오지 못했습니다.';
     } finally {
         loading.value = false;
     }
@@ -167,32 +163,46 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 단계 안의 산출물. 흐름을 방해하지 않게 작고 조용하게. */
-.step__out {
-    margin: 6px 0 0;
-    display: grid;
-    grid-template-columns: minmax(64px, 36%) 1fr;
-    gap: 2px 8px;
-    font-size: 0.82rem;
+.task-bar {
+    align-items: flex-start;
+    background: var(--ground);
+    border-bottom: none;
 }
 
-.step__out dt {
-    color: var(--ink-faint);
-    overflow: hidden;
-    text-overflow: ellipsis;
+.task-bar__title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
 }
 
-.step__out dd {
-    margin: 0;
-    word-break: break-word;
+.task-bar__title h1 {
+    font-size: 1.2rem;
+    line-height: 1.35;
+}
+
+.inst {
+    padding: 4px 16px 20px;
+    gap: 14px;
+}
+
+.summary__top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.summary__top strong {
+    font-size: 1.02rem;
 }
 
 .bar {
+    display: block;
     height: 6px;
     border-radius: 3px;
     background: var(--sunk);
     overflow: hidden;
-    margin: 6px 0 2px;
+    margin-top: 6px;
 }
 
 .bar__fill {
@@ -202,68 +212,142 @@ onMounted(async () => {
     border-radius: 3px;
 }
 
-.steps {
+.tl {
     list-style: none;
     margin: 0;
     padding: 0;
-    display: flex;
-    flex-direction: column;
 }
 
-.step {
+.tl__item {
+    position: relative;
     display: grid;
-    grid-template-columns: 18px 1fr auto;
-    gap: 10px;
-    align-items: start;
-    padding: 12px 2px;
-    border-bottom: 1px solid var(--rule);
+    grid-template-columns: 30px 1fr;
+    gap: 12px;
+    padding-bottom: 18px;
 }
 
-.step:last-child {
-    border-bottom: none;
+/* 점과 점을 잇는 세로 줄 */
+.tl__item::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 30px;
+    bottom: -2px;
+    width: 2px;
+    background: var(--rule);
 }
 
-.step__body {
+.tl__item:last-child::before {
+    display: none;
+}
+
+.tl__dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--ink-faint);
+    color: #fff;
+    z-index: 1;
+}
+
+.tl__item--rejected .tl__dot {
+    background: var(--danger);
+}
+
+.tl__item--approved .tl__dot {
+    background: var(--ok);
+}
+
+.tl__item--current .tl__dot {
+    background: var(--surface);
+    border: 3px solid var(--brand);
+    box-shadow: inset 0 0 0 4px var(--surface), inset 0 0 0 12px var(--brand);
+}
+
+.tl__item--waiting .tl__dot {
+    background: var(--surface);
+    border: 2px solid var(--rule);
+}
+
+.tl__item--waiting .tl__name strong {
+    color: var(--ink-faint);
+}
+
+.tl__body {
     display: flex;
     flex-direction: column;
     gap: 2px;
     min-width: 0;
+    padding-top: 3px;
 }
 
-/* 점 하나로 상태를 구분한다. 색만으로 나누지 않도록 글자도 함께 적는다. */
-.step__dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin-top: 5px;
-    border: 2px solid var(--rule);
-    background: var(--surface);
+.tl__name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.step--done .step__dot {
-    background: var(--brand);
-    border-color: var(--brand);
+.tl__name strong,
+.tl__link {
+    font-size: 1.02rem;
+    font-weight: 700;
 }
 
-.step--current .step__dot {
-    border-color: var(--brand);
-    box-shadow: 0 0 0 3px var(--brand-wash);
+.tl__link {
+    color: var(--brand);
+    text-align: left;
 }
 
-.step--cancelled .step__dot {
-    background: var(--rule);
+.tl__comment {
+    margin: 6px 0 0;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: var(--danger-wash);
+    color: var(--danger);
+    font-size: 0.92rem;
 }
 
-.step--cancelled .step__body strong {
-    text-decoration: line-through;
-    color: var(--ink-faint);
+.tl__comment--ok {
+    background: var(--ok-wash);
+    color: var(--ok);
 }
 
-.step__go {
-    min-height: 36px;
-    padding: 0 14px;
-    background: var(--brand);
-    color: var(--brand-ink);
-    border-color: transparent;
+.files {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.file {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    border-radius: 14px;
+}
+
+.file__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--brand-wash);
+    color: var(--brand);
+    display: grid;
+    place-items: center;
+    flex: none;
+}
+
+.file__body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.file__body strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 </style>

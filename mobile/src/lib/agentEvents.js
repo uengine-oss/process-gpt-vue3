@@ -17,6 +17,8 @@
  *   task_completed      (끝)
  */
 
+import { formatToolName } from '../../../src/shared/toolNames/index.js';
+
 const DONE_TYPES = ['task_completed', 'task_failed', 'task_cancelled'];
 
 /**
@@ -41,9 +43,36 @@ function splitTag(text) {
  * 보여 줄 말이 없는 이벤트는 만들지 않는다 — 빈 줄이 쌓이면 무슨 일이
  * 벌어지는지 오히려 더 안 보인다.
  */
+/** 순서. 예전 표에는 seq 가 있었고 지금 표에는 timestamp 만 있다 — 둘 다 받는다. */
+export function orderOf(row) {
+    const seq = Number(row?.seq);
+    if (Number.isFinite(seq) && seq > 0) return seq;
+    const t = new Date(row?.timestamp || 0).getTime();
+    return Number.isFinite(t) ? t : 0;
+}
+
+/**
+ * 딥 에이전트는 message 대신 goal · tool_name · result 를 싣는다.
+ * 팀 구성 결과(team_agent_ids)는 첫 줄("함께 일할 에이전트: …")만, 폼 값을 통째로 담은 결과는 싣지 않는다.
+ */
+function textOf(row) {
+    const data = row?.data && typeof row.data === 'object' ? row.data : {};
+    const type = (row?.event_type || '').toString();
+    const direct = (data.message ?? data.msg ?? '').toString().trim();
+    if (direct) return direct;
+    if (type === 'task_started' && data.goal) return String(data.goal).trim();
+    if (type === 'tool_usage_started' && (data.tool_name || data.tool)) {
+        return `${formatToolName(data.tool_name || data.tool)} 쓰는 중`;
+    }
+    if (type === 'task_completed' && Array.isArray(data.team_agent_ids) && typeof data.result === 'string') {
+        return data.result.split('\n')[0].trim();
+    }
+    return '';
+}
+
 export function toFeedItem(row) {
     const type = (row?.event_type || '').toString();
-    const raw = (row?.data?.message ?? row?.data?.msg ?? '').toString().trim();
+    const raw = textOf(row);
     if (!raw) return null;
 
     const { tag, body } = splitTag(raw);
@@ -52,7 +81,7 @@ export function toFeedItem(row) {
     const clean = body.replace(/\s*\((?:form_id|task_id|id)=[^)]*\)/g, '').trim();
     return {
         id: `${row?.id ?? row?.seq ?? raw}`,
-        seq: Number(row?.seq) || 0,
+        seq: orderOf(row),
         tag,
         text: clean || body || raw,
         done: type === 'tool_usage_finished' || DONE_TYPES.includes(type),
@@ -106,4 +135,20 @@ export function toFeed(rows) {
 export function latestText(feed) {
     const last = feed[feed.length - 1];
     return last ? last.text : '';
+}
+
+/**
+ * 이 업무의 진행 기록을 읽는다.
+ *
+ * events 표에서 seq 열이 빠졌다(지금은 timestamp). seq 로 정렬하면 400 이 나 기록이 통째로 비었다
+ * (2026-11-11 휴대폰 웹 확인). timestamp 로 읽고, 그 열이 없는 옛 표면 seq 로 다시 읽는다.
+ */
+export async function loadEvents(supabase, taskId) {
+    if (!supabase || !taskId) return [];
+    const read = (column) => supabase.from('events').select('*').eq('todo_id', taskId).order(column);
+    let { data, error } = await read('timestamp');
+    if (error) ({ data, error } = await read('seq'));
+    if (error) ({ data, error } = await supabase.from('events').select('*').eq('todo_id', taskId));
+    if (error) throw error;
+    return [...(data || [])].sort((a, b) => orderOf(a) - orderOf(b));
 }
