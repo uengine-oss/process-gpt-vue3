@@ -140,7 +140,13 @@ export default {
                 animation: 200,
                 ghostClass: 'ghost-card',
                 group: this.dragGroup,
-                move: this.checkMove
+                move: this.checkMove,
+                // 손가락은 0.3초 눌러 둬야 끌기 시작한다. 휴대폰의 PC 화면(폭 1280)도 여기로 온다.
+                // 바로 끌기 시작하면 누르는 동안의 한두 픽셀 흔들림이 끌기가 되고, SortableJS 는 끌고 난
+                // 뒤의 클릭을 버려 카드가 열리지 않았다(2026-11-12 녹화). 그전에 떼면 누르기, 움직이면 스크롤.
+                delay: 300,
+                delayOnTouchOnly: true,
+                touchStartThreshold: 8
             };
         },
         dragGroup() {
