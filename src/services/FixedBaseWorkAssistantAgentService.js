@@ -5,6 +5,7 @@
  */
 import { buildAgentHeaders } from './agentRequestHeaders';
 import { assertAiEnabled } from '@/utils/aiFeatureGate';
+import { agentStreamError } from '@/utils/cliAgents';
 
 class FixedBaseWorkAssistantAgentService {
     constructor(baseUrl) {
@@ -35,7 +36,8 @@ class FixedBaseWorkAssistantAgentService {
             onFileArtifact,
             onDraft,
             onSteerAccepted,
-            onSteerApplied
+            onSteerApplied,
+            onSessionStatus
         } = callbacks;
 
         try {
@@ -67,6 +69,8 @@ class FixedBaseWorkAssistantAgentService {
                         ? params.files.length
                         : 0,
                     stream: true,
+                    // CLI 코딩 에이전트(cliagents)에서 어느 CLI 로 돌릴지(agent_cli)는 metadata 안에 있다.
+                    // 맨 위에 두면 SDK 가 모르는 칸이라 버린다.
                     metadata: params.metadata || {}
                 })
             });
@@ -99,6 +103,11 @@ class FixedBaseWorkAssistantAgentService {
                             continue;
                         }
                         switch (parsed.type) {
+                            // 대화 Pod 가 아직 뜨는 중이다(세션 라우터가 에이전트 스트림보다 먼저 보낸다).
+                            // 이것을 버리면 첫 답까지 수십 초 동안 화면이 멈춘 것처럼 보인다.
+                            case 'session_status':
+                                if (onSessionStatus) onSessionStatus(parsed);
+                                break;
                             case 'token':
                                 if (onToken) onToken(parsed.content);
                                 break;
@@ -167,7 +176,9 @@ class FixedBaseWorkAssistantAgentService {
                                 if (onDone) onDone(parsed.content, parsed);
                                 break;
                             case 'error':
-                                if (onError) onError(new Error(parsed.error || parsed.message || 'Agent error'));
+                                // cli-agent 는 사유를 content 에 싣고 code(cli_not_selected · cli_unavailable ·
+                                // empty_message)를 붙인다. content 를 안 보면 「Agent error」만 남는다.
+                                if (onError) onError(agentStreamError(parsed.error || parsed.message || parsed.content, parsed));
                                 break;
                         }
                     } catch (e) {

@@ -568,7 +568,13 @@
         "saturday": "Saturday",
         "basicAgent": "Basic Agent (LangChain ReAct)",
         "deepAgent": "Deep Agent (LangGraph)",
-        "codexAgent": "Deep Agent (Codex)"
+        "codexAgent": "Deep Agent (Codex)",
+        "sessionPreparing": "Getting the agent ready · {seconds}s",
+        "agentErrors": {
+            "cliNotSelected": "Choose a CLI first.",
+            "cliUnavailable": "The selected CLI isn't installed on this server. Choose another CLI.",
+            "emptyMessage": "There is nothing to send."
+        }
     },
     "AssistantChats": {
         "document": "Enter the task details you want to assign. When you provide information about the task, a preview of the task that the recipient will see is displayed on the left. Review the preview and improve any lacking areas. Once the improvements are complete, use 'Assign Task' to give the task."

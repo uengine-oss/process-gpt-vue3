@@ -6,16 +6,21 @@
  * - codex 서버도 같은 chat/stream 계약이라 baseUrl 만 바꿔 이 클래스를 재사용한다.
  *   (codex 도 /chat/stream/attach · /chat/stop 을 제공한다. 없는 런타임을 붙일 때만
  *   supportsStreamAttach=false 로 재접속 호출을 끈다.)
+ * - CLI 코딩 에이전트(cliagents, `/process-gpt-cli-agent`)도 같은 계약이다. 어느 CLI 로 돌릴지는
+ *   metadata.agent_cli 로 싣는다. 수정 지시(/chat/steer)는 받지 않으므로(501 unsupported)
+ *   supportsSteer=false 로 부르지 않는다.
  */
 const DEEP_AGENT_ROUTER_BASE_URL = '/process-gpt-deepagents';
 
 import { buildAgentHeaders } from './agentRequestHeaders';
 import { assertAiEnabled } from '@/utils/aiFeatureGate';
+import { agentStreamError } from '@/utils/cliAgents';
 
 class DeepAgentRouterService {
-    constructor(baseUrl, { supportsStreamAttach = true } = {}) {
+    constructor(baseUrl, { supportsStreamAttach = true, supportsSteer = true } = {}) {
         this.baseUrl = (baseUrl ?? '').toString().trim().replace(/\/$/, '') || DEEP_AGENT_ROUTER_BASE_URL;
         this.supportsStreamAttach = supportsStreamAttach;
+        this.supportsSteer = supportsSteer;
     }
 
     async healthCheck() {
@@ -81,6 +86,8 @@ class DeepAgentRouterService {
                         ? params.files.length
                         : 0,
                     stream: true,
+                    // CLI 코딩 에이전트(cliagents)에서 어느 CLI 로 돌릴지(agent_cli)는 metadata 안에 있다.
+                    // 맨 위에 두면 SDK 가 모르는 칸이라 버린다.
                     metadata: params.metadata || {}
                 })
             });
@@ -146,6 +153,9 @@ class DeepAgentRouterService {
         const text = (message ?? '').toString().trim();
         if (!conversationId) return { accepted: false, reason: 'no_conversation' };
         if (!text) return { accepted: false, reason: 'empty_message' };
+        // 수정 지시를 받지 않는 런타임(cliagents). 물어 봐야 501 이 돌아올 뿐이고, 그 사이 메시지가
+        // 늦어진다 — 묻지 않고 거절해 부르는 쪽이 곧바로 평범한 새 턴으로 보내게 한다.
+        if (!this.supportsSteer) return { accepted: false, reason: 'unsupported' };
         try {
             const response = await fetch(`${this.baseUrl}/chat/steer`, {
                 method: 'POST',
@@ -237,7 +247,8 @@ class DeepAgentRouterService {
             onFileArtifact,
             onDraft,
             onSteerAccepted,
-            onSteerApplied
+            onSteerApplied,
+            onSessionStatus
         } = callbacks;
 
         const reader = response.body.getReader();
@@ -264,6 +275,11 @@ class DeepAgentRouterService {
                             continue;
                         }
                         switch (parsed.type) {
+                            // 대화 Pod 가 아직 뜨는 중이다(세션 라우터가 에이전트 스트림보다 먼저 보낸다).
+                            // 이것을 버리면 첫 답까지 수십 초 동안 화면이 멈춘 것처럼 보인다.
+                            case 'session_status':
+                                if (onSessionStatus) onSessionStatus(parsed);
+                                break;
                             case 'snapshot':
                                 // catch-up 스냅샷: 지금까지 누적된 전체 텍스트를 한 번에 전달
                                 if (onToken) onToken(parsed.content);
@@ -325,7 +341,8 @@ class DeepAgentRouterService {
                                 if (onSteerApplied) onSteerApplied(parsed);
                                 break;
                             case 'error':
-                                if (onError) onError(new Error(parsed.content || parsed.error || parsed.message || 'Agent error'));
+                                // code(cli_not_selected 등)를 붙여 화면이 읽을 문구를 고르게 한다.
+                                if (onError) onError(agentStreamError(parsed.content || parsed.error || parsed.message, parsed));
                                 break;
                         }
                     } catch (e) {

@@ -267,6 +267,7 @@ import DetailComponent from '@/components/ui-components/details/DetailComponent.
 
 import axios from 'axios';
 import { useDefaultSetting } from '@/stores/defaultSetting';
+import { toCliAgentItems } from '@/utils/cliAgents';
 
 // 메인 에이전트 '자동'의 화면 전용 표식. 저장 시에는 null 로 떨어뜨려, 값이 없으면
 // 백엔드가 기존 자동 휴리스틱(배정 1명이면 승격)을 그대로 쓰게 한다.
@@ -785,18 +786,9 @@ export default {
             this.cliAgentsLoading = true;
             try {
                 const response = await axios.get('/process-gpt-cli-agent/agents');
-                this.cliAgentItems = (response.data?.agents || []).map((agent) => ({
-                    value: agent.agent_id,
-                    title: agent.display_name || agent.agent_id,
-                    installed: !!agent.installed,
-                    // 설치/인증이 안 된 이유를 그 자리에서 보여준다. 실행을 눌러
-                    // 실패 메시지로 알게 되는 것보다 낫다.
-                    hint: agent.installed
-                        ? agent.authenticated === false
-                            ? `${this.$t('AgentSelectInfo.cliAgent.cliNotAuthenticated')}${agent.auth_hint ? ` — ${agent.auth_hint}` : ''}`
-                            : ''
-                        : `${this.$t('AgentSelectInfo.cliAgent.cliNotInstalled')}${agent.install_hint ? ` — ${agent.install_hint}` : ''}`
-                }));
+                // 설치/인증이 안 된 이유를 그 자리에서 보여준다. 실행을 눌러
+                // 실패 메시지로 알게 되는 것보다 낫다. 채팅 입력창도 같은 변환을 쓴다(@/utils/cliAgents).
+                this.cliAgentItems = toCliAgentItems(response.data?.agents, (key) => this.$t(key));
             } catch (error) {
                 console.error('CLI 에이전트 가용성 조회 실패:', error);
                 // 서비스가 내려가 있으면 목록을 비워 둔다. 임의로 채워 넣으면

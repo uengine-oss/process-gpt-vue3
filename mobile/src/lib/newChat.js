@@ -8,10 +8,12 @@
  *   participants  나 + 가상 에이전트 두 명. 에이전트가 없으면 답할 사람이 없다.
  *   message       `{msg:'NEW'}` — 목록에서 "새 대화" 로 표시되는 표식이다.
  *   context       고른 에이전트(orchestration). 이 값으로 어느 엔진이 답할지 정해진다.
+ *                 CLI 코딩 에이전트(cliagents)면 어느 CLI 인지(agent_cli)도 함께 — 포털과 같은 칸이다.
  */
 
 // 별칭(@/) 대신 상대 경로. 이 파일은 검증에서 Node 가 직접 불러온다.
 import { processGptAgent } from '../../../src/shared/processGptAgent.js';
+import { agentCliOf } from '../../../src/utils/cliAgents.js';
 
 /** 기본 에이전트. 포털의 메인 채팅과 같은 값을 쓴다. */
 export const DEFAULT_ORCHESTRATION = 'langchain-react';
@@ -39,13 +41,15 @@ export function toParticipant(person) {
  *
  * @param {object} me            로그인한 사람
  * @param {string} orchestration 고른 에이전트
- * @param {object} deps          { id, now } — 테스트에서 고정하기 위해 받는다
+ * @param {object} deps          { id, now, agentCli } — id · now 는 테스트에서 고정하기 위해 받는다.
+ *                               agentCli 는 cliagents 일 때 고른 CLI(없으면 서버 기본값)
  */
-export function buildRoom(me, orchestration, { id, now = new Date() } = {}) {
+export function buildRoom(me, orchestration, { id, now = new Date(), agentCli = '' } = {}) {
     const participant = toParticipant(me);
     if (!participant?.id) return null;
 
     const nowIso = now.toISOString();
+    const chosen = (orchestration || '').toString().trim() || DEFAULT_ORCHESTRATION;
     return {
         id,
         name: '새 대화',
@@ -54,7 +58,9 @@ export function buildRoom(me, orchestration, { id, now = new Date() } = {}) {
         // 목록에서 "새 대화" 로 보이게 하는 표식.
         message: { msg: 'NEW', type: 'text', createdAt: nowIso },
         context: {
-            orchestration: (orchestration || '').toString().trim() || DEFAULT_ORCHESTRATION,
+            orchestration: chosen,
+            // 방마다 고른 CLI 를 기억한다. 포털(ChatRoomPage)도 같은 칸(context.agent_cli)을 읽는다.
+            ...(chosen === 'cliagents' ? { agent_cli: agentCliOf(agentCli) } : {}),
             updatedAt: nowIso
         }
     };

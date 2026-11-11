@@ -15,6 +15,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import { processGptAgent } from '@/constants/processGptAgent';
 import { getTenantId } from '@/utils/tenant';
+import { cliRoomContext } from '@/utils/cliAgents';
 
 const backend = BackendFactory.createBackend();
 
@@ -55,6 +56,8 @@ export async function startMainChat(message, { currentUser, router, eventBus } =
     const hasFile = messageFiles.length > 0;
     const primaryFile = messageFiles[0] || null;
     const orchestration = (message?.orchestration || '').toString().trim() || 'langchain-react';
+    // CLI 코딩 에이전트면 고른 CLI 를 방에 기억한다(context.agent_cli). ChatRoomPage 가 매 턴 이 값을 싣는다.
+    const cliContext = cliRoomContext(orchestration, message?.agentCli);
 
     const roomId = uuid();
     const nowIso = new Date().toISOString();
@@ -84,6 +87,7 @@ export async function startMainChat(message, { currentUser, router, eventBus } =
         // chat_rooms.context에 orchestration 저장 (tools/skills/todos와 충돌 방지: 최상위 키로 둔다)
         context: {
             orchestration,
+            ...cliContext,
             auto_name_pending: !!generatedNamePromise,
             updatedAt: nowIso
         }
@@ -192,6 +196,7 @@ export async function startMainChat(message, { currentUser, router, eventBus } =
                 file: primaryFile,
                 files: messageFiles,
                 orchestration,
+                agentCli: cliContext.agent_cli || null,
                 // 지식 선택은 전역 스토어(useKnowledgeSelectionStore)가 단일 소스라 kickoff 로 안 넘긴다.
                 // 스토어는 앱 전역이라 메인→채팅 이동에도 살아있고, 새 방이 bindRoom 으로 이월받는다.
                 createdAt: nowIso
