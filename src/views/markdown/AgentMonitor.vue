@@ -139,6 +139,7 @@ import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import agentEventTimeline from '@/components/ui/agentEventTimeline.js';
 import { resumePatchForAnswer, revisionFeedbackEntry } from '@/shared/hitlFeedback/index.js';
+import { stripAgentMeta } from '@/shared/agentSummary/index.js';
 
 export default {
     mixins: [ChatModule, agentEventTimeline],
@@ -733,6 +734,8 @@ export default {
                     }
                 }
             }
+            // 결과 요약 · 팀 구성(agent_summary · team_agent_ids)은 폼 값이 아니다 — 폼 위 안내 상자가 따로 읽는다
+            payloadForSubmit = stripAgentMeta(payloadForSubmit);
             let normalized = this.normalizeFormValues(payloadForSubmit);
             const hasFilePayload = this.hasFilePayload(normalized);
             if (!hasFilePayload && this.latestFormData && typeof this.latestFormData === 'object') {
@@ -961,6 +964,12 @@ export default {
             }
 
             if (row.event_type !== 'task_completed') return;
+
+            // 결과 요약이 실린 완료 이벤트 — 결과 폼 위 안내 상자(FormWorkItem)에 알린다
+            const summary = row.data && typeof row.data === 'object' ? row.data.agent_summary : null;
+            if (typeof summary === 'string' && summary.trim()) {
+                this.EventBus.emit('agent-result-summary', { todoId: row.todo_id, summary: summary.trim() });
+            }
 
             const jobId = row.job_id || row.id;
 

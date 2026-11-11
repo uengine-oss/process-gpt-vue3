@@ -4105,6 +4105,8 @@
         "knowledgeSetupInProgress": "지식 셋팅 중"
     },
     "FormWorkItem": {
+        "agentSummaryTitle": "에이전트 작업 요약",
+        "agentSummaryHint": "에이전트가 채운 아래 폼을 확인하고, 필요하면 고친 뒤 제출하세요.",
         "previous": "이전 단계",
         "save": "중간 저장",
         "submitComplete": "제출 완료",

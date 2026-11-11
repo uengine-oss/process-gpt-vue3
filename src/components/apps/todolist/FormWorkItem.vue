@@ -66,6 +66,20 @@
                         <!-- 추가: PC 전용 액션 슬롯 -->
                         <slot name="form-work-item-action-btn"></slot>
                     </v-row>
+                    <!-- 에이전트에 맡긴 결과의 요약 — 폼을 보기 전에 무엇을 근거로 어떤 값을 정했는지 읽는다 -->
+                    <v-alert
+                        v-if="agentSummary"
+                        type="info"
+                        variant="tonal"
+                        density="compact"
+                        icon="mdi-robot-outline"
+                        class="mb-4"
+                        data-testid="agent-result-summary"
+                    >
+                        <div class="text-body-2 font-weight-bold">{{ $t('FormWorkItem.agentSummaryTitle') }}</div>
+                        <div class="text-body-2 mt-1 agent-summary-text">{{ agentSummary }}</div>
+                        <div class="text-caption mt-1 text-medium-emphasis">{{ $t('FormWorkItem.agentSummaryHint') }}</div>
+                    </v-alert>
                     <!-- 등록된 폼 정보가 없을 때 표시되는 메시지 -->
                     <div
                         v-if="
@@ -235,6 +249,7 @@ import Checkpoints from '@/components/ui/Checkpoints.vue';
 import DelegateTaskForm from '@/components/apps/todolist/DelegateTaskForm.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { awaitingUserInput } from '@/shared/awaitingUserInput';
+import { latestAgentSummary } from '@/shared/agentSummary/index.js';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -301,6 +316,7 @@ export default {
         formInfo: null,
         html: null,
         formDefId: null,
+        agentSummary: '',
         formData: {},
         newMessage: '',
         useTextAudio: false,
@@ -365,6 +381,8 @@ export default {
     },
     async mounted() {
         var me = this;
+        this.EventBus.on('agent-result-summary', this.onAgentResultSummary);
+        this.loadAgentSummary();
         this.EventBus.on('form-values-updated', (formValues) => {
             if (formValues) {
                 let incomingValues = formValues;
@@ -429,7 +447,31 @@ export default {
         await this.init();
 
     },
+    beforeUnmount() {
+        this.EventBus.off('agent-result-summary', this.onAgentResultSummary);
+    },
     methods: {
+        agentSummaryTaskId() {
+            return this.workItem?.worklist?.taskId || this.$route?.params?.taskId || null;
+        },
+        // 다시 들어와도 보이도록 이 업무의 작업 이벤트에서 가장 최근 요약을 읽는다
+        async loadAgentSummary() {
+            const taskId = this.agentSummaryTaskId();
+            if (!taskId) return;
+            try {
+                const events = await backend.getAgentEvents(taskId);
+                const summary = latestAgentSummary(events);
+                if (summary) this.agentSummary = summary;
+            } catch (e) {
+                // 요약은 보조 정보 — 못 읽어도 폼은 그대로 쓴다
+            }
+        },
+        onAgentResultSummary(payload) {
+            if (!payload || !payload.summary) return;
+            const taskId = this.agentSummaryTaskId();
+            if (payload.todoId && taskId && String(payload.todoId) !== String(taskId)) return;
+            this.agentSummary = payload.summary;
+        },
         extractFileFieldNames(html) {
             if (!html) return [];
             try {
@@ -1485,5 +1527,8 @@ export default {
         height: 300px;
         min-height: 250px;
     }
+}
+.agent-summary-text {
+    white-space: pre-line;
 }
 </style>
