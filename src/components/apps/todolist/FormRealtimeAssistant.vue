@@ -37,6 +37,17 @@
                     </div>
                 </div>
                 <v-divider />
+                <v-alert
+                    v-if="errorMessage"
+                    class="ma-2 mb-0"
+                    type="error"
+                    variant="tonal"
+                    density="compact"
+                    closable
+                    @click:close="errorMessage = ''"
+                >
+                    {{ errorMessage }}
+                </v-alert>
                 <div class="ai-chat-input">
                     <v-textarea
                         v-model="userInput"
@@ -268,6 +279,26 @@ const pushMessage = (role, text) => {
     messages.value = [...messages.value, { id: (messageSeq += 1), role, text }];
 };
 
+const GA_EVENT_ALIASES = {
+    'response.output_audio.delta': 'response.audio.delta',
+    'response.output_audio.done': 'response.audio.done',
+    'response.output_audio_transcript.delta': 'response.audio_transcript.delta',
+    'response.output_audio_transcript.done': 'response.audio_transcript.done'
+};
+
+const pushUserTranscript = (text) => {
+    const trimmed = (text || '').trim();
+    if (!trimmed) return;
+    const item = { id: (messageSeq += 1), role: 'user', text: trimmed };
+    const list = messages.value;
+    const last = list[list.length - 1];
+    if (last && last.role === 'assistant' && last.isStreaming) {
+        messages.value = [...list.slice(0, -1), item, last];
+    } else {
+        messages.value = [...list, item];
+    }
+};
+
 const sendUserInfo = (socket) => {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     const payload = {
@@ -357,8 +388,9 @@ const enrichFormSchema = (schema) => {
 
 const bootstrapSession = (socket) => {
     const now = new Date();
-    const localIsoDate = now.toISOString().slice(0, 10);
     const pad = (n) => (n < 10 ? `0${n}` : `${n}`);
+    // 로컬 날짜 — toISOString() 은 UTC 라 한국 시간 0~9시에는 어제 날짜가 로컬 시각 옆에 붙었다
+    const localIsoDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     const tzOffsetMin = now.getTimezoneOffset();
     const tzSign = tzOffsetMin > 0 ? '-' : '+';
     const tzAbs = Math.abs(tzOffsetMin);
@@ -422,9 +454,15 @@ const handleIncoming = (event) => {
     } catch (e) {
         return;
     }
-    const { type } = parsed;
+    // Realtime 정식(GA) 이름도 받는다 — 프락시가 예전 이름으로 되돌려 주지 않아도 소리·자막이 나게
+    const type = GA_EVENT_ALIASES[parsed.type] || parsed.type;
     if (type === 'error') {
-        errorMessage.value = parsed.error?.message || '모델 오류';
+        errorMessage.value = parsed.error?.message || parsed.message || '모델 오류';
+        return;
+    }
+    if (type === 'conversation.item.input_audio_transcription.completed') {
+        // 사람이 한 말(전사)도 창에 보인다 — 에이전트가 이미 대답을 쓰고 있으면 그 앞에 넣는다
+        pushUserTranscript(parsed.transcript);
         return;
     }
     if (type === 'input_audio_buffer.speech_started') {
