@@ -1,21 +1,26 @@
 <template>
     <div>
+        <!--
+            카드는 언제나 흰 면(테마의 surface)이고, 상태는 왼쪽 띠 색(kanbanTone)으로만 보인다.
+            전에는 내 업무를 주 색으로 꽉 칠해(흰 글자) 다른 카드와 따로 놀았고, 그 안에 앉은 빨간
+            「기한 지남」 칩은 읽히지 않았다(2026-11-11 검토). 내 업무는 아래 「내 업무」 글자로 알린다.
+        -->
         <v-card
-            elevation="10"
-            class="cursor-pointer pa-2 pt-1"
+            elevation="0"
+            class="cursor-pointer pa-2 pt-1 pg-kanban-card"
+            data-testid="kanban-card"
+            :data-status="task.status"
+            :data-tone="tone"
+            :style="{ '--pg-tone': toneColor }"
             @click="executeTask"
-            :class="[
-                { 'choice-background-color': isMyTask && !isTodolistPath && task.status !== 'DONE' },
-                { 'todo-status-opacity': task.status === 'TODO' },
-                { 'dot-border-animation': isStartedStatus }
-            ]"
+            :class="[{ 'pg-kanban-card--todo': tone === 'todo' }, { 'dot-border-animation': isStartedStatus }]"
         >
             <div class="ma-0 pa-0 mt-1" style="line-height: 100%">
                 <!-- 가로배치 -->
                 <div class="pa-0">
                     <v-row class="ma-0 pa-0" style="width: 100%">
                         <v-col class="pa-0 d-flex align-center" cols="9">
-                            <span style="font-size: 16px; font-weight: 500; line-height: 20px">{{ displayTitle }}</span>
+                            <span class="pg-kanban-card__title">{{ displayTitle }}</span>
                             <v-chip v-if="reworkCount" class="ml-1" size="small" color="info" variant="flat" density="comfortable">{{
                                 reworkCount
                             }}</v-chip>
@@ -34,7 +39,7 @@
                             <v-row class="ma-0 pa-0 justify-end align-start" style="margin-top: 1px !important">
                                 <v-chip
                                     v-if="category"
-                                    :color="task.status === 'DONE' ? '' : isMyTask && !isTodolistPath ? 'on-primary' : 'on-surface'"
+                                    class="pg-kanban-card__badge"
                                     size="small"
                                     variant="outlined"
                                     density="comfortable"
@@ -42,10 +47,7 @@
                                 >
 
                                 <RouterLink v-if="managed" to="" class="px-0 ml-1">
-                                    <DotsVerticalIcon
-                                        size="15"
-                                        :style="isMyTask && !isTodolistPath && task.status !== 'DONE' ? 'color: white;' : 'color: black;'"
-                                    />
+                                    <DotsVerticalIcon size="15" />
                                     <v-menu activator="parent">
                                         <v-list density="compact">
                                             <v-list-item @click="editTask">
@@ -150,7 +152,7 @@
                                     v-for="(char, index) in $t('kanbanColumnCard.agentWorking')"
                                     :key="index"
                                     :style="{ animationDelay: `${index * 0.1}s` }"
-                                    class="thinking-char"
+                                    class="pg-kanban-shimmer"
                                 >
                                     {{ char === ' ' ? '\u00A0' : char }}
                                 </div>
@@ -173,12 +175,12 @@
                                 v-for="(char, index) in $t('kanbanColumnCard.submitProcessing')"
                                 :key="'submit-' + index"
                                 :style="{ animationDelay: `${index * 0.1}s` }"
-                                class="submit-processing-char"
+                                class="pg-kanban-shimmer"
                             >
                                 {{ char === ' ' ? '\u00A0' : char }}
                             </div>
                         </div>
-                        <span class="loading-dots" style="color: #ffffff">
+                        <span class="loading-dots">
                             <span>.</span>
                             <span>.</span>
                             <span>.</span>
@@ -226,7 +228,9 @@
                     <!-- 텍스트를 세로 기준 중앙정렬하기 위해 flex와 align-center 적용 -->
                     <div class="body-text-2 text-dark mr-2">
                         <span v-if="isMultiUser">{{ userInfoForTask.map((user) => user.username || user.name).join(', ') }}</span>
-                        <span v-else-if="isMyTask">{{ $t('TodoTaskItemCard.myTask') }}</span>
+                        <span v-else-if="isMyTask" class="pg-kanban-card__mine" data-testid="kanban-my-task">{{
+                            $t('TodoTaskItemCard.myTask')
+                        }}</span>
                         <span v-else-if="userInfoForTask">{{ userInfoForTask.username || userInfoForTask.name }}</span>
                         <span v-else>{{ $t('TodoTaskItemCard.noAssignee') }}</span>
                         <!-- 프로필 이미지를 v-img로 표시, 없으면 기본 이미지 사용 -->
@@ -243,6 +247,7 @@
 
 <script>
 import { awaitingUserInput } from '@/shared/awaitingUserInput';
+import { kanbanTone, TONE_COLOR } from '@/shared/kanbanTone';
 import { format } from 'date-fns';
 import TodoDialog from './TodoDialog.vue';
 
@@ -278,6 +283,13 @@ export default {
         }
     },
     computed: {
+        /** 왼쪽 띠 색 이름 — 열 머리 점과 같은 규칙. */
+        tone() {
+            return kanbanTone(this.task && this.task.status);
+        },
+        toneColor() {
+            return TONE_COLOR[this.tone];
+        },
         displayTitle() {
             // 모드별 필드 우선순위:
             // - uEngine(worklist): title
@@ -623,7 +635,71 @@ export default {
 </script>
 
 <style scoped>
-.todo-status-opacity {
-    opacity: 0.5;
+.pg-kanban-card {
+    background: rgb(var(--v-theme-surface)) !important;
+    color: var(--cds-text-primary);
+    border: 1px solid var(--cds-border);
+    border-left: 3px solid var(--pg-tone);
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.pg-kanban-card:hover {
+    border-color: var(--cds-border-strong);
+    border-left-color: var(--pg-tone);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.pg-kanban-card__title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+}
+
+/* 아직 시작하지 않은 업무는 흐리게 — 전에는 카드 전체를 반투명(0.5)으로 만들어 글자까지 읽기 어려웠다. */
+.pg-kanban-card--todo .pg-kanban-card__title {
+    color: var(--cds-text-secondary);
+}
+
+.pg-kanban-card__badge {
+    color: var(--cds-text-secondary);
+}
+
+/*
+ * 글자가 차례로 흐려지는 「작업 중」 표시. 전역 것(thinking-char · submit-processing-char)은 #333 · 흰색을
+ * 오가 꽉 찬 파랑 카드에 맞춰져 있었다 — 흰 카드 · 다크 테마에서도 보이게 토큰 색으로 바꿔 쓴다.
+ */
+.pg-kanban-shimmer {
+    display: inline-block;
+    animation: pg-kanban-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes pg-kanban-shimmer {
+    0%,
+    70%,
+    100% {
+        color: var(--cds-text-primary);
+    }
+    15%,
+    35% {
+        color: var(--cds-text-muted);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-kanban-shimmer {
+        animation: none;
+    }
+}
+
+.pg-kanban-card__mine {
+    color: rgb(var(--v-theme-primary));
+    font-weight: 600;
+}
+
+/* 끝난 업무까지 주 색이면 지금 할 일과 섞인다. */
+.pg-kanban-card[data-tone='done'] .pg-kanban-card__mine {
+    color: var(--cds-text-secondary);
 }
 </style>

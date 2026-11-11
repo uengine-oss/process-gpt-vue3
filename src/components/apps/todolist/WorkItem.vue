@@ -347,21 +347,8 @@
                                     v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
                                     class="work-item-form-btn-box align-center"
                                 >
-                                    <!-- 음성 도우미(휴대폰 전용 아이콘). Process GPT 휴대폰에서는 「에이전트에 맡기기」를 보이므로 뺀다 -->
-                                    <v-btn
-                                        v-if="!gs && isMobile && !phoneScopeMode"
-                                        class="mr-1"
-                                        color="gray"
-                                        variant="flat"
-                                        :icon="isMobile"
-                                        density="comfortable"
-                                        :size="isMobile ? 'small' : 'default'"
-                                        :rounded="!isMobile"
-                                        @click="openRealtimeAssistant"
-                                    >
-                                        <v-icon>mdi-robot</v-icon>
-                                        <span v-if="!isMobile" class="ms-1">{{ $t('FormRealtimeAssistant.title') }}</span>
-                                    </v-btn>
+                                    <!-- 「음성 에이전트」 창(FormRealtimeAssistant) 단추는 없앴다 — 말로 입력하기는 아래 마이크 하나로,
+                                         창 없이 이 폼에 바로 들어간다(2026-11-11 화면 검토 1:50~2:35). -->
                                     <v-btn
                                         v-if="isMobile && canResetGeneratedContent"
                                         @click="resetGeneratedContent"
@@ -420,31 +407,27 @@
                                     >
                                         <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
                                     </v-btn>
+                                    <!-- 말로 입력하기(받아쓰기). 누르면 듣고, 다시 누르면 받아써서 이 폼에 넣는다 —
+                                         듣는 동안의 상태 · 받아쓴 글 · 오류는 머리 아래 한 줄 막대에 보인다. -->
                                     <v-btn
-                                        v-if="!isMicRecording && !isMicRecorderLoading && !gs"
-                                        @click="startVoiceRecording()"
+                                        v-if="!gs"
+                                        @click="toggleDictation"
                                         class="mr-1 text-medium-emphasis"
+                                        :class="{ 'workitem-dictation-mic--on': dictation.state === 'recording' }"
                                         density="comfortable"
                                         icon
                                         variant="outlined"
                                         size="small"
-                                        style="border-color: var(--cds-border) !important"
-                                        :disabled="isGenerationFinished"
+                                        :style="dictation.state === 'recording' ? '' : 'border-color: var(--cds-border) !important'"
+                                        :loading="dictationBusy"
+                                        :disabled="dictationBusy || isGeneratingExample"
+                                        :aria-label="
+                                            dictation.state === 'recording' ? $t('WorkItemDictation.stop') : $t('WorkItemDictation.start')
+                                        "
+                                        :aria-pressed="dictation.state === 'recording' ? 'true' : 'false'"
+                                        data-testid="workitem-dictation-mic"
                                     >
-                                        <Icons :icon="'sharp-mic'" :size="'16'" />
-                                    </v-btn>
-                                    <v-btn
-                                        v-else-if="!isMicRecorderLoading && !gs"
-                                        @click="stopVoiceRecording()"
-                                        class="mr-1 text-medium-emphasis"
-                                        density="comfortable"
-                                        icon
-                                        variant="outlined"
-                                        size="small"
-                                        style="border-color: var(--cds-border) !important"
-                                        :disabled="isGenerationFinished"
-                                    >
-                                        <Icons :icon="'stop'" :size="'16'" />
+                                        <Icons :icon="dictation.state === 'recording' ? 'stop' : 'sharp-mic'" :size="'16'" />
                                     </v-btn>
 
                                     <v-menu v-if="!isMobile && !gs" location="bottom end">
@@ -475,9 +458,6 @@
                                             >
                                                 <v-list-item-title>{{ $t('WorkItem.quickCreate') }}</v-list-item-title>
                                             </v-list-item>
-                                            <v-list-item prepend-icon="mdi-robot" @click="openRealtimeAssistant">
-                                                <v-list-item-title>{{ $t('FormRealtimeAssistant.title') }}</v-list-item-title>
-                                            </v-list-item>
                                             <v-list-item
                                                 v-if="canResetGeneratedContent"
                                                 prepend-icon="mdi-delete-outline"
@@ -505,7 +485,80 @@
                                             <Icons v-else :icon="'sparkles'" :size="'16'" />
                                         </template>
                                     </v-btn>
-                                    <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
+                                </div>
+                                <!-- 받아쓰기 막대 — 머리 줄 바로 아래 한 줄(머리 줄이 감싸는 flex 의 새 줄). 창을 띄우지 않는다:
+                                     말하는 동안 받아쓴 글 · 지난 시간 · 멈춤, 끝나면 어디에 넣었는지, 안 되면 왜 안 되는지. -->
+                                <div
+                                    v-if="!gs && dictationBarVisible"
+                                    class="workitem-dictation-bar"
+                                    :class="{ 'workitem-dictation-bar--error': !!dictation.error }"
+                                    role="status"
+                                    aria-live="polite"
+                                    data-testid="workitem-dictation-bar"
+                                    :data-state="dictation.error ? 'error' : dictation.state"
+                                >
+                                    <template v-if="dictation.error">
+                                        <v-icon size="18" color="error">mdi-alert-circle-outline</v-icon>
+                                        <span
+                                            class="workitem-dictation-text text-error"
+                                            :title="dictation.error"
+                                            data-testid="workitem-dictation-error"
+                                            >{{ dictation.error }}</span
+                                        >
+                                    </template>
+                                    <template v-else-if="dictation.state === 'recording'">
+                                        <span class="workitem-dictation-dot" aria-hidden="true"></span>
+                                        <span class="workitem-dictation-time" data-testid="workitem-dictation-elapsed">{{
+                                            dictationElapsed
+                                        }}</span>
+                                        <span
+                                            class="workitem-dictation-text"
+                                            :class="{ 'text-medium-emphasis': !dictation.partial }"
+                                            data-testid="workitem-dictation-partial"
+                                            >{{
+                                                dictation.partial ? dictationTail(dictation.partial) : $t('WorkItemDictation.listening')
+                                            }}</span
+                                        >
+                                        <v-btn
+                                            size="small"
+                                            variant="tonal"
+                                            color="error"
+                                            rounded
+                                            density="comfortable"
+                                            data-testid="workitem-dictation-stop"
+                                            @click="stopDictation"
+                                        >
+                                            <v-icon start size="16">mdi-stop</v-icon>{{ $t('WorkItemDictation.stop') }}
+                                        </v-btn>
+                                    </template>
+                                    <template v-else-if="dictationBusy">
+                                        <v-progress-circular indeterminate size="16" width="2" color="primary" />
+                                        <span class="workitem-dictation-text">{{
+                                            dictation.state === 'filling'
+                                                ? $t('WorkItemDictation.filling', { text: dictationTail(dictation.transcript, 60) })
+                                                : dictation.state === 'transcribing'
+                                                ? $t('WorkItemDictation.transcribing')
+                                                : $t('WorkItemDictation.starting')
+                                        }}</span>
+                                    </template>
+                                    <template v-else>
+                                        <v-icon size="18" color="success">mdi-check-circle-outline</v-icon>
+                                        <span class="workitem-dictation-text" :title="dictation.note" data-testid="workitem-dictation-note">{{
+                                            dictation.note
+                                        }}</span>
+                                    </template>
+                                    <v-btn
+                                        v-if="dictation.error || dictation.state === 'idle'"
+                                        icon
+                                        variant="text"
+                                        size="x-small"
+                                        density="comfortable"
+                                        :aria-label="$t('WorkItemDictation.close')"
+                                        data-testid="workitem-dictation-close"
+                                        @click="dismissDictation"
+                                    >
+                                        <v-icon size="16">mdi-close</v-icon>
+                                    </v-btn>
                                 </div>
                             </template>
                         </FormWorkItem>
@@ -545,21 +598,6 @@
         <v-dialog v-model="reworkDialog" width="500">
             <ReworkDialog :reworkActivities="reworkActivities" @submitRework="submitRework" @close="handleReworkDialog('close')" />
         </v-dialog>
-        <FormRealtimeAssistant
-            ref="realtimeAssistant"
-            v-model="showRealtimeAssistant"
-            :form-schema="assistantFormSchema"
-            :form-data-snapshot="formData || {}"
-            :current-user-name="currentUserName"
-            :current-user-email="currentUserEmail"
-            :current-user-uid="currentUserUid"
-            :process-name="processDefinition ? processDefinition.processDefinitionName : ''"
-            :activity-name="activityName || ''"
-            :activity-instruction="assistantInstruction"
-            :reference-forms="assistantRefForms"
-            @apply="handleAssistantApply"
-            @submit="handleAssistantSubmit"
-        />
     </v-card>
 </template>
 
@@ -587,7 +625,23 @@ import ReworkDialog from './ReworkDialog.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
-import FormRealtimeAssistant from './FormRealtimeAssistant.vue';
+import {
+    appendTranscript,
+    buildFillMessages,
+    dictationTarget,
+    formatElapsed,
+    isOnAttr,
+    mergeFill,
+    parseFillResponse,
+    parseItemsAttr,
+    partialDue,
+    snapshotValues,
+    startRecording,
+    tailText,
+    transcribe
+} from '@/shared/dictation';
+import { requestFormFill } from '@/components/ai/FormFillGenerator';
+import { presentedFieldLabels } from '@/shared/formPresentation/index.js';
 
 import JSON5 from 'json5';
 import partialParse from 'partial-json-parser';
@@ -648,8 +702,7 @@ export default {
         DelegateTaskForm,
         ReworkDialog,
         DetailComponent,
-        AgentSelectField,
-        FormRealtimeAssistant
+        AgentSelectField
     },
     data: () => ({
         backend: null,
@@ -685,8 +738,6 @@ export default {
         // Form data
         inFormNameTabs: [],
         inFormValues: [],
-        showRealtimeAssistant: false,
-        assistantRefForms: [],
 
         isFinishedAgentGeneration: false,
         showFeedbackForm: false,
@@ -701,12 +752,8 @@ export default {
         isVisionMode: false,
         isGeneratingExample: false,
 
-        // Audio recording
-        newMessage: '',
-        isMicRecording: false,
-        isMicRecorderLoading: false,
-        micRecorder: null,
-        micAudioChunks: [],
+        // 받아쓰기(머리의 마이크). state: idle · starting · recording · transcribing · filling
+        dictation: { state: 'idle', partial: '', transcript: '', elapsedMs: 0, note: '', error: '' },
 
         assigneeUserInfo: null,
         isLoading: false,
@@ -885,6 +932,8 @@ export default {
     },
     beforeUnmount() {
         window.removeEventListener('resize', this.handleResize);
+        // 화면을 떠나도 마이크가 켜져 있으면 녹음 표시가 계속 남는다
+        this.cancelDictation();
     },
     computed: {
         phoneScopeMode() {
@@ -918,9 +967,6 @@ export default {
 
             // generator가 있고 이전 메시지가 있는 경우
             if (this.generator && this.generator.previousMessages && this.generator.previousMessages.length > 0) return true;
-
-            // 오디오 메시지가 있는 경우
-            if (this.newMessage && this.newMessage.trim()) return true;
 
             // formData에 실제 값이 있는지 확인
             if (this.formData && typeof this.formData === 'object') {
@@ -1010,8 +1056,14 @@ export default {
         assistantInstruction() {
             return this.workItem && this.workItem.activity && this.workItem.activity.instruction ? this.workItem.activity.instruction : '';
         },
-        assistantFormSchema() {
-            return this.buildAssistantFormSchema();
+        dictationBusy() {
+            return ['starting', 'transcribing', 'filling'].includes(this.dictation.state);
+        },
+        dictationBarVisible() {
+            return this.dictation.state !== 'idle' || !!this.dictation.error || !!this.dictation.note;
+        },
+        dictationElapsed() {
+            return formatElapsed(this.dictation.elapsedMs);
         },
         workItemStatus() {
             if (!this.workItem) return null;
@@ -1087,15 +1139,6 @@ export default {
         },
         procInstId() {
             return this.workItem?.worklist?.instId || null;
-        },
-        currentUserEmail() {
-            return localStorage.getItem('email');
-        },
-        currentUserName() {
-            return localStorage.getItem('userName') || localStorage.getItem('name') || '';
-        },
-        currentUserUid() {
-            return localStorage.getItem('uid') || '';
         }
     },
     watch: {
@@ -1196,24 +1239,6 @@ export default {
             }
             return 'grey';
         },
-        buildAssistantFormSchema() {
-            const schemas = [];
-            const mainFormData = this.formData || {};
-            if (this.html) {
-                schemas.push(...this.extractFieldSchema(this.html, mainFormData));
-            }
-            (this.inFormValues || []).forEach((item) => {
-                if (item && item.html) {
-                    schemas.push(...this.extractFieldSchema(item.html, item.formData || {}));
-                }
-            });
-            (this.assistantRefForms || []).forEach((item) => {
-                if (item && item.html) {
-                    schemas.push(...this.extractFieldSchema(item.html, item.formData || {}));
-                }
-            });
-            return schemas;
-        },
         extractFieldSchema(formHtml, formData) {
             if (!formHtml) return [];
             try {
@@ -1225,7 +1250,8 @@ export default {
                 Array.from(doc.querySelectorAll(selectors)).forEach((el) => {
                     const name = el.getAttribute('name') || el.getAttribute('id');
                     if (!name) return;
-                    const label = el.getAttribute('label') || el.getAttribute('placeholder') || name;
+                    // 이 저장소의 폼은 칸 이름을 alias 에 둔다 — label 만 보면 LLM 이 「고객명」 대신 customer_name 만 본다
+                    const label = el.getAttribute('label') || el.getAttribute('alias') || el.getAttribute('placeholder') || name;
                     const required = el.hasAttribute('required') || el.getAttribute('required') === 'true';
                     const placeholder = el.getAttribute('placeholder') || '';
                     const tag = (el.tagName || '').toLowerCase();
@@ -1242,147 +1268,27 @@ export default {
                         const labelText = (opt.textContent || '').trim();
                         options.push({ label: labelText, value });
                     });
+                    const rawItems = el.getAttribute('items') || undefined;
+                    const itemOptions = options.length ? options : parseItemsAttr(rawItems);
                     fields.push({
                         name,
                         label,
                         type,
+                        inputType: inputType || undefined,
                         required,
                         placeholder,
+                        // 받아쓰기는 읽기 전용 칸을 건드리지 않는다(disabled='false' 처럼 글자로 꺼 둔 칸이 흔하다)
+                        readonly: isOnAttr(el.getAttribute('readonly')),
+                        disabled: isOnAttr(el.getAttribute('disabled')),
                         value: Object.prototype.hasOwnProperty.call(formData || {}, name) ? formData[name] : null,
-                        options: options.length ? options : undefined,
-                        rawItems: el.getAttribute('items') || undefined
+                        options: itemOptions.length ? itemOptions : undefined,
+                        rawItems
                     });
                 });
                 return fields;
             } catch (e) {
                 console.error('assistant schema parse error', e);
                 return [];
-            }
-        },
-        async openRealtimeAssistant() {
-            await this.prepareAssistantContext();
-            this.showRealtimeAssistant = true;
-        },
-        async prepareAssistantContext() {
-            try {
-                if (this.workItem?.worklist?.taskId && this.backend?.getRefForm) {
-                    const refForms = await this.backend.getRefForm(this.workItem.worklist.taskId);
-                    this.assistantRefForms = Array.isArray(refForms) ? refForms : [];
-                } else {
-                    this.assistantRefForms = [];
-                }
-            } catch (e) {
-                console.error('assistant reference form load error', e);
-                this.assistantRefForms = [];
-            }
-        },
-        handleAssistantApply(patch) {
-            if (!patch || typeof patch !== 'object') return;
-            const next = { ...(this.formData || {}) };
-            const nameVariants = (name) => {
-                if (!name || typeof name !== 'string') return [];
-                const kebab = name.replace(/_/g, '-');
-                const camel = name.replace(/[-_](.)/g, (_, g1) => g1.toUpperCase());
-                return Array.from(new Set([name, kebab, camel]));
-            };
-            const normalizeDateValue = (val) => {
-                if (!val || typeof val !== 'string') return val;
-                const raw = val.trim();
-                const today = new Date();
-                const pad = (n) => (n < 10 ? `0${n}` : `${n}`);
-                const toIso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-                if (/오늘/.test(raw)) return toIso(today);
-                if (/내일/.test(raw)) {
-                    const d = new Date(today);
-                    d.setDate(d.getDate() + 1);
-                    return toIso(d);
-                }
-                const ymd = raw.match(/(\d{4})[./-]?(\d{1,2})[./-]?(\d{1,2})/);
-                if (ymd) {
-                    const [_, y, m, d] = ymd;
-                    return `${y}-${pad(Number(m))}-${pad(Number(d))}`;
-                }
-                const md = raw.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
-                if (md) {
-                    const [_, m, d] = md;
-                    return `${today.getFullYear()}-${pad(Number(m))}-${pad(Number(d))}`;
-                }
-                return raw;
-            };
-            const normalizeTimeValue = (val) => {
-                if (!val || typeof val !== 'string') return val;
-                const raw = val.trim();
-                const hhmm = raw.match(/^\s*(\d{1,2}):(\d{1,2})/);
-                if (hhmm) {
-                    const [_, h, m] = hhmm;
-                    const hh = Math.min(23, Math.max(0, Number(h)));
-                    const mm = Math.min(59, Math.max(0, Number(m)));
-                    return `${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`;
-                }
-                const ko = raw.match(/(오전|오후)?\s*(\d{1,2})\s*시\s*(\d{1,2})?\s*분?/);
-                if (ko) {
-                    const [, ampm, hStr, mStr] = ko;
-                    let h = Number(hStr);
-                    const m = mStr ? Number(mStr) : 0;
-                    if (ampm === '오후' && h < 12) h += 12;
-                    if (ampm === '오전' && h === 12) h = 0;
-                    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-                }
-                return raw;
-            };
-            const isDateKey = (k) => typeof k === 'string' && /date/i.test(k);
-            const isTimeKey = (k) => typeof k === 'string' && /time/i.test(k);
-            const expandedPatch = {};
-            Object.keys(patch).forEach((key) => {
-                const rawVal = patch[key];
-                const normalizedVal = isDateKey(key) ? normalizeDateValue(rawVal) : isTimeKey(key) ? normalizeTimeValue(rawVal) : rawVal;
-                nameVariants(key).forEach((variant) => {
-                    next[variant] = normalizedVal;
-                    expandedPatch[variant] = normalizedVal;
-                });
-            });
-            this.formData = next;
-            // 폼 컴포넌트와 동기화 (리마운트 없이 값 반영)
-            if (this.EventBus && typeof this.EventBus.emit === 'function') {
-                this.EventBus.emit('form-values-updated', expandedPatch);
-            }
-        },
-        async handleAssistantSubmit(payload) {
-            const callId = payload && payload.callId;
-            const assistantRef = this.$refs.realtimeAssistant;
-            const comp = this.$refs.currentWorkItemComponent;
-            const checkpoints = comp && comp.$refs && comp.$refs.checkpoints;
-            if (checkpoints && !checkpoints.allChecked && Array.isArray(checkpoints.checkpoints)) {
-                checkpoints.checkpoints.forEach((cp) => {
-                    cp.checked = true;
-                });
-                checkpoints.showWarning = false;
-            }
-            const checkpointsOk = !checkpoints || checkpoints.allChecked;
-            if (!comp || typeof comp.executeProcess !== 'function') {
-                if (assistantRef && typeof assistantRef.reportSubmitResult === 'function') {
-                    assistantRef.reportSubmitResult(false, '제출 컴포넌트를 찾지 못했습니다.', callId);
-                }
-                this.errorMessage = '제출을 처리할 수 없습니다. 화면을 새로고침 후 다시 시도하세요.';
-                return;
-            }
-            if (!checkpointsOk) {
-                if (assistantRef && typeof assistantRef.reportSubmitResult === 'function') {
-                    assistantRef.reportSubmitResult(false, '체크포인트가 완료되지 않았습니다.', callId);
-                }
-                // 기존 동작: 경고 표시 및 스크롤
-                comp.executeProcess();
-                return;
-            }
-            try {
-                await Promise.resolve(comp.executeProcess());
-                if (assistantRef && typeof assistantRef.reportSubmitResult === 'function') {
-                    assistantRef.reportSubmitResult(true, null, callId);
-                }
-            } catch (e) {
-                if (assistantRef && typeof assistantRef.reportSubmitResult === 'function') {
-                    assistantRef.reportSubmitResult(false, e?.message || '제출 중 오류가 발생했습니다.', callId);
-                }
             }
         },
         injectDeployTargetToBpmnField(formHtml, formData) {
@@ -1419,48 +1325,163 @@ export default {
         isTabAvailable(tabValue) {
             return this.tabList.some((tab) => tab.value === tabValue);
         },
-        async startVoiceRecording() {
-            this.isMicRecording = true;
-
-            if (!navigator.mediaDevices) {
-                alert('getUserMedia를 지원하지 않는 브라우저입니다.');
+        // ── 받아쓰기(머리의 마이크) ─────────────────────────────────────────────
+        // 녹음 · 받아쓰기는 휴대폰 웹과 같은 것(src/shared/dictation, /completion/upload)을 쓴다.
+        // 받아쓴 글은 창 없이 이 폼에 넣는다 — 글 칸 하나면 그 칸 뒤에 그대로, 칸이 여럿이면 서버 LLM 한 번으로
+        // 말한 칸만 채운다. 채운 뒤 사람이 보고 제출한다(자동 제출 · 자동 저장 없음).
+        async toggleDictation() {
+            if (this.dictation.state === 'recording') return this.stopDictation();
+            if (this.dictation.state !== 'idle') return;
+            await this.startDictation();
+        },
+        async startDictation() {
+            this.cancelDictation();
+            this.dictation = { state: 'starting', partial: '', transcript: '', elapsedMs: 0, note: '', error: '' };
+            const session = await startRecording({ timeslice: 1000 });
+            if (this.dictation.state !== 'starting') {
+                // 기다리는 사이 화면을 떠났거나 취소했다 — 받은 마이크를 바로 놓는다
+                if (session.ok) session.stop();
                 return;
             }
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.micRecorder = new MediaRecorder(stream);
-            this.micAudioChunks = [];
-            this.micRecorder.ondataavailable = (e) => {
-                this.micAudioChunks.push(e.data);
-            };
-            this.micRecorder.start();
-        },
-        stopVoiceRecording() {
-            this.isMicRecording = false;
-            // MediaRecorder의 상태가 'recording'인 경우에만 stop 메서드를 호출
-            if (this.micRecorder && this.micRecorder.state === 'recording') {
-                this.micRecorder.stop();
-                this.micRecorder.onstop = async () => {
-                    const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
-                    await this.uploadAudio(audioBlob);
-                };
+            if (!session.ok) {
+                // 녹음 시작의 'failed' 는 서버가 아니라 마이크 문제다(장치 없음 등)
+                this.failDictation(session.reason === 'failed' ? 'micFailed' : session.reason);
+                return;
             }
+            const run = { session, startedAt: Date.now(), lastPartialAt: 0, partialInFlight: false, timer: null };
+            run.timer = setInterval(() => this.tickDictation(run), 1000);
+            this.dictationRun = run;
+            this.dictation.state = 'recording';
         },
-        async uploadAudio(audioBlob) {
-            this.isMicRecorderLoading = true; // 로딩 상태 시작
-
-            const formData = new FormData();
-            formData.append('audio', audioBlob);
-
+        tickDictation(run) {
+            if (this.dictationRun !== run || this.dictation.state !== 'recording') return;
+            const now = Date.now();
+            const elapsedMs = now - run.startedAt;
+            this.dictation.elapsedMs = elapsedMs;
+            // 말하는 동안 지금까지 받아쓴 글을 보여 준다 — 「듣고 있나?」 를 묻지 않아도 되게
+            if (!partialDue({ elapsedMs, sinceLastMs: now - run.lastPartialAt, inFlight: run.partialInFlight })) return;
+            const blob = run.session.peek();
+            if (!blob) return;
+            run.partialInFlight = true;
+            run.lastPartialAt = now;
+            transcribe(blob, { post: (url, body) => axios.post(url, body) })
+                .then((result) => {
+                    if (result.ok && this.dictationRun === run && this.dictation.state === 'recording') {
+                        this.dictation.partial = result.text;
+                    }
+                })
+                .finally(() => {
+                    run.partialInFlight = false;
+                });
+        },
+        async stopDictation() {
+            const run = this.dictationRun;
+            if (!run || this.dictation.state !== 'recording') return;
+            clearInterval(run.timer);
+            this.dictation.state = 'transcribing';
+            const blob = await run.session.stop();
+            const result = await transcribe(blob, { post: (url, body) => axios.post(url, body) });
+            if (this.dictationRun !== run) return;
+            if (!result.ok) {
+                this.failDictation(result.reason);
+                return;
+            }
+            await this.applyDictation(result.text, run);
+        },
+        async applyDictation(text, run) {
+            const fields = this.extractFieldSchema(this.html, this.formData || {});
+            const target = dictationTarget(fields);
+            // 결과 한 줄의 칸 이름은 화면에 보이는 그대로(FormWorkItem 과 같은 presentFormHtml) — 「text-field-2」 · 「자유입력」 이 아니라
+            // 「텍스트 2」 · 「작업 내용」
+            const shown = this.dictationFieldLabels();
+            const labelOf = (name) => shown[name] || (fields.find((f) => f.name === name) || {}).label || name;
+            if (target.mode === 'append') {
+                const current = this.formData ? this.formData[target.name] : '';
+                this.EventBus.emit('form-values-updated', { [target.name]: appendTranscript(current, text) });
+                this.finishDictation(this.$t('WorkItemDictation.appended', { field: labelOf(target.name) }));
+                return;
+            }
+            if (target.mode === 'none') {
+                this.failDictation('nothingToFill', text);
+                return;
+            }
+            this.dictation.state = 'filling';
+            this.dictation.transcript = text;
+            // 보낼 때의 값을 복사해 둔다 — 답을 기다리는 동안(최대 60초) 사람이 계속 쓰므로, 넣기 전에 이 값과 견준다
+            const snapshot = snapshotValues(fields, this.formData || {});
+            const messages = buildFillMessages({
+                fields,
+                values: snapshot,
+                transcript: text,
+                processName: this.processDefinition ? this.processDefinition.processDefinitionName : '',
+                activityName: this.activityName || '',
+                instruction: this.assistantInstruction
+            });
+            let patch = {};
             try {
-                const response = await axios.post(`/completion/upload`, formData);
-                const data = response.data;
-                this.newMessage = data.transcript;
-                this.beforeGenerateExample();
-            } catch (error) {
-                console.error('Error:', error);
-            } finally {
-                this.isMicRecorderLoading = false; // 로딩 상태 종료
+                patch = parseFillResponse(await requestFormFill(messages), fields);
+            } catch (e) {
+                if (this.dictationRun === run) this.failDictation('fillFailed', text);
+                return;
             }
+            if (this.dictationRun !== run) return;
+            // 그새 사람이 고친 칸은 건너뛰고, 글이 있는 글 칸은 뒤에 잇기만 한다(mergeFill)
+            const { values, applied, skipped } = mergeFill(patch, { fields, snapshot, current: this.formData || {} });
+            if (!applied.length && !skipped.length) {
+                this.failDictation('noMatch', text);
+                return;
+            }
+            if (applied.length) this.EventBus.emit('form-values-updated', values);
+            // 건너뛴 칸을 먼저 말한다 — 막대는 한 줄이라 뒤에 두면 말줄임으로 잘려 안 보인다
+            const parts = [];
+            if (skipped.length) {
+                parts.push(this.$t('WorkItemDictation.skippedTyping', { count: skipped.length, fields: skipped.map(labelOf).join(', ') }));
+            }
+            if (applied.length) {
+                parts.push(this.$t('WorkItemDictation.filled', { count: applied.length, fields: applied.map(labelOf).join(', ') }));
+            } else {
+                // 아무 칸에도 못 넣었으면 받아쓴 글을 남긴다 — 말한 것을 다시 하지 않아도 되게
+                parts.push(this.$t('WorkItemDictation.heard', { text }));
+            }
+            this.finishDictation(parts.join(' '));
+        },
+        /** 업무 화면에 보이는 칸 이름(name → 이름). 폼 정의 HTML 이 아니라 화면에 그린 이름을 쓴다. */
+        dictationFieldLabels() {
+            const translate = (key) => (this.$te && this.$te(key) ? this.$t(key) : null);
+            return presentedFieldLabels(this.html, {
+                translate,
+                freeInputTitle: this.$t('FormWorkItem.freeInputTitle'),
+                freeInputPlaceholder: this.$t('FormWorkItem.freeInputPlaceholder')
+            });
+        },
+        finishDictation(note) {
+            this.releaseDictation();
+            this.dictation = { state: 'idle', partial: '', transcript: '', elapsedMs: 0, note, error: '' };
+        },
+        failDictation(reason, transcript = '') {
+            this.releaseDictation();
+            // 받아쓴 글이 있으면 같이 보여 준다 — 칸에 못 넣었어도 말한 것을 다시 하지 않아도 되게
+            const message = this.$t(`WorkItemDictation.reason.${reason}`);
+            const error = transcript ? `${message} ${this.$t('WorkItemDictation.heard', { text: transcript })}` : message;
+            this.dictation = { state: 'idle', partial: '', transcript, elapsedMs: 0, note: '', error };
+        },
+        dismissDictation() {
+            this.dictation = { state: 'idle', partial: '', transcript: '', elapsedMs: 0, note: '', error: '' };
+        },
+        releaseDictation() {
+            const run = this.dictationRun;
+            this.dictationRun = null;
+            if (!run) return;
+            clearInterval(run.timer);
+            // 마이크를 놓지 않으면 녹음 표시가 계속 남는다(이미 멈췄으면 아무 일도 없다)
+            run.session.stop();
+        },
+        cancelDictation() {
+            this.releaseDictation();
+            if (this.dictation && this.dictation.state !== 'idle') this.dismissDictation();
+        },
+        dictationTail(text, max) {
+            return tailText(text, max);
         },
         hasUnclosedTripleBackticks(inputString) {
             // 백틱 세 개의 시작과 끝을 찾는 정규 표현식
@@ -1732,11 +1753,7 @@ export default {
             if (this.isVisionMode) {
                 this.generator.generate();
             } else {
-                if (this.newMessage) {
-                    this.generateExample(this.newMessage, 'audio');
-                } else {
-                    this.generateExample();
-                }
+                this.generateExample();
             }
         },
         resetGeneratedContent() {
@@ -1752,9 +1769,6 @@ export default {
                 this.generator.previousMessages = [];
                 this.generator = null;
             }
-
-            // 오디오 메시지 초기화
-            this.newMessage = '';
 
             // 폼 데이터에서 이미지 데이터 제거
             if (this.formData && typeof this.formData === 'object') {
@@ -1782,23 +1796,11 @@ export default {
 
             this.generator.model = 'gpt-4o';
 
-            if (response) {
-                if (type == 'audio') {
-                    this.generator.previousMessages.push({
-                        content:
-                            '오디오 내용을 보고 오디오 내용을 개선해서 예시를 생성해. 오디오 내용을 기반으로 생성해야하고 오디오에 관한 언급은 하면 안돼. 오디오 내용과 생성될 내용이 달라서도 안돼. 적당한 수준의 보완, 정리만 해서 생성해.',
-                        role: 'user'
-                    });
-                    this.generator.previousMessages.push({
-                        content: '오디오 내용: ' + response,
-                        role: 'user'
-                    });
-                } else if (type == 'vision') {
-                    this.generator.previousMessages.push({
-                        content: '첨부된 이미지에 대한 설명: ' + response,
-                        role: 'user'
-                    });
-                }
+            if (response && type == 'vision') {
+                this.generator.previousMessages.push({
+                    content: '첨부된 이미지에 대한 설명: ' + response,
+                    role: 'user'
+                });
             }
             if (this.inputData) {
                 this.generator.previousMessages.push({
@@ -1966,7 +1968,6 @@ export default {
                             me.agentGenerationFinished(null);
                         }
                         me.isGeneratingExample = false;
-                        me.newMessage = null;
 
                         // 순차적 폼 채우기 상태 초기화
                         me.appliedFormFields = {};
@@ -1976,7 +1977,6 @@ export default {
                 errorMsg: '초안 생성을 실패하였습니다. 잠시 후 다시 시도해주세요.',
                 finalAction: () => {
                     me.isGeneratingExample = false;
-                    me.newMessage = null;
                     me.appliedFormFields = {};
                 }
             });
@@ -2071,7 +2071,6 @@ export default {
             if (!me.workItem || !me.workItem.activity) return;
             if (me.workItem && me.workItem.worklist && me.workItem.activity && !me.workItem.activity.inParameterContexts) {
                 const refForms = await this.backend.getRefForm(me.workItem.worklist.taskId);
-                this.assistantRefForms = Array.isArray(refForms) ? refForms : [];
                 refForms.forEach((refForm) => {
                     const tabName = `${me.$t('WorkItem.previous')} (${refForm.name}) ${me.$t('WorkItem.inputForm')}`;
                     me.inFormNameTabs.push(tabName);
@@ -2088,7 +2087,6 @@ export default {
 
             me.inFormNameTabs = [];
             me.inFormValues = [];
-            this.assistantRefForms = [];
 
             const promises = me.workItem.activity.inParameterContexts.map(async (inParameterContext) => {
                 const formName = inParameterContext.variable.name;
@@ -2568,5 +2566,65 @@ export default {
 .v-list-item--disabled .detail-component-enabled {
     pointer-events: auto !important;
     opacity: 1 !important;
+}
+
+/* 받아쓰기 막대 — 머리 줄(flex-wrap) 안에서 새 줄을 통째로 차지해 머리 바로 아래에 온다 */
+.workitem-dictation-bar {
+    flex: 0 0 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    margin-top: 8px;
+    padding: 6px 8px 6px 12px;
+    border: 1px solid var(--cds-border);
+    border-radius: 8px;
+    background: var(--cds-surface-2, rgba(0, 0, 0, 0.02));
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.workitem-dictation-bar--error {
+    border-color: rgba(var(--v-theme-error), 0.35);
+    background: rgba(var(--v-theme-error), 0.05);
+}
+
+/* 한 줄 — 길면 말줄임(미리 보기는 끝부분만 넘겨받는다) */
+.workitem-dictation-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.workitem-dictation-time {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+    color: rgb(var(--v-theme-error));
+}
+
+.workitem-dictation-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgb(var(--v-theme-error));
+}
+
+.workitem-dictation-mic--on {
+    color: rgb(var(--v-theme-error)) !important;
+    border-color: rgb(var(--v-theme-error)) !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .workitem-dictation-dot {
+        animation: workitem-dictation-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes workitem-dictation-pulse {
+        50% {
+            opacity: 0.3;
+        }
+    }
 }
 </style>
