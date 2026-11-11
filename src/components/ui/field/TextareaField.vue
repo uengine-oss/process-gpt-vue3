@@ -1,15 +1,17 @@
 <template>
     <div class="form-text-area">
         <!-- 내용이 markdown/json 이면 원본 대신 보기 좋게 렌더한다.
-             편집 가능한 폼에서는 미리보기 ⇄ 편집 토글을 제공한다(읽기전용은 항상 미리보기). -->
-        <div v-if="showFormatted" class="form-text-area__readonly">
-            <div class="form-text-area__labelrow">
-                <span class="form-text-area__label">{{ displayLabel }}</span>
+             편집 가능한 폼에서는 미리보기 ⇄ 편집 토글을 제공한다(읽기전용은 항상 미리보기).
+             읽기전용의 평문도 높이가 정해진 입력 칸 대신 글 그대로 다 보여 준다. -->
+        <div v-if="showFormatted || showPlainReadonly" class="form-text-area__readonly">
+            <div v-if="!labelHidden || !isReadonlyView" class="form-text-area__labelrow" :class="{ 'is-label-hidden': labelHidden }">
+                <span v-if="!labelHidden" class="form-text-area__label">{{ displayLabel }}</span>
                 <v-btn v-if="!isReadonlyView" size="x-small" variant="text" prepend-icon="mdi-pencil-outline" @click="previewMode = false"
                     >편집</v-btn
                 >
             </div>
             <pre v-if="formattedKind === 'json'" class="form-text-area__json">{{ prettyJson }}</pre>
+            <div v-else-if="showPlainReadonly" class="form-text-area__plain">{{ localModelValue }}</div>
             <div v-else-if="hasContent" class="form-text-area__md" v-html="renderedMarkdown"></div>
             <div v-else class="form-text-area__empty">-</div>
         </div>
@@ -25,8 +27,10 @@
                 :variant="localReadonly ? 'filled' : 'outlined'"
                 :hide-details="hideDetails"
                 :density="density"
+                :placeholder="placeholder || undefined"
+                :persistent-placeholder="!!placeholder"
             >
-                <template v-slot:label>
+                <template v-if="!labelHidden" v-slot:label>
                     <span style="color: var(--cds-text-primary)">
                         {{ displayLabel }}
                     </span>
@@ -38,7 +42,7 @@
 
 <script>
 import { commonSettingInfos } from './CommonSettingInfos.vue';
-import { marked } from 'marked';
+import { looksLikeMarkdown, renderMarkdown } from '@/shared/markdownText/index.js';
 
 export default {
     name: 'TextareaField',
@@ -62,7 +66,10 @@ export default {
         alias: String,
         rows: String,
         disabled: String,
-        readonly: String
+        readonly: String,
+        // 업무 화면이 붙이는 표시 속성(저장된 폼에는 없다) — 카드 제목과 같은 칸 이름을 한 번만 보이게(formPresentation)
+        hide_label: String,
+        placeholder: String
     },
 
     data() {
@@ -104,6 +111,13 @@ export default {
         isReadonlyView() {
             return this.localReadonly || this.localDisabled;
         },
+        labelHidden() {
+            return this.hide_label === 'true';
+        },
+        showPlainReadonly() {
+            // 읽기전용의 평문: 입력 칸(5줄 높이 · 안쪽 스크롤) 대신 글을 그대로 보인다
+            return this.isReadonlyView && this.formattedKind === 'text' && this.hasContent;
+        },
         canFormat() {
             // 내용이 markdown/json 이라 포맷 렌더가 의미있는 경우.
             return this.formattedKind !== 'text';
@@ -127,19 +141,8 @@ export default {
                     // JSON 아님 → 마크다운 판정으로 진행
                 }
             }
-            // 마크다운 마커가 있을 때만 마크다운으로 취급(평문 오탐 방지).
-            const mdSignals = [
-                /(^|\n)#{1,6}\s/, // 헤딩
-                /(^|\n)\s*[-*+]\s+\S/, // 불릿
-                /(^|\n)\s*\d+\.\s+\S/, // 번호목록
-                /```/, // 코드펜스
-                /(^|\n)\s*>\s+\S/, // 인용
-                /\|.+\|/, // 표
-                /\[[^\]]+\]\([^)]+\)/, // 링크
-                /\*\*[^*]+\*\*/ // 강조
-            ];
-            if (mdSignals.some((re) => re.test(raw))) return 'markdown';
-            return 'text';
+            // 마크다운 마커가 있거나 줄 머리("적합한 점:")로 나뉜 글일 때만 마크다운으로 취급(평문 오탐 방지).
+            return looksLikeMarkdown(raw) ? 'markdown' : 'text';
         },
         prettyJson() {
             const raw = (this.localModelValue || '').toString().trim();
@@ -150,10 +153,13 @@ export default {
             }
         },
         renderedMarkdown() {
+            // 줄 머리 · 목록 경계를 바로잡고, 사람 · 에이전트가 쓴 글이라 HTML 은 걸러서 넣는다(markdownText)
+            const text = (this.localModelValue || '').toString();
             try {
-                return marked.parse((this.localModelValue || '').toString());
+                return renderMarkdown(text);
             } catch (e) {
-                return (this.localModelValue || '').toString();
+                // 그리지 못하면 글자 그대로(태그로 해석되지 않게 바꿔서)
+                return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
             }
         }
     },
@@ -284,6 +290,18 @@ export default {
     font-size: 13.5px;
     color: var(--cds-text-muted);
 }
+.form-text-area__labelrow.is-label-hidden {
+    justify-content: flex-end;
+}
+.form-text-area__plain {
+    font-size: 13.5px;
+    color: var(--cds-text-primary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+/* 이 스타일 블록은 scoped 가 아니다 — :deep() 을 쓰면 선택자가 그대로 남아 아무 데도 맞지 않는다
+   (예전에는 그래서 목록 들여쓰기가 0 이 되어 글머리가 글 칸 밖으로 튀어나왔다). 자손 선택자로 쓴다. */
 .form-text-area__md {
     font-size: 13.5px;
     color: var(--cds-text-primary);
@@ -291,38 +309,91 @@ export default {
     white-space: normal;
     word-break: break-word;
 }
-.form-text-area__md :deep(p) {
-    margin: 0 0 6px;
+.form-text-area__md > :first-child {
+    margin-top: 0;
 }
-.form-text-area__md :deep(h1),
-.form-text-area__md :deep(h2),
-.form-text-area__md :deep(h3) {
-    margin: 8px 0 4px;
+.form-text-area__md > :last-child {
+    margin-bottom: 0;
+}
+.form-text-area__md p {
+    margin: 0 0 8px;
+}
+.form-text-area__md p.md-section {
+    margin: 14px 0 4px;
     font-weight: 700;
 }
-.form-text-area__md :deep(ul),
-.form-text-area__md :deep(ol) {
-    padding-left: 20px;
-    margin: 4px 0;
+.form-text-area__md p.md-section:first-child {
+    margin-top: 0;
 }
-.form-text-area__md :deep(table) {
+.form-text-area__md h1,
+.form-text-area__md h2,
+.form-text-area__md h3,
+.form-text-area__md h4,
+.form-text-area__md h5,
+.form-text-area__md h6 {
+    margin: 14px 0 6px;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+.form-text-area__md ul,
+.form-text-area__md ol {
+    margin: 0 0 8px;
+    padding-left: 1.5em;
+}
+.form-text-area__md ul {
+    list-style: disc outside;
+}
+.form-text-area__md ol {
+    list-style: decimal outside;
+}
+.form-text-area__md ul ul {
+    list-style-type: circle;
+    margin-bottom: 0;
+}
+.form-text-area__md ol ol,
+.form-text-area__md ul ol,
+.form-text-area__md ol ul {
+    margin-bottom: 0;
+}
+.form-text-area__md li {
+    margin: 2px 0;
+    padding-left: 2px;
+}
+.form-text-area__md li > p {
+    margin: 0;
+}
+.form-text-area__md blockquote {
+    margin: 0 0 8px;
+    padding-left: 10px;
+    border-left: 3px solid var(--cds-border);
+    color: var(--cds-text-secondary);
+}
+.form-text-area__md table {
     border-collapse: collapse;
     margin: 6px 0;
 }
-.form-text-area__md :deep(th),
-.form-text-area__md :deep(td) {
+.form-text-area__md th,
+.form-text-area__md td {
     border: 1px solid var(--cds-border);
     padding: 4px 8px;
 }
-.form-text-area__md :deep(code) {
-    background: #eceef1;
+.form-text-area__md code {
+    background: var(--cds-surface-2, #eceef1);
     padding: 1px 4px;
     border-radius: 4px;
 }
-.form-text-area__md :deep(pre) {
-    background: #eceef1;
+.form-text-area__md pre {
+    background: var(--cds-surface-2, #eceef1);
     padding: 8px;
     border-radius: 6px;
     overflow-x: auto;
+}
+.form-text-area__md pre code {
+    padding: 0;
+    background: transparent;
+}
+.form-text-area__md img {
+    max-width: 100%;
 }
 </style>

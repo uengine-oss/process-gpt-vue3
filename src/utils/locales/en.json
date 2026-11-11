@@ -2588,7 +2588,7 @@
         "generateExample": "Generate Example",
         "quickGenerateExample": "Quick Generation",
         "quickGenerateExampleDescription": "Quick draft generation using the default AI model. ex) Basic document writing, simple analysis (1~3 minutes)",
-        "resultInput": "Current Task",
+        "resultInput": "Task to Do",
         "researchMethod": "Agent Delegation",
         "runningResearchMethod": "Running Research Method",
         "delegateMessage": "Task '{taskName}' has been delegated to {username}.",
@@ -3855,10 +3855,14 @@
         "systemSender": "System"
     },
     "ActivityInputData": {
-        "previousInput": "Previous Activity Input",
-        "previousInputDescription": "This shows the input provided for the previous activity. Please refer to it as you proceed with the current work.",
-        "previousInputDetailTitle": "What is previous input?",
-        "previousInputDetail": "Shows form data entered by the previous task actor in the BPM process. Use this to perform the current task and understand the flow. Example: In Approve Request → Review → Approve, at 'Review' you see what was entered at 'Approve Request'."
+        "previousInput": "Received Outputs",
+        "previousInputDescription": "Outputs handed over from the previous step. Use them as you work on the task to do.",
+        "previousInputDetailTitle": "What are received outputs?",
+        "previousInputDetail": "Shows what the previous step's assignee (a person or an agent) left as output. Refer to it while you work on the task to do. Example: In Approve Request → Review → Approve, at 'Review' you see what was left at 'Approve Request'.",
+        "expand": "Show",
+        "collapse": "Hide",
+        "fieldCount": "{count} fields",
+        "empty": "No content"
     },
     "MCPServer": {
         "searchMCPServers": "Search MCP Servers",
@@ -4099,6 +4103,8 @@
         "knowledgeSetupInProgress": "Setting up knowledge"
     },
     "FormWorkItem": {
+        "freeInputTitle": "Work details",
+        "freeInputPlaceholder": "Write what you did and the result.",
         "agentSummaryTitle": "Agent work summary",
         "agentSummaryHint": "Review the form the agent filled in below, edit it if needed, then submit.",
         "chooseDecision": "Choose “{field}”. Approve or reject is never preselected.",

@@ -1,42 +1,76 @@
 <template>
     <div>
-        <v-card flat class="mb-4 bg-lightprimary">
-            <!-- SummaryButton 전용 폼 데이터 표시 -->
-            <div v-for="field in inputFields" :key="field.formId">
-                <v-row class="ma-0 pa-4 pb-0">
-                    <div>
-                        <v-card-title
-                            class="text-h6 cursor-pointer d-flex align-center justify-space-between pa-0 mb-2"
-                            @click="toggleExpanded"
-                        >
-                            <div class="d-flex align-center">
-                                {{ $t('ActivityInputData.previousInput') }}
-                                <DetailComponent
-                                    :title="$t('ActivityInputData.previousInputDescription')"
-                                    :details="previousInputDetails"
-                                />
+        <v-card flat class="mb-4 bg-lightprimary received-output" data-testid="received-output">
+            <div class="pa-4">
+                <div class="text-h6 d-flex align-center mb-2" data-testid="received-output-title">
+                    {{ $t('ActivityInputData.previousInput') }}
+                    <DetailComponent
+                        class="ml-1"
+                        :title="$t('ActivityInputData.previousInputDescription')"
+                        :details="previousInputDetails"
+                    />
+                </div>
+                <!-- 앞 단계마다 한 칸: 어느 단계의 산출물인지 + 한 줄 미리보기를 접어 두고, 눌러서 펼친다.
+                     예전의 기울어진 미니 카드(SummaryButton)는 글씨가 6px 이라 읽을 수 없고 누를 곳인지도 알기 어려웠다. -->
+                <div
+                    v-for="field in inputFields"
+                    :key="field.formId"
+                    class="received-output__item"
+                    :class="{ 'is-open': isOpen(field.formId) }"
+                    data-testid="received-output-item"
+                >
+                    <button
+                        type="button"
+                        class="received-output__head"
+                        :aria-expanded="isOpen(field.formId) ? 'true' : 'false'"
+                        @click="toggle(field.formId)"
+                    >
+                        <v-icon class="received-output__icon" size="18">mdi-file-document-outline</v-icon>
+                        <span class="received-output__meta">
+                            <span class="received-output__line">
+                                <span class="received-output__source" data-testid="received-output-source">{{
+                                    getActivityName(field.formId)
+                                }}</span>
+                                <template v-if="getAssignee(field.formId)">
+                                    <v-avatar size="18" class="ml-2">
+                                        <v-img
+                                            :src="getAssignee(field.formId).profile || '/images/defaultUser.png'"
+                                            :alt="getAssignee(field.formId).name"
+                                        />
+                                    </v-avatar>
+                                    <span class="received-output__who">{{ getAssignee(field.formId).name }}</span>
+                                </template>
+                                <span v-if="previewOf(field).count" class="received-output__count" data-testid="received-output-count">
+                                    · {{ $t('ActivityInputData.fieldCount', { count: previewOf(field).count }) }}
+                                </span>
+                            </span>
+                            <span v-if="!isOpen(field.formId)" class="received-output__preview" data-testid="received-output-preview">{{
+                                previewOf(field).text || $t('ActivityInputData.empty')
+                            }}</span>
+                        </span>
+                        <span class="received-output__toggle" data-testid="received-output-toggle">
+                            {{ isOpen(field.formId) ? $t('ActivityInputData.collapse') : $t('ActivityInputData.expand') }}
+                            <v-icon size="18">{{ isOpen(field.formId) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+                        </span>
+                    </button>
+                    <v-expand-transition>
+                        <div v-if="isOpen(field.formId)" class="received-output__body" data-testid="received-output-body">
+                            <DynamicForm
+                                v-if="presentedHtml[field.formId]"
+                                :formHTML="presentedHtml[field.formId]"
+                                v-model="field.formValue"
+                                :readonly="true"
+                            ></DynamicForm>
+                            <!-- 폼 정의를 못 받았으면 값만이라도 이름과 함께 보인다(내부 id 대신 읽을 이름) -->
+                            <div v-else class="received-output__plain">
+                                <div v-for="row in plainRows(field)" :key="row.key" class="received-output__plain-row">
+                                    <div class="received-output__plain-label">{{ row.label }}</div>
+                                    <div class="received-output__plain-value">{{ row.value }}</div>
+                                </div>
                             </div>
-                            <!-- <v-icon :icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"></v-icon> -->
-                        </v-card-title>
-                        <div class="text-subtitle-1 font-weight-medium mb-2 d-flex align-center">
-                            <v-icon class="mr-2" size="small">mdi-form-select</v-icon>
-                            {{ getActivityName(field.formId) }}
-                            <v-avatar v-if="getAssignee(field.formId)" size="20" class="ml-2">
-                                <v-img
-                                    :src="getAssignee(field.formId).profile || '/images/defaultUser.png'"
-                                    :alt="getAssignee(field.formId).name"
-                                />
-                            </v-avatar>
-                            <span v-if="getAssignee(field.formId)" class="text-caption ml-1">{{ getAssignee(field.formId).name }}</span>
                         </div>
-                    </div>
-                    <v-spacer></v-spacer>
-                    <div v-if="formHtmlData[field.formId]" :class="['summary-container', { 'w-100': isSummaryExpanded[field.formId] }]">
-                        <SummaryButton class="activity-input-data-summary-button" @expanded="handleSummaryExpanded(field.formId, $event)">
-                            <DynamicForm :formHTML="formHtmlData[field.formId]" v-model="field.formValue" :readonly="true"></DynamicForm>
-                        </SummaryButton>
-                    </div>
-                </v-row>
+                    </v-expand-transition>
+                </div>
             </div>
 
             <!-- 기존 일반 텍스트 표시 방식 (더 이상 사용하지 않음 - 혹시 몰라서 주석 유지) -->
@@ -74,13 +108,13 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
-import SummaryButton from '@/components/ui/SummaryButton.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
+import { outputPreview, hasValue } from '@/shared/workItemOutput.js';
+import { fallbackFieldLabel, presentFormHtml } from '@/shared/formPresentation/index.js';
 
 export default {
     components: {
         DynamicForm,
-        SummaryButton,
         DetailComponent
     },
     props: {
@@ -95,7 +129,8 @@ export default {
             activityMetadata: null, // proc_def의 activities 정보 (레이지 로딩)
             formHtmlData: {}, // 폼별 HTML 데이터 저장
             assigneeMap: {},
-            isSummaryExpanded: {},
+            activityNameMap: {}, // formId → 업무 이름(정의에서 못 찾을 때 내부 폼 id 대신 쓴다)
+            openForms: {},
             previousInputDetails: [
                 {
                     title: 'ActivityInputData.previousInputDetail'
@@ -121,6 +156,21 @@ export default {
         if (this.workItem && this.workItem.worklist && this.workItem.worklist.defId) {
             this.fetchActivityMetadata();
             this.fetchAssignees();
+        }
+    },
+    computed: {
+        /** 업무 화면용으로 보이는 이름을 고친 폼 HTML(빈 alias → 「텍스트 2」, 자유입력 → 「작업 내용」) */
+        presentedHtml() {
+            const translate = (key) => (this.$te && this.$te(key) ? this.$t(key) : null);
+            const out = {};
+            Object.keys(this.formHtmlData).forEach((formId) => {
+                out[formId] = presentFormHtml(this.formHtmlData[formId], {
+                    translate,
+                    freeInputTitle: this.$t('FormWorkItem.freeInputTitle'),
+                    freeInputPlaceholder: this.$t('FormWorkItem.freeInputPlaceholder')
+                });
+            });
+            return out;
         }
     },
     watch: {
@@ -151,6 +201,33 @@ export default {
     methods: {
         toggleExpanded() {
             this.expanded = !this.expanded;
+        },
+        isOpen(formId) {
+            return !!this.openForms[formId];
+        },
+        toggle(formId) {
+            this.openForms = { ...this.openForms, [formId]: !this.openForms[formId] };
+        },
+        /** 접힌 칸에 보일 한 줄 미리보기와 값이 든 항목 수 — 폼 정의의 필드 순서를 따른다 */
+        previewOf(field) {
+            const meta = this.fieldMetadata[field.formId];
+            const order = Array.isArray(meta) ? meta.map((m) => m && m.key).filter(Boolean) : [];
+            return outputPreview(field.formValue, { order });
+        },
+        /** 폼 HTML 이 없을 때의 값 목록(이름은 폼 정의의 text, 없으면 읽을 수 있는 이름) */
+        plainRows(field) {
+            const meta = Array.isArray(this.fieldMetadata[field.formId]) ? this.fieldMetadata[field.formId] : [];
+            const values = field.formValue || {};
+            const translate = (key) => (this.$te && this.$te(key) ? this.$t(key) : null);
+            return Object.keys(values)
+                .filter((key) => hasValue(values[key]))
+                .map((key) => {
+                    const m = meta.find((item) => item && item.key === key);
+                    const tag = m && m.type ? `${m.type}-field` : 'text-field';
+                    const label = (m && m.text) || fallbackFieldLabel(tag, key, translate);
+                    const v = values[key];
+                    return { key, label, value: typeof v === 'object' ? JSON.stringify(v) : String(v) };
+                });
         },
         // formId를 통해 fields_json 메타데이터를 백그라운드에서 가져오는 함수
         async fetchFieldsMetadata(formDefId) {
@@ -238,8 +315,8 @@ export default {
                 return activity.name;
             }
 
-            // 찾을 수 없는 경우 원래 formId 반환
-            return formId;
+            // 정의에서 못 찾으면 이 인스턴스의 업무 이름, 그것도 없으면 폼 id
+            return this.activityNameMap[formId] || formId;
         },
         // 일반 텍스트 표시용 헬퍼 함수들 (더 이상 사용하지 않음 - 혹시 몰라서 주석 유지)
         // key 값으로 해당하는 text를 찾는 헬퍼 함수 (레이지 방식)
@@ -294,14 +371,17 @@ export default {
                 if (!workList || !Array.isArray(workList)) return;
 
                 const nameMap = {};
+                const activityNames = {};
                 workList.forEach((item) => {
                     if (item.tool && item.tool.includes('formHandler:') && (item.status === 'DONE' || item.status === 'COMPLETED')) {
                         const formId = item.tool.split('formHandler:')[1];
                         if (formId && !nameMap[formId]) {
                             nameMap[formId] = item.username || item.endpoint || null;
                         }
+                        if (formId && !activityNames[formId] && item.name) activityNames[formId] = item.name;
                     }
                 });
+                this.activityNameMap = activityNames;
 
                 const usernames = [...new Set(Object.values(nameMap).filter(Boolean))];
                 let userProfileMap = {};
@@ -334,13 +414,111 @@ export default {
         },
         getAssignee(formId) {
             return this.assigneeMap[formId] || null;
-        },
-        handleSummaryExpanded(formId, expanded) {
-            this.isSummaryExpanded = {
-                ...this.isSummaryExpanded,
-                [formId]: expanded
-            };
         }
     }
 };
 </script>
+
+<style scoped>
+.received-output__item + .received-output__item {
+    margin-top: 8px;
+}
+/* 접힌 칸: 흰 바탕 한 줄 — 누를 수 있는 곳이라는 것이 보이게 테두리와 오른쪽 「펼쳐 보기」 */
+.received-output__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--cds-border);
+    border-radius: 8px;
+    background: var(--cds-surface-1, #fff);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.received-output__head:hover,
+.received-output__head:focus-visible {
+    border-color: rgb(var(--v-theme-primary));
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    outline: none;
+}
+.received-output__icon {
+    flex-shrink: 0;
+    color: var(--cds-text-secondary);
+}
+.received-output__meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+/* 좁은 화면에서는 단계 이름을 자르지 않고 담당자 · 항목 수를 다음 줄로 내린다 */
+.received-output__line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 2px;
+    min-width: 0;
+    font-size: 14px;
+    color: var(--cds-text-primary);
+}
+.received-output__source {
+    max-width: 100%;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.received-output__who {
+    margin-left: 4px;
+    font-size: 12px;
+    color: var(--cds-text-secondary);
+    white-space: nowrap;
+}
+.received-output__count {
+    margin-left: 6px;
+    font-size: 12px;
+    color: var(--cds-text-secondary);
+    white-space: nowrap;
+}
+.received-output__preview {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--cds-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.received-output__toggle {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgb(var(--v-theme-primary));
+    white-space: nowrap;
+}
+/* 펼친 본문: 폼 카드가 테두리를 갖고 있어 겉 상자를 하나 더 두르지 않는다 */
+.received-output__body {
+    padding-top: 8px;
+}
+.received-output__plain {
+    padding: 12px;
+    border: 1px solid var(--cds-border);
+    border-radius: 8px;
+    background: var(--cds-surface-1, #fff);
+}
+.received-output__plain-row + .received-output__plain-row {
+    margin-top: 8px;
+}
+.received-output__plain-label {
+    font-size: 12px;
+    color: var(--cds-text-secondary);
+}
+.received-output__plain-value {
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+</style>
