@@ -250,6 +250,7 @@ import DelegateTaskForm from '@/components/apps/todolist/DelegateTaskForm.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import { awaitingUserInput } from '@/shared/awaitingUserInput';
 import { latestAgentSummary } from '@/shared/agentSummary/index.js';
+import { missingDecisions } from '@/shared/decisionField';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -412,6 +413,9 @@ export default {
         });
 
         // ReportField에서 저장 요청이 올 때 실제 저장 처리
+        // AI 빠른 생성으로 채운 값은 바로 중간 저장한다(WorkItem) — 다시 열면 사라지던 문제(휴대폰 점검 H5)
+        this.EventBus.on('form-autosave-request', this.onAutosaveRequest);
+
         this.EventBus.on('form-save-request', async (data) => {
             if (data && data.fieldName && data.fieldValue !== undefined) {
                 me.formData[data.fieldName] = data.fieldValue;
@@ -449,6 +453,7 @@ export default {
     },
     beforeUnmount() {
         this.EventBus.off('agent-result-summary', this.onAgentResultSummary);
+        this.EventBus.off('form-autosave-request', this.onAutosaveRequest);
     },
     methods: {
         agentSummaryTaskId() {
@@ -471,6 +476,23 @@ export default {
             const taskId = this.agentSummaryTaskId();
             if (payload.todoId && taskId && String(payload.todoId) !== String(taskId)) return;
             this.agentSummary = payload.summary;
+        },
+        notifyMissingDecision(alias) {
+            const msg = this.$t('FormWorkItem.chooseDecision', { field: alias });
+            if (window.$app_) {
+                window.$app_.snackbarMessage = msg;
+                window.$app_.snackbarColor = 'warning';
+                window.$app_.snackbar = true;
+            }
+        },
+        async onAutosaveRequest() {
+            if (this.isDryRun || !this.$route?.params?.taskId) return;
+            await this.$nextTick();
+            try {
+                await this.saveForm();
+            } catch (e) {
+                console.warn('[FormWorkItem] 자동 중간 저장 실패', e);
+            }
         },
         extractFileFieldNames(html) {
             if (!html) return [];
@@ -1013,6 +1035,12 @@ export default {
             this.$emit('fail', msg);
         },
         async executeProcess() {
+            // 승인 · 반려 같은 결정 칸은 미리 골라 두지 않으므로, 고르지 않았으면 제출하지 않는다(휴대폰 점검 H6)
+            const missing = missingDecisions(this.html, this.formData);
+            if (missing.length > 0) {
+                this.notifyMissingDecision(missing[0].alias);
+                return;
+            }
             if (this.workItem.raw && this.workItem.raw.agent_mode && (await this.isDraftIncomplete())) {
                 this.agentIncompleteDialog = true;
                 return;

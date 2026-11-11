@@ -347,8 +347,9 @@
                                     v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
                                     class="work-item-form-btn-box align-center"
                                 >
+                                    <!-- 음성 도우미(휴대폰 전용 아이콘). Process GPT 휴대폰에서는 「에이전트에 맡기기」를 보이므로 뺀다 -->
                                     <v-btn
-                                        v-if="!gs && isMobile"
+                                        v-if="!gs && isMobile && !phoneScopeMode"
                                         class="mr-1"
                                         color="gray"
                                         variant="flat"
@@ -376,9 +377,10 @@
                                         <v-icon>mdi-delete-outline</v-icon>
                                         <span v-if="!isMobile" class="ms-1">{{ $t('WorkItem.resetContent') }}</span>
                                     </v-btn>
-                                    <!-- 누르면 바로 맡긴다(정해 둔 방식 → 지난번 방식 → 딥 에이전트). 방식 고르기는 ⋯ 안에 -->
+                                    <!-- 누르면 바로 맡긴다(정해 둔 방식 → 지난번 방식 → 딥 에이전트). 방식 고르기는 ⋯ 안에.
+                                         휴대폰에서도 보인다 — 휴대폰에서 가장 자주 쓸 일이다(2026-11-11 휴대폰 점검 H4) -->
                                     <v-btn
-                                        v-if="!isMobile && !gs"
+                                        v-if="!gs"
                                         class="mr-1"
                                         color="primary"
                                         variant="flat"
@@ -591,6 +593,7 @@ import JSON5 from 'json5';
 import partialParse from 'partial-json-parser';
 import { canReassignWorkItem, findStarterId } from '@/utils/workItemAccess';
 import { pickAgentDelegation, readLastAgentDelegation } from '@/utils/agentDelegation';
+import { phoneScopeMode } from '@/shared/phoneScope';
 import axios from 'axios';
 
 export default {
@@ -884,6 +887,9 @@ export default {
         window.removeEventListener('resize', this.handleResize);
     },
     computed: {
+        phoneScopeMode() {
+            return phoneScopeMode(window);
+        },
         gs() {
             return window.$gs;
         },
@@ -1952,6 +1958,8 @@ export default {
                             if (Object.keys(remainingFields).length > 0) {
                                 me.EventBus.emit('form-values-updated', remainingFields);
                             }
+                            // 채운 초안은 바로 중간 저장한다 — 다시 열면 사라져 빈 폼이 제출되던 문제(2026-11-11 휴대폰 점검 H5)
+                            me.EventBus.emit('form-autosave-request', { reason: 'quick-generate' });
 
                             me.agentGenerationFinished(jsonData);
                         } else {

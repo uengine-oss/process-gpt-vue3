@@ -26,6 +26,7 @@
 </template>
 
 <script>
+import { isDecisionItems } from '@/shared/decisionField';
 import { commonSettingInfos } from './CommonSettingInfos.vue';
 import axios from 'axios';
 import jp from 'jsonpath';
@@ -129,7 +130,8 @@ export default {
 
                     this.localModelValue = Object.keys(foundItem)[0];
                 } else {
-                    if (this.controlItems.length > 0) this.localModelValue = Object.keys(this.controlItems[0])[0];
+                    // 승인 · 반려 같은 결정 칸은 미리 고르지 않는다 — 「제출」 한 번에 승인되지 않게(shared/decisionField)
+                    if (this.controlItems.length > 0 && !isDecisionItems(this.controlItems)) this.localModelValue = Object.keys(this.controlItems[0])[0];
                 }
             },
             deep: true,
@@ -339,7 +341,8 @@ export default {
 
         await this.loadDataSource();
         await this.loadControlItems();
-        if (this.controlItems.length > 0 && !this.localModelValue) this.localModelValue = Object.keys(this.controlItems[0])[0];
+        if (this.controlItems.length > 0 && !this.localModelValue && !isDecisionItems(this.controlItems))
+            this.localModelValue = Object.keys(this.controlItems[0])[0];
     }
 };
 </script>

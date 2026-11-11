@@ -4101,6 +4101,7 @@
     "FormWorkItem": {
         "agentSummaryTitle": "Agent work summary",
         "agentSummaryHint": "Review the form the agent filled in below, edit it if needed, then submit.",
+        "chooseDecision": "Choose “{field}”. Approve or reject is never preselected.",
         "previous": "Previous Step",
         "save": "Save Draft",
         "submitComplete": "Submit Complete",
@@ -5895,5 +5896,12 @@
             "desktop2": "Choose “Install app” or “Add to Home screen”.",
             "after": "Tap the Process GPT icon on your home screen to open it like an app, without the address bar."
         }
+    },
+    "desktopOnly": {
+        "title": "Open this screen on a computer",
+        "body": "On a phone you use tasks, progress, chat and notifications. Admin, design and analytics screens open on a computer.",
+        "goTodo": "Go to my tasks",
+        "openOnDesktop": "Use the desktop view",
+        "hint": "“Use the desktop view” switches this phone to the desktop screen. You can switch back in Settings › Appearance › Phone screen."
     }
 }
