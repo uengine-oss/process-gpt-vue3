@@ -4151,6 +4151,28 @@
         "micOn": "마이크 ON",
         "inputPlaceholder": "메시지를 입력하거나 마이크로 말해보세요."
     },
+    "WorkItemDictation": {
+        "start": "말로 입력하기",
+        "stop": "멈춤",
+        "close": "닫기",
+        "starting": "마이크를 켜는 중…",
+        "listening": "듣고 있습니다. 말씀하세요.",
+        "transcribing": "받아쓰는 중…",
+        "filling": "「{text}」 로 칸을 채우는 중…",
+        "appended": "받아쓴 글을 「{field}」 칸에 넣었습니다.",
+        "filled": "{count}개 칸을 채웠습니다 ({fields}). 확인한 뒤 제출하세요.",
+        "heard": "받아쓴 글: 「{text}」",
+        "reason": {
+            "denied": "마이크 사용을 허용해 주세요 (브라우저 주소창의 마이크 권한).",
+            "unsupported": "이 브라우저에서는 음성 입력을 쓸 수 없습니다.",
+            "micFailed": "마이크를 켜지 못했습니다. 마이크가 연결돼 있는지 확인해 주세요.",
+            "empty": "소리가 녹음되지 않았습니다. 다시 시도해 주세요.",
+            "failed": "받아쓰기 서버에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
+            "fillFailed": "말한 내용으로 칸을 채우지 못했습니다 (AI 서버 연결 실패).",
+            "noMatch": "말한 내용에서 이 양식에 넣을 값을 찾지 못했습니다.",
+            "nothingToFill": "이 양식에는 말로 채울 칸이 없습니다."
+        }
+    },
     "processDialog": {
         "editProcess": "프로세스 수정",
         "processDefinition": "프로세스 정의",

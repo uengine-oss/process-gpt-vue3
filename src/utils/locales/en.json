@@ -4145,6 +4145,28 @@
         "micOn": "Mic ON",
         "inputPlaceholder": "Type a message or speak with the microphone."
     },
+    "WorkItemDictation": {
+        "start": "Dictate",
+        "stop": "Stop",
+        "close": "Close",
+        "starting": "Turning on the microphone…",
+        "listening": "Listening. Go ahead.",
+        "transcribing": "Transcribing…",
+        "filling": "Filling the fields from “{text}”…",
+        "appended": "Added what you said to “{field}”.",
+        "filled": "Filled {count} field(s) ({fields}). Review before submitting.",
+        "heard": "Heard: “{text}”",
+        "reason": {
+            "denied": "Allow microphone access (microphone permission in the address bar).",
+            "unsupported": "Voice input is not available in this browser.",
+            "micFailed": "Could not turn on the microphone. Check that one is connected.",
+            "empty": "No sound was recorded. Please try again.",
+            "failed": "Could not reach the transcription server. Please try again shortly.",
+            "fillFailed": "Could not fill the fields from what you said (AI server unavailable).",
+            "noMatch": "Nothing you said matches a field on this form.",
+            "nothingToFill": "This form has no fields that can be filled by voice."
+        }
+    },
     "processDialog": {
         "editProcess": "Edit Process",
         "processDefinition": "Process Definition",
