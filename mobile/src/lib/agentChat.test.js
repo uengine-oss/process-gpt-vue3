@@ -18,6 +18,16 @@ test('딥 에이전트는 전용 경로로 간다', () => {
     assert.equal(basePathFor('deepagents'), '/process-gpt-deepagents');
 });
 
+test('코덱스 · CLI 코딩 에이전트도 포털과 같은 경로로 간다', () => {
+    // 휴대폰에 따로 적은 표에는 deepagents 만 있어서, 이 둘이 조용히 기본 에이전트(/agent)로 갔다.
+    assert.equal(basePathFor('cliagents'), '/process-gpt-cli-agent');
+    assert.equal(basePathFor('codex'), '/process-gpt-codex');
+    assert.equal(
+        streamUrl('https://uengine.process-gpt.io', 'cliagents'),
+        'https://uengine.process-gpt.io/process-gpt-cli-agent'
+    );
+});
+
 test('그 밖의 에이전트는 공통 경로로 간다', () => {
     assert.equal(basePathFor('langchain-react'), '/agent');
     assert.equal(basePathFor('a2a'), '/agent');
@@ -215,4 +225,50 @@ test('멘션 — 지목한 상대를 함께 보낸다. 없으면 엉뚱한 에�
 
 test('멘션 — 지목이 없으면 빈 목록. 서버가 고른다', () => {
     assert.deepEqual(buildParams({ text: 'x', roomId: 'r', session: null }).mentioned_users, []);
+});
+
+// ---------------------------------------------------------------------------
+// CLI 코딩 에이전트
+// ---------------------------------------------------------------------------
+
+/**
+ * buildParams 는 localStorage 에서 이름을 읽는다. Node 25 의 globalThis.localStorage 는
+ * --localstorage-file 없이는 getItem 이 없어 던진다 — 이 묶음에서만 브라우저처럼 채운다.
+ */
+function withStorage(fn) {
+    const desc = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    Object.defineProperty(globalThis, 'localStorage', {
+        configurable: true,
+        value: { getItem: () => null, setItem() {}, removeItem() {} }
+    });
+    try {
+        return fn();
+    } finally {
+        if (desc) Object.defineProperty(globalThis, 'localStorage', desc);
+        else delete globalThis.localStorage;
+    }
+}
+
+test('CLI 코딩 에이전트 — 고른 CLI 가 metadata 에 실린다. 맨 위에 두면 에이전트 SDK 가 버린다', () => {
+    const p = withStorage(() =>
+        buildParams({ text: 'x', roomId: 'r', session, orchestration: 'cliagents', agentCli: 'codex', docs: [doc] })
+    );
+    assert.equal(p.metadata.agent_cli, 'codex');
+    assert.equal('agent_cli' in p, false);
+    assert.equal('agent_model' in p.metadata, false);
+    // 지식 문서와 함께 실린다 — 한쪽이 다른 쪽을 덮지 않는다.
+    assert.equal(p.metadata.knowledge_docs.length, 1);
+});
+
+test('CLI 코딩 에이전트 — 고른 적이 없으면 서버 기본값을 명시한다', () => {
+    const p = withStorage(() => buildParams({ text: 'x', roomId: 'r', session, orchestration: 'cliagents' }));
+    assert.equal(p.metadata.agent_cli, 'claude-code');
+});
+
+test('CLI 코딩 에이전트가 아니면 agent_cli 를 싣지 않는다', () => {
+    const p = withStorage(() =>
+        buildParams({ text: 'x', roomId: 'r', session, orchestration: 'deepagents', agentCli: 'codex' })
+    );
+    assert.equal('agent_cli' in p, false);
+    assert.equal('agent_cli' in p.metadata, false);
 });

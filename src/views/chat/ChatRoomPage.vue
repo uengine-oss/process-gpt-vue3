@@ -905,6 +905,8 @@ import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
 import { useCodexFolderStore } from '@/stores/codexFolder';
 import { usePhoneShell, setPhoneShellTitle } from '@/shared/phoneShell';
 import { normalizeOrchestration } from '@/utils/orchestration';
+import { agentCliOf, agentCliTitle, cliChatMetadata, cliRoomContext, readableAgentError } from '@/utils/cliAgents';
+import { createSessionPreparing, withSessionPreparing } from '@/shared/sessionStatus/index.js';
 import agentRouterService from '@/services/AgentRouterService';
 import deepAgentRouterService, { DeepAgentRouterService } from '@/services/DeepAgentRouterService';
 import FixedBaseWorkAssistantAgentService from '@/services/FixedBaseWorkAssistantAgentService';
@@ -921,6 +923,10 @@ const fixedDeepagentsMainAgentService = new FixedBaseWorkAssistantAgentService('
 // codex 는 deepagents 와 동일한 chat/stream 계약이라 같은 서비스 클래스를 prefix 만 바꿔 쓴다.
 const codexAgentRouterService = new DeepAgentRouterService('/process-gpt-codex');
 const fixedCodexMainAgentService = new FixedBaseWorkAssistantAgentService('/process-gpt-codex');
+// CLI 코딩 에이전트(Claude Code · Codex)도 같은 chat/stream 계약이다. 어느 CLI 인지는 metadata.agent_cli.
+// 수정 지시(/chat/steer)는 501 unsupported 라 부르지 않는다 — 작업 중에 보낸 말은 곧바로 새 턴으로 간다.
+const cliAgentRouterService = new DeepAgentRouterService('/process-gpt-cli-agent', { supportsSteer: false });
+const fixedCliAgentMainAgentService = new FixedBaseWorkAssistantAgentService('/process-gpt-cli-agent');
 
 // 메인 에이전트(process-gpt-agent)는 별도 메타 설정이 필요함(항상 기본 파드로 실행)
 const MAIN_PROCESS_GPT_AGENT_META = {
@@ -1145,6 +1151,10 @@ export default {
         roomOrchestrationLabel() {
             const ctx = this.readChatRoomContext(this.currentChatRoom);
             const value = normalizeOrchestration(ctx?.orchestration);
+            // CLI 코딩 에이전트는 어느 CLI 가 답하는지까지 보여 준다 — 같은 방이라도 고른 CLI 에 따라 답이 다르다.
+            if (value === 'cliagents') {
+                return `${this.$t('AgentSelectInfo.orchestration.cliagents.title')} · ${agentCliTitle(agentCliOf(ctx?.agent_cli))}`;
+            }
             const key = value === 'codex' ? 'chats.codexAgent' : value === 'langchain-react' ? 'chats.basicAgent' : 'chats.deepAgent';
             return this.$t(key);
         },
@@ -2301,6 +2311,8 @@ export default {
                     message: { msg: 'NEW', type: 'text', createdAt: nowIso },
                     context: {
                         orchestration: orchestration,
+                        // CLI 코딩 에이전트면 고른 CLI 도 방에 기억한다(context.agent_cli).
+                        ...cliRoomContext(orchestration, payload?.agentCli),
                         auto_name_pending: true
                     }
                 };
@@ -2420,6 +2432,8 @@ export default {
                     message: { msg: 'NEW', type: 'text', createdAt: nowIso },
                     context: {
                         orchestration: orchestration,
+                        // CLI 코딩 에이전트면 고른 CLI 도 방에 기억한다(context.agent_cli).
+                        ...cliRoomContext(orchestration, payload?.agentCli),
                         auto_name_pending: true
                     }
                 };
@@ -2831,7 +2845,7 @@ export default {
                     const effectiveOrchestration =
                         ((payload?.orchestration != null ? String(payload.orchestration) : '') || '').trim() || this.getRoomOrchestration();
                     if (this.shouldClientWriteChatDb(effectiveOrchestration)) {
-                        await this.setRoomOrchestration(effectiveOrchestration);
+                        await this.setRoomOrchestration(effectiveOrchestration, payload?.agentCli);
                     }
                     payload.orchestration = effectiveOrchestration;
                 } catch (e) {}
@@ -3079,14 +3093,25 @@ export default {
         getAgentRouterForOrchestration(orchestration) {
             const o = (orchestration || '').toString().trim();
             if (o === 'codex') return codexAgentRouterService;
+            if (o === 'cliagents') return cliAgentRouterService;
             return o === 'deepagents' ? deepAgentRouterService : agentRouterService;
         },
         getMainAgentServiceForOrchestration(orchestration) {
             const o = (orchestration || '').toString().trim();
             if (o === 'codex') return fixedCodexMainAgentService;
+            if (o === 'cliagents') return fixedCliAgentMainAgentService;
             return o === 'deepagents' ? fixedDeepagentsMainAgentService : fixedLangchainMainAgentService;
         },
-        async setRoomOrchestration(orchestration) {
+        /**
+         * 이 턴에 쓸 CLI(cliagents 일 때만). 입력창에서 방금 고른 값 → 방에 기억된 값 → 서버 기본값.
+         * 방에 기억된 값을 보지 않으면 새로고침 뒤 첫 메시지가 기본 CLI 로 가 버린다.
+         */
+        resolveAgentCli(orchestration, payload) {
+            if ((orchestration || '').toString().trim() !== 'cliagents') return null;
+            const ctx = this.readChatRoomContext(this.currentChatRoom);
+            return agentCliOf(payload?.agentCli || ctx?.agent_cli);
+        },
+        async setRoomOrchestration(orchestration, agentCli = null) {
             try {
                 if (!this.currentChatRoom?.id) return;
                 const nextValue = (orchestration || '').toString().trim();
@@ -3095,6 +3120,8 @@ export default {
                 const nextCtx = {
                     ...(prevCtx && typeof prevCtx === 'object' ? prevCtx : {}),
                     orchestration: nextValue,
+                    // 방마다 고른 CLI 를 기억한다 — 오케스트레이션과 같은 자리(context)에.
+                    ...(nextValue === 'cliagents' && agentCli ? { agent_cli: agentCliOf(agentCli) } : {}),
                     updatedAt: new Date().toISOString()
                 };
                 this.writeChatRoomContext(nextCtx, this.currentChatRoom);
@@ -5265,7 +5292,7 @@ export default {
                 const effectiveOrchestration =
                     ((payload?.orchestration != null ? String(payload.orchestration) : '') || '').trim() || this.getRoomOrchestration();
                 if (this.shouldClientWriteChatDb(effectiveOrchestration)) {
-                    await this.setRoomOrchestration(effectiveOrchestration);
+                    await this.setRoomOrchestration(effectiveOrchestration, payload?.agentCli);
                 }
                 payload.orchestration = effectiveOrchestration;
 
@@ -9191,6 +9218,8 @@ export default {
             const canWrite = this.shouldClientWriteChatDb(orchestration);
             const router = this.getAgentRouterForOrchestration(orchestration);
             const mainAgentService = this.getMainAgentServiceForOrchestration(orchestration);
+            // CLI 코딩 에이전트면 어느 CLI 로 돌릴지. 다른 오케스트레이션이면 null 이고 본문에도 실리지 않는다.
+            const agentCli = this.resolveAgentCli(orchestration, payload);
 
             // remove routing loading bubble once we start calling agents
             const routingUuid = (agentTargets || []).find((t) => t?.__routingLoadingUuid)?.__routingLoadingUuid || null;
@@ -9405,6 +9434,9 @@ export default {
                     file_count: requestFiles.length,
                     metadata: {
                         ...(payload?.metadata && typeof payload.metadata === 'object' ? payload.metadata : {}),
+                        // CLI 코딩 에이전트(cliagents)에서 고른 CLI(agent_cli). 다른 런타임이면 빈 객체.
+                        // metadata 안이어야 한다 — 본문 맨 위에 두면 SDK 가 모르는 칸이라 버린다.
+                        ...cliChatMetadata(orchestration, agentCli),
                         ...(orchestration === 'codex' ? { active_document: this.activeDocumentContext() } : {}),
                         ...(agentTarget?.__routingDecision ? { routing: agentTarget.__routingDecision } : {}),
                         room_recent_history,
@@ -10186,7 +10218,8 @@ export default {
                         flushStreamedContentNow();
                         delete this.agentAbortControllers[abortKey];
                         // 백엔드가 보낸 실제 오류 메시지를 화면에 노출한다(오류를 먹지 않음).
-                        const errText = (err && (err.message || err.toString())) || '';
+                        // cli-agent 의 코드(cli_not_selected 등)는 무엇을 하면 되는지 읽을 수 있는 문구로 바꾼다.
+                        const errText = (err && (readableAgentError(err, (key) => this.$t(key)) || err.toString())) || '';
                         const partial = (full || '').toString().trim();
                         const display = partial
                             ? `${partial}\n\n⚠️ 오류가 발생했습니다: ${errText || '에이전트 응답 오류'}`
@@ -10245,25 +10278,32 @@ export default {
                     this.setAgentStatus(agentId, { state: 'ready', message: '' });
                 };
 
-                if (agentId === PROCESS_GPT_AGENT_ID) {
-                    await mainAgentService.sendMessageStream(
-                        commonParams,
-                        {
-                            ...callbacks,
-                            onAbort: onAbortHandler
-                        },
-                        { signal: abortController.signal }
-                    );
-                } else {
-                    await router.sendMessageStream(
-                        agentId,
-                        commonParams,
-                        {
-                            ...callbacks,
-                            onAbort: onAbortHandler
-                        },
-                        { signal: abortController.signal }
-                    );
+                // 대화 Pod 를 띄우는 동안(session_status starting) 말풍선 자리에 「에이전트를 준비하고 있어요 · N초」.
+                // 상태 프레임이 아닌 이벤트가 하나라도 오면(토큰 · 도구 · 끝 · 오류 · 중지) 지운다.
+                // 상태 프레임을 보내지 않는 런타임(이미 떠 있는 Pod · deepagents · 기본 에이전트)에는 나타나지 않는다.
+                const sessionPreparing = createSessionPreparing({
+                    onChange: (view) => {
+                        const msg = this.activeStreams[agentId];
+                        if (!msg) return;
+                        if (view) {
+                            msg.sessionPreparing = view;
+                            maybeScroll();
+                        } else {
+                            delete msg.sessionPreparing;
+                        }
+                    }
+                });
+                const streamCallbacks = withSessionPreparing({ ...callbacks, onAbort: onAbortHandler }, sessionPreparing);
+
+                try {
+                    if (agentId === PROCESS_GPT_AGENT_ID) {
+                        await mainAgentService.sendMessageStream(commonParams, streamCallbacks, { signal: abortController.signal });
+                    } else {
+                        await router.sendMessageStream(agentId, commonParams, streamCallbacks, { signal: abortController.signal });
+                    }
+                } finally {
+                    // done 없이 스트림이 끝나도 「준비 중」과 초 세기 타이머를 남기지 않는다.
+                    sessionPreparing.clear();
                 }
 
                 // 방어적 정리 — onDone/onError/onAbort 중 어느 것도 호출되지 않고 스트림이 끝난 경우,

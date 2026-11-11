@@ -9,7 +9,9 @@
  * 다른 방식을 고르고 싶으면 「맡길 방식 고르기」로 탭에서 고른다.
  */
 
-const DEFAULT_ORCHESTRATION = 'deepagents';
+// 기본 오케스트레이션은 채팅과 같은 값을 쓴다 — 두 곳에 적어 두면 한쪽만 바뀐다.
+import { DEFAULT_ORCHESTRATION } from './orchestration.js';
+
 const DEFAULT_MODE = 'draft';
 
 function activeMode(mode) {

@@ -96,6 +96,14 @@
             <!-- 지금 답하는 중. 도착한 만큼 바로 보여 준다. -->
             <div v-if="streaming || busy" class="bubble">
                 <!--
+                    대화 Pod 를 띄우는 중(CLI 계열 에이전트의 첫 답). 16~40초 동안 빈 말풍선만
+                    두면 AI 가 죽은 줄 안다 — 무엇을 기다리는지와 몇 초째인지 보인다.
+                    상태 프레임이 오지 않는 대화에는 나타나지 않는다. 포털과 같은 규칙(@/shared/sessionStatus).
+                -->
+                <p v-if="preparing" class="preparing" data-testid="m-session-preparing" role="status" aria-live="polite">
+                    <span class="preparing__dot" aria-hidden="true"></span><span>에이전트를 준비하고 있어요 · {{ preparing.seconds }}초</span>
+                </p>
+                <!--
                     지금 무엇을 하는 중인지. 오래 걸리는 질의에서 빈 화면만 보이면
                     멈춘 것처럼 보인다. 포털과 같은 이름표를 쓴다.
                 -->
@@ -125,6 +133,10 @@
             :busy="busy"
             :can-talk="canTalk"
             :talking="talking"
+            :orchestration="orchestration"
+            :agent-cli="agentCli"
+            :cli-choices="cliChoices"
+            @update:agent-cli="chooseCli"
             @send="send"
             @pick-knowledge="knowledgeOpen = true"
             @remove-doc="removeDoc"
@@ -205,6 +217,8 @@ import KnowledgePicker from '../components/KnowledgePicker.vue';
 import MobileComposer from '../components/MobileComposer.vue';
 import VoiceSession from '../components/VoiceSession.vue';
 import { buildParams, streamUrl } from '../lib/agentChat.js';
+import { CLI_ERROR_KEYS, DEFAULT_AGENT_CLI, agentCliOf, readableAgentError, toCliAgentItems } from '@/utils/cliAgents';
+import { createSessionPreparing, withSessionPreparing } from '@/shared/sessionStatus/index.js';
 import { sizeText, uploadAll } from '../lib/attachments.js';
 import { download, downloadUrl, reasonText } from '../lib/download.js';
 import { formatToolName } from '@/shared/toolNames/index.js';
@@ -247,11 +261,18 @@ const loading = ref(true);
 const busy = ref(false);
 const error = ref('');
 const orchestration = ref('langchain-react');
+// CLI 코딩 에이전트(cliagents) 방에서 고른 CLI. 방에 기억된 값(context.agent_cli)을 이어 쓴다.
+const agentCli = ref(DEFAULT_AGENT_CLI);
+// 서버(GET /process-gpt-cli-agent/agents)가 알려 준 CLI 목록. 못 받으면 비어 있고 입력창이 아는 둘을 보여 준다.
+const cliChoices = ref<any[]>([]);
+// 「에이전트를 준비하고 있어요 · N초」. 상태 프레임(session_status starting)이 왔을 때만 채워진다.
+const preparing = ref<{ agentType: string; seconds: number } | null>(null);
 const scroller = ref<HTMLElement | null>(null);
 
 let subscription: any = null;
 let session: any = null;
 let controller: AbortController | null = null;
+let tracker: ReturnType<typeof createSessionPreparing> | null = null;
 
 const messages = computed(() => toConversation(rows.value));
 
@@ -448,6 +469,8 @@ async function load() {
         const ctx =
             typeof room.value?.context === 'string' ? safeParse(room.value.context) : room.value?.context;
         orchestration.value = (ctx?.orchestration || route.query.orchestration || 'langchain-react').toString();
+        agentCli.value = agentCliOf(ctx?.agent_cli);
+        if (orchestration.value === 'cliagents') void loadCliChoices();
 
         // 최근 것부터 오므로 뒤집어 시간순으로 만든다.
         rows.value = ((await backend().getMessages(roomId, { size: 100 })) || []).slice().reverse();
@@ -603,6 +626,47 @@ async function savePreview(text: string) {
     }
 }
 
+/**
+ * 서버에 설치된 CLI 를 묻는다(포털 업무 설정과 같은 목록 · 같은 변환).
+ * 서비스가 없는 설치본은 HTML 을 돌려주므로 JSON 이 아니면 비워 둔다.
+ */
+const CLI_HINTS: Record<string, string> = {
+    'AgentSelectInfo.cliAgent.cliNotInstalled': '이 서버에 설치되어 있지 않습니다',
+    'AgentSelectInfo.cliAgent.cliNotAuthenticated': '인증이 필요합니다'
+};
+
+async function loadCliChoices() {
+    try {
+        const res = await fetch(`${apiBase.origin}/process-gpt-cli-agent/agents`);
+        const type = res.headers.get('content-type') || '';
+        if (!res.ok || !type.includes('json')) return;
+        const body = await res.json();
+        cliChoices.value = toCliAgentItems(body?.agents, (key: string) => CLI_HINTS[key] || key);
+    } catch (_e) {
+        // 목록을 못 받아도 고를 수는 있다(아는 둘). 없는 CLI 면 서버가 그렇다고 답한다.
+    }
+}
+
+/**
+ * CLI 를 바꿨다. 방에 기억한다 — 포털과 같은 자리(context.agent_cli)라 웹에서 열어도 같은 CLI 로 간다.
+ * 방 전체를 다시 쓴다. 일부만 쓰면 나머지 칸이 지워진다.
+ */
+async function chooseCli(value: string) {
+    agentCli.value = agentCliOf(value);
+    const ctx = (typeof room.value?.context === 'string' ? safeParse(room.value.context) : room.value?.context) || {};
+    const next = {
+        ...room.value,
+        context: { ...ctx, agent_cli: agentCli.value, updatedAt: new Date().toISOString() }
+    };
+    try {
+        await backend().putObject('db://chat_rooms', next);
+        room.value = next;
+    } catch (e) {
+        // 저장이 안 돼도 이번 대화에서는 고른 CLI 로 간다. 다시 열면 이전 값이다.
+        console.warn('[chat] CLI 선택 저장 실패', e);
+    }
+}
+
 function safeParse(text: string) {
     try {
         return JSON.parse(text);
@@ -730,6 +794,15 @@ async function send({
         );
         controller = new AbortController();
 
+        // 상태 프레임이 아닌 이벤트(토큰 · 도구 · 끝 · 오류 · 중지)가 하나라도 오면 「준비 중」을 지운다.
+        const prep = createSessionPreparing({
+            onChange: (view: any) => {
+                preparing.value = view;
+                if (view) void scrollToEnd();
+            }
+        });
+        tracker = prep;
+
         await service.sendMessageStream(
             buildParams({
                 text: value,
@@ -742,9 +815,11 @@ async function send({
                 images: uploaded.images,
                 sessionFiles: sessionFiles.value,
                 mentioned,
-                ids: { message: messageUuid, response: responseUuid }
+                ids: { message: messageUuid, response: responseUuid },
+                orchestration: orchestration.value,
+                agentCli: agentCli.value
             }),
-            {
+            withSessionPreparing({
                 onToken: (token: string) => {
                     streaming.value += token;
                     void scrollToEnd();
@@ -759,9 +834,17 @@ async function send({
                 },
                 onError: (e: any) => {
                     console.error('[chat] 스트림 오류', e);
-                    error.value = '답변을 받지 못했습니다. 다시 시도해 주세요.';
-                }
-            },
+                    // CLI 코딩 에이전트의 거절(CLI 를 안 골랐다 · 설치 안 됨 · 빈 내용)은 무엇을 하면
+                    // 되는지 알려 준다. 그 밖에는 지금처럼 다시 시도하라고만 한다.
+                    error.value =
+                        e?.code && (CLI_ERROR_KEYS as any)[e.code]
+                            ? readableAgentError(e)
+                            : '답변을 받지 못했습니다. 다시 시도해 주세요.';
+                },
+                // 표시를 지우는 계기로만 쓴다(최종본은 서버가 저장해 실시간으로 들어온다).
+                onDone: () => {},
+                onAbort: () => {}
+            }, prep),
             { signal: controller.signal }
         );
     } catch (e: any) {
@@ -770,6 +853,9 @@ async function send({
             console.error('[chat] 전송 실패', e);
         }
     } finally {
+        // done 없이 끝나도 「준비 중」과 초 세기 타이머를 남기지 않는다.
+        tracker?.clear();
+        tracker = null;
         // 최종본은 서버가 저장하고 실시간 구독으로 들어온다. 여기서 남겨 두면
         // 같은 답이 두 번 보인다.
         streaming.value = '';
@@ -822,6 +908,7 @@ onMounted(async () => {
 onUnmounted(() => {
     void markViewing('');
     controller?.abort();
+    tracker?.clear();
     imageUrls.stop();
     // 구독을 끊지 않으면 방을 옮길 때마다 쌓여 한 메시지가 여러 번 들어온다.
     try {
@@ -904,6 +991,42 @@ onUnmounted(() => {
 .cursor {
     opacity: 0.5;
     margin-left: 1px;
+}
+
+/* 대화 Pod 를 띄우는 동안. 초가 바뀔 때 글자 폭이 흔들리지 않게 숫자 폭을 고정한다. */
+.preparing {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+}
+
+.preparing__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--brand);
+    flex: none;
+    animation: preparing-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes preparing-pulse {
+    0%,
+    100% {
+        opacity: 0.35;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .preparing__dot {
+        animation: none;
+    }
 }
 
 /* --- 첨부 --- */
