@@ -3397,6 +3397,24 @@
         "selectTeam": "팀 선택",
         "selectTeamFirst": "먼저 팀을 선택하세요"
     },
+    "LandingGuide": {
+        "tagline": "업무 절차를 정하면 사람과 AI 에이전트가 함께 실행하는 소스가 공개된 업무 관리 도구(Agentic BPM)입니다.",
+        "note": "튜토리얼과 제품 소개는 uengine.org에서 최신 내용으로 관리합니다.",
+        "tutorial": "튜토리얼",
+        "tutorialHint": "설치부터 분석까지 영상으로 배우세요",
+        "github": "GitHub",
+        "githubHint": "공개된 소스 코드를 확인하세요",
+        "product": "제품 소개",
+        "productHint": "주요 기능과 활용 방법을 알아보세요",
+        "start": "시작하기",
+        "startHint": "이 앱에 로그인해 시작하세요",
+        "installTitle": "내 컴퓨터에 Process GPT Lite 설치",
+        "installHint": "Docker만 있으면 설치할 수 있고, 설치 후 http://localhost:18080 에서 열 수 있습니다.",
+        "installSafety": "v0.2.0 릴리스에 고정된 스크립트의 확인값을 검사한 뒤 실행하세요. 설치할 때 비밀번호와 키는 무작위로 만들며, 앱은 기본으로 이 컴퓨터(127.0.0.1)에서만 열립니다.",
+        "installCopy": "복사",
+        "installCopied": "복사했습니다",
+        "installViewScript": "설치 스크립트 내용 보기"
+    },
     "Header": {
         "tutorial": "튜토리얼",
         "works": "핵심 기능",

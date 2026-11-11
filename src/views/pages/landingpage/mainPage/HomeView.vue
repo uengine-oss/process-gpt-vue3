@@ -2,14 +2,8 @@
     <v-container class="main-page-container ma-0 pa-0">
         <v-row class="ma-0 pa-0">
             <v-col class="ma-0 pa-0" cols="12" v-if="!showTutorial">
-                <HeroSection />
-                <NecessitySection />
-                <AI3StepsSection />
-                <HowSection />
-                <MovieGallerySection />
-                <!-- <ExtensibilitySection /> -->
-                <DownloadSection />
-                <CTASection />
+                <!-- 제품 소개는 uengine.org 가 맡는다. 여기서는 튜토리얼·GitHub·제품 소개·로그인으로 가는 길만 안내한다. -->
+                <GuideSection />
                 <!-- <v-card>
                     <v-card-title>Vue 3 + Vuetify 3</v-card-title>
                     <v-card-text>
@@ -41,15 +35,8 @@
 </template>
 
 <script>
-import HeroSection from './sections/HeroSection.vue';
-import NecessitySection from './sections/NecessitySection.vue';
-import AI3StepsSection from './sections/AI3StepsSection.vue';
-import HowSection from './sections/HowSection.vue';
+import GuideSection from './sections/GuideSection.vue';
 import TutorialMain from './tutorial/TutorialMain.vue';
-import MovieGallerySection from './sections/MovieGallerySection.vue';
-// import ExtensibilitySection from './sections/ExtensibilitySection.vue'
-import CTASection from './sections/CTASection.vue';
-import DownloadSection from './sections/DownloadSection.vue';
 
 export default {
     name: 'HomeView',
@@ -65,15 +52,8 @@ export default {
         };
     },
     components: {
-        HeroSection,
-        NecessitySection,
-        AI3StepsSection,
-        HowSection,
-        TutorialMain,
-        MovieGallerySection,
-        // ExtensibilitySection,
-        CTASection,
-        DownloadSection
+        GuideSection,
+        TutorialMain
     },
     watch: {
         showTutorial(newVal) {

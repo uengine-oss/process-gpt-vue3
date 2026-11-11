@@ -3382,6 +3382,24 @@
         "selectTeam": "Select Team",
         "selectTeamFirst": "Please select a team first"
     },
+    "LandingGuide": {
+        "tagline": "Process GPT is a source-available workflow tool (Agentic BPM). Define a workflow for people and AI agents to run together.",
+        "note": "Tutorials and product information are kept up to date on uengine.org.",
+        "tutorial": "Tutorials",
+        "tutorialHint": "Learn step by step",
+        "github": "GitHub",
+        "githubHint": "Browse the source code",
+        "product": "Product overview",
+        "productHint": "Explore Process GPT",
+        "start": "Get started",
+        "startHint": "Log in to this app",
+        "installTitle": "Install Process GPT Lite on your computer",
+        "installHint": "All you need is Docker; after installation, open http://localhost:18080.",
+        "installSafety": "Verify the checksum of the script pinned to release v0.2.0 before running it. Installation generates random passwords and keys, and the app is accessible only on this computer (127.0.0.1) by default.",
+        "installCopy": "Copy",
+        "installCopied": "Copied",
+        "installViewScript": "View installation script"
+    },
     "Header": {
         "tutorial": "Tutorial",
         "works": "How Process GPT Works?",
