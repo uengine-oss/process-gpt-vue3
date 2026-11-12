@@ -6,8 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <script>
         // 휴대폰 브라우저의 앱 화면은 기본으로 데스크톱 화면(PC와 같은 화면)으로 연다(2026-11-11 결정 D-1111-09).
-        // 브라우저의 「데스크톱 사이트 요청」처럼 화면 폭을 1280px 로 잡는다. 라이트 버전(localStorage mobileView=light —
-        // 설정 › 테마 설정 「휴대폰 화면」)을 고른 휴대폰만 휴대폰 웹(/m/, 할 일 · 진행 · AI · 알림 · 나)으로 연다.
+        // 브라우저의 「데스크톱 사이트 요청」처럼 화면 폭을 1280px 로 잡는다. 설정 › 테마 설정 「휴대폰 화면」에서
+        // 고른 값(localStorage mobileView)이 mobile(모바일 버전)인 휴대폰은 휴대폰 웹(/m/, 할 일 · 진행 · AI · 알림 · 나)으로,
+        // lite(라이트 모드)인 휴대폰은 Process GPT Lite(/lite/)로 연다(2026-11-12 결정 D-1112-30).
+        // 예전 값 light 는 휴대폰 웹을 뜻했으므로 mobile 로 읽는다.
         // 옮기지 않는 경우:
         //   - 네이티브 앱(process-gpt-mobile, Capacitor) — 앱은 지금처럼 모바일 화면
         //   - 랜딩(/) · 로그인(/auth/*) · 외부 폼(/external-forms/*) · 조직 고르기 · 약관 — 포털이 기기 폭으로 그린다
@@ -29,9 +31,23 @@
                 var coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
                 return coarse && Math.min(screen.width, screen.height) <= 768 && !isNativeApp();
             }
+            var LITE_URL = '/lite/';
             function view() {
-                try { return localStorage.getItem(KEY); } catch (e) { return null; }
+                var v = null;
+                try { v = localStorage.getItem(KEY); } catch (e) { return null; }
+                return v === 'light' ? 'mobile' : v;
             }
+            // 주소에 ?mobileView=desktop|mobile|lite 가 있으면 그 값으로 바꾼다 — Lite 처럼 포털 밖 화면에서
+            // 「데스크톱 화면으로」 돌아올 때 쓴다(Lite 에는 이 설정 화면이 없다).
+            (function adoptViewFromUrl() {
+                var m = /[?&]mobileView=(desktop|mobile|lite)(?:&|$)/.exec(location.search || '');
+                if (!m) return;
+                try { localStorage.setItem(KEY, m[1]); } catch (e) { /* 저장을 막은 브라우저 */ }
+                try {
+                    var rest = location.search.replace(/([?&])mobileView=[^&]*&?/, '$1').replace(/[?&]$/, '');
+                    history.replaceState(history.state, '', location.pathname + rest + location.hash);
+                } catch (e) { /* 주소를 못 고쳐도 값은 반영됐다 */ }
+            })();
             function isDeviceWidthPath(path) {
                 return path === '/' || path.indexOf('/auth/') === 0 || path.indexOf('/external-forms/') === 0;
             }
@@ -51,8 +67,9 @@
                 return '#/tasks';
             }
             // 포털에 남는 곳: 랜딩 · 로그인 · 외부 폼 · 조직 고르기/만들기 · 약관 · 계정 설정(2단계 인증 등록).
+            // /lite 도 넣는다 — Lite 가 없는 설치에서는 그 주소도 포털이 받으므로, 빼면 끝없이 다시 옮긴다.
             function staysOnPortal(path) {
-                return isDeviceWidthPath(path) || /^\/(?:auth|tenant|privacy|terms|m|account-settings)(?:\/|$)/.test(path);
+                return isDeviceWidthPath(path) || /^\/(?:auth|tenant|privacy|terms|m|lite|account-settings)(?:\/|$)/.test(path);
             }
             var api = {
                 KEY: KEY,
@@ -61,13 +78,19 @@
                 isDeviceWidthPath: isDeviceWidthPath,
                 view: view,
                 wantsDesktop: function (path) {
-                    return enabled && isPhoneBrowser() && view() !== 'light' && !isDeviceWidthPath(path);
+                    var v = view();
+                    return enabled && isPhoneBrowser() && v !== 'mobile' && v !== 'lite' && !isDeviceWidthPath(path);
                 },
                 phoneWebHash: phoneWebHash,
-                // 라이트 버전을 고른 휴대폰이면 앱 화면은 휴대폰 웹(/m/)으로 연다. 옮길 곳 또는 null.
+                // 모바일 버전을 고른 휴대폰이면 앱 화면은 휴대폰 웹(/m/)의 같은 화면으로, 라이트 모드를 고른 휴대폰이면
+                // Process GPT Lite(/lite/)로 연다. 옮길 곳 또는 null.
+                LITE_URL: LITE_URL,
                 phoneWebUrl: function (path) {
-                    if (!enabled || !isPhoneBrowser() || view() !== 'light' || staysOnPortal(path)) return null;
-                    return '/m/' + phoneWebHash(path);
+                    if (!enabled || !isPhoneBrowser() || staysOnPortal(path)) return null;
+                    var v = view();
+                    if (v === 'mobile') return '/m/' + phoneWebHash(path);
+                    if (v === 'lite') return LITE_URL;
+                    return null;
                 },
                 disable: function () {
                     enabled = false;

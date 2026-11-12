@@ -1,7 +1,8 @@
 /**
- * 휴대폰 화면 (F-MV-01 ~ F-MV-16) — 2026-11-11
- *   - 휴대폰은 기본으로 데스크톱 화면(1280px — PC와 같은 화면)으로 연다. 설정에서 라이트를 고른 휴대폰만
- *     휴대폰 웹(/m/ — 할 일 · 진행 · AI · 알림 · 나)으로 연다.
+ * 휴대폰 화면 (F-MV-01 ~ F-MV-20) — 2026-11-11, 세 가지 화면은 2026-11-12
+ *   - 휴대폰은 기본으로 데스크톱 화면(1280px — PC와 같은 화면)으로 연다. 설정에서 모바일 버전을 고른 휴대폰은
+ *     휴대폰 웹(/m/ — 할 일 · 진행 · AI · 알림 · 나)으로, 라이트 모드를 고른 휴대폰은 Process GPT Lite(/lite/)로 연다
+ *     (F-MV-03 · 17 ~ 20). 전에 「라이트 버전」(저장값 light)을 골라 둔 휴대폰은 모바일 버전으로 읽는다.
  *   - 홈 화면에 추가하지 않은 휴대폰에는 맨 위 「홈 화면에 추가」 띠, 「다시 보지 않기」 뒤로는 보이지 않는다(F-MV-15 · 16).
  *   - 휴대폰 웹도 포털과 같은 로그인 · 2단계 인증(TOTP)을 거친다(F-MV-13 · 14).
  *   - 홈 화면에 추가(매니페스트 · iPhone 안내), 좁은 화면의 관리 · 설계 · 분석 숨김 · 막기, 결정 칸.
@@ -80,7 +81,7 @@ async function fillLogin(page: Page, a: { email: string; password: string }) {
 const viewport = (page: Page) => page.evaluate(() => ({ mode: document.documentElement.dataset.viewport, width: window.innerWidth }));
 const tabs = (page: Page) => page.locator('nav.m-tabs');
 
-async function phoneContext(browser: any, extra: Record<string, unknown> = {}, saved?: 'desktop' | 'light'): Promise<BrowserContext> {
+async function phoneContext(browser: any, extra: Record<string, unknown> = {}, saved?: 'desktop' | 'mobile' | 'lite' | 'light'): Promise<BrowserContext> {
     const ctx = await browser.newContext({ ...phone, ...extra });
     // 처음 한 번만 심는다 — 초기화 스크립트는 페이지를 열 때마다 돌아 새로 연 뒤의 저장값을 덮는다
     if (saved)
@@ -90,6 +91,14 @@ async function phoneContext(browser: any, extra: Record<string, unknown> = {}, s
             sessionStorage.setItem('mv-seeded', '1');
         }, saved);
     return ctx;
+}
+
+async function openPhoneScreenSetting(page: Page) {
+    await page.goto(`${BASE}/account-settings`);
+    await page.getByText('테마 설정', { exact: true }).first().click();
+    const setting = page.getByTestId('mobile-view-setting');
+    await expect(setting).toBeVisible({ timeout: 30_000 });
+    return setting;
 }
 
 test('F-MV-01 휴대폰으로 로그인하면 데스크톱 화면(PC와 같은 화면)으로 열린다', async ({ browser }) => {
@@ -110,7 +119,7 @@ test('F-MV-01 휴대폰으로 로그인하면 데스크톱 화면(PC와 같은 �
 });
 
 test('F-MV-02 휴대폰 웹 「나」의 「PC 화면으로 보기」는 포털 데스크톱 화면을 열고, 다시 열어도 그대로다', async ({ browser }) => {
-    const ctx = await phoneContext(browser, {}, 'light');
+    const ctx = await phoneContext(browser, {}, 'mobile');
     const page = await ctx.newPage();
     await login(page);
     await page.waitForURL((u) => u.pathname === '/m/', { timeout: 60_000 });
@@ -126,19 +135,16 @@ test('F-MV-02 휴대폰 웹 「나」의 「PC 화면으로 보기」는 포털 
     await ctx.close();
 });
 
-test('F-MV-03 설정 › 테마 설정 「휴대폰 화면」에서 라이트를 고르면 휴대폰 웹으로 간다', async ({ browser }) => {
+test('F-MV-03 설정 › 테마 설정 「휴대폰 화면」에서 모바일 버전을 고르면 휴대폰 웹으로 간다', async ({ browser }) => {
     const ctx = await phoneContext(browser);
     const page = await ctx.newPage();
     await login(page);
     expect((await viewport(page)).mode).toBe('desktop');
-    await page.goto(`${BASE}/account-settings`);
-    await page.getByText('테마 설정', { exact: true }).first().click();
-    const setting = page.getByTestId('mobile-view-setting');
-    await expect(setting).toBeVisible({ timeout: 30_000 });
-    await setting.getByText(/라이트 버전/).click();
+    const setting = await openPhoneScreenSetting(page);
+    await setting.getByText(/모바일 버전/).click();
     await page.waitForURL((u) => u.pathname === '/m/', { timeout: 60_000 });
     await expect(tabs(page)).toBeVisible({ timeout: 30_000 });
-    expect(await page.evaluate(() => localStorage.getItem('mobileView'))).toBe('light');
+    expect(await page.evaluate(() => localStorage.getItem('mobileView'))).toBe('mobile');
     await ctx.close();
 });
 
@@ -148,10 +154,11 @@ test('F-MV-06 홈 화면에 추가: 매니페스트가 있고 iPhone 에는 공�
     await login(page);
     const href = await page.locator('link[rel="manifest"]').getAttribute('href');
     expect(href).toBe('/manifest.webmanifest');
-    const manifest = await (await page.request.get(`${BASE}${href}`)).json();
+    // 브라우저로 받는다 — 시험 러너(Node)는 UX_HOST_MAP 을 모르므로 VM 화면 주소(localhost:8088)에 닿지 못한다
+    const manifest = await page.evaluate(async (h) => (await fetch(h)).json(), href);
     expect(manifest.display).toBe('standalone');
     expect(manifest.icons.map((i: any) => i.sizes)).toEqual(expect.arrayContaining(['192x192', '512x512']));
-    for (const icon of manifest.icons) expect((await page.request.get(`${BASE}${icon.src}`)).status(), icon.src).toBe(200);
+    for (const icon of manifest.icons) expect(await page.evaluate(async (src) => (await fetch(src)).status, icon.src), icon.src).toBe(200);
 
     await page.goto(`${BASE}/account-settings`);
     await page.getByText('테마 설정', { exact: true }).first().click();
@@ -215,7 +222,7 @@ test('F-MV-09 좁은 화면에서 관리 주소로 가면 PC 안내로 간다', 
 
 test('F-MV-10 휴대폰 웹 업무 화면에 「에이전트에 맡기기」가 있다', async ({ browser }) => {
     test.skip(!process.env.MV_TASK_ID, 'MV_TASK_ID 없음');
-    const ctx = await phoneContext(browser, {}, 'light');
+    const ctx = await phoneContext(browser, {}, 'mobile');
     const page = await ctx.newPage();
     await loginAs(page, 'minji');
     await page.goto(`${BASE}/todolist/${process.env.MV_TASK_ID}`);
@@ -247,7 +254,7 @@ test('F-MV-11 승인 · 반려 칸은 미리 고르지 않고, 고르지 않으�
 
 test('F-MV-12 휴대폰 웹 승인 화면: 미리 고른 값 없이 반려 · 승인 두 단추, 반려는 의견이 있어야 눌린다', async ({ browser }) => {
     test.skip(!process.env.MV_APPROVAL_TASK_ID, 'MV_APPROVAL_TASK_ID 없음');
-    const ctx = await phoneContext(browser, {}, 'light');
+    const ctx = await phoneContext(browser, {}, 'mobile');
     const page = await ctx.newPage();
     await loginAs(page, 'admin');
     await page.goto(`${BASE}/m/#/tasks/${process.env.MV_APPROVAL_TASK_ID}`);
@@ -261,6 +268,7 @@ test('F-MV-12 휴대폰 웹 승인 화면: 미리 고른 값 없이 반려 · �
 
 
 test('F-MV-13 로그인 전에 휴대폰 웹 주소를 열면 포털 로그인을 거쳐 그 화면으로 돌아온다', async ({ browser }) => {
+    // 옛 저장값(light — 「라이트 버전」)으로 둔다: 전에 고른 휴대폰도 그대로 휴대폰 웹으로 열려야 한다
     const ctx = await phoneContext(browser, {}, 'light');
     const page = await ctx.newPage();
     await page.goto(`${BASE}/m/#/notifications`);
@@ -274,7 +282,7 @@ test('F-MV-13 로그인 전에 휴대폰 웹 주소를 열면 포털 로그인�
 
 test('F-MV-14 2단계 인증 계정은 비밀번호만으로 휴대폰 웹에 들어가지 못한다', async ({ browser }) => {
     test.skip(!accounts.mfa, '계정 파일에 mfa(TOTP 등록 계정)가 없습니다');
-    const ctx = await phoneContext(browser, {}, 'light');
+    const ctx = await phoneContext(browser, {}, 'mobile');
     const page = await ctx.newPage();
     await page.goto(`${BASE}/auth/login`);
     await fillLogin(page, accounts.mfa);
@@ -328,7 +336,7 @@ test('F-MV-15 데스크톱 화면 맨 위의 「홈 화면에 추가」 띠 — 
 });
 
 test('F-MV-16 휴대폰 웹(/m/) 맨 위에도 같은 띠가 있고, 「다시 보지 않기」는 포털과 같이 기억한다', async ({ browser }) => {
-    const ctx = await phoneContext(browser, { userAgent: IPHONE_UA }, 'light');
+    const ctx = await phoneContext(browser, { userAgent: IPHONE_UA }, 'mobile');
     const page = await ctx.newPage();
     await login(page);
     await page.waitForURL((u) => u.pathname === '/m/', { timeout: 60_000 });
@@ -348,5 +356,96 @@ test('F-MV-16 휴대폰 웹(/m/) 맨 위에도 같은 띠가 있고, 「다시 �
     await expect.poll(() => viewport(page), { timeout: 30_000 }).toEqual({ mode: 'desktop', width: 1280 });
     await page.waitForTimeout(3_000);
     await expect(page.getByTestId('install-bar')).toHaveCount(0);
+    await ctx.close();
+});
+
+// ── 휴대폰 화면 세 가지: 데스크톱 버전 · 모바일 버전(/m/) · 라이트 모드(/lite/ — Process GPT Lite) ─────────────────
+// 「데스크탑 버전, 모바일 버전, 라이트 모드 이렇게 있는 거야 … 라이트 모드 말 그대로 프로세스 GPT 라이트로 연결이 돼야 돼」
+
+/** 이 서버에 Process GPT Lite 가 실제로 있나(없으면 /lite/ 도 포털 화면이 나온다) */
+async function hasLite(page: Page) {
+    // 브라우저로 받는다(Node 는 UX_HOST_MAP 을 모른다). 로그인 화면은 어떤 설정에서도 포털에 남는다.
+    const probe = await page.context().newPage();
+    await probe.goto(`${BASE}/auth/login`);
+    const html = await probe.evaluate(async () => (await fetch('/lite/')).text());
+    await probe.close();
+    return html.includes('/lite/assets/') && !html.includes('__pgptViewport');
+}
+
+/** Lite 가 없는 시험 서버에서 Lite 자리를 대신하는 화면 — /lite/ 문서만 바꾼다(포털 문서는 건드리지 않는다) */
+async function fakeLite(ctx: BrowserContext) {
+    await ctx.route(/\/lite\/(\?.*)?$/, (route) =>
+        route.fulfill({
+            contentType: 'text/html; charset=utf-8',
+            body: '<!doctype html><title>process gpt pro</title><script type="module" src="/lite/assets/index.js"></script><div data-testid="fake-lite">Process GPT Lite</div>'
+        })
+    );
+    await ctx.route(/\/lite\/assets\//, (route) => route.fulfill({ contentType: 'text/javascript', body: '' }));
+}
+
+test('F-MV-17 「휴대폰 화면」에는 데스크톱 버전 · 모바일 버전 · 라이트 모드 세 가지가 있다', async ({ browser }) => {
+    const ctx = await phoneContext(browser);
+    const page = await ctx.newPage();
+    await login(page);
+    const setting = await openPhoneScreenSetting(page);
+    const radios = setting.getByRole('radio');
+    await expect(radios).toHaveCount(3);
+    await expect(setting).toContainText('데스크톱 버전');
+    await expect(setting).toContainText('모바일 버전');
+    await expect(setting).toContainText('라이트 모드');
+    // 고르지 않은 휴대폰은 데스크톱 버전이다
+    await expect(setting.getByRole('radio', { name: /데스크톱 버전/ })).toBeChecked();
+    await page.screenshot({ path: 'playwright/test-results/mv-three-options.png' });
+    await ctx.close();
+});
+
+test('F-MV-18 라이트 모드를 고르면 Process GPT Lite(/lite/)로 가고, 포털 주소를 열어도 Lite 로 간다', async ({ browser }) => {
+    const ctx = await phoneContext(browser);
+    const page = await ctx.newPage();
+    if (!(await hasLite(page))) await fakeLite(ctx);
+    await login(page);
+    const setting = await openPhoneScreenSetting(page);
+    await setting.getByText(/라이트 모드/).click();
+    await page.waitForURL((u) => u.pathname === '/lite/', { timeout: 60_000 });
+    expect(await page.evaluate(() => localStorage.getItem('mobileView'))).toBe('lite');
+    await expect(tabs(page)).toHaveCount(0);
+    // 포털 업무 주소(알림 링크 등)를 열어도 Lite 로 간다 — 휴대폰 웹(/m/)이 아니다
+    await page.goto(`${BASE}/todolist`);
+    await page.waitForURL((u) => u.pathname === '/lite/', { timeout: 60_000 });
+    await ctx.close();
+});
+
+test('F-MV-19 Lite 가 없는 서버에서 라이트 모드를 고르면 안내만 하고 바꾸지 않는다', async ({ browser }) => {
+    const ctx = await phoneContext(browser);
+    const page = await ctx.newPage();
+    test.skip(await hasLite(page), '이 서버에는 Process GPT Lite 가 있다');
+    await login(page);
+    const setting = await openPhoneScreenSetting(page);
+    await setting.getByText(/라이트 모드/).click();
+    await expect(page.getByTestId('mobile-view-lite-missing')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('mobile-view-lite-missing')).toContainText('Process GPT Lite');
+    await expect(setting.getByRole('radio', { name: /데스크톱 버전/ })).toBeChecked();
+    expect(await page.evaluate(() => localStorage.getItem('mobileView'))).toBeNull();
+    expect(new URL(page.url()).pathname).toBe('/account-settings');
+    await page.screenshot({ path: 'playwright/test-results/mv-lite-missing.png' });
+    await ctx.close();
+});
+
+test('F-MV-20 라이트 모드인 휴대폰이 ?mobileView=desktop 주소로 오면 데스크톱 화면으로 돌아온다', async ({ browser }) => {
+    const ctx = await phoneContext(browser, {}, 'lite');
+    const page = await ctx.newPage();
+    if (!(await hasLite(page))) await fakeLite(ctx);
+    await login(page);
+    await page.waitForURL((u) => u.pathname === '/lite/', { timeout: 60_000 });
+    // Lite 설정의 「데스크톱 화면으로」가 여는 주소
+    await page.goto(`${BASE}/definition-map?mobileView=desktop`);
+    await expect.poll(() => viewport(page), { timeout: 30_000 }).toEqual({ mode: 'desktop', width: 1280 });
+    expect(await page.evaluate(() => localStorage.getItem('mobileView'))).toBe('desktop');
+    const url = new URL(page.url());
+    expect(url.pathname).toBe('/definition-map');
+    expect(url.searchParams.has('mobileView')).toBe(false);
+    // 설정에는 데스크톱 버전이 골라져 있다
+    const setting = await openPhoneScreenSetting(page);
+    await expect(setting.getByRole('radio', { name: /데스크톱 버전/ })).toBeChecked();
     await ctx.close();
 });
