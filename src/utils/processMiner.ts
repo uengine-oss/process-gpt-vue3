@@ -48,6 +48,42 @@ export interface HandoverThread {
     steps: HandoverStep[];
 }
 
+async function post<T>(path: string, body: Record<string, any>): Promise<T> {
+    const res = await fetch(`${BASE}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+        body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+        const detail = await res.text().catch(() => '');
+        throw new Error(`${path} 실패 (${res.status}) ${detail.slice(0, 200)}`);
+    }
+    return res.json();
+}
+
+/** 지켜야 할 묶음 경계 — 관리자가 본 묶음. 저장은 handover_process_decisions */
+export interface DecidedProcess {
+    key: string;
+    category?: string | null;
+    core_activities: string[];
+    case_ids?: string[] | null;
+    exclude: string[];
+}
+
+export interface UnclassifiedCase {
+    case_id: string;
+    trace: string[];
+    reason: 'no_category' | 'no_core_step';
+}
+
+/** 관리자의 말에서 읽은 결정. 마이너가 사실과 맞춰 본 것만 온다 */
+export interface FeedbackChange {
+    confirm?: boolean;
+    steps?: { step: string; kind: 'required' | 'optional' }[];
+    moves?: { case_id: string; to: string; category?: string }[];
+    proposal?: 'accept' | 'reject';
+}
+
 export interface DiscoveredProcess {
     stats: {
         event_count: number;
@@ -68,14 +104,31 @@ export interface DiscoveredProcess {
     definition: any;
 }
 
-/** 업무 묶음 — 거친 단계가 겹치는 끝난 스레드끼리 묶은 것. 묶음마다 프로세스를 따로 도출한다 */
+/** 업무 묶음 — 업무 범주가 같은 끝난 스레드. 관리자가 본 묶음은 경계로 고정된다 */
 export interface MinedProcessGroup {
     process_key: string;
+    decided_key: string;
+    category: string;
+    // 업무 범주
     name: string;
     case_count: number;
     activities: string[];
+    core_activities: string[];
+    optional_activities: string[];
     variants: { trace: string[]; count: number }[];
+    // 묶음의 사례(관리자가 확인한 사례). 화면은 이것으로 스레드를 거른다
+    cases: string[];
     minable: boolean;
+    // 관리자가 본 묶음에 새로 붙은 사례 — 받아들이기 전에는 묶음에 들어가지 않는다
+    new_case_ids: string[];
+    proposed: { case_ids: string[]; case_count: number; variants: { trace: string[]; count: number }[] } | null;
+}
+
+export interface GroupResult {
+    processes: MinedProcessGroup[];
+    unclassified: UnclassifiedCase[];
+    in_progress_cases: number;
+    dropped_short_cases: number;
 }
 
 export interface IdentifiedProposal {
@@ -91,22 +144,57 @@ export interface IdentifiedProposal {
 export const processMiner = {
     health: () => get<{ status: string }>('/health'),
     // 식별 화면은 업무별로 스레드를 거른다. 50건에서 자르면 업무의 케이스 수와 스레드 수가 맞지 않았다.
-    threads: (tenantId?: string, limit = 1000) => get<{ count: number; threads: HandoverThread[] }>('/threads', { tenant_id: tenantId, limit }),
+    threads: (tenantId?: string, limit = 1000) =>
+        get<{ count: number; threads: HandoverThread[] }>('/threads', { tenant_id: tenantId, limit }),
     network: (tenantId?: string) =>
         get<{ edges: { from: string; to: string; count: number }[]; automation: Record<string, any> }>('/network', {
             tenant_id: tenantId
         }),
-    processes: (tenantId?: string) =>
-        get<{ processes: MinedProcessGroup[]; in_progress_cases: number; dropped_short_cases: number }>('/processes', {
-            tenant_id: tenantId
+    /** 업무 범주 판단(쓰기 없음) — 결과는 부른 쪽이 handover_case_categories 에 한 번 저장한다 */
+    categories: (
+        tenantId: string,
+        cases: { id: string; request: string; steps: string[] }[],
+        known: string[] = [],
+        examples: { request: string; category: string }[] = [],
+        lang?: string
+    ) => post<{ categories: Record<string, string> }>('/categories', { tenant_id: tenantId, cases, known, examples, lang }),
+    /** 업무 묶음 — 저장해 둔 범주와 관리자 결정(경계)을 넘긴다 */
+    processes: (tenantId: string, categories: Record<string, string>, decided: DecidedProcess[]) =>
+        post<GroupResult>('/processes', { tenant_id: tenantId, categories, decided }),
+    discovered: (
+        tenantId: string,
+        processKey: string,
+        categories: Record<string, string>,
+        decided: DecidedProcess[],
+        processId?: string,
+        name?: string
+    ) =>
+        post<DiscoveredProcess>('/discovered', {
+            tenant_id: tenantId,
+            process_key: processKey,
+            categories,
+            decided,
+            process_id: processId,
+            name
         }),
-    discovered: (tenantId?: string, processKey?: string, processId?: string, name?: string) =>
-        get<DiscoveredProcess>('/discovered', { tenant_id: tenantId, process_key: processKey, process_id: processId, name }),
+    /** 관리자의 말을 결정으로 읽는다(쓰기 없음). 저장은 관리자가 적용을 누른 뒤 화면이 한다 */
+    feedback: (tenantId: string, message: string, facts: Record<string, any>, lang?: string) =>
+        post<{ reply: string; change: FeedbackChange | null; error?: string }>('/feedback', {
+            tenant_id: tenantId,
+            message,
+            facts,
+            lang
+        }),
     /** 조직 마이닝 — 역할 클러스터·활동별 자격·핸드오버 네트워크 */
     organization: (tenantId?: string) =>
         get<{
             network: { from: string; from_name: string; to: string; to_name: string; count: number }[];
-            roles: { role: string; members: { user_id: string; name: string; is_agent: boolean }[]; activities: string[]; mixed: boolean }[];
+            roles: {
+                role: string;
+                members: { user_id: string; name: string; is_agent: boolean }[];
+                activities: string[];
+                mixed: boolean;
+            }[];
             eligibility: {
                 activity: string;
                 required_capability: string;
@@ -116,7 +204,15 @@ export const processMiner = {
             }[];
         }>('/organization', { tenant_id: tenantId }),
     /** 마이닝 실행 → proc_def_version(draft) + PR 생성. 살아있는 proc_def 는 건드리지 않는다. */
-    mine: async (body: { tenant_id?: string; process_id?: string; name?: string; dry_run?: boolean; process_key?: string }) => {
+    mine: async (body: {
+        tenant_id?: string;
+        process_id?: string;
+        name?: string;
+        dry_run?: boolean;
+        process_key?: string;
+        categories?: Record<string, string>;
+        decided?: DecidedProcess[];
+    }) => {
         const res = await fetch(`${BASE}/mine`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },

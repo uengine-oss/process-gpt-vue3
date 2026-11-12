@@ -15,6 +15,23 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
+                    <v-tooltip text="관리자 대화" location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-btn
+                                v-bind="props"
+                                icon
+                                variant="text"
+                                size="small"
+                                :color="talkOpen ? 'primary' : undefined"
+                                :disabled="!selectedGroup"
+                                class="e2e-talk-toggle"
+                                aria-label="관리자 대화"
+                                @click="toggleTalk"
+                            >
+                                <v-icon>mdi-message-text-outline</v-icon>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
                     <v-tooltip text="새 프로세스로 제안" location="bottom">
                         <template v-slot:activator="{ props }">
                             <v-btn
@@ -75,6 +92,11 @@
                             class="e2e-process-select"
                             @update:model-value="selectGroup"
                         >
+                            <template v-slot:prepend-inner>
+                                <v-icon v-if="selectedKey && isConfirmed(selectedKey)" size="16" color="success" class="e2e-group-confirmed"
+                                    >mdi-check-decagram</v-icon
+                                >
+                            </template>
                             <template v-slot:item="{ props, item }">
                                 <v-list-item
                                     v-bind="props"
@@ -82,7 +104,23 @@
                                     :class="{ 'text-medium-emphasis': !item.raw.minable }"
                                     :data-key="item.raw.process_key"
                                 >
+                                    <template v-slot:prepend>
+                                        <v-icon v-if="item.raw.process_key === UNCLASSIFIED" size="16" class="mr-2"
+                                            >mdi-help-circle-outline</v-icon
+                                        >
+                                        <v-icon v-else-if="isConfirmed(item.raw.process_key)" size="16" color="success" class="mr-2"
+                                            >mdi-check-decagram</v-icon
+                                        >
+                                        <v-icon v-else size="16" class="mr-2 text-medium-emphasis">mdi-shape-outline</v-icon>
+                                    </template>
                                     <template v-slot:append>
+                                        <v-icon
+                                            v-if="item.raw.new_case_ids && item.raw.new_case_ids.length"
+                                            size="14"
+                                            class="mr-1"
+                                            color="warning"
+                                            >mdi-plus-circle-outline</v-icon
+                                        >
                                         <span class="text-caption text-medium-emphasis">{{ item.raw.case_count }}</span>
                                     </template>
                                 </v-list-item>
@@ -110,6 +148,7 @@
                                         :class="{ 'is-open': t.finished === false }"
                                         :data-room-id="t.origin_room_id"
                                         :data-finished="t.finished === false ? 'false' : 'true'"
+                                        :data-category="categoryOf(t.origin_room_id)"
                                         role="button"
                                         tabindex="0"
                                         @click="openRoom(t.origin_room_id)"
@@ -117,6 +156,25 @@
                                     >
                                         <div class="mining-thread__title">
                                             <span class="mining-thread__name">{{ threadName(t) }}</span>
+                                            <!-- 관리자가 본 묶음에 새로 붙은 사례: 받아들이기 전에는 그림에 들어가지 않는다 -->
+                                            <v-tooltip v-if="isProposal(t.origin_room_id)" text="제안 — 관리자 확인 전" location="top">
+                                                <template v-slot:activator="{ props }">
+                                                    <v-icon v-bind="props" size="14" color="warning" class="ml-1 e2e-thread-proposal">
+                                                        mdi-plus-circle-outline
+                                                    </v-icon>
+                                                </template>
+                                            </v-tooltip>
+                                            <v-tooltip v-if="unclassifiedIds.has(t.origin_room_id)" text="확인 필요" location="top">
+                                                <template v-slot:activator="{ props }">
+                                                    <v-icon
+                                                        v-bind="props"
+                                                        size="14"
+                                                        class="ml-1 text-medium-emphasis e2e-thread-unclassified"
+                                                    >
+                                                        mdi-help-circle-outline
+                                                    </v-icon>
+                                                </template>
+                                            </v-tooltip>
                                             <!-- 마지막으로 받은 할 일이 끝나지 않은 건은 도출에 들어가지 않는다 -->
                                             <v-tooltip v-if="t.finished === false" text="진행 중 — 도출에서 제외" location="top">
                                                 <template v-slot:activator="{ props }">
@@ -174,6 +232,24 @@
                                         케이스 {{ discovered.stats.case_count }}
                                     </v-chip>
                                 </div>
+                                <!-- 단계: 채운 칩 = 필수, 테두리 칩 = 옵션, 자물쇠 = 관리자가 확정 -->
+                                <div
+                                    v-if="selectedGroup && selectedGroup.process_key !== UNCLASSIFIED"
+                                    class="mb-2 d-flex flex-wrap ga-1 e2e-steps"
+                                >
+                                    <v-chip
+                                        v-for="a in selectedGroup.activities"
+                                        :key="a"
+                                        size="x-small"
+                                        :variant="selectedGroup.core_activities.includes(a) ? 'flat' : 'outlined'"
+                                        :color="selectedGroup.core_activities.includes(a) ? 'primary' : undefined"
+                                        class="e2e-step"
+                                        :data-step="a"
+                                        :data-kind="selectedGroup.core_activities.includes(a) ? 'required' : 'optional'"
+                                    >
+                                        <v-icon v-if="isStepConfirmed(a)" size="10" start>mdi-lock</v-icon>{{ a }}
+                                    </v-chip>
+                                </div>
                                 <div class="mining-canvas">
                                     <BpmnUengineViewer
                                         v-if="bpmnXml"
@@ -186,6 +262,60 @@
                                         <div v-if="discoverError" class="mt-1">{{ discoverError }}</div>
                                     </div>
                                 </div>
+                            </v-card-text>
+                        </v-card>
+
+                        <!-- 관리자 대화: 말로 묶음을 확인·고친다. 바뀔 내용은 정해진 문장으로 보이고, 적용해야 저장된다 -->
+                        <v-card v-if="talkOpen && selectedGroup" variant="outlined" class="rounded-lg e2e-talk">
+                            <v-card-text class="pa-4">
+                                <div class="mining-talk">
+                                    <div
+                                        v-for="(m, i) in talk"
+                                        :key="m.id || i"
+                                        class="mining-talk__msg e2e-talk-msg"
+                                        :class="m.role === 'admin' ? 'is-admin' : 'is-assistant'"
+                                        :data-role="m.role"
+                                    >
+                                        <div class="mining-talk__text">{{ m.text }}</div>
+                                        <div v-if="m.change && m.lines && m.lines.length" class="mining-talk__change e2e-talk-change">
+                                            <div v-for="(l, j) in m.lines" :key="j" class="text-caption">· {{ l }}</div>
+                                            <div class="d-flex justify-end mt-1">
+                                                <v-icon v-if="m.applied" size="16" color="success" class="e2e-talk-applied"
+                                                    >mdi-check-circle</v-icon
+                                                >
+                                                <v-tooltip v-else text="적용" location="top">
+                                                    <template v-slot:activator="{ props }">
+                                                        <v-btn
+                                                            v-bind="props"
+                                                            icon
+                                                            size="x-small"
+                                                            variant="tonal"
+                                                            color="primary"
+                                                            class="e2e-talk-apply"
+                                                            aria-label="적용"
+                                                            :loading="applying"
+                                                            @click="applyTalk(m)"
+                                                        >
+                                                            <v-icon size="16">mdi-check</v-icon>
+                                                        </v-btn>
+                                                    </template>
+                                                </v-tooltip>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <v-text-field
+                                    v-model="talkInput"
+                                    density="compact"
+                                    variant="outlined"
+                                    hide-details
+                                    class="mt-2 e2e-talk-input"
+                                    :disabled="talking"
+                                    :loading="talking"
+                                    append-inner-icon="mdi-send"
+                                    @click:append-inner="sendTalk"
+                                    @keydown.enter.prevent="sendTalk"
+                                />
                             </v-card-text>
                         </v-card>
 
@@ -263,6 +393,7 @@
 import BPMNXmlGenerator from '@/components/BPMNXmlGenerator.vue';
 import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
 import { processMiner } from '@/utils/processMiner';
+import * as Decisions from '@/utils/identificationDecisions';
 import BackendFactory from '@/components/api/BackendFactory';
 
 const backend = BackendFactory.createBackend();
@@ -294,24 +425,57 @@ export default {
             people: [],
             organization: null,
             // 스레드를 시작한 방의 이름(업무 이름) — 방 id 대신 보인다
-            roomNames: {}
+            roomNames: {},
+            // 업무 범주(사례 → {category, category_by}) · 관리자 결정 · 확인 필요 사례
+            caseCategories: {},
+            decisions: [],
+            unclassified: [],
+            requests: {},
+            UNCLASSIFIED: '__unclassified',
+            // 관리자 대화
+            talkOpen: false,
+            talk: [],
+            talkInput: '',
+            talking: false,
+            applying: false
         };
     },
     computed: {
         tenantId() {
             return window.$tenantName || 'localhost';
         },
-        /** 고른 업무의 스레드. 진행 중인 스레드는 가장 가까운 업무에 붙어 함께 보인다. 묶음이 없으면 전부 */
+        /** 고른 업무의 스레드 — 묶음의 사례와 그 묶음의 제안. 확인 필요를 고르면 그 사례들. 묶음이 없으면 전부 */
         visibleThreads() {
             if (!this.selectedKey) return this.threads;
-            return this.threads.filter((t) => t.process_key === this.selectedKey);
+            if (this.selectedKey === this.UNCLASSIFIED) return this.threads.filter((t) => this.unclassifiedIds.has(t.origin_room_id));
+            const g = this.selectedGroup;
+            const ids = new Set([...(g?.cases || []), ...(g?.new_case_ids || [])]);
+            return this.threads.filter((t) => ids.has(t.origin_room_id));
         },
-        /** 선택 상자 항목 — 도출할 수 있는 업무 먼저, 케이스가 많은 순 */
+        unclassifiedIds() {
+            return new Set((this.unclassified || []).map((u) => u.case_id));
+        },
+        /** 선택 상자 항목 — 도출할 수 있는 업무 먼저, 케이스가 많은 순. 확인 필요 사례가 있으면 맨 끝에 */
         groupItems() {
-            return [...this.groups].sort((a, b) => Number(!!b.minable) - Number(!!a.minable) || (b.case_count || 0) - (a.case_count || 0));
+            const items = [...this.groups].sort(
+                (a, b) => Number(!!b.minable) - Number(!!a.minable) || (b.case_count || 0) - (a.case_count || 0)
+            );
+            if (this.unclassified.length)
+                items.push({ process_key: this.UNCLASSIFIED, name: '확인 필요', case_count: this.unclassified.length, minable: false });
+            return items;
         },
         selectedGroup() {
             return this.groups.find((g) => g.process_key === this.selectedKey) || null;
+        },
+        decisionOf() {
+            const out = {};
+            for (const d of this.decisions) out[d.process_key] = d;
+            return out;
+        },
+        categoriesForMiner() {
+            const out = {};
+            for (const [k, v] of Object.entries(this.caseCategories)) if (v?.category) out[k] = v.category;
+            return out;
         },
         /** 고른 업무의 단계만. 다른 업무의 단계와 담당자는 보이지 않는다. */
         eligibility() {
@@ -325,6 +489,22 @@ export default {
         await this.load();
     },
     methods: {
+        isConfirmed(key) {
+            return this.decisionOf[key]?.status === 'confirmed';
+        },
+        isStepConfirmed(step) {
+            return (this.decisionOf[this.selectedKey]?.confirmed_steps || []).includes(step);
+        },
+        isProposal(roomId) {
+            return !!this.selectedGroup && (this.selectedGroup.new_case_ids || []).includes(roomId);
+        },
+        categoryOf(roomId) {
+            return this.caseCategories[roomId]?.category || '';
+        },
+        caseLabel(id) {
+            const t = this.threads.find((x) => x.origin_room_id === id);
+            return (t && this.threadName(t)) || id;
+        },
         threadName(t) {
             return this.roomNames[t.origin_room_id] || t.steps?.[0]?.activity || '—';
         },
@@ -372,16 +552,16 @@ export default {
             try {
                 // 스레드와 업무 묶음은 도출과 따로 받는다. 끝난 건이 모자라 도출이 안 돼도
                 // 쌓인 스레드(진행 중인 건 포함)는 보여야 한다.
-                const [th, pg] = await Promise.all([
-                    processMiner.threads(this.tenantId),
-                    processMiner.processes(this.tenantId).catch(() => ({ processes: [] }))
-                ]);
+                const th = await processMiner.threads(this.tenantId);
                 this.threads = th.threads || [];
-                this.groups = pg.processes || [];
                 await this.loadRoomNames().catch((e) => console.warn('[mining] 방 이름 조회 실패:', e));
-                const first = this.groups.find((g) => g.minable) || this.groups[0];
-                this.selectedKey = first ? first.process_key : null;
+                const keep = this.selectedKey;
+                await this.loadGroups();
+                const still = this.groups.find((g) => g.process_key === keep);
+                const first = still || this.groups.find((g) => g.minable) || this.groups[0];
+                this.selectedKey = first ? first.process_key : this.unclassified.length ? this.UNCLASSIFIED : null;
                 await this.loadDiscovered();
+                if (this.talkOpen) await this.loadTalkRows();
                 this.organization = await processMiner.organization(this.tenantId).catch(() => null);
             } catch (e) {
                 this.error = e?.message || String(e);
@@ -389,14 +569,72 @@ export default {
                 this.loading = false;
             }
         },
-        /** 고른 업무 묶음의 프로세스를 도출한다. */
+        /**
+         * 업무 묶음. 끝난 사례 중 범주가 없는 것은 한 번 판단해 저장하고(다시 판단하지 않는다),
+         * 저장한 범주와 관리자 결정을 마이너에 넘겨 묶는다. 처음 보인 묶음은 경계로 남긴다.
+         */
+        async loadGroups() {
+            this.caseCategories = await Decisions.loadCategories();
+            const pending = this.threads.filter(
+                (t) => t.finished !== false && !this.caseCategories[t.origin_room_id] && (t.steps || []).length >= 2
+            );
+            if (pending.length) {
+                this.requests = { ...this.requests, ...(await Decisions.firstRequests(pending.map((t) => t.origin_room_id))) };
+                const known = Array.from(new Set(Object.values(this.caseCategories).map((c) => c.category)));
+                const examples = Object.values(this.caseCategories)
+                    .filter((c) => c.category_by === 'admin' && c.request)
+                    .slice(0, 30)
+                    .map((c) => ({ request: c.request, category: c.category }));
+                // 무엇을 요청받은 일인가: 처음 요청한 대화. 대화 없이 인계로만 시작한 방이면 방 이름과 첫 지시사항.
+                // 단계 이름만으로 판단하면 범주가 단계 요약이 된다(2026-11-12)
+                const requestOf = (t) =>
+                    this.requests[t.origin_room_id] ||
+                    [this.roomNames[t.origin_room_id], (t.steps || []).find((st) => st.instruction)?.instruction]
+                        .filter(Boolean)
+                        .join('\n');
+                const cases = pending.map((t) => ({
+                    id: t.origin_room_id,
+                    request: requestOf(t),
+                    steps: (t.steps || []).map((st) => st.activity).filter(Boolean)
+                }));
+                const usedRequest = Object.fromEntries(cases.map((c) => [c.id, c.request]));
+                const got = await processMiner
+                    .categories(this.tenantId, cases, known, examples)
+                    .catch((e) => (console.warn('[mining] 범주 판단 실패:', e), { categories: {} }));
+                const rows = Object.entries(got.categories || {}).map(([case_id, category]) => ({
+                    case_id,
+                    category,
+                    category_by: 'ai',
+                    request: usedRequest[case_id] || null
+                }));
+                await Decisions.saveJudged(rows);
+                if (rows.length) this.caseCategories = await Decisions.loadCategories();
+            }
+            this.decisions = await Decisions.loadDecisions();
+            let pg = await processMiner.processes(this.tenantId, this.categoriesForMiner, Decisions.toDecided(this.decisions));
+            if (await Decisions.rememberShown(pg.processes || [], this.decisions)) {
+                this.decisions = await Decisions.loadDecisions();
+                pg = await processMiner.processes(this.tenantId, this.categoriesForMiner, Decisions.toDecided(this.decisions));
+            }
+            this.groups = pg.processes || [];
+            this.unclassified = pg.unclassified || [];
+        },
+        /** 고른 업무 묶음의 프로세스를 도출한다. 그 묶음의 확인된 사례로만 그린다. */
         async loadDiscovered() {
             this.discoverError = '';
             this.prResult = null;
-            const dc = await processMiner.discovered(this.tenantId, this.selectedKey || undefined).catch((e) => {
-                this.discoverError = e?.message || String(e);
-                return null;
-            });
+            if (!this.selectedKey || this.selectedKey === this.UNCLASSIFIED) {
+                this.discovered = null;
+                this.bpmnXml = '';
+                this.proposals = [];
+                return;
+            }
+            const dc = await processMiner
+                .discovered(this.tenantId, this.selectedKey, this.categoriesForMiner, Decisions.toDecided(this.decisions))
+                .catch((e) => {
+                    this.discoverError = e?.message || String(e);
+                    return null;
+                });
             this.discovered = dc;
             this.bpmnXml = dc ? this.markMultiInstance(this.toBpmn(dc.definition), dc) : '';
             this.proposals = [];
@@ -406,6 +644,86 @@ export default {
             if (!key) return;
             this.selectedKey = key;
             await this.loadDiscovered();
+            if (this.talkOpen) await this.loadTalkRows();
+        },
+        // ---------- 관리자 대화 ----------
+        async toggleTalk() {
+            this.talkOpen = !this.talkOpen;
+            if (this.talkOpen) await this.loadTalkRows();
+        },
+        withLines(m) {
+            const names = {};
+            for (const g of this.groups) names[g.process_key] = g.name;
+            return {
+                ...m,
+                lines: m.change && this.selectedGroup ? Decisions.describeChange(m.change, this.selectedGroup, names, this.caseLabel) : []
+            };
+        },
+        async loadTalkRows() {
+            if (!this.selectedGroup) {
+                this.talk = [];
+                return;
+            }
+            const rows = await Decisions.loadTalk(this.selectedGroup.process_key).catch(() => []);
+            this.talk = rows.map((m) => this.withLines(m));
+        },
+        /** 마이너에 넘길 사실 — 저장된 값으로만 만든다. 숫자는 여기서만 나온다. */
+        talkFacts() {
+            const g = this.selectedGroup;
+            const trace = (id) => (this.threads.find((t) => t.origin_room_id === id)?.steps || []).map((s) => s.activity);
+            const asCase = (id) => ({ id, label: this.caseLabel(id), trace: trace(id), category: this.categoryOf(id) });
+            return {
+                group: {
+                    key: g.process_key,
+                    name: g.name,
+                    category: g.category,
+                    status: this.isConfirmed(g.process_key) ? 'confirmed' : 'shown',
+                    steps: g.activities,
+                    core: g.core_activities,
+                    optional: g.optional_activities,
+                    confirmed_steps: this.decisionOf[g.process_key]?.confirmed_steps || [],
+                    case_count: g.case_count,
+                    variants: g.variants,
+                    cases: g.cases.map(asCase),
+                    proposal: g.new_case_ids?.length ? { case_count: g.new_case_ids.length, cases: g.new_case_ids.map(asCase) } : null
+                },
+                others: this.groups
+                    .filter((o) => o.process_key !== g.process_key)
+                    .map((o) => ({ key: o.process_key, name: o.name, category: o.category })),
+                unclassified: this.unclassified.map((u) => asCase(u.case_id))
+            };
+        },
+        async sendTalk() {
+            const text = (this.talkInput || '').trim();
+            if (!text || !this.selectedGroup || this.talking) return;
+            this.talking = true;
+            const key = this.selectedGroup.process_key;
+            try {
+                this.talk.push(this.withLines(await Decisions.addTalk({ process_key: key, role: 'admin', text })));
+                this.talkInput = '';
+                const r = await processMiner.feedback(this.tenantId, text, this.talkFacts());
+                const reply = r.reply || (r.change ? '이렇게 바꿀까요?' : '');
+                const row = await Decisions.addTalk({ process_key: key, role: 'assistant', text: reply, change: r.change || null });
+                this.talk.push(this.withLines(row));
+            } catch (e) {
+                this.talk.push({ role: 'assistant', text: e?.message || String(e), lines: [] });
+            } finally {
+                this.talking = false;
+            }
+        },
+        /** 관리자가 적용을 눌렀을 때만 결정이 저장되고, 묶음을 다시 받는다. */
+        async applyTalk(m) {
+            if (!m?.change || !this.selectedGroup) return;
+            this.applying = true;
+            try {
+                await Decisions.applyChange(m.change, this.selectedGroup, this.decisions, this.requests);
+                if (m.id) await Decisions.markApplied(m.id);
+                await this.load();
+            } catch (e) {
+                this.error = e?.message || String(e);
+            } finally {
+                this.applying = false;
+            }
         },
         /**
          * 마이너가 내는 flattened 정의(activities/gateways/events/sequences)를
@@ -828,5 +1146,32 @@ export default {
 }
 .mining-proposal:last-child {
     border-bottom: none;
+}
+.mining-talk {
+    max-height: 320px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.mining-talk__msg {
+    max-width: 85%;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    white-space: pre-wrap;
+}
+.mining-talk__msg.is-admin {
+    align-self: flex-end;
+    background: rgba(var(--v-theme-primary), 0.1);
+}
+.mining-talk__msg.is-assistant {
+    align-self: flex-start;
+    background: rgba(var(--v-theme-on-surface), 0.05);
+}
+.mining-talk__change {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px dashed rgba(var(--v-theme-on-surface), 0.15);
 }
 </style>

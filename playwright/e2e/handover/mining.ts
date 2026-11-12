@@ -123,7 +123,13 @@ export async function openMining(page: Page, activity: string, shotName?: string
     const discovered = new Map<string, any>();
     const onResponse = async (r: Response) => {
         if (!r.url().includes('/process-miner/discovered') || !r.ok()) return;
-        const key = new URL(r.url()).searchParams.get('process_key') || '';
+        // 2026-11-12: 도출은 범주·결정을 본문에 담은 POST 다(general-intent-grouping)
+        let key = new URL(r.url()).searchParams.get('process_key') || '';
+        try {
+            key = JSON.parse(r.request().postData() || '{}').process_key || key;
+        } catch (e) {
+            /* GET 이면 쿼리 그대로 */
+        }
         discovered.set(key, await r.json().catch(() => null));
     };
     page.on('response', onResponse);
