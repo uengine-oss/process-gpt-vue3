@@ -154,10 +154,11 @@ test('F-MV-06 홈 화면에 추가: 매니페스트가 있고 iPhone 에는 공�
     await login(page);
     const href = await page.locator('link[rel="manifest"]').getAttribute('href');
     expect(href).toBe('/manifest.webmanifest');
-    const manifest = await (await page.request.get(`${BASE}${href}`)).json();
+    // 브라우저로 받는다 — 시험 러너(Node)는 UX_HOST_MAP 을 모르므로 VM 화면 주소(localhost:8088)에 닿지 못한다
+    const manifest = await page.evaluate(async (h) => (await fetch(h)).json(), href);
     expect(manifest.display).toBe('standalone');
     expect(manifest.icons.map((i: any) => i.sizes)).toEqual(expect.arrayContaining(['192x192', '512x512']));
-    for (const icon of manifest.icons) expect((await page.request.get(`${BASE}${icon.src}`)).status(), icon.src).toBe(200);
+    for (const icon of manifest.icons) expect(await page.evaluate(async (src) => (await fetch(src)).status, icon.src), icon.src).toBe(200);
 
     await page.goto(`${BASE}/account-settings`);
     await page.getByText('테마 설정', { exact: true }).first().click();
@@ -363,7 +364,11 @@ test('F-MV-16 휴대폰 웹(/m/) 맨 위에도 같은 띠가 있고, 「다시 �
 
 /** 이 서버에 Process GPT Lite 가 실제로 있나(없으면 /lite/ 도 포털 화면이 나온다) */
 async function hasLite(page: Page) {
-    const html = await (await page.request.get(`${BASE}/lite/`)).text();
+    // 브라우저로 받는다(Node 는 UX_HOST_MAP 을 모른다). 로그인 화면은 어떤 설정에서도 포털에 남는다.
+    const probe = await page.context().newPage();
+    await probe.goto(`${BASE}/auth/login`);
+    const html = await probe.evaluate(async () => (await fetch('/lite/')).text());
+    await probe.close();
     return html.includes('/lite/assets/') && !html.includes('__pgptViewport');
 }
 
