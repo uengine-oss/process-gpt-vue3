@@ -23,6 +23,12 @@
                 -->
                 <OutputCard v-if="compact" :item="item" :full="isSolo" />
 
+                <!--
+                    인스턴스 화면의 「산출물」 탭. 아래 원래 모양(기울어진 작은 썸네일 SummaryButton)은
+                    업무 화면도 함께 쓰는 것이라 건드리지 않고, 이 탭만 넓은 카드로 그린다(wide).
+                -->
+                <OutputCard v-else-if="wide" :item="item" :wide="true" :labels="item.labels" />
+
                 <v-card v-else elevation="2" class="pa-4">
                     <v-card-title class="pa-0 pb-4">{{ item.name }}</v-card-title>
                     <!-- output URL -->
@@ -34,7 +40,8 @@
                     </v-tooltip>
                     <v-row class="ma-0 pa-0 justify-end">
                         <SummaryButton v-if="item.type === 'form'">
-                            <DynamicForm :formHTML="item.html" v-model="item.output" :readonly="true" class="dynamic-form" />
+                            <!-- 이름 칸이 빈 옛 폼(text-field-2)은 「텍스트 2」 로 보이게 — 업무 화면과 같은 규칙, 저장된 HTML 은 그대로 -->
+                            <DynamicForm :formHTML="presented(item.html)" v-model="item.output" :readonly="true" class="dynamic-form" />
                         </SummaryButton>
                         <SummaryButton v-else-if="item.type === 'html'">
                             <div v-html="item.html" class="border border-1 border-gray-300 rounded-md pa-2"></div>
@@ -43,6 +50,15 @@
                 </v-card>
             </v-col>
         </v-row>
+        <!-- 넓은 탭에서 끝난 단계가 하나도 없으면 빈 화면 대신 그렇다고 말한다. -->
+        <div
+            v-else-if="wide && loaded"
+            class="pa-6 d-flex align-center justify-center ga-2 text-medium-emphasis"
+            data-testid="instance-output-empty"
+        >
+            <v-icon size="20">mdi-inbox-outline</v-icon>
+            <span>{{ $t('OutputCard.empty') }}</span>
+        </div>
 
     </div>
 </template>
@@ -53,7 +69,8 @@ import SummaryButton from '@/components/ui/SummaryButton.vue';
 import OutputCard from './OutputCard.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
-import { fetchFormDefs, formIdOf, hasValue, stripScopeSuffix } from '@/shared/workItemOutput';
+import { fetchFormDefs, fieldLabelsOf, formIdOf, hasValue, stripScopeSuffix } from '@/shared/workItemOutput';
+import { presentFormHtml } from '@/shared/formPresentation/index.js';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -72,10 +89,16 @@ export default {
         compact: {
             type: Boolean,
             default: false
+        },
+        /** 넓은 칸(인스턴스 「산출물」 탭). 항목 이름 · 본문을 펴 보이는 OutputCard 로 그린다. */
+        wide: {
+            type: Boolean,
+            default: false
         }
     },
     data: () => ({
         outputList: [],
+        loaded: false,
         workWatchRef: null,
         rootWatchRef: null
     }),
@@ -138,6 +161,9 @@ export default {
                 formIds: taskList.map(formIdOf)
             });
             const sortedTaskList = taskList.sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
+            // 항목 키 → 폼에 적힌 이름. 정의의 모든 폼에서 한 번 만들고, 업무마다 그 업무의 폼 이름만 위에 얹는다
+            // (업무마다 모든 폼을 다시 훑으면 업무 수 × 폼 수만큼 돈다).
+            const baseLabels = fieldLabelsOf(formList);
 
             const outputList = [];
             sortedTaskList.forEach(async (item) => {
@@ -157,6 +183,8 @@ export default {
                 }
                 const formId = (item.tool || '').replace('formHandler:', '');
                 const form = formList.find((form) => form.id === formId);
+                // 이 업무의 폼 이름이 먼저고, 폼에 없는 값은 정의의 다른 폼에서라도 이름을 찾는다.
+                const labels = form ? { ...baseLabels, ...fieldLabelsOf(form) } : baseLabels;
                 if (!form) {
                     // 폼으로 만들어지지 않은 산출물(에이전트가 내놓은 값 등)도 남긴다.
                     // 이걸 빼 두면 사람이 채운 폼 하나만 보이고, 정작 에이전트가
@@ -168,7 +196,8 @@ export default {
                             name,
                             html: null,
                             output: item.task.output,
-                            outputURL: item.task.output_url || null
+                            outputURL: item.task.output_url || null,
+                            labels
                         });
                     }
                     return;
@@ -181,7 +210,8 @@ export default {
                             name,
                             html: form.html,
                             output: item.task.output[formId],
-                            outputURL: item.task.output_url || null
+                            outputURL: item.task.output_url || null,
+                            labels
                         });
                     } else {
                         let formData = {};
@@ -194,12 +224,17 @@ export default {
                             name,
                             html: form.html,
                             output: formData,
-                            outputURL: item.task.output_url || null
+                            outputURL: item.task.output_url || null,
+                            labels
                         });
                     }
                 }
             });
             this.outputList = outputList;
+            this.loaded = true;
+        },
+        presented(html) {
+            return presentFormHtml(html, { translate: (key) => (this.$te && this.$te(key) ? this.$t(key) : null) });
         },
         openOutputURL(url) {
             window.open(url, '_blank');

@@ -577,7 +577,16 @@
         "saturday": "토요일",
         "basicAgent": "기본 에이전트 (LangChain ReAct)",
         "deepAgent": "딥 에이전트 (LangGraph)",
-        "codexAgent": "딥 에이전트 (Codex)"
+        "codexAgent": "딥 에이전트 (Codex)",
+        "sessionPreparing": "에이전트를 준비하고 있어요 · {seconds}초",
+        "agentErrors": {
+            "cliNotSelected": "실행할 CLI를 먼저 고르세요.",
+            "cliUnavailable": "고른 CLI가 이 서버에 설치되어 있지 않습니다. 다른 CLI를 고르세요.",
+            "emptyMessage": "보낼 내용이 비어 있습니다.",
+            "companyKeyRequired": "이 CLI에 쓸 회사 API 키가 없습니다.",
+            "companyKeyAdminHint": "관리자는 설정 › CLI 에이전트 API 키에서 회사 키를 넣을 수 있습니다.",
+            "companyKeyCheckFailed": "회사 API 키를 확인하지 못했습니다. 잠시 뒤 다시 보내 주세요."
+        }
     },
     "AssistantChats": {
         "document": "지시할 업무 내용을 입력하세요. 업무에 관한 정보를 주시면 업무를 받는 사람이 확인할 업무 미리보기가 좌측에 표시됩니다. 미리보기를 확인하고 부족한 부분을 개선합니다. 개선이 완료되었다면 '업무 지시하기'로 업무를 지시합니다."
@@ -1737,6 +1746,7 @@
         "skills": "스킬",
         "taskCatalog": "Task 설정",
         "orgChartGroup": "조직 그룹",
+        "cliAgentKeys": "CLI 에이전트 API 키",
         "github": "GitHub 설정",
         "githubUsername": "GitHub 사용자명",
         "githubToken": "GitHub 토큰 (Personal Access Token)",
@@ -1759,6 +1769,35 @@
         "tokenHintGithub": "토큰은 GitHub → Settings → Developer settings → Personal access tokens에서 발급받을 수 있습니다. repo 권한이 필요합니다.",
         "tokenHintGitlab": "토큰은 GitLab → User Settings → Access Tokens에서 발급받을 수 있습니다. api 또는 read_repository 권한이 필요합니다.",
         "tokenHintGitea": "토큰은 Gitea → Settings → Applications에서 발급받을 수 있습니다."
+    },
+    "cliAgentKeys": {
+        "title": "CLI 에이전트 API 키",
+        "description": "Claude Code · Codex CLI가 업무와 채팅을 처리할 때 쓰는 회사 API 키입니다. 넣은 키는 암호화해 보관하고 다시 보여 주지 않습니다.",
+        "notice": "회사가 직접 만든 API 키를 넣으세요. 개인 구독 토큰을 여러 사람이 나눠 쓰면 약관 위반입니다.",
+        "anthropicConsole": "Claude Console에서 키 만들기",
+        "openaiConsole": "OpenAI 플랫폼에서 키 만들기",
+        "fallback": "키가 없는 쪽은 채팅에서 고를 수 없고, 업무 실행은 지금처럼 서버에 설정된 자격 증명으로 돕니다.",
+        "anthropicKey": "Anthropic API 키",
+        "openaiKey": "OpenAI API 키",
+        "configured": "설정됨",
+        "notConfigured": "설정 안 됨",
+        "inputLabel": "새 키 붙여 넣기",
+        "replaceLabel": "새 키로 바꾸기",
+        "save": "저장",
+        "delete": "지우기",
+        "cancel": "취소",
+        "saved": "{agent} 키를 저장했습니다.",
+        "deleted": "{agent} 키를 지웠습니다.",
+        "confirmTitle": "{agent} 키를 지울까요?",
+        "confirmText": "지우면 {agent}는 채팅에서 고를 수 없고, 업무 실행은 서버에 설정된 자격 증명으로 돌아갑니다. 같은 키를 다시 쓰려면 다시 붙여 넣어야 합니다.",
+        "loadFailed": "상태를 불러오지 못했습니다: {message}",
+        "storeMissing": "이 서버에는 아직 키 저장소가 준비되지 않았습니다. 운영 관리자가 DB 설정(process-gpt-vue3 supabase/migrations/20261111000001_cli_agent_credentials.sql)을 적용하면 여기서 키를 넣을 수 있습니다.",
+        "warn": {
+            "whitespace": "키 가운데에 공백이나 줄바꿈이 있습니다. 붙여 넣은 값을 확인하세요.",
+            "anthropicPrefix": "Anthropic API 키는 보통 sk-ant- 로 시작합니다. 맞는 키인지 확인하세요.",
+            "openaiPrefix": "OpenAI API 키는 보통 sk- 로 시작합니다. 맞는 키인지 확인하세요.",
+            "looksAnthropic": "Anthropic 키(sk-ant-)로 보입니다. Codex에는 OpenAI 키를 넣으세요."
+        }
     },
     "orgChartGroup": {
         "title": "조직 그룹 관리",
@@ -2603,7 +2642,7 @@
         "generateExample": "예시 재생성",
         "quickGenerateExample": "빠른 생성",
         "quickGenerateExampleDescription": "기본 AI 모델을 사용한 빠른 초안 생성. ex) 기본 문서 작성, 간단한 분석 (1~3분 소요)",
-        "resultInput": "현재 작업",
+        "resultInput": "해야 할 작업",
         "researchMethod": "에이전트에 맡기기",
         "runningResearchMethod": "진행 중인 연구방식",
         "delegateMessage": "'{taskName}'업무를 {username}에게 위임하였습니다.",
@@ -3861,10 +3900,14 @@
         "systemSender": "시스템"
     },
     "ActivityInputData": {
-        "previousInput": "이전 작업 입력 내역",
-        "previousInputDescription": "이전 작업에 입력한 내용입니다. 참고하여 현재 작업을 진행하세요.",
-        "previousInputDetailTitle": "이전 작업 입력 내역이란?",
-        "previousInputDetail": "BPM 프로세스에서 이전 단계의 작업자가 입력한 폼 데이터를 보여줍니다.\n\n이 정보를 참고하여 현재 작업을 수행하면 프로세스 흐름을 더 명확하게 파악할 수 있습니다.\n\n예시: 결재 요청 → 검토 → 승인 프로세스에서 '검토' 단계라면,\n'결재 요청' 단계에서 입력한 내용이 표시됩니다."
+        "previousInput": "전달받은 산출물",
+        "previousInputDescription": "앞 단계에서 넘겨받은 산출물입니다. 참고해서 해야 할 작업을 진행하세요.",
+        "previousInputDetailTitle": "전달받은 산출물이란?",
+        "previousInputDetail": "프로세스의 앞 단계 담당자(사람 또는 에이전트)가 남긴 산출물을 보여 줍니다.\n\n이 내용을 참고해 해야 할 작업을 진행하면 흐름을 놓치지 않습니다.\n\n예시: 결재 요청 → 검토 → 승인 프로세스의 '검토' 단계에서는\n'결재 요청' 단계에서 남긴 내용이 보입니다.",
+        "expand": "펼쳐 보기",
+        "collapse": "접기",
+        "fieldCount": "항목 {count}개",
+        "empty": "내용 없음"
     },
     "MCPServer": {
         "searchMCPServers": "MCP 서버 검색",
@@ -4105,6 +4148,8 @@
         "knowledgeSetupInProgress": "지식 셋팅 중"
     },
     "FormWorkItem": {
+        "freeInputTitle": "작업 내용",
+        "freeInputPlaceholder": "한 일과 결과를 자유롭게 적어 주세요.",
         "agentSummaryTitle": "에이전트 작업 요약",
         "agentSummaryHint": "에이전트가 채운 아래 폼을 확인하고, 필요하면 고친 뒤 제출하세요.",
         "chooseDecision": "「{field}」 칸에서 하나를 골라 주세요. 승인 · 반려는 미리 골라 두지 않습니다.",
@@ -4136,14 +4181,28 @@
         "fileTooLarge": "파일이 너무 큽니다. (최대 50MB)",
         "fileDeleted": "파일이 삭제되었습니다."
     },
-    "FormRealtimeAssistant": {
-        "title": "음성 에이전트",
-        "connected": "연결됨",
-        "connecting": "연결 중",
-        "disconnected": "연결 안 됨",
-        "responding": "응답 중",
-        "micOn": "마이크 ON",
-        "inputPlaceholder": "메시지를 입력하거나 마이크로 말해보세요."
+    "WorkItemDictation": {
+        "start": "말로 입력하기",
+        "stop": "멈춤",
+        "close": "닫기",
+        "starting": "마이크를 켜는 중…",
+        "listening": "듣고 있습니다. 말씀하세요.",
+        "transcribing": "받아쓰는 중…",
+        "filling": "「{text}」 로 칸을 채우는 중…",
+        "appended": "받아쓴 글을 「{field}」 칸에 넣었습니다.",
+        "filled": "{count}개 칸을 채웠습니다 ({fields}). 확인한 뒤 제출하세요.",
+        "skippedTyping": "입력 중이던 칸 {count}개는 건드리지 않았습니다 ({fields}).",
+        "heard": "받아쓴 글: 「{text}」",
+        "reason": {
+            "denied": "마이크 사용을 허용해 주세요 (브라우저 주소창의 마이크 권한).",
+            "unsupported": "이 브라우저에서는 음성 입력을 쓸 수 없습니다.",
+            "micFailed": "마이크를 켜지 못했습니다. 마이크가 연결돼 있는지 확인해 주세요.",
+            "empty": "소리가 녹음되지 않았습니다. 다시 시도해 주세요.",
+            "failed": "받아쓰기 서버에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
+            "fillFailed": "말한 내용으로 칸을 채우지 못했습니다 (AI 서버 연결 실패).",
+            "noMatch": "말한 내용에서 이 양식에 넣을 값을 찾지 못했습니다.",
+            "nothingToFill": "이 양식에는 말로 채울 칸이 없습니다."
+        }
     },
     "processDialog": {
         "editProcess": "프로세스 수정",
@@ -4801,7 +4860,19 @@
         "userInput": "사용자 입력",
         "noFormContent": "입력 폼 내용이 없습니다.",
         "stepFeedback": "이 단계에 대한 피드백",
-        "processing": "처리중..."
+        "processing": "처리중...",
+        "round": "{n}회차",
+        "loopBack": "되돌아감",
+        "rerun": "다시 진행",
+        "current": "진행 중",
+        "loopBackHint": "이 단계에서 흐름이 앞 단계로 돌아갔습니다",
+        "rerunHint": "앞에서 마친 단계를 다시 진행합니다"
+    },
+    "OutputCard": {
+        "empty": "아직 산출물이 없습니다",
+        "openOriginal": "원본 보기",
+        "moreFields": "외 {n}개 항목",
+        "openLink": "산출물 링크 열기"
     },
     "SkillsManagement": {
         "title": "스킬 목록 관리",

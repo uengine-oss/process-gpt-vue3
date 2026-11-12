@@ -378,7 +378,10 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        # 의존 패키지(apt)는 러너가 ubuntu.com 을 해석하지 못하면 받지 못한다 — 11-11 에 이것만으로
+        # 배포가 다섯 번 롤백됐다. 러너 이미지에 크로미움 실행 라이브러리는 이미 있고 빠지는 건 글꼴뿐이라,
+        # 실패하면 브라우저만 받는다. 브라우저가 정말 못 뜨면 다음 스모크 단계가 실패한다.
+        run: npx playwright install --with-deps chromium || npx playwright install chromium
       - name: Run smoke test
         env:
           BASE_URL: ${{ secrets.BASE_URL }}

@@ -27,6 +27,9 @@ export const AGENT_ORCHESTRATIONS = [
     'deep-research-custom',
     'deepagents',
     'codex',
+    // CLI 코딩 에이전트(Claude Code · Codex). 업무 설정 화면(AgentSelectField)에서 고를 수 있는데
+    // 여기 없으면 시작 업무가 에이전트 없이 만들어진다. todolist.agent_orch 는 text 다.
+    'cliagents',
     'langchain-react',
     'browser-automation-agent',
     'a2a',

@@ -68,6 +68,23 @@
                     <Icon class="composer__caret" name="chevron-down" :size="16" />
                 </button>
 
+                <!--
+                    CLI 코딩 에이전트 방이면 어느 CLI 로 돌릴지. 다른 에이전트에는 의미가 없어
+                    그때만 보인다. 고른 값은 방에 기억된다(화면이 저장한다).
+                -->
+                <button
+                    v-if="currentOrchestration === 'cliagents'"
+                    type="button"
+                    class="composer__chip"
+                    data-testid="m-agent-cli"
+                    :aria-label="`실행 CLI: ${currentCliLabel}`"
+                    :disabled="busy"
+                    @click="cliOpen = true"
+                >
+                    {{ currentCliLabel }}
+                    <Icon class="composer__caret" name="chevron-down" :size="16" />
+                </button>
+
                 <!-- 지식 베이스 -->
                 <button type="button" class="composer__chip" :disabled="busy" @click="$emit('pick-knowledge')">
                     지식 베이스<span v-if="docs.length"> {{ docs.length }}</span>
@@ -158,7 +175,7 @@
             <div class="sheet__panel" role="dialog" aria-label="에이전트 선택">
                 <h2 class="sheet__title">에이전트</h2>
                 <button
-                    v-for="opt in AGENTS"
+                    v-for="opt in agentChoices"
                     :key="opt.value"
                     type="button"
                     class="sheet__item"
@@ -169,6 +186,26 @@
                     <span class="m-muted">{{ opt.hint }}</span>
                 </button>
                 <button type="button" class="m-btn m-btn--block" @click="agentOpen = false">닫기</button>
+            </div>
+        </div>
+
+        <!-- 실행 CLI. 업무 설정(포털 AgentSelectField)과 같은 목록 · 이름표다. -->
+        <div v-if="cliOpen" class="sheet" @click.self="cliOpen = false">
+            <div class="sheet__panel" role="dialog" aria-label="실행 CLI 선택">
+                <h2 class="sheet__title">실행 CLI</h2>
+                <button
+                    v-for="opt in cliOptions"
+                    :key="opt.value"
+                    type="button"
+                    class="sheet__item"
+                    :class="{ 'sheet__item--on': opt.value === currentCli }"
+                    :disabled="!opt.installed"
+                    @click="chooseCli(opt.value)"
+                >
+                    <strong>{{ opt.title }}</strong>
+                    <span v-if="opt.hint" class="m-muted">{{ opt.hint }}</span>
+                </button>
+                <button type="button" class="m-btn m-btn--block" @click="cliOpen = false">닫기</button>
             </div>
         </div>
     </div>
@@ -197,6 +234,9 @@ import {
     tooBig
 } from '../lib/attachments.js';
 import { applyMention, mentionDraft, resolveMentions, suggest } from '@/shared/mentions/index.js';
+import { agentCliOf, agentCliTitle } from '@/utils/cliAgents';
+import { selectableOrchestrations } from '@/utils/orchestration';
+import { cliChoicesFor, companyCliAgents } from '@/shared/cliAgentKeys';
 import Icon from './Icon.vue';
 import VoiceButton from './VoiceButton.vue';
 
@@ -208,8 +248,18 @@ import VoiceButton from './VoiceButton.vue';
  */
 const AGENTS = [
     { value: 'langchain-react', label: '기본', hint: '일반적인 질문과 조회' },
-    { value: 'deepagents', label: '딥 에이전트', hint: '여러 단계를 스스로 밟는 작업' }
+    { value: 'deepagents', label: '딥 에이전트', hint: '여러 단계를 스스로 밟는 작업' },
+    { value: 'cliagents', label: 'CLI 코딩 에이전트', hint: 'Claude Code · Codex 로 파일을 만들거나 고치는 작업' }
 ] as const;
+/**
+ * 고를 수 있는 것만. CLI 코딩 에이전트는 플래그(utils/orchestration 의 cliAgentChatEnabled)가 켜졌거나
+ * 회사 관리자가 CLI 에이전트 API 키를 넣었을 때만(포털 Chat.vue 와 같은 규칙).
+ * companyKeyClis — 회사 키가 있는 CLI(anthropic → claude-code, openai → codex). 실행 CLI 도 이 안에서만 고른다.
+ */
+const companyKeyClis = ref<string[]>([]);
+const agentChoices = computed(() =>
+    AGENTS.filter((a) => selectableOrchestrations(undefined, { companyCliKey: companyKeyClis.value.length > 0 }).includes(a.value))
+);
 
 const props = defineProps<{
     modelValue?: string;
@@ -224,6 +274,15 @@ const props = defineProps<{
     talking?: boolean;
     /** 엔진(오케스트레이션) 고르기를 보일까. 휴대폰 화면안에서는 뺀다. */
     engines?: boolean;
+    /**
+     * 이 방이 쓰는 에이전트(방에 기억된 오케스트레이션). 엔진 고르기를 뺀 화면에서는 이 값으로
+     * CLI 고르기를 보일지 정한다.
+     */
+    orchestration?: string;
+    /** cliagents 방에서 고른 CLI. */
+    agentCli?: string;
+    /** 서버가 알려 준 CLI 목록. 비어 있으면 아는 둘(Claude Code · Codex)을 보여 준다. */
+    cliChoices?: any[];
 }>();
 
 const emit = defineEmits<{
@@ -239,6 +298,7 @@ const emit = defineEmits<{
     (e: 'update:modelValue', value: string): void;
     (e: 'voice-error', message: string): void;
     (e: 'toggle-voice'): void;
+    (e: 'update:agentCli', value: string): void;
 }>();
 
 const text = ref(props.modelValue || '');
@@ -260,6 +320,38 @@ const placeholder = computed(() => props.placeholder || '무엇을 도와드릴�
 const currentAgentLabel = computed(
     () => AGENTS.find((a) => a.value === agent.value)?.label || '기본'
 );
+
+/** 지금 이 입력이 갈 에이전트. 엔진을 고를 수 있으면 고른 것, 아니면 방에 기억된 것. */
+const currentOrchestration = computed(() => (props.engines ? agent.value : props.orchestration || ''));
+
+const cliOpen = ref(false);
+/**
+ * 실행 CLI 목록(포털과 같은 규칙, src/shared/cliAgentKeys 의 cliChoicesFor). 회사 키가 있으면 키가 있는 CLI 만.
+ * 회사 키가 없으면(플래그로 연 배포) 지금처럼 — 방에 기억된 값이 목록에 없으면 그것도 보여 준다.
+ */
+const cliOptions = computed(() => cliChoicesFor(props.cliChoices || [], companyKeyClis.value, props.agentCli).items);
+
+// 엔진을 고를 수 있거나 CLI 코딩 에이전트 방일 때만 회사 키를 묻는다(같은 사용자 · 테넌트면 60초 동안 기억한 값).
+watch(
+    currentOrchestration,
+    (value) => {
+        if (props.engines || value === 'cliagents') companyCliAgents().then((clis) => (companyKeyClis.value = clis));
+    },
+    { immediate: true }
+);
+// 방에 기억된 CLI · 기본값(claude-code)에 회사 키가 없으면 키가 있는 첫 CLI 로 바꾼다. 화면(ChatRoomView)이 방에 기억한다.
+watch([companyKeyClis, () => props.agentCli, currentOrchestration], () => {
+    if (currentOrchestration.value !== 'cliagents' || !companyKeyClis.value.length) return;
+    const { value } = cliChoicesFor(props.cliChoices || [], companyKeyClis.value, props.agentCli);
+    if (value !== agentCliOf(props.agentCli)) emit('update:agentCli', value);
+});
+const currentCli = computed(() => agentCliOf(props.agentCli));
+const currentCliLabel = computed(() => agentCliTitle(currentCli.value, cliOptions.value));
+
+function chooseCli(value: string) {
+    cliOpen.value = false;
+    emit('update:agentCli', value);
+}
 
 watch(
     () => props.modelValue,
@@ -374,7 +466,10 @@ function submit() {
 
     emit('send', {
         text: value,
-        orchestration: agent.value,
+        // 엔진을 고를 수 있을 때만 고른 값을 보낸다. 고르기를 뺀 화면에서 보이지 않는 기본값
+        // ('langchain-react')을 실어 보내면, 받는 화면이 그것으로 방의 에이전트를 덮어써
+        // 포털에서 딥 에이전트 · CLI 에이전트로 시작한 대화가 휴대폰에서는 기본 에이전트로 답했다.
+        orchestration: props.engines ? agent.value : '',
         attachments: attached.value,
         // 지목한 상대. 없으면 라우터가 고른다.
         mentioned: resolveMentions(value, props.participants || [])
@@ -432,8 +527,12 @@ defineExpose({ focus: () => input.value?.focus() });
 }
 
 .composer__chip {
+    /* CLI 칩이 함께 서면 390px 폭에서 「지식 베이스」가 두 줄로 꺾였다 — 꺾지 않고 줄인다. */
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
     min-height: 34px;
-    padding: 0 12px;
+    padding: 0 10px;
     border-radius: 999px;
     border: 1px solid var(--rule);
     font-size: 0.82rem;

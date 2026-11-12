@@ -7,7 +7,8 @@
                 v-else-if="!isMobile"
                 :headers="tableHeaders"
                 :items="tableRows"
-                :items-per-page="10"
+                v-model:page="page"
+                :items-per-page="ITEMS_PER_PAGE"
                 density="comfortable"
                 class="log-table w-100"
                 :hover="true"
@@ -38,7 +39,12 @@
                 <!-- Completed Work Column -->
                 <template #item.completedWork="{ item }">
                     <div v-if="item.completedActivityName">
-                        <div class="work-name">{{ item.completedActivityName }}</div>
+                        <div class="work-name">
+                            <span>{{ item.completedActivityName }}</span>
+                            <span v-if="item.completedRound > 1" class="pg-hist-round" data-testid="activity-round">{{
+                                $t('ProcessInstanceTable.round', { n: item.completedRound })
+                            }}</span>
+                        </div>
                         <div v-if="item.performer" class="work-performer">
                             <v-avatar size="16" class="mr-1">
                                 <v-img v-if="item.performerProfile" :src="item.performerProfile" alt="profile" />
@@ -52,8 +58,32 @@
 
                 <!-- Next Work Column -->
                 <template #item.nextWork="{ item }">
-                    <div v-if="item.nextActivityName">
-                        <div class="work-name">{{ item.nextActivityName }}</div>
+                    <div v-if="item.nextActivityName" :class="{ 'pg-hist-current': item.current }">
+                        <div class="work-name">
+                            <span>{{ item.nextActivityName }}</span>
+                            <span v-if="item.nextRound > 1" class="pg-hist-round" data-testid="activity-round">{{
+                                $t('ProcessInstanceTable.round', { n: item.nextRound })
+                            }}</span>
+                            <v-chip
+                                v-if="item.current"
+                                size="x-small"
+                                color="primary"
+                                variant="flat"
+                                class="pg-hist-chip"
+                                data-testid="activity-current"
+                                >{{ $t('ProcessInstanceTable.current') }}</v-chip
+                            >
+                        </div>
+                        <div
+                            v-if="item.loop"
+                            class="pg-hist-loop"
+                            data-testid="activity-loop"
+                            :title="item.loop.label ? $t('ProcessInstanceTable.loopBackHint') : $t('ProcessInstanceTable.rerunHint')"
+                        >
+                            <v-icon size="14">{{ item.loop.label ? 'mdi-undo-variant' : 'mdi-refresh' }}</v-icon>
+                            <!-- 좁은 칸에서는 「되돌아감 ·」 과 갈래 이름 사이에서만 줄을 바꾼다. -->
+                            <span v-for="(part, pi) in loopParts(item.loop)" :key="pi" class="pg-hist-loop__part">{{ part }}</span>
+                        </div>
                         <div v-if="item.nextPerformer" class="work-performer">
                             <v-avatar size="16" class="mr-1">
                                 <v-img v-if="item.nextPerformerProfile" :src="item.nextPerformerProfile" alt="profile" />
@@ -66,11 +96,9 @@
                 </template>
 
                 <!-- Time Column -->
+                <!-- 시간은 한 줄(「11.11 20:05」), 전체 날짜는 마우스를 올리면 보인다. -->
                 <template #item.time="{ item }">
-                    <div class="time-cell">
-                        <v-icon size="small" class="mr-1 text-medium-emphasis">mdi-clock-outline</v-icon>
-                        <span class="text-caption">{{ formatTimestamp(item.time) }}</span>
-                    </div>
+                    <span class="pg-hist-time" data-testid="activity-time" :title="item.timeFull">{{ item.timeShort }}</span>
                 </template>
 
                 <!-- Expanded Row -->
@@ -211,8 +239,7 @@
                                     <span>{{ item.status }}</span>
                                 </v-tooltip>
                                 <span v-else class="text-medium-emphasis text-caption mr-2">-</span>
-                                <v-icon size="small" class="text-medium-emphasis mr-1">mdi-clock-outline</v-icon>
-                                <span class="text-caption">{{ formatTimestamp(item.time) }}</span>
+                                <span class="pg-hist-time" data-testid="activity-time" :title="item.timeFull">{{ item.timeShort }}</span>
                             </div>
                             <v-icon size="small" class="text-medium-emphasis">
                                 {{ expandedRows.includes(item.id) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
@@ -223,7 +250,10 @@
                                 $t('ProcessInstanceTable.completedWork')
                             }}</span>
                             <div v-if="item.completedActivityName" class="work-name">
-                                {{ item.completedActivityName }}
+                                <span>{{ item.completedActivityName }}</span>
+                                <span v-if="item.completedRound > 1" class="pg-hist-round" data-testid="activity-round">{{
+                                    $t('ProcessInstanceTable.round', { n: item.completedRound })
+                                }}</span>
                             </div>
                             <div v-else class="text-medium-emphasis text-caption">-</div>
                             <div v-if="item.performer" class="work-performer mt-1">
@@ -238,10 +268,31 @@
                             <span class="process-instance-mobile-card-label text-caption text-medium-emphasis">{{
                                 $t('ProcessInstanceTable.nextWork')
                             }}</span>
-                            <div v-if="item.nextActivityName" class="work-name">
-                                {{ item.nextActivityName }}
+                            <div v-if="item.nextActivityName" class="work-name" :class="{ 'pg-hist-current': item.current }">
+                                <span>{{ item.nextActivityName }}</span>
+                                <span v-if="item.nextRound > 1" class="pg-hist-round" data-testid="activity-round">{{
+                                    $t('ProcessInstanceTable.round', { n: item.nextRound })
+                                }}</span>
+                                <v-chip
+                                    v-if="item.current"
+                                    size="x-small"
+                                    color="primary"
+                                    variant="flat"
+                                    class="pg-hist-chip"
+                                    data-testid="activity-current"
+                                    >{{ $t('ProcessInstanceTable.current') }}</v-chip
+                                >
                             </div>
                             <div v-else class="text-medium-emphasis text-caption">-</div>
+                            <div
+                                v-if="item.nextActivityName && item.loop"
+                                class="pg-hist-loop"
+                                data-testid="activity-loop"
+                                :title="item.loop.label ? $t('ProcessInstanceTable.loopBackHint') : $t('ProcessInstanceTable.rerunHint')"
+                            >
+                                <v-icon size="14">{{ item.loop.label ? 'mdi-undo-variant' : 'mdi-refresh' }}</v-icon>
+                                <span v-for="(part, pi) in loopParts(item.loop)" :key="pi" class="pg-hist-loop__part">{{ part }}</span>
+                            </div>
                             <div v-if="item.nextPerformer" class="work-performer mt-1">
                                 <v-avatar size="16" class="mr-1">
                                     <v-img v-if="item.nextPerformerProfile" :src="item.nextPerformerProfile" alt="profile" />
@@ -348,6 +399,7 @@
 import ChatModule from '@/components/ChatModule.vue';
 import ProcessFeedback from '@/components/ui/ProcessFeedback.vue';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
+import { annotateHistory, formatHistoryTime } from '@/shared/activityHistory';
 
 export default {
     mixins: [ChatModule],
@@ -367,6 +419,8 @@ export default {
     },
     data: () => ({
         processInstance: null,
+        // 프로세스 정의(JSON) — 되돌아간 줄에 갈림길 이름(「반려인 경우」)을 붙이는 데만 쓴다.
+        definition: null,
         chatRoomId: '',
         isTaskMode: false,
         isLoading: false,
@@ -389,25 +443,29 @@ export default {
         // table expansion
         expandedRows: [],
 
+        // 표는 오래된 것부터 쌓인다. 처음 열 때는 지금 단계가 있는 쪽을 보여 준다(되돌아간 흐름이 길면 2쪽 뒤에 있다).
+        page: 1,
+        pageSettled: false,
+
         // per-row feedback
         rowFeedbackStates: {} // { rowId: { showInput: false, task: null } }
     }),
     computed: {
+        ITEMS_PER_PAGE() {
+            return 10;
+        },
         isMobile() {
             return window.innerWidth <= 1279;
         },
         tableHeaders() {
+            // 상태 · 시간은 내용 폭에 맞춘 고정 폭, 업무 두 칸이 나머지를 나눈다.
+            // 업무 화면 왼쪽 칸(약 430px)에서 「상태」 머리가 두 줄, 시간이 세 줄로 접히던 것을 막는다.
             return [
-                { title: this.$t('ProcessInstanceTable.status'), key: 'status', sortable: false, width: '100', align: 'center' },
-                {
-                    title: this.$t('ProcessInstanceTable.completedWork'),
-                    key: 'completedWork',
-                    sortable: false,
-                    width: '35%',
-                    align: 'start'
-                },
-                { title: this.$t('ProcessInstanceTable.nextWork'), key: 'nextWork', sortable: false, width: '30%', align: 'start' },
-                { title: this.$t('ProcessInstanceTable.time'), key: 'time', sortable: true, width: '130', align: 'start' }
+                { title: this.$t('ProcessInstanceTable.status'), key: 'status', sortable: false, width: '56', align: 'center' },
+                { title: this.$t('ProcessInstanceTable.completedWork'), key: 'completedWork', sortable: false, align: 'start' },
+                { title: this.$t('ProcessInstanceTable.nextWork'), key: 'nextWork', sortable: false, align: 'start' },
+                { title: this.$t('ProcessInstanceTable.time'), key: 'time', sortable: true, width: '92', align: 'start' },
+                { title: '', key: 'data-table-expand', width: '44' }
             ];
         },
         effectiveMessages() {
@@ -561,7 +619,22 @@ export default {
                 });
             });
 
-            return rows.sort((a, b) => (a.time || 0) - (b.time || 0));
+            rows.sort((a, b) => (a.time || 0) - (b.time || 0));
+
+            // 회차 · 되돌아감 · 지금 단계 · 한 줄 시간(activityHistory). 흐름이 되돌아가면 같은 이름이
+            // 여러 번 나와 헷갈렸다(2026-11-11 검토).
+            const instance = this.processInstance;
+            const notes = annotateHistory(rows, {
+                definition: this.definition,
+                currentActivityIds: instance ? instance.currentActivityIds || [] : undefined,
+                finished: !!(instance && ['COMPLETED', 'DONE', 'CANCELLED', 'TERMINATED'].includes(instance.status)) || this.isComplete
+            });
+            const now = new Date();
+            rows.forEach((row, i) => {
+                const t = formatHistoryTime(row.time, now);
+                Object.assign(row, notes[i], { timeShort: t.short, timeFull: t.full });
+            });
+            return rows;
         },
         filteredStreamingText() {
             if (!this.streamingText) {
@@ -586,6 +659,12 @@ export default {
         }
     },
     watch: {
+        tableRows(rows) {
+            if (this.pageSettled || !rows || !rows.length) return;
+            this.pageSettled = true;
+            const at = rows.map((r) => !!r.current).lastIndexOf(true);
+            if (at >= 0) this.page = Math.floor(at / this.ITEMS_PER_PAGE) + 1;
+        },
         $route: {
             deep: true,
             async handler(newVal, oldVal) {
@@ -647,6 +726,8 @@ export default {
     methods: {
         async loadData() {
             this.isLoading = true;
+            this.page = 1;
+            this.pageSettled = false;
             this.internalMessages = [];
             this.processInstance = null;
             this.chatRoomId = '';
@@ -687,6 +768,7 @@ export default {
                 const value = await this.backend.getInstance(id);
                 if (value) {
                     this.processInstance = value;
+                    this.loadDefinition(value);
                 }
                 await this.getMessages(this.chatRoomId);
             }
@@ -699,6 +781,28 @@ export default {
                 }
             }
             this.isLoading = false;
+        },
+        /**
+         * 갈림길 이름을 찾으려고 정의를 받아 둔다. 못 받아도 표는 그대로 그리고,
+         * 되돌아간 줄에는 이름 없이 「다시 진행」 만 붙는다(activityHistory).
+         */
+        async loadDefinition(instance) {
+            this.definition = null;
+            if (!instance || !instance.defId || typeof this.backend.getExecutionDefinition !== 'function') return;
+            try {
+                const res = await this.backend.getExecutionDefinition(instance.defId);
+                // 그새 다른 인스턴스로 옮겨 갔으면 버린다.
+                if (this.processInstance && this.processInstance.instId === instance.instId) {
+                    this.definition = (res && res.definition) || null;
+                }
+            } catch (e) {
+                this.definition = null;
+            }
+        },
+        /** 되돌아간 줄의 글 — [「되돌아감 ·」, 「반려인 경우」], 이름을 모르면 [「다시 진행」]. */
+        loopParts(loop) {
+            if (!loop) return [];
+            return loop.label ? [`${this.$t('ProcessInstanceTable.loopBack')} ·`, loop.label] : [this.$t('ProcessInstanceTable.rerun')];
         },
         async getMessages(chatRoomId) {
             const messages = await this.backend.getMessages(chatRoomId);
@@ -785,26 +889,6 @@ export default {
             }
 
             return '';
-        },
-        formatTimestamp(timeStamp) {
-            if (!timeStamp) return '-';
-            try {
-                const date = new Date(timeStamp);
-                const today = new Date();
-                const isToday = date.toDateString() === today.toDateString();
-
-                if (isToday) {
-                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                }
-                return date.toLocaleString([], {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            } catch (e) {
-                return '-';
-            }
         },
         getRoleColor(role) {
             const colorMap = {
@@ -1062,9 +1146,13 @@ export default {
     overflow-x: auto;
 }
 
+/*
+ * 고정 배치 — 상태 · 시간 · 펼침은 정한 폭, 업무 두 칸은 남은 폭을 반씩.
+ * 자동 배치일 때는 다음 업무 칸의 표시(회차 · 되돌아감)에 폭을 빼앗겨 완료된 업무가 세 줄로 접혔다.
+ */
 .log-table :deep(table) {
     width: 100%;
-    table-layout: auto;
+    table-layout: fixed;
 }
 
 .log-table :deep(th),
@@ -1076,6 +1164,22 @@ export default {
 .log-table :deep(thead th) {
     font-weight: 600;
     font-size: 0.875rem;
+    /* 「상태」 머리가 좁은 칸에서 「상 / 태」 두 줄로 접혔다. */
+    white-space: nowrap;
+}
+
+/* 상태 칸은 아이콘 하나라 좌우 여백을 줄인다. */
+.log-table :deep(th:first-child),
+.log-table :deep(td:first-child),
+.log-table :deep(th:last-child),
+.log-table :deep(td:last-child) {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+
+.log-table :deep(tbody td) {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
 }
 
 .log-table :deep(tbody tr:hover) {
@@ -1089,10 +1193,83 @@ export default {
 
 /* Work Info Styles */
 .work-name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 6px;
     font-weight: 500;
     font-size: 0.875rem;
     color: rgba(var(--v-theme-on-surface), 0.87);
     margin-bottom: 4px;
+    word-break: keep-all;
+}
+
+/* 같은 단계의 몇 번째인가 — 작은 테두리 알약 */
+.pg-hist-round {
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+    padding: 0 6px;
+    border: 1px solid var(--cds-border-strong);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--cds-text-secondary);
+    white-space: nowrap;
+}
+
+.pg-hist-chip {
+    font-weight: 600;
+}
+
+/* 흐름을 앞 단계로 돌려보낸 줄 */
+.pg-hist-loop {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11.5px;
+    font-weight: 500;
+    /* 글자는 본문 색(경고색 글자는 옅은 바탕 위에서 대비가 모자란다), 아이콘 · 바탕만 경고색. */
+    color: var(--cds-text-primary);
+    background: rgba(var(--v-theme-warning), 0.16);
+    max-width: 100%;
+    line-height: 1.5;
+    flex-wrap: wrap;
+    column-gap: 4px;
+    row-gap: 0;
+}
+
+.pg-hist-loop__part {
+    white-space: nowrap;
+}
+
+.pg-hist-loop .v-icon {
+    color: rgb(var(--v-theme-warning));
+}
+
+/* 지금 단계를 가리키는 줄 — 줄 전체를 옅게 칠하고 왼쪽에 주 색 띠 */
+.log-table :deep(tbody tr:has(.pg-hist-current)) {
+    background-color: rgba(var(--v-theme-primary), 0.06);
+}
+
+.log-table :deep(tbody tr:has(.pg-hist-current) > td:first-child) {
+    box-shadow: inset 3px 0 0 rgb(var(--v-theme-primary));
+}
+
+.pg-hist-current .work-name > span:first-child {
+    color: rgb(var(--v-theme-primary));
+    font-weight: 600;
+}
+
+.pg-hist-time {
+    font-size: 0.75rem;
+    color: var(--cds-text-secondary);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
 .work-performer {
@@ -1145,6 +1322,11 @@ export default {
 .process-instance-mobile-card {
     cursor: pointer;
     border-radius: 8px;
+}
+
+.process-instance-mobile-card:has(.pg-hist-current) {
+    border-color: rgb(var(--v-theme-primary));
+    box-shadow: inset 3px 0 0 rgb(var(--v-theme-primary));
 }
 
 .process-instance-mobile-card-row {

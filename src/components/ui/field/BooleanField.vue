@@ -14,6 +14,16 @@
 <script>
 import { commonSettingInfos } from './CommonSettingInfos.vue';
 
+/** 예/아니오 값: true · 'true' · 'Y' · 'yes' · '예' · 1 만 참, 나머지(빈 값 · 'false' · 'N')는 거짓 */
+function toBoolean(value) {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    const s = String(value ?? '')
+        .trim()
+        .toLowerCase();
+    return ['true', 'y', 'yes', '1', '예', 'on'].includes(s);
+}
+
 export default {
     name: 'BooleanField',
 
@@ -28,7 +38,8 @@ export default {
             default: 'compact'
         },
         // UI 관련 설정 props 끝
-        modelValue: Boolean,
+        // 에이전트 · 외부 시스템이 넣은 값은 문자열('true'/'false')로 오기도 한다 — 그대로 두면 'false' 도 체크된 칸이 된다
+        modelValue: [Boolean, String, Number],
         vueRenderUUID: String,
         tagName: String,
 
@@ -59,7 +70,7 @@ export default {
     watch: {
         modelValue: {
             handler() {
-                this.localModelValue = this.modelValue ?? false;
+                this.localModelValue = toBoolean(this.modelValue);
             },
             deep: true,
             immediate: true
@@ -75,7 +86,7 @@ export default {
     },
 
     created() {
-        this.localModelValue = this.modelValue ?? false;
+        this.localModelValue = toBoolean(this.modelValue);
 
         this.localName = this.name ?? 'name';
         this.localAlias = this.alias ?? '';

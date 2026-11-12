@@ -1414,7 +1414,27 @@
                                                                                 width="2"
                                                                                 color="primary"
                                                                             />
+                                                                            <!--
+                                                                                대화 Pod 가 아직 뜨는 중(session_status starting).
+                                                                                첫 답까지 수십 초가 걸리는 동안 「생각 중...」만 두면
+                                                                                멈춘 줄 안다 — 무엇을 기다리는지와 몇 초째인지 보인다.
+                                                                                상태 프레임이 오지 않는 대화에는 나타나지 않는다.
+                                                                            -->
                                                                             <div
+                                                                                v-if="message.sessionPreparing"
+                                                                                class="ml-2 session-preparing"
+                                                                                data-testid="session-preparing"
+                                                                                role="status"
+                                                                                aria-live="polite"
+                                                                            >
+                                                                                {{
+                                                                                    $t('chats.sessionPreparing', {
+                                                                                        seconds: message.sessionPreparing.seconds
+                                                                                    })
+                                                                                }}
+                                                                            </div>
+                                                                            <div
+                                                                                v-else
                                                                                 class="ml-2 markdown-content streaming-content"
                                                                                 v-html="withKbCitations(renderStreamingMarkdown(message))"
                                                                                 @click="onKbCitationClick"
@@ -3182,6 +3202,37 @@
                                     data-testid="orchestration-select"
                                     style="max-width: 220px"
                                 />
+                                <!--
+                                    CLI 코딩 에이전트면 어느 CLI 로 돌릴지 고른다. 다른 에이전트에는 의미가 없어
+                                    cliagents 일 때만 보인다. 대화가 시작된 방에서도 보인다 — 고른 값은 방에
+                                    기억되고(context.agent_cli) 다음 메시지부터 그 CLI 로 간다.
+                                    목록 · 이름표 · 문구는 업무 설정(AgentSelectField)과 같은 것을 쓴다.
+                                -->
+                                <v-select
+                                    v-if="orchestration === 'cliagents'"
+                                    v-model="agentCli"
+                                    :items="cliAgentOptions"
+                                    item-title="title"
+                                    item-value="value"
+                                    :aria-label="$t('AgentSelectInfo.cliAgent.cliTitle')"
+                                    :title="$t('AgentSelectInfo.cliAgent.cliDescription')"
+                                    :loading="cliAgentsLoading"
+                                    density="compact"
+                                    variant="outlined"
+                                    hide-details
+                                    class="ml-2 orchestration-select"
+                                    data-testid="agent-cli-select"
+                                    style="max-width: 170px"
+                                >
+                                    <template #item="{ item, props }">
+                                        <!-- 설치되지 않은 CLI 는 고를 수 없게 한다(업무 설정과 같은 규칙). -->
+                                        <v-list-item v-bind="props" :disabled="!item.raw.installed" :title="item.raw.title">
+                                            <v-list-item-subtitle v-if="item.raw.hint" class="text-wrap">
+                                                {{ item.raw.hint }}
+                                            </v-list-item-subtitle>
+                                        </v-list-item>
+                                    </template>
+                                </v-select>
                                 <!-- <v-btn v-if="orchestration === 'langchain-react'" icon variant="text" class="text-medium-emphasis" @click="openController()" v-bind="props"
                                     style="width:30px; height:30px;">
                                     <Icons :icon="'filter'" :size="20" />
@@ -3578,7 +3629,9 @@ import { isExecuteProcessTool, processLaunchesOf } from '@/shared/processLaunch'
 import BackendFactory from '@/components/api/BackendFactory';
 import { usePhoneShell } from '@/shared/phoneShell';
 import { getTenantId } from '@/utils/tenant';
-import { normalizeOrchestration } from '@/utils/orchestration';
+import { normalizeOrchestration, selectableOrchestrations } from '@/utils/orchestration';
+import { cliChoicesFor, companyCliAgents } from '@/shared/cliAgentKeys';
+import { DEFAULT_AGENT_CLI, agentCliOf, toCliAgentItems } from '@/utils/cliAgents';
 // 첨부 이미지·파일 주소는 비공개 버킷의 서명 URL 이라 그릴 때 만들어야 한다.
 import { storageUrlMixin } from '@/utils/storageUrl';
 const backend = BackendFactory.createBackend();
@@ -3814,6 +3867,15 @@ export default {
             // orchestration: which chat server/runtime to use
             orchestration: 'deepagents',
             selectableOrchestration: false,
+            // cliagents 일 때 어느 CLI 로 돌릴지. 방에 기억된 값(context.agent_cli)이 있으면 그것.
+            agentCli: DEFAULT_AGENT_CLI,
+            // 서버(GET /process-gpt-cli-agent/agents)가 알려 준 CLI 목록. 못 받으면 비어 있다.
+            cliAgentItems: [],
+            // 회사 키가 있는 CLI(anthropic → claude-code, openai → codex). 하나라도 있으면 플래그와 상관없이
+            // 「CLI 코딩 에이전트」를 고를 수 있고, 실행 CLI 는 이 안에서만 고른다(src/shared/cliAgentKeys).
+            companyKeyClis: [],
+            cliAgentsLoading: false,
+            cliAgentsLoaded: false,
             isDragOverTextarea: false,
             showNewMessageNoti: false,
             lastMessage: { name: '', content: '' },
@@ -3967,6 +4029,10 @@ export default {
         };
         document.addEventListener('click', this._autocompleteOutsideClickHandler);
 
+        // 새 대화를 시작하는 화면에서 묻는다(CLI 코딩 에이전트 방은 watch(orchestration) 이 묻는다). 같은 사용자 · 테넌트면
+        // 60초 동안 기억한 값을 쓴다. 화면을 옮겨 들어올 때는 watch($route.path) 가 다시 묻는다.
+        if (this.isOrchestrationSelectableRoute) this.refreshCompanyKeyClis();
+
         this.EventBus.on('scroll_update', () => {
             if (this.$refs && this.$refs.scrollContainer) {
                 setTimeout(() => {
@@ -4030,6 +4096,29 @@ export default {
         this._contentResizeObserver = null;
     },
     watch: {
+        // CLI 코딩 에이전트를 고르면(또는 그런 방을 열면) 서버에 설치된 CLI 를 물어 둔다.
+        orchestration: {
+            immediate: true,
+            handler(value) {
+                if (value === 'cliagents') {
+                    this.loadCliAgentItems();
+                    // CLI 코딩 에이전트 방 · 새 대화에서 고른 때 — 실행 CLI 를 회사 키가 있는 것으로 맞추려고 묻는다.
+                    this.refreshCompanyKeyClis();
+                }
+            }
+        },
+        // 다른 화면에서 새 대화 화면(/definition-map …)으로 옮겨 오면 회사 키를 다시 묻는다 — mounted 만으로는
+        // 컴포넌트가 재사용될 때 처음 값에 머문다.
+        '$route.path'() {
+            if (this.isOrchestrationSelectableRoute) this.refreshCompanyKeyClis();
+        },
+        // 방을 바꾸면(기억된 CLI) · 회사 키 목록이 오면, 고른 CLI 가 키 있는 CLI 인지 맞춘다.
+        agentCli() {
+            this.alignAgentCliToCompanyKeys();
+        },
+        companyKeyClis() {
+            this.alignAgentCliToCompanyKeys();
+        },
         prompt(newVal, oldVal) {
             if (newVal !== oldVal) {
                 this.newMessage = newVal;
@@ -4047,6 +4136,13 @@ export default {
                         return (c?.orchestration || '').toString().trim();
                     };
                     const v = readOrchestration(newRoom);
+                    // 방마다 고른 CLI 를 이어 쓴다. 매번 기본값으로 돌아가면 사용자가 고른 것이 조용히 무시된다.
+                    // 같은 방이면 저장된 값이 바뀌었을 때만 따른다 — 미리보기 갱신마다 덮으면 입력창에서
+                    // 방금 바꾼(아직 보내지 않은) CLI 가 되돌아간다.
+                    const readCli = (r) => ((r?.context ?? r?.room_context ?? r?.roomContext ?? null)?.agent_cli || '').toString().trim();
+                    const roomCli = readCli(newRoom);
+                    if (newId !== oldId) this.agentCli = roomCli || DEFAULT_AGENT_CLI;
+                    else if (roomCli && roomCli !== readCli(oldRoom)) this.agentCli = roomCli;
 
                     // 같은 방에 대한 메시지/미리보기 갱신마다 실행되므로, 저장된 값이 그대로면 건드리지 않는다.
                     // (매 갱신마다 덮어쓰면 컴포저에서 선택한 orchestration 이 전송 전에 초기화된다)
@@ -4107,8 +4203,22 @@ export default {
             return [
                 { label: this.$t('chats.basicAgent'), value: 'langchain-react' },
                 { label: this.$t('chats.deepAgent'), value: 'deepagents' },
-                { label: this.$t('chats.codexAgent'), value: 'codex' }
-            ];
+                { label: this.$t('chats.codexAgent'), value: 'codex' },
+                // 업무 설정(AgentSelectField)과 같은 이름표를 쓴다. 플래그(cliAgentChatEnabled)나 회사 키(companyKeyClis)가 있을 때만.
+                { label: this.$t('AgentSelectInfo.orchestration.cliagents.title'), value: 'cliagents' }
+            ].filter(
+                (o) =>
+                    selectableOrchestrations(undefined, { companyCliKey: this.companyKeyClis.length > 0 }).includes(o.value) ||
+                    o.value === this.orchestration
+            );
+        },
+        /**
+         * CLI 선택 목록. 서버 목록을 받았으면 그것(설치 · 인증 여부 포함), 못 받았으면 아는 둘.
+         * 회사 키가 있으면 키가 있는 CLI 만 — OpenAI 키만 있는 회사에서 Claude Code 를 고르면 공용 개인 구독으로 돈다.
+         * 회사 키가 없으면(플래그로 연 배포) 지금처럼: 방에 기억된 값이 목록에 없으면 그 값도 보여 준다.
+         */
+        cliAgentOptions() {
+            return cliChoicesFor(this.cliAgentItems, this.companyKeyClis, this.agentCli).items;
         },
         isSystemMentioned() {
             return (
@@ -4805,6 +4915,38 @@ export default {
         getLoadingLabel(message) {
             return message?.content || '생각 중...';
         },
+        /** 회사 키가 있는 CLI 를 다시 묻는다(같은 사용자 · 테넌트면 60초 동안 기억한 값). 실패하면 [] — 지금 상태 그대로. */
+        async refreshCompanyKeyClis() {
+            const clis = await companyCliAgents();
+            if (JSON.stringify(clis) !== JSON.stringify(this.companyKeyClis)) this.companyKeyClis = clis;
+        },
+        /**
+         * 회사 키가 있으면 고른 CLI 를 그 안으로 — 기본값(claude-code)이나 방에 기억된 CLI 에 키가 없으면 키가 있는 첫 CLI 로.
+         * 회사 키가 없으면(플래그로 연 배포) 건드리지 않는다.
+         */
+        alignAgentCliToCompanyKeys() {
+            if (!this.companyKeyClis.length) return;
+            const { value } = cliChoicesFor(this.cliAgentItems, this.companyKeyClis, this.agentCli);
+            if (value !== agentCliOf(this.agentCli)) this.agentCli = value;
+        },
+        /** 보낼 메시지에 실을 CLI. cliagents 가 아니면 null — 다른 런타임에는 의미가 없다. */
+        selectedAgentCli() {
+            return normalizeOrchestration(this.orchestration) === 'cliagents' ? agentCliOf(this.agentCli) : null;
+        },
+        /** 서버가 아는 CLI 목록(설치 · 인증 여부). 한 번만 묻는다. 실패하면 아는 둘을 보여 준다. */
+        async loadCliAgentItems() {
+            if (this.cliAgentsLoaded || this.cliAgentsLoading) return;
+            this.cliAgentsLoading = true;
+            try {
+                const response = await axios.get('/process-gpt-cli-agent/agents');
+                this.cliAgentItems = toCliAgentItems(response.data?.agents, (key) => this.$t(key));
+            } catch (e) {
+                this.cliAgentItems = [];
+            } finally {
+                this.cliAgentsLoading = false;
+                this.cliAgentsLoaded = true;
+            }
+        },
         /**
          * 스트리밍 중(isLoading=true) 단계의 마크다운 렌더.
          * 토큰이 도착하기 전이거나 placeholder 만 있는 경우엔 회색 안내 텍스트,
@@ -5110,6 +5252,7 @@ export default {
                     images: [],
                     mentionedUsers: [],
                     orchestration: normalizeOrchestration(this.orchestration),
+                    agentCli: this.selectedAgentCli(),
                     file: null,
                     files: [],
                     rawFiles: [],
@@ -6682,6 +6825,7 @@ export default {
                     text: this.newMessage,
                     mentionedUsers: this.mentionedUsers,
                     orchestration: normalizeOrchestration(this.orchestration),
+                    agentCli: this.selectedAgentCli(),
                     file: filesForMessage[0] || null,
                     files: filesForMessage,
                     rawFiles,
@@ -8395,6 +8539,13 @@ pre {
 .chat-split-resize-handle:hover,
 .chat-split-resize-handle:active {
     background-color: rgba(var(--v-theme-primary), 0.3);
+}
+
+/* 대화 Pod 를 띄우는 동안의 안내. 초가 바뀔 때 글자 폭이 흔들리지 않게 숫자 폭을 고정한다. */
+.session-preparing {
+    font-size: 14px;
+    color: rgba(var(--v-theme-on-surface), 0.62);
+    font-variant-numeric: tabular-nums;
 }
 
 // Orchestration select (definition-map main input)

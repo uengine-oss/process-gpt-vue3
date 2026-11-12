@@ -270,9 +270,9 @@
                     <v-window-item value="source" class="instance-card-tab-6">
                         <InstanceSource :instance="instance" />
                     </v-window-item>
-                    <!-- 산출물  -->
+                    <!-- 산출물 — 넓은 카드로 항목 이름 · 본문을 펴 보인다(업무 화면의 썸네일 모양과는 따로). -->
                     <v-window-item value="output" class="instance-card-tab-7">
-                        <InstanceOutput :instance="instance" />
+                        <InstanceOutput :instance="instance" :wide="true" />
                     </v-window-item>
                 </v-window>
             </div>

@@ -568,7 +568,16 @@
         "saturday": "Saturday",
         "basicAgent": "Basic Agent (LangChain ReAct)",
         "deepAgent": "Deep Agent (LangGraph)",
-        "codexAgent": "Deep Agent (Codex)"
+        "codexAgent": "Deep Agent (Codex)",
+        "sessionPreparing": "Getting the agent ready · {seconds}s",
+        "agentErrors": {
+            "cliNotSelected": "Choose a CLI first.",
+            "cliUnavailable": "The selected CLI isn't installed on this server. Choose another CLI.",
+            "emptyMessage": "There is nothing to send.",
+            "companyKeyRequired": "There is no company API key for this CLI.",
+            "companyKeyAdminHint": "An admin can add one in Settings › CLI Agent API Keys.",
+            "companyKeyCheckFailed": "Couldn't check the company API key. Please send again in a moment."
+        }
     },
     "AssistantChats": {
         "document": "Enter the task details you want to assign. When you provide information about the task, a preview of the task that the recipient will see is displayed on the left. Review the preview and improve any lacking areas. Once the improvements are complete, use 'Assign Task' to give the task."
@@ -1720,6 +1729,7 @@
         "skills": "Skills",
         "taskCatalog": "Task Catalog",
         "orgChartGroup": "Org Groups",
+        "cliAgentKeys": "CLI Agent API Keys",
         "github": "GitHub Settings",
         "githubUsername": "GitHub Username",
         "githubToken": "GitHub Token (Personal Access Token)",
@@ -1742,6 +1752,35 @@
         "tokenHintGithub": "You can generate a token at GitHub → Settings → Developer settings → Personal access tokens. The repo scope is required.",
         "tokenHintGitlab": "You can generate a token at GitLab → User Settings → Access Tokens. The api or read_repository scope is required.",
         "tokenHintGitea": "You can generate a token at Gitea → Settings → Applications."
+    },
+    "cliAgentKeys": {
+        "title": "CLI Agent API Keys",
+        "description": "Company API keys that Claude Code and Codex CLI use for tasks and chats. Keys are stored encrypted and never shown again.",
+        "notice": "Use API keys created by your company. Sharing a personal subscription token among several people violates the terms.",
+        "anthropicConsole": "Create a key in Claude Console",
+        "openaiConsole": "Create a key on the OpenAI Platform",
+        "fallback": "Without a key, that CLI can't be picked in chat, and work items keep running on the credentials configured on the server.",
+        "anthropicKey": "Anthropic API key",
+        "openaiKey": "OpenAI API key",
+        "configured": "Configured",
+        "notConfigured": "Not configured",
+        "inputLabel": "Paste a new key",
+        "replaceLabel": "Replace with a new key",
+        "save": "Save",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "saved": "Saved the {agent} key.",
+        "deleted": "Deleted the {agent} key.",
+        "confirmTitle": "Delete the {agent} key?",
+        "confirmText": "{agent} can't be picked in chat any more, and work items go back to the credentials configured on the server. To use the same key again, paste it again.",
+        "loadFailed": "Couldn't load the status: {message}",
+        "storeMissing": "The key store isn't set up on this server yet. Once an operator applies the database setup (process-gpt-vue3 supabase/migrations/20261111000001_cli_agent_credentials.sql), you can add keys here.",
+        "warn": {
+            "whitespace": "The key contains spaces or line breaks. Check what you pasted.",
+            "anthropicPrefix": "Anthropic API keys usually start with sk-ant-. Make sure this is the right key.",
+            "openaiPrefix": "OpenAI API keys usually start with sk-. Make sure this is the right key.",
+            "looksAnthropic": "This looks like an Anthropic key (sk-ant-). Codex needs an OpenAI key."
+        }
     },
     "orgChartGroup": {
         "title": "Organization Group Management",
@@ -2588,7 +2627,7 @@
         "generateExample": "Generate Example",
         "quickGenerateExample": "Quick Generation",
         "quickGenerateExampleDescription": "Quick draft generation using the default AI model. ex) Basic document writing, simple analysis (1~3 minutes)",
-        "resultInput": "Current Task",
+        "resultInput": "Task to Do",
         "researchMethod": "Agent Delegation",
         "runningResearchMethod": "Running Research Method",
         "delegateMessage": "Task '{taskName}' has been delegated to {username}.",
@@ -3855,10 +3894,14 @@
         "systemSender": "System"
     },
     "ActivityInputData": {
-        "previousInput": "Previous Activity Input",
-        "previousInputDescription": "This shows the input provided for the previous activity. Please refer to it as you proceed with the current work.",
-        "previousInputDetailTitle": "What is previous input?",
-        "previousInputDetail": "Shows form data entered by the previous task actor in the BPM process. Use this to perform the current task and understand the flow. Example: In Approve Request → Review → Approve, at 'Review' you see what was entered at 'Approve Request'."
+        "previousInput": "Received Outputs",
+        "previousInputDescription": "Outputs handed over from the previous step. Use them as you work on the task to do.",
+        "previousInputDetailTitle": "What are received outputs?",
+        "previousInputDetail": "Shows what the previous step's assignee (a person or an agent) left as output. Refer to it while you work on the task to do. Example: In Approve Request → Review → Approve, at 'Review' you see what was left at 'Approve Request'.",
+        "expand": "Show",
+        "collapse": "Hide",
+        "fieldCount": "{count} fields",
+        "empty": "No content"
     },
     "MCPServer": {
         "searchMCPServers": "Search MCP Servers",
@@ -4099,6 +4142,8 @@
         "knowledgeSetupInProgress": "Setting up knowledge"
     },
     "FormWorkItem": {
+        "freeInputTitle": "Work details",
+        "freeInputPlaceholder": "Write what you did and the result.",
         "agentSummaryTitle": "Agent work summary",
         "agentSummaryHint": "Review the form the agent filled in below, edit it if needed, then submit.",
         "chooseDecision": "Choose “{field}”. Approve or reject is never preselected.",
@@ -4130,14 +4175,28 @@
         "fileTooLarge": "File is too large. (Maximum 50MB)",
         "fileDeleted": "File deleted successfully."
     },
-    "FormRealtimeAssistant": {
-        "title": "Voice Agent",
-        "connected": "Connected",
-        "connecting": "Connecting",
-        "disconnected": "Disconnected",
-        "responding": "Responding",
-        "micOn": "Mic ON",
-        "inputPlaceholder": "Type a message or speak with the microphone."
+    "WorkItemDictation": {
+        "start": "Dictate",
+        "stop": "Stop",
+        "close": "Close",
+        "starting": "Turning on the microphone…",
+        "listening": "Listening. Go ahead.",
+        "transcribing": "Transcribing…",
+        "filling": "Filling the fields from “{text}”…",
+        "appended": "Added what you said to “{field}”.",
+        "filled": "Filled {count} field(s) ({fields}). Review before submitting.",
+        "skippedTyping": "Left {count} field(s) you were editing untouched ({fields}).",
+        "heard": "Heard: “{text}”",
+        "reason": {
+            "denied": "Allow microphone access (microphone permission in the address bar).",
+            "unsupported": "Voice input is not available in this browser.",
+            "micFailed": "Could not turn on the microphone. Check that one is connected.",
+            "empty": "No sound was recorded. Please try again.",
+            "failed": "Could not reach the transcription server. Please try again shortly.",
+            "fillFailed": "Could not fill the fields from what you said (AI server unavailable).",
+            "noMatch": "Nothing you said matches a field on this form.",
+            "nothingToFill": "This form has no fields that can be filled by voice."
+        }
     },
     "processDialog": {
         "editProcess": "Edit Process",
@@ -4823,7 +4882,19 @@
         "userInput": "User Input",
         "noFormContent": "No form content available.",
         "stepFeedback": "Feedback for this step",
-        "processing": "Processing..."
+        "processing": "Processing...",
+        "round": "Round {n}",
+        "loopBack": "Sent back",
+        "rerun": "Runs again",
+        "current": "In progress",
+        "loopBackHint": "The flow went back to an earlier step here",
+        "rerunHint": "This step was done before and runs again"
+    },
+    "OutputCard": {
+        "empty": "No output yet",
+        "openOriginal": "Open original",
+        "moreFields": "+{n} more fields",
+        "openLink": "Open output link"
     },
     "SkillsManagement": {
         "title": "Skills List Management",

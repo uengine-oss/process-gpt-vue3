@@ -21,6 +21,36 @@ export function hasValue(v) {
     return true;
 }
 
+/**
+ * 폼 정의들에서 항목 키 → 사람이 읽을 이름(「request_detail」 → 「요청사항」).
+ *
+ * 산출물 카드는 값에 붙은 키를 그대로 보여 줬다(「text-field-2 : …」). 폼에 적힌 이름이 있으면 그것을 쓴다.
+ * 같은 키가 여러 폼에 있으면 먼저 받은 폼의 이름을 쓴다(호출하는 쪽이 해당 업무의 폼을 앞에 둔다).
+ *
+ * @param {object|object[]} forms  form_def 행(fields_json: [{key, text}])
+ * @returns {Record<string, string>}
+ */
+export function fieldLabelsOf(forms) {
+    const labels = {};
+    (Array.isArray(forms) ? forms : [forms]).forEach((form) => {
+        let fields = form && form.fields_json;
+        if (typeof fields === 'string') {
+            try {
+                fields = JSON.parse(fields);
+            } catch (e) {
+                fields = [];
+            }
+        }
+        (Array.isArray(fields) ? fields : []).forEach((f) => {
+            const key = f && (f.key || f.name);
+            const text = f && String(f.text || f.alias || f.label || '').trim();
+            // 이름 칸에 키를 그대로 베낀 폼(text-field-2)은 이름이 없는 것과 같다 — 화면에서 「텍스트 2」 로 바꿔 부른다.
+            if (key && text && text !== key && !labels[key]) labels[key] = text;
+        });
+    });
+    return labels;
+}
+
 /** 업무가 가리키는 폼 id(tool 이 formHandler:<id>). */
 export function formIdOf(work) {
     const tool = (work && work.tool) || '';
@@ -70,4 +100,48 @@ export async function fetchFormDefs(backend, { defIds, formIds, have = [], tried
     const byId = [...new Set((formIds || []).filter(Boolean))].filter((id) => !known.has(id) && !tried.has(`#${id}`));
     (await fetchAll(byId.map((id) => `#${id}`), (key) => ({ id: key.slice(1) }))).forEach(add);
     return fresh;
+}
+
+/** 미리보기 한 줄에 맞게 마크다운 표시(글머리 · 번호 · 제목 · 굵게)와 HTML 태그를 걷어 낸다. */
+function plainLine(text) {
+    return String(text)
+        .split(/\r?\n/)
+        .map((line) =>
+            line
+                .replace(/<[^>]*>/g, ' ')
+                .replace(/^\s*(?:#{1,6}\s+|[-*+•·]\s+|\d{1,3}[.)]\s+|>\s+)/, '')
+                .replace(/\*\*|__|`/g, '')
+                .trim()
+        )
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/**
+ * 「전달받은 산출물」을 접어 둔 채 보여 줄 한 줄 미리보기와 값이 든 항목 수.
+ * 글(문자열)이 있으면 폼 순서(order)대로 첫 글을, 없으면 첫 값을 쓴다.
+ *
+ * @param {object} values  폼 값({필드: 값})
+ * @param {object} [opts]
+ * @param {string[]} [opts.order]  필드 순서(폼 정의 fields_json 의 key 순서)
+ * @param {number} [opts.maxLength]  미리보기 최대 글자 수
+ * @returns {{ text: string, count: number }}
+ */
+export function outputPreview(values, { order = [], maxLength = 120 } = {}) {
+    const v = values && typeof values === 'object' ? values : {};
+    const keys = [...new Set([...(order || []).filter((k) => k in v), ...Object.keys(v)])].filter(
+        (k) => k && !k.startsWith('__') && hasValue(v[k])
+    );
+    const pick = keys.find((k) => typeof v[k] === 'string' && plainLine(v[k])) ?? keys[0];
+    let text = '';
+    if (pick !== undefined) {
+        const value = v[pick];
+        if (typeof value === 'string') text = plainLine(value);
+        else if (Array.isArray(value)) text = value.filter((x) => typeof x !== 'object').join(', ');
+        else if (typeof value !== 'object') text = String(value);
+    }
+    if (text.length > maxLength) text = `${text.slice(0, maxLength).trimEnd()}…`;
+    return { text, count: keys.length };
 }

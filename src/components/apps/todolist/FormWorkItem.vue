@@ -124,7 +124,7 @@
                         <DynamicForm
                             v-if="html"
                             ref="dynamicForm"
-                            :formHTML="html"
+                            :formHTML="displayHtml"
                             v-model="formData"
                             class="dynamic-form mb-4"
                             :readonly="isCompleted || !isOwnWorkItem || isGeneratingExample"
@@ -251,6 +251,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import { awaitingUserInput } from '@/shared/awaitingUserInput';
 import { latestAgentSummary, agentDraftValues } from '@/shared/agentSummary/index.js';
 import { missingDecisions } from '@/shared/decisionField';
+import { presentFormHtml } from '@/shared/formPresentation/index.js';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -353,6 +354,18 @@ export default {
         },
         hasInputFields() {
             return this.inputFields && this.inputFields.length > 0;
+        },
+        /**
+         * 화면에 그릴 폼 HTML — 보이는 이름만 고친다(빈 alias → 「텍스트 2」, 기본 자유입력 → 제목 「작업 내용」 한 번).
+         * 저장 · 에이전트 쪽(html-updated)은 원래 html 을 그대로 쓴다.
+         */
+        displayHtml() {
+            const translate = (key) => (this.$te && this.$te(key) ? this.$t(key) : null);
+            return presentFormHtml(this.html, {
+                translate,
+                freeInputTitle: this.$t('FormWorkItem.freeInputTitle'),
+                freeInputPlaceholder: this.$t('FormWorkItem.freeInputPlaceholder')
+            });
         }
     },
     watch: {

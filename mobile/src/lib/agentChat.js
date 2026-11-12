@@ -13,19 +13,21 @@
  */
 
 import { isUsable } from './attachments.js';
+// 별칭(@/) 대신 상대 경로. 이 파일은 검증에서 Node 가 직접 불러온다.
+import { basePathForOrchestration } from '../../../src/utils/orchestration.js';
+import { cliChatMetadata } from '../../../src/utils/cliAgents.js';
 
-/** 오케스트레이션별 서비스 경로. 포털과 같아야 한다. */
-const BASE_PATHS = {
-    deepagents: '/process-gpt-deepagents'
-};
-
-/** 그 밖의 모든 것. */
+/** 그 밖의 모든 것(모르는 오케스트레이션). */
 const DEFAULT_BASE_PATH = '/agent';
 
-/** 이 대화가 어느 엔진으로 가는가. */
+/**
+ * 이 대화가 어느 엔진으로 가는가.
+ *
+ * 경로 표는 포털과 같은 것(src/utils/orchestration.js)을 쓴다. 여기 따로 적어 두었을 때는
+ * deepagents 하나만 있어서, 코덱스 · CLI 에이전트 대화가 조용히 기본 에이전트(`/agent`)로 갔다.
+ */
 export function basePathFor(orchestration) {
-    const o = (orchestration || '').toString().trim();
-    return BASE_PATHS[o] || DEFAULT_BASE_PATH;
+    return basePathForOrchestration(orchestration) || DEFAULT_BASE_PATH;
 }
 
 /** 앱에서 실제로 부를 절대 주소. */
@@ -125,7 +127,10 @@ export function buildParams({
     sessionFiles = null,
     mentioned = null,
     metadata = null,
-    ids = null
+    ids = null,
+    orchestration = '',
+    agentCli = '',
+    agentModel = ''
 }) {
     const user = session?.user;
     // 주소가 없는 첨부는 보내지 않는다. 에이전트가 열지 못하는 것을 넘기면
@@ -149,7 +154,12 @@ export function buildParams({
         file: usable[0] || null,
         files: usable,
         file_count: usable.length,
-        metadata: withKnowledge(metadata, docs)
+        metadata: {
+            ...withKnowledge(metadata, docs),
+            // CLI 코딩 에이전트면 어느 CLI 로 돌릴지(agent_cli). 다른 대화에는 싣지 않는다.
+            // metadata 안이어야 한다 — 맨 위에 두면 에이전트 SDK 가 모르는 칸이라 버린다.
+            ...cliChatMetadata(orchestration, agentCli, { model: agentModel })
+        }
     };
 }
 

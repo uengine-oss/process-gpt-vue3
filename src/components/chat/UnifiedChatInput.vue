@@ -145,7 +145,7 @@ import Chat from '@/components/ui/Chat.vue';
 import KnowledgeSpacePicker from '@/components/knowledge/KnowledgeSpacePicker.vue';
 import { mimeIcon } from '@/utils/fileIcon';
 import { useKnowledgeSelectionStore } from '@/stores/knowledgeSelection';
-import { normalizeOrchestration } from '@/utils/orchestration';
+import { ORCHESTRATIONS, normalizeOrchestration } from '@/utils/orchestration';
 import codexSessionFolderService from '@/services/CodexSessionFolderService';
 import { getTenantId } from '@/utils/tenant';
 import { useCodexFolderStore } from '@/stores/codexFolder';
@@ -453,17 +453,22 @@ export default {
         },
         selectExample(example) {
             if (!example) return;
+            // 입력창에서 고른 에이전트를 그대로 쓴다. 예전의 이진 판정(deepagents 아니면 기본)은
+            // 코덱스 · CLI 에이전트를 고른 상태에서 예시를 누르면 조용히 기본 에이전트로 보냈다.
             let orchestration = 'langchain-react';
+            let agentCli = null;
             try {
-                const o = this.$refs.inputChat?.orchestration;
-                if ((o || '').toString().trim() === 'deepagents') orchestration = 'deepagents';
+                const o = (this.$refs.inputChat?.orchestration || '').toString().trim();
+                if (ORCHESTRATIONS.includes(o)) orchestration = o;
+                agentCli = this.$refs.inputChat?.selectedAgentCli?.() || null;
             } catch (e) {}
             this.$emit('sendMessage', {
                 text: example.text,
                 timestamp: new Date().toISOString(),
                 file: null,
                 images: null,
-                orchestration
+                orchestration,
+                agentCli
             });
         },
         forwardSendMessage(message) {
@@ -484,6 +489,8 @@ export default {
                 images: message.images || null,
                 // orchestration pass-through (Chat.vue -> MainChatInput/ChatRoomPage)
                 orchestration: normalizeOrchestration(message?.orchestration),
+                // CLI 코딩 에이전트면 고른 CLI (Chat.vue -> startMainChat/ChatRoomPage). 빠지면 서버 기본 CLI 로 돈다.
+                agentCli: message?.agentCli || null,
                 // mention 메타데이터 pass-through (Chat.vue -> ChatRoomPage 라우팅)
                 mentionedUsers: Array.isArray(message.mentionedUsers) ? message.mentionedUsers : [],
                 // reply 메타데이터 pass-through (Chat.vue -> ChatRoomPage)

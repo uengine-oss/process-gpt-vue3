@@ -30,6 +30,14 @@ test('고른 에이전트가 방에 기록된다', () => {
     assert.equal(room.context.orchestration, 'deepagents');
 });
 
+test('CLI 코딩 에이전트면 고른 CLI 도 방에 기억한다 — 포털과 같은 칸(context.agent_cli)', () => {
+    assert.equal(buildRoom(me, 'cliagents', { id: 'r', now: NOW, agentCli: 'codex' }).context.agent_cli, 'codex');
+    // 고르지 않았으면 서버 기본값을 적는다. 비워 두면 화면마다 다른 기본값을 보일 수 있다.
+    assert.equal(buildRoom(me, 'cliagents', { id: 'r', now: NOW }).context.agent_cli, 'claude-code');
+    // 다른 에이전트 방에는 남기지 않는다.
+    assert.equal('agent_cli' in buildRoom(me, 'deepagents', { id: 'r', now: NOW, agentCli: 'codex' }).context, false);
+});
+
 test('고르지 않으면 기본 에이전트를 쓴다', () => {
     assert.equal(buildRoom(me, '', { id: 'r', now: NOW }).context.orchestration, DEFAULT_ORCHESTRATION);
     assert.equal(buildRoom(me, null, { id: 'r', now: NOW }).context.orchestration, DEFAULT_ORCHESTRATION);
