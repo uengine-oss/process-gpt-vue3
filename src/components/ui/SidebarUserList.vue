@@ -228,7 +228,7 @@ export default {
 .user-name {
     font-size: 14px;
     font-weight: 500;
-    color: #2d3436;
+    color: rgba(var(--v-theme-on-surface), 0.82);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -236,7 +236,7 @@ export default {
 
 .user-email {
     font-size: 10px;
-    color: #636e72;
+    color: rgba(var(--v-theme-on-surface), 0.6);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
