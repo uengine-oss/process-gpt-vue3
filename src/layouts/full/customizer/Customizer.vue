@@ -2,8 +2,8 @@
 import { ref, onMounted } from 'vue';
 import { useCustomizerStore } from '@/stores/customizer';
 import { CheckIcon } from 'vue-tabler-icons';
-import { applyAppearance, appearanceFromTheme, THEME_BY_APPEARANCE, type Appearance } from '@/ds/appearance';
-import { isPhoneBrowser, viewportApi, savedMobileView, saveMobileView, phoneWebUrl } from '@/shared/mobileView';
+import { applyAppearance, getAppearance, THEME_BY_APPEARANCE, type Appearance } from '@/ds/appearance';
+import { isPhoneBrowser, viewportApi, savedMobileView, saveMobileView, phoneWebUrl, liteAvailable } from '@/shared/mobileView';
 import { webAppInstall } from '@/utils/webAppInstall';
 import AddToHomeScreen from '@/components/mobile/AddToHomeScreen.vue';
 
@@ -19,12 +19,16 @@ const themes: Array<{ value: Appearance; labelKey: string; swatch: string; dot: 
     { value: 'dark', labelKey: 'Customizer.dark', swatch: '#262624', dot: '#d97757' }
 ];
 
-const active = ref<Appearance>('sky');
+// 지금 화면에 적용된 테마가 기준이다(저장 칸 pg-appearance — 부팅 때 ds/appearance 가 복원한다).
+const active = ref<Appearance>(getAppearance());
 
 function select(appearance: Appearance) {
     active.value = appearance;
     // 토큰 레이어 · Vuetify 테마 · BPMN 캔버스가 함께 전환된다
     applyAppearance(appearance);
+    // applyAppearance 는 Vuetify 테마를 한 박자 늦게 맞춘다(지연 로드). 여기서 바로 맞춰야 아래 저장에 새 테마가 들어간다 —
+    // 옛 테마가 저장되면 다음에 이 화면을 열 때 사이드바 · 상단바만 옛 색으로 돌아간다.
+    customizer.actTheme = THEME_BY_APPEARANCE[appearance];
     saveSettings();
 }
 
@@ -41,17 +45,28 @@ function saveSettings() {
 
 /**
  * 휴대폰 화면 — 휴대폰 브라우저에서만 보인다(이 기기에 저장되고, 폭은 index.html 이 정한다).
- * 고르지 않았으면 기본인 데스크톱 화면으로 보인다. 라이트를 고르면 휴대폰 웹(/m/)으로 간다.
+ * 고르지 않았으면 기본인 데스크톱 버전으로 보인다. 모바일 버전은 휴대폰 웹(/m/)으로, 라이트 모드는
+ * Process GPT Lite(/lite/)로 간다.
  */
+type MobileView = 'desktop' | 'mobile' | 'lite';
 const showMobileView = isPhoneBrowser() && !!viewportApi()?.isEnabled?.();
-const mobileView = ref<'desktop' | 'light'>(savedMobileView() ?? 'desktop');
+const mobileView = ref<MobileView>((savedMobileView() as MobileView | null) ?? 'desktop');
+const liteMissing = ref(false);
 
-function selectMobileView(view: 'desktop' | 'light') {
+async function selectMobileView(view: MobileView) {
+    liteMissing.value = false;
+    const previous = mobileView.value;
     mobileView.value = view;
+    // Lite 가 없는 설치에서 라이트 모드를 고르면 열 화면이 없다 — 저장하지 않고 알리고, 고른 표시도 되돌린다.
+    if (view === 'lite' && !(await liteAvailable())) {
+        mobileView.value = previous;
+        liteMissing.value = true;
+        return;
+    }
     const { reload } = saveMobileView(view);
-    // 라이트는 휴대폰 웹으로 간다 — 계정 설정은 휴대폰에서도 포털에 남는 화면이라 새로 열기만 하면 그대로다.
-    const phoneWeb = view === 'light' ? phoneWebUrl('/todolist') : null;
-    if (phoneWeb) window.location.assign(phoneWeb);
+    // 모바일 버전 · 라이트 모드는 그 화면으로 간다 — 계정 설정은 휴대폰에서도 포털에 남는 화면이라 새로 열기만 하면 그대로다.
+    const moveTo = view === 'desktop' ? null : phoneWebUrl('/todolist');
+    if (moveTo) window.location.assign(moveTo);
     else if (reload) window.location.reload();
 }
 
@@ -59,8 +74,11 @@ onMounted(() => {
     const saved = JSON.parse(localStorage.getItem('userSettings') ?? '{}');
     customizer.boxed = false;
     customizer.mini_sidebar = saved.mini_sidebar ?? false;
-    customizer.actTheme = saved.actTheme ?? THEME_BY_APPEARANCE.sky;
-    active.value = appearanceFromTheme(customizer.actTheme);
+    // Vuetify 테마는 저장해 둔 이름(userSettings.actTheme)이 아니라 지금 적용된 테마에서 정한다.
+    // 그 이름은 휴대폰 웹(/m/)에서 테마를 바꾸면 따라오지 않아, 그대로 덮으면 본문은 다크인데
+    // 사이드바 · 상단바만 흰색으로 남는다.
+    customizer.actTheme = THEME_BY_APPEARANCE[active.value];
+    if (saved.actTheme !== customizer.actTheme) saveSettings();
 });
 </script>
 
@@ -122,11 +140,15 @@ onMounted(() => {
                     :model-value="mobileView"
                     hide-details
                     data-testid="mobile-view-setting"
-                    @update:model-value="(v) => selectMobileView(v as 'desktop' | 'light')"
+                    @update:model-value="(v) => selectMobileView(v as MobileView)"
                 >
                     <v-radio value="desktop" :label="$t('mobileView.desktopOption')" color="primary" />
-                    <v-radio value="light" :label="$t('mobileView.lightOption')" color="primary" />
+                    <v-radio value="mobile" :label="$t('mobileView.mobileOption')" color="primary" />
+                    <v-radio value="lite" :label="$t('mobileView.liteOption')" color="primary" />
                 </v-radio-group>
+                <p v-if="liteMissing" class="text-body-2 text-error mt-2" data-testid="mobile-view-lite-missing" role="alert">
+                    {{ $t('mobileView.liteMissing') }}
+                </p>
             </template>
 
             <template v-if="webAppInstall.enabled && !webAppInstall.installed">

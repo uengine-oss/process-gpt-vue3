@@ -1,8 +1,8 @@
 /**
  * 휴대폰 화면 고르기 · 홈 화면에 추가.
  *
- * 지키려는 것: 휴대폰은 기본으로 데스크톱 폭(PC와 같은 화면)으로 그리고, 라이트(light)를 고른 휴대폰만
- * 휴대폰 웹(/m/)으로 가는 것. 로그인 · 랜딩 · 외부 폼과 컴퓨터는 폭을 바꾸지 않는다. 폭이 바뀌어야 할 때만 새로 연다.
+ * 지키려는 것: 휴대폰은 기본으로 데스크톱 폭(PC와 같은 화면)으로 그리고, 모바일 버전(mobile)을 고른 휴대폰은
+ * 휴대폰 웹(/m/)으로, 라이트 모드(lite)를 고른 휴대폰은 Process GPT Lite(/lite/)로 가는 것. 예전 값 light 는 mobile 로 읽는다. 로그인 · 랜딩 · 외부 폼과 컴퓨터는 폭을 바꾸지 않는다. 폭이 바뀌어야 할 때만 새로 연다.
  * 홈 화면에 추가하지 않은 휴대폰에는 맨 위 띠를 보이고, 「다시 보지 않기」 뒤로는 그 기기에서 보이지 않는 것.
  */
 import test from 'node:test';
@@ -12,6 +12,8 @@ import {
     savedMobileView,
     needsViewportReload,
     saveMobileView,
+    liteUrl,
+    liteAvailable,
     phoneZoom,
     shouldShowInstallBar,
     hideInstallBar,
@@ -42,8 +44,11 @@ function fakeWin({ phone = true, saved = {}, path = '/definition-map', scale = 0
         isEnabled: () => enabled,
         isPhoneBrowser: () => phone,
         isDeviceWidthPath,
-        view: () => win.localStorage.getItem('mobileView'),
-        wantsDesktop: (p) => enabled && phone && api.view() !== 'light' && !isDeviceWidthPath(p),
+        view: () => {
+            const v = win.localStorage.getItem('mobileView');
+            return v === 'light' ? 'mobile' : v;
+        },
+        wantsDesktop: (p) => enabled && phone && api.view() !== 'mobile' && api.view() !== 'lite' && !isDeviceWidthPath(p),
         desktop: false
     };
     api.desktop = api.wantsDesktop(path);
@@ -72,22 +77,45 @@ test('휴대폰은 기본(고르지 않음)이든 데스크톱을 골랐든 폭�
         assert.equal(needsViewportReload('/instancelist', inApp), false);
         assert.equal(needsViewportReload('/auth/login', inApp), true, '앱 → 로그인');
     }
-    const light = { mobileView: 'light' };
-    assert.equal(needsViewportReload('/definition-map', fakeWin({ path: '/auth/login', saved: light })), false, '라이트는 포털에서 늘 기기 폭');
+    for (const view of ['mobile', 'lite', 'light']) {
+        const saved = { mobileView: view };
+        assert.equal(needsViewportReload('/definition-map', fakeWin({ path: '/auth/login', saved })), false, `${view} 는 포털에서 늘 기기 폭`);
+    }
     assert.equal(needsViewportReload('/definition-map', fakeWin({ phone: false, path: '/auth/login' })), false, '컴퓨터');
 });
 
-test('라이트를 고르면 저장하고 새로 연다(휴대폰 웹으로)', () => {
-    const win = fakeWin();
-    assert.deepEqual(saveMobileView('light', win), { reload: true });
-    assert.equal(win.__store.mobileView, 'light');
-    assert.equal(savedMobileView(win), 'light');
+test('모바일 버전 · 라이트 모드를 고르면 저장하고 새로 연다', () => {
+    for (const view of ['mobile', 'lite']) {
+        const win = fakeWin();
+        assert.deepEqual(saveMobileView(view, win), { reload: true });
+        assert.equal(win.__store.mobileView, view);
+        assert.equal(savedMobileView(win), view);
+    }
 });
 
-test('라이트에서 데스크톱으로 바꾸면 새로 열어 데스크톱 폭으로 바꾼다', () => {
-    const win = fakeWin({ saved: { mobileView: 'light' } });
-    assert.deepEqual(saveMobileView('desktop', win), { reload: true });
-    assert.equal(win.__store.mobileView, 'desktop');
+test('모바일 버전 · 라이트 모드에서 데스크톱으로 바꾸면 새로 열어 데스크톱 폭으로 바꾼다', () => {
+    for (const view of ['mobile', 'lite', 'light']) {
+        const win = fakeWin({ saved: { mobileView: view } });
+        assert.deepEqual(saveMobileView('desktop', win), { reload: true });
+        assert.equal(win.__store.mobileView, 'desktop');
+    }
+});
+
+test('예전 값 light(휴대폰 웹)는 모바일 버전으로 읽고, 새로 저장하지는 않는다', () => {
+    assert.equal(savedMobileView(fakeWin({ saved: { mobileView: 'light' } })), 'mobile');
+    assert.throws(() => saveMobileView('light', fakeWin()));
+});
+
+test('Lite 가 있는지는 /lite/ 가 돌려준 화면이 Lite 의 것인지로 안다', async () => {
+    const withFetch = (res) => ({ fetch: async () => res });
+    const page = (html, ok = true) => ({ ok, text: async () => html });
+    const lite = '<script type="module" src="/lite/assets/index-abc.js"></script>';
+    const portal = '<script>window.__pgptViewport = api;</script><script type="module" src="/assets/index-x.js"></script>';
+    assert.equal(liteUrl({}), '/lite/');
+    assert.equal(await liteAvailable(withFetch(page(lite))), true);
+    assert.equal(await liteAvailable(withFetch(page(portal))), false, 'Lite 가 없으면 포털이 200 으로 자기 화면을 돌려준다');
+    assert.equal(await liteAvailable(withFetch(page(lite, false))), false, '오류 응답');
+    assert.equal(await liteAvailable({ fetch: async () => { throw new Error('offline'); } }), false, '연결 실패');
 });
 
 test('기본(고르지 않음)에서 데스크톱을 고르면 폭은 그대로다', () => {
@@ -105,7 +133,7 @@ test('데스크톱 폭에서만 대화상자를 휴대폰 글자 크기로 키�
     assert.equal(Math.round(phoneZoom(fakeWin({ scale: 0.3, saved: desk })) * 100) / 100, 3.33);
     assert.equal(phoneZoom(fakeWin({ scale: 0.1, saved: desk })), 4, '너무 커지지 않게');
     assert.equal(phoneZoom(fakeWin({ scale: 2, saved: desk })), 1, '확대하면 키우지 않는다');
-    assert.equal(phoneZoom(fakeWin({ scale: 0.3, saved: { mobileView: 'light' } })), 1, '기기 폭');
+    assert.equal(phoneZoom(fakeWin({ scale: 0.3, saved: { mobileView: 'mobile' } })), 1, '기기 폭');
 });
 
 test('홈 화면에서 연 앱인지 안다', () => {
@@ -127,7 +155,7 @@ test('홈 화면에 추가하는 방법을 기기별로 고른다', () => {
 
 test('홈 화면에 추가 띠: 휴대폰 브라우저 · 홈 화면 앱 아님 · 다시 보지 않기 전에만', () => {
     assert.equal(shouldShowInstallBar(fakeWin()), true);
-    assert.equal(shouldShowInstallBar(fakeWin({ saved: { mobileView: 'light' } })), true, '라이트 · 데스크톱 상관없이');
+    assert.equal(shouldShowInstallBar(fakeWin({ saved: { mobileView: 'mobile' } })), true, '모바일 · 데스크톱 상관없이');
     assert.equal(shouldShowInstallBar(fakeWin({ phone: false })), false, '컴퓨터');
     assert.equal(shouldShowInstallBar(fakeWin({ enabled: false })), false, 'PAL · uEngine');
     assert.equal(shouldShowInstallBar(fakeWin({ standalone: true })), false, '이미 홈 화면에서 연 앱');

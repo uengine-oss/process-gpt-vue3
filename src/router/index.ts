@@ -154,7 +154,7 @@ router.beforeEach(async (to: any, from: any, next: any) => {
         window.location.assign(to.fullPath);
         return next(false);
     }
-    // 휴대폰(라이트 버전)에서는 관리 · 설계 · 분석 화면을 열지 않는다 — 주소로 바로 와도(알림 링크 등) 안내로 보낸다.
+    // 좁은 화면에서는 관리 · 설계 · 분석 화면을 열지 않는다 — 주소로 바로 와도(알림 링크 등) 안내로 보낸다.
     const phoneTo = phoneRedirect(to.path, to.fullPath);
     if (phoneTo) return next(phoneTo);
     // Approval lookup fails closed; a network error must not admit pending accounts.
@@ -223,7 +223,8 @@ router.beforeEach(async (to: any, from: any, next: any) => {
             return next({ path: MFA_ENROLL_PATH, query: { ...MFA_ENROLL_QUERY } });
         }
 
-        // 휴대폰: 앱 화면은 휴대폰 웹(/m/)으로 — 로그인 뒤처럼 앱 안에서 옮겨 갈 때.
+        // 휴대폰: 앱 화면은 고른 화면(모바일 버전 = 휴대폰 웹 /m/, 라이트 모드 = Process GPT Lite /lite/)으로 —
+        // 로그인 뒤처럼 앱 안에서 옮겨 갈 때.
         // 반드시 MFA 게이트 뒤에 둔다. 앞에 두면 비밀번호만 통과한 세션이 2단계 인증 없이 휴대폰 웹으로 간다
         // (휴대폰 웹도 같은 판정을 하지만 관문은 두 겹으로 둔다).
         const phoneWeb = phoneWebUrl(to.path);
