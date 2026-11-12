@@ -589,19 +589,19 @@ export default {
 .chat-room-item--unread :deep(.chat-room-subtitle),
 .chat-room-item--unread :deep(.chat-room-date) {
     font-weight: 700;
-    color: rgba(0, 0, 0, 0.87);
+    color: rgba(var(--v-theme-on-surface), 0.87);
 }
 .chat-room-title {
     font-size: 13px;
     font-weight: 600;
-    color: rgba(0, 0, 0, 0.62);
+    color: rgba(var(--v-theme-on-surface), 0.62);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 .chat-room-subtitle {
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.52);
+    color: rgba(var(--v-theme-on-surface), 0.52);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -609,7 +609,7 @@ export default {
 .chat-room-date {
     font-size: 11px;
     white-space: nowrap;
-    color: rgba(0, 0, 0, 0.45);
+    color: rgba(var(--v-theme-on-surface), 0.45);
 }
 .chat-room-item :deep(.v-list-item__prepend) {
     margin-inline-end: 8px !important;

@@ -12547,7 +12547,7 @@ export default {
     top: 0;
     width: 2px;
     height: 100%;
-    background: rgba(0, 0, 0, 0.08);
+    background: rgba(var(--v-theme-on-surface), 0.08);
 }
 
 @media (max-width: 960px) {
@@ -12657,7 +12657,7 @@ export default {
 .room-name {
     font-size: 16px;
     font-weight: 700;
-    color: rgba(0, 0, 0, 0.8);
+    color: rgba(var(--v-theme-on-surface), 0.8);
     white-space: normal;
     overflow-wrap: anywhere;
     line-height: 1.3;
@@ -12770,7 +12770,7 @@ export default {
 }
 .participants-count {
     font-weight: 700;
-    color: rgba(0, 0, 0, 0.65);
+    color: rgba(var(--v-theme-on-surface), 0.65);
 }
 
 .participants-preview {
@@ -12779,7 +12779,7 @@ export default {
     min-width: 0;
     max-width: 260px;
     cursor: pointer;
-    color: rgba(0, 0, 0, 0.55);
+    color: rgba(var(--v-theme-on-surface), 0.55);
     font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -12789,7 +12789,7 @@ export default {
 .participants-preview::before {
     content: '·';
     margin-right: 6px;
-    color: rgba(0, 0, 0, 0.25);
+    color: rgba(var(--v-theme-on-surface), 0.25);
 }
 
 .view-only-bar {
@@ -12798,7 +12798,7 @@ export default {
     justify-content: center;
     padding: 14px 16px;
     font-size: 13px;
-    color: var(--cds-text-secondary, rgba(0, 0, 0, 0.6));
+    color: var(--cds-text-secondary, rgba(var(--v-theme-on-surface), 0.6));
     background: rgba(var(--v-theme-on-surface), 0.03);
     border-radius: 12px;
 }

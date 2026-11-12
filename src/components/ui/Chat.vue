@@ -1,5 +1,5 @@
 <template>
-    <div v-if="!workAssistantAgentMode" style="background-color: rgba(255, 255, 255, 1)" class="chat-info-view-wrapper">
+    <div v-if="!workAssistantAgentMode" style="background-color: rgba(var(--v-theme-surface), 1)" class="chat-info-view-wrapper">
         <div class="chat-info-view-wrapper" style="min-height: 0">
             <div class="chat-info-view-area" style="min-height: 0">
                 <div class="chat-info-view-area" style="position: relative; min-height: 0">
@@ -652,7 +652,7 @@
                                                                                         style="
                                                                                             gap: 10px;
                                                                                             cursor: pointer;
-                                                                                            border: 1px solid rgba(0, 0, 0, 0.08);
+                                                                                            border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
                                                                                             background: var(--cds-surface-2);
                                                                                             max-width: min(520px, 80vw);
                                                                                         "
@@ -681,7 +681,7 @@
                                                                                                 style="
                                                                                                     font-size: 13px;
                                                                                                     font-weight: 700;
-                                                                                                    color: rgba(0, 0, 0, 0.78);
+                                                                                                    color: rgba(var(--v-theme-on-surface), 0.78);
                                                                                                     overflow: hidden;
                                                                                                     text-overflow: ellipsis;
                                                                                                     white-space: nowrap;
@@ -696,7 +696,7 @@
                                                                                             <div
                                                                                                 style="
                                                                                                     font-size: 11px;
-                                                                                                    color: rgba(0, 0, 0, 0.55);
+                                                                                                    color: rgba(var(--v-theme-on-surface), 0.55);
                                                                                                     overflow: hidden;
                                                                                                     text-overflow: ellipsis;
                                                                                                     white-space: nowrap;
@@ -865,7 +865,7 @@
                                                                                         style="
                                                                                             gap: 10px;
                                                                                             cursor: pointer;
-                                                                                            border: 1px solid rgba(0, 0, 0, 0.08);
+                                                                                            border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
                                                                                             background: rgba(var(--v-theme-primary), 0.06);
                                                                                             max-width: min(520px, 80vw);
                                                                                         "
@@ -894,7 +894,7 @@
                                                                                                 style="
                                                                                                     font-size: 13px;
                                                                                                     font-weight: 700;
-                                                                                                    color: rgba(0, 0, 0, 0.78);
+                                                                                                    color: rgba(var(--v-theme-on-surface), 0.78);
                                                                                                     overflow: hidden;
                                                                                                     text-overflow: ellipsis;
                                                                                                     white-space: nowrap;
@@ -909,7 +909,7 @@
                                                                                             <div
                                                                                                 style="
                                                                                                     font-size: 11px;
-                                                                                                    color: rgba(0, 0, 0, 0.55);
+                                                                                                    color: rgba(var(--v-theme-on-surface), 0.55);
                                                                                                     overflow: hidden;
                                                                                                     text-overflow: ellipsis;
                                                                                                     white-space: nowrap;
@@ -1618,7 +1618,7 @@
                                                                                         style="
                                                                                             gap: 10px;
                                                                                             cursor: pointer;
-                                                                                            border: 1px solid rgba(0, 0, 0, 0.08);
+                                                                                            border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
                                                                                             background: rgba(var(--v-theme-primary), 0.06);
                                                                                             max-width: min(520px, 80vw);
                                                                                         "
@@ -1647,7 +1647,7 @@
                                                                                                 style="
                                                                                                     font-size: 13px;
                                                                                                     font-weight: 700;
-                                                                                                    color: rgba(0, 0, 0, 0.78);
+                                                                                                    color: rgba(var(--v-theme-on-surface), 0.78);
                                                                                                     overflow: hidden;
                                                                                                     text-overflow: ellipsis;
                                                                                                     white-space: nowrap;
@@ -1662,7 +1662,7 @@
                                                                                             <div
                                                                                                 style="
                                                                                                     font-size: 11px;
-                                                                                                    color: rgba(0, 0, 0, 0.55);
+                                                                                                    color: rgba(var(--v-theme-on-surface), 0.55);
                                                                                                     overflow: hidden;
                                                                                                     text-overflow: ellipsis;
                                                                                                     white-space: nowrap;
@@ -4982,7 +4982,7 @@ export default {
                 t === 'AI 생성중...' ||
                 t === 'AI 생성 중...'
             ) {
-                return '<span style="color:rgba(0,0,0,0.55)">생각 중...</span>';
+                return '<span style="color:rgba(var(--v-theme-on-surface), 0.55)">생각 중...</span>';
             }
             marked.setOptions({ breaks: true, gfm: true });
             return this.withExternalLinks(this.withMermaidContainers(marked(this.escapeSingleTildes(raw))));
@@ -7562,7 +7562,7 @@ export default {
 /* 라우터 로딩(에이전트 선정 중) - '...'만 표시 */
 .routing-loading-text {
     font-size: 14px;
-    color: rgba(0, 0, 0, 0.72);
+    color: rgba(var(--v-theme-on-surface), 0.72);
     letter-spacing: 1px;
     animation: routingDotsPulse 1.1s infinite ease-in-out;
 }
@@ -7632,7 +7632,7 @@ pre {
         height: 100%;
         width: 100%;
         z-index: 1;
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(var(--v-theme-on-surface), 0.2);
     }
 }
 
@@ -7697,7 +7697,7 @@ pre {
 .mention-autocomplete-empty {
     padding: 10px 12px;
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.55);
+    color: rgba(var(--v-theme-on-surface), 0.55);
 }
 
 .mention-autocomplete-item {
@@ -7708,7 +7708,7 @@ pre {
     cursor: pointer;
 }
 .mention-autocomplete-item:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: rgba(var(--v-theme-on-surface), 0.04);
 }
 .mention-autocomplete-item--active {
     background: rgba(var(--v-theme-primary), 0.1);
@@ -7726,14 +7726,14 @@ pre {
 }
 .mention-autocomplete-name {
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.78);
+    color: rgba(var(--v-theme-on-surface), 0.78);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .mention-autocomplete-sub {
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.55);
+    color: rgba(var(--v-theme-on-surface), 0.55);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -7762,11 +7762,11 @@ pre {
 
 .message-info-box {
     margin: 0;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(var(--v-theme-surface), 0.95);
     backdrop-filter: blur(5px);
     border-radius: 4px 4px 0 0;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
     border-bottom: none;
     width: 100%;
 }
@@ -7777,7 +7777,7 @@ pre {
 
 .message-info-box--reply {
     border-radius: 10px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.1);
 }
 
 .message-info-content--reply {
@@ -7806,7 +7806,7 @@ pre {
 .reply-banner__to {
     font-size: 12px;
     font-weight: 700;
-    color: rgba(0, 0, 0, 0.75);
+    color: rgba(var(--v-theme-on-surface), 0.75);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -7819,14 +7819,14 @@ pre {
 .reply-banner__text {
     margin-top: 2px;
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.62);
+    color: rgba(var(--v-theme-on-surface), 0.62);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .reply-banner__close {
-    color: rgba(0, 0, 0, 0.55);
+    color: rgba(var(--v-theme-on-surface), 0.55);
 }
 
 .steer-note {
@@ -7849,8 +7849,8 @@ pre {
     padding: 8px 10px;
     border-radius: 10px;
     margin-bottom: 10px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+    background: rgba(var(--v-theme-surface), 0.72);
     cursor: pointer;
 }
 
@@ -7862,7 +7862,7 @@ pre {
 .reply-quote__title {
     font-size: 12px;
     font-weight: 800;
-    color: rgba(0, 0, 0, 0.72);
+    color: rgba(var(--v-theme-on-surface), 0.72);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -7871,7 +7871,7 @@ pre {
 .reply-quote__text {
     margin-top: 2px;
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(var(--v-theme-on-surface), 0.6);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -7910,7 +7910,7 @@ pre {
 }
 
 .message-info-text {
-    color: rgba(0, 0, 0, 0.87);
+    color: rgba(var(--v-theme-on-surface), 0.87);
     font-size: 0.875rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -7921,7 +7921,7 @@ pre {
 .user-name {
     font-weight: 500;
     font-size: 14px;
-    color: rgba(0, 0, 0, 0.87);
+    color: rgba(var(--v-theme-on-surface), 0.87);
 }
 
 .chat-message-bubble-select-team-member {
@@ -7987,7 +7987,7 @@ pre {
 .markdown-timestamp {
     margin-top: 6px;
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.5);
+    color: rgba(var(--v-theme-on-surface), 0.5);
     text-align: right;
 }
 
@@ -8003,7 +8003,7 @@ pre {
 
 .message-timestamp {
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.5);
+    color: rgba(var(--v-theme-on-surface), 0.5);
     margin-top: 6px;
     display: block;
     position: static;
@@ -8038,7 +8038,7 @@ pre {
 
 .chat-room-timestamp-text {
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.5);
+    color: rgba(var(--v-theme-on-surface), 0.5);
     transition: opacity 120ms ease;
     white-space: nowrap;
     line-height: 1;
@@ -8109,7 +8109,7 @@ pre {
     white-space: nowrap;
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.45);
+    color: rgba(var(--v-theme-on-surface), 0.45);
 }
 @keyframes chat-tool-activity-item-in {
     from {
@@ -8139,17 +8139,17 @@ pre {
     display: inline-flex;
     align-items: center;
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.55);
+    color: rgba(var(--v-theme-on-surface), 0.55);
     padding: 3px 8px;
     border-radius: 8px;
-    background: rgba(0, 0, 0, 0.04);
+    background: rgba(var(--v-theme-on-surface), 0.04);
 }
 .chat-tool-activity__summary::-webkit-details-marker {
     display: none;
 }
 .chat-tool-activity__summary:hover {
-    color: rgba(0, 0, 0, 0.8);
-    background: rgba(0, 0, 0, 0.06);
+    color: rgba(var(--v-theme-on-surface), 0.8);
+    background: rgba(var(--v-theme-on-surface), 0.06);
 }
 .chat-tool-activity__list {
     margin-top: 6px;
@@ -8163,7 +8163,7 @@ pre {
     align-items: center;
     gap: 4px;
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.7);
+    color: rgba(var(--v-theme-on-surface), 0.7);
 }
 .chat-tool-activity__name {
     flex: 1;
@@ -8176,8 +8176,8 @@ pre {
     font-size: 10px;
     padding: 1px 6px;
     border-radius: 999px;
-    color: rgba(0, 0, 0, 0.5);
-    background: rgba(0, 0, 0, 0.05);
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    background: rgba(var(--v-theme-on-surface), 0.05);
     text-transform: lowercase;
 }
 .chat-tool-activity__status.is-running {
@@ -8214,11 +8214,11 @@ pre {
     padding: 10px 12px;
     font-size: 11px;
     line-height: 1.5;
-    background: rgba(0, 0, 0, 0.03);
+    background: rgba(var(--v-theme-on-surface), 0.03);
     border-radius: 8px;
     max-height: 300px;
     overflow: auto;
-    color: rgba(0, 0, 0, 0.7);
+    color: rgba(var(--v-theme-on-surface), 0.7);
     font-family: 'Menlo', 'Consolas', monospace;
     white-space: pre-wrap;
     word-break: break-all;
@@ -8238,7 +8238,7 @@ pre {
     border-radius: 12px;
     background: transparent;
     max-width: min(720px, 80vw);
-    color: rgba(0, 0, 0, 0.87);
+    color: rgba(var(--v-theme-on-surface), 0.87);
     font-size: 13px;
     line-height: 1.45;
     font-family: inherit;
@@ -8313,7 +8313,7 @@ pre {
 
     .ps__thumb-y {
         width: 6px !important;
-        background-color: rgba(0, 0, 0, 0.3);
+        background-color: rgba(var(--v-theme-on-surface), 0.3);
         border-radius: 3px;
     }
 }
@@ -8450,8 +8450,8 @@ pre {
 .date-separator-text {
     margin: 0 16px;
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.6);
-    background-color: rgba(255, 255, 255, 0.9);
+    color: rgba(var(--v-theme-on-surface), 0.6);
+    background-color: rgba(var(--v-theme-surface), 0.9);
     padding: 4px 12px;
     border-radius: 12px;
     font-weight: 500;
@@ -8466,7 +8466,7 @@ pre {
     transition: background-color 0.2s ease;
 
     &:hover {
-        background-color: rgba(0, 0, 0, 0.04);
+        background-color: rgba(var(--v-theme-on-surface), 0.04);
     }
 
     &.selected {
@@ -8499,7 +8499,7 @@ pre {
 }
 
 .pdf2bpmn-result-container {
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
     padding-top: 10px;
 }
 
@@ -8521,7 +8521,7 @@ pre {
 .chat-split-active .chat-view-box-split-left {
     flex: 1;
     min-width: 0;
-    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    border-right: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 .chat-view-box-split-right {
     min-width: 280px;

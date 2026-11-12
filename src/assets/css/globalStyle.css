@@ -6,7 +6,7 @@
     transform: translateX(2px);
 }
 .sidebar-list-hover-bg.sidebar-list-hover-bg--active .v-list-item-title {
-    color: rgba(0, 0, 0, 0.87);
+    color: rgba(var(--v-theme-on-surface), 0.87);
 }
 
 h1, h2, h3, h4, h5, h6 {

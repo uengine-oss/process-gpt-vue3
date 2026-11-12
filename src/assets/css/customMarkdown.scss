@@ -167,3 +167,39 @@
     }
 }
 
+
+/* 다크 테마 — 위 색은 흰 바탕 기준이라 어두운 대화방에서 본문이 거의 안 보였다(2026-11-12 휴대폰 사진).
+   html 의 data-mode 는 src/ds/appearance.ts 가 붙인다. 색은 디자인 토큰을 쓴다. */
+[data-mode='dark'] .markdown-content {
+    color: var(--cds-text-primary);
+
+    h1,
+    h2,
+    h3,
+    h4 {
+        color: var(--cds-text-primary);
+    }
+
+    h2,
+    hr,
+    th,
+    td {
+        border-color: var(--cds-border-strong);
+    }
+
+    a {
+        color: #8fbdf0;
+    }
+
+    code {
+        background: var(--cds-surface-1);
+    }
+
+    blockquote {
+        color: var(--cds-text-secondary);
+    }
+
+    th {
+        background-color: var(--cds-surface-1);
+    }
+}
