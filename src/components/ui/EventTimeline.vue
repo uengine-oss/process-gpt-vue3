@@ -599,7 +599,6 @@
 
 <script>
 import { marked } from 'marked';
-import { parseFileDocument } from '@/utils/upstageParser';
 import BackendFactory from '@/components/api/BackendFactory';
 // 에이전트 산출물 주소가 우리 저장소를 가리키면 비공개라 서명해야 열린다.
 import { resolveStorageUrl } from '@/shared/storageUrl';

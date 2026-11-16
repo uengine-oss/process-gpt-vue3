@@ -14,7 +14,6 @@ if [ -f /opt/www/.env ]; then
   echo "Environment variables:"
   echo "VITE_SUPABASE_URL: $VITE_SUPABASE_URL"
   echo "VITE_SUPABASE_KEY: $VITE_SUPABASE_KEY"
-  echo "VITE_UPSTAGE_API_KEY: $VITE_UPSTAGE_API_KEY" # 보안을 위해 일부만 표시
 else
   echo "Warning: .env file not found at /opt/www/.env"
 fi
@@ -32,7 +31,6 @@ if [ -f "$INDEX_HTML" ]; then
     VITE_KEYCLOAK_URL: "'$VITE_KEYCLOAK_URL'",\
     VITE_KEYCLOAK_REALM: "'$VITE_KEYCLOAK_REALM'",\
     VITE_KEYCLOAK_CLIENT_ID: "'$VITE_KEYCLOAK_CLIENT_ID'",\
-    VITE_UPSTAGE_API_KEY: "'$VITE_UPSTAGE_API_KEY'",\
     VITE_GS_MODE: "'$VITE_GS_MODE'",\
     VITE_MODE: "'$VITE_MODE'",\
     VITE_PAL_MODE: "'$VITE_PAL_MODE'",\
