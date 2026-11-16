@@ -186,7 +186,7 @@
         "@types/node": "^16.18.70",
         "@vitejs/plugin-vue": "^5.2.4",
         "@vue-js-cron/core": "^5.3.1",
-        "@vue/eslint-config-prettier": "^7.0.0",
+        "@vue/eslint-config-prettier": "^10.2.0",
         "@vue/eslint-config-typescript": "^10.0.0",
         "@vue/tsconfig": "^0.7.0",
         "@vueup/vue-quill": "^1.2.0",
