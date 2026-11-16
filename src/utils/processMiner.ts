@@ -36,6 +36,8 @@ export interface HandoverStep {
     source: string;
     is_explicit: boolean;
     occurred_at: string;
+    // 넘긴 사람이 적은 지시사항(시작 단계에는 없다)
+    instruction?: string;
 }
 
 export interface HandoverThread {
