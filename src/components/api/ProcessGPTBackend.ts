@@ -689,6 +689,10 @@ class ProcessGPTBackend implements Backend {
                     diff: options.diff,
                     message: options.message
                 };
+                // 승인 전 버전(제안) — 엔진은 초안 버전으로 새 인스턴스를 시작하지 않는다
+                if (Object.prototype.hasOwnProperty.call(options, 'version_is_draft')) {
+                    procDefVersion.is_draft = !!options.version_is_draft;
+                }
                 // 컴포넌트 업데이트(import update 모드) 시 이전 설치 버전을 부모로 연결.
                 if (options.parent_version) {
                     procDefVersion.parent_version = options.parent_version;
@@ -10292,9 +10296,12 @@ class ProcessGPTBackend implements Backend {
             .pop();
         const [major, minor] = latest ? parse(latest) : [0, 0];
         const version = `${major}.${minor + 1}`;
+        // 비교 기준은 지금 정식(초안 아님) 버전 — 승인되지 않은 앞 제안(초안)을 기준으로 삼지 않는다
+        const base = versions.find((row) => row.is_draft !== true)?.version || null;
 
         if (live) {
             // 운영 중인 정의는 승인 전까지 그대로 둔다 — 버전만 추가한다.
+            // 승인 전 버전이므로 초안(is_draft)으로 둔다 — 엔진은 초안 버전으로 새 인스턴스를 시작하지 않는다.
             await storage.putObject('proc_def_version', {
                 arcv_id: `${p.procDefId}_${version}`,
                 proc_def_id: p.procDefId,
@@ -10303,8 +10310,9 @@ class ProcessGPTBackend implements Backend {
                 timeStamp: new Date().toISOString(),
                 snapshot: p.xml,
                 definition: p.definition,
-                parent_version: latest || null,
+                parent_version: base,
                 message: p.title,
+                is_draft: true,
                 tenant_id: tenantId
             });
         } else {
@@ -10317,7 +10325,8 @@ class ProcessGPTBackend implements Backend {
                 version,
                 version_tag: 'minor',
                 arcv_id: `${p.procDefId}_${version}`,
-                message: p.title
+                message: p.title,
+                version_is_draft: true
             });
         }
 
@@ -10325,13 +10334,65 @@ class ProcessGPTBackend implements Backend {
         const pr = await this.createResourcePrRecord('bpmn', {
             resourceId: p.procDefId,
             branchName: `v${version}`,
-            baseBranch: live && latest ? `v${latest}` : '',
+            baseBranch: live && base ? `v${base}` : '',
             title: p.title,
             description: p.description || undefined,
             requesterId: user.uid,
             requesterName: user.name || localStorage.getItem('userName') || ''
         });
         return { procDefId: p.procDefId, version, pr };
+    }
+
+    /**
+     * 식별된 업무의 정식 정의를 바로 저장한다(실행 전환). 한 업무는 정식 정의 하나로 관리하므로,
+     * 정의가 이미 있으면(제안·병합이나 앞선 전환으로 생긴 것) 같은 정의의 새 버전이 된다.
+     * 병합과 같은 major 버전을 남겨 엔진이 새 인스턴스를 이 버전으로 시작한다.
+     */
+    async saveIdentifiedDefinition(p: {
+        procDefId: string;
+        name: string;
+        definition: any;
+        bpmn?: string | null;
+        message?: string;
+    }): Promise<{ version: string; created: boolean }> {
+        if (!p.procDefId) throw new Error('저장할 정의가 없습니다.');
+        const tenantId = window.$tenantName;
+        const existing: any = await storage.getObject('proc_def', withTenantMatch({ match: { id: p.procDefId } }));
+        const rows: any = await this.getDefinitionVersions(p.procDefId, { orderBy: 'timeStamp', sort: 'desc' });
+        const versions: any[] = Array.isArray(rows) ? rows : [];
+        const majors = versions.map((r) => parseInt(String(r.version || '').split('.')[0], 10)).filter((n) => Number.isFinite(n));
+        const version = `${(majors.length ? Math.max(...majors) : 0) + 1}.0`;
+        const latest = versions[0]?.version || null;
+        await storage.putObject(
+            'proc_def',
+            {
+                id: p.procDefId,
+                name: p.name || existing?.name || p.procDefId,
+                definition: p.definition,
+                // 이 정의의 그림. 없으면 비워 정의에서 다시 그린다(앞 버전의 BPMN 이 남아 새 정의와 어긋나지 않게)
+                bpmn: p.bpmn || null,
+                type: 'bpmn',
+                isdeleted: false,
+                is_draft: false,
+                ...(existing?.owner ? {} : { owner: localStorage.getItem('uid') || null }),
+                tenant_id: tenantId
+            },
+            { onConflict: 'id,tenant_id' }
+        );
+        await storage.putObject('proc_def_version', {
+            arcv_id: `${p.procDefId}_${version}`,
+            proc_def_id: p.procDefId,
+            version,
+            version_tag: 'major',
+            timeStamp: new Date().toISOString(),
+            snapshot: p.bpmn || null,
+            definition: p.definition,
+            parent_version: latest,
+            message: p.message || '실행 전환',
+            is_draft: false,
+            tenant_id: tenantId
+        });
+        return { version, created: !existing };
     }
 
     async getResourcePrRecords(

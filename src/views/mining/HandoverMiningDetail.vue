@@ -55,13 +55,21 @@
                         </ol>
                         <span v-if="isHeld" class="mining-held e2e-group-held">보류</span>
                         <v-spacer />
+                        <!-- 조건이 정해지지 않은 분기 — 남아 있으면 정의로 저장하지 않는다 -->
+                        <v-tooltip v-if="openSplits.length" :text="openSplitsTip" location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <span v-bind="props" class="mining-open e2e-open-splits" :data-count="openSplits.length">
+                                    <v-icon size="16">mdi-source-branch</v-icon>{{ openSplits.length }}
+                                </span>
+                            </template>
+                        </v-tooltip>
                         <v-btn
                             color="primary"
                             variant="flat"
                             size="small"
                             prepend-icon="mdi-source-pull"
                             class="e2e-propose-pr"
-                            :disabled="!discovered"
+                            :disabled="!discovered || openSplits.length > 0"
                             :loading="proposing"
                             @click="openProposeDialog"
                             >제안</v-btn
@@ -75,7 +83,7 @@
                                     size="small"
                                     class="ml-1 e2e-convert-process"
                                     aria-label="실행 가능한 프로세스로 전환"
-                                    :disabled="!discovered"
+                                    :disabled="!discovered || openSplits.length > 0"
                                     :loading="converting"
                                     @click="convertToProcess"
                                 >
@@ -138,11 +146,14 @@
                                     class="mining-step e2e-step"
                                     :class="[`is-${s.look}`, { 'is-on': pickedStep === s.name }]"
                                     :data-step="s.name"
-                                    :data-kind="s.required ? 'required' : 'optional'"
+                                    :data-kind="s.kind"
+                                    :data-when="s.when"
                                     :aria-pressed="pickedStep === s.name ? 'true' : 'false'"
                                     @click="pickStep(s.name)"
                                 >
                                     <v-icon v-if="s.locked" size="12">mdi-lock</v-icon>
+                                    <v-icon v-if="s.open" size="12" color="warning" class="e2e-step-open">mdi-help-circle-outline</v-icon>
+                                    <v-icon v-else-if="s.kind === 'choice'" size="12">mdi-call-split</v-icon>
                                     <span>{{ s.name }}</span>
                                     <span class="mining-step__n">{{ s.count }}/{{ group.case_count }}</span>
                                 </button>
@@ -276,7 +287,7 @@
                     </div>
                     <div ref="talkList" class="mining-talk">
                         <div v-if="!talk.length" class="text-caption text-medium-emphasis pa-2">
-                            이 업무가 맞는지, 어떤 단계가 필수인지, 어떤 건을 옮길지 말해 주세요.
+                            어떤 단계를 모든 건이 거치는지, 어떤 경우에만 거치는지, 어떤 건을 옮길지 말해 주세요.
                         </div>
                         <div
                             v-for="(m, i) in talk"
@@ -403,6 +414,7 @@ import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
 import { processMiner } from '@/utils/processMiner';
 import * as Decisions from '@/utils/identificationDecisions';
 import * as Ident from '@/views/mining/useIdentification';
+import { withSupplements } from '@/utils/identifiedSupplements';
 import BackendFactory from '@/components/api/BackendFactory';
 
 const backend = BackendFactory.createBackend();
@@ -427,6 +439,7 @@ export default {
             talking: false,
             applying: false,
             holding: false,
+            asking: false,
             // 제안 · 실행 전환
             proposing: false,
             converting: false,
@@ -499,25 +512,55 @@ export default {
             for (const e of this.organization?.eligibility || []) out[e.activity] = (e.candidates || []).slice(0, 3).map((c) => c.name);
             return out;
         },
+        /** 정의가 말하는 단계 진행 방식(규칙 반영 뒤) */
+        shapeOf() {
+            const out = {};
+            for (const x of this.discovered?.steps || []) out[x.step] = x;
+            return out;
+        },
+        /** 조건이 정해지지 않은 분기 */
+        openSplits() {
+            return this.discovered?.undecided || [];
+        },
+        openSplitsTip() {
+            const need = { skip: '언제 건너뛰는지', when: '언제 이 갈래로 가는지', redo: '언제 다시 하는지' };
+            return `정할 분기 조건 ${this.openSplits.length}개 — ${this.openSplits.map((u) => `${u.step}: ${need[u.need]}`).join(', ')}`;
+        },
         steps() {
             const g = this.group;
             if (!g) return [];
             const confirmed = this.decision?.confirmed_steps || [];
             const preview = {};
-            for (const s of this.pendingChange?.steps || []) preview[s.step] = s.kind;
+            for (const s of this.pendingChange?.steps || []) preview[s.step] = s;
+            const open = new Set(this.openSplits.map((u) => u.step));
+            const KIND = { required: '필수', optional: '옵션', choice: '택일' };
             return Ident.stepOrder(g).map((name) => {
                 const count = g.cases.filter((c) => (this.traces[c] || []).includes(name)).length;
-                const required = (g.core_activities || []).includes(name);
-                const locked = confirmed.includes(name);
+                const sh = this.shapeOf[name];
+                // 정의에 없으면(아직 도출 전) 묶음의 필수 단계로 본다
+                const kind = sh?.kind || ((g.core_activities || []).includes(name) ? 'required' : 'optional');
+                const required = kind === 'required';
+                const locked = confirmed.includes(name) || !!sh?.by;
                 const pv = preview[name];
-                const look = pv ? 'preview' : required ? 'required' : 'optional';
+                const look = pv ? 'preview' : kind;
                 const who = (this.performers[name] || []).join(', ');
+                const when = kind === 'optional' ? sh?.skip_when || '' : kind === 'choice' ? sh?.when || '' : '';
+                const cond =
+                    kind === 'optional'
+                        ? when
+                            ? `${when} 건너뜀`
+                            : '언제 건너뛰는지 정해야 함'
+                        : kind === 'choice'
+                        ? when
+                            ? `${when} 이 갈래`
+                            : '언제 이 갈래로 가는지 정해야 함'
+                        : '';
+                const redo = sh?.redo_when ? ` · ${sh.redo_when} 다시 함` : '';
+                const by = sh?.by === 'cases' ? `사례로 정함(${sh.matched}/${sh.total}건)` : locked ? '관리자 확정' : '건수로 본 초안';
                 const tip = pv
-                    ? `미리보기 — 적용하면 ${pv === 'required' ? '필수' : '옵션'}로 확정`
-                    : `${required ? '필수' : '옵션'} · ${locked ? '관리자 확정' : '건수로 본 초안'} · ${count}/${g.case_count}건${
-                          who ? ` · 수행: ${who}` : ''
-                      }`;
-                return { name, count, required, locked, look, tip };
+                    ? `미리보기 — 적용하면 ${KIND[pv.kind] || '반복'}${pv.when ? ` · ${pv.when}` : ''}`
+                    : `${KIND[kind]}${cond ? ` · ${cond}` : ''}${redo} · ${by} · ${count}/${g.case_count}건${who ? ` · 수행: ${who}` : ''}`;
+                return { name, count, kind, required, locked, look, tip, when, open: open.has(name) };
             });
         },
         rows() {
@@ -575,6 +618,7 @@ export default {
             await Ident.ensureLoaded();
             await this.loadDiscovered();
             await this.loadTalkRows();
+            this.askConditions();
             if (!this.organization) this.organization = await processMiner.organization(Ident.tenantId()).catch(() => null);
         },
         pickStep(name) {
@@ -593,14 +637,44 @@ export default {
                 this.bpmnXml = '';
                 return;
             }
-            const dc = await processMiner.discovered(Ident.tenantId(), this.key, Ident.categoriesForMiner(), Ident.decided()).catch((e) => {
-                this.discoverError = e?.message || String(e);
-                return null;
-            });
+            const rules = this.decision?.step_rules || {};
+            const dc = await processMiner
+                .discovered(Ident.tenantId(), this.key, Ident.categoriesForMiner(), Ident.decided(), undefined, undefined, rules)
+                .catch((e) => {
+                    this.discoverError = e?.message || String(e);
+                    return null;
+                });
             this.discovered = dc;
             this.bpmnXml = dc ? this.markMultiInstance(this.toBpmn(dc.definition), dc) : '';
             this.proposals = [];
             if (dc) await this.loadProposals(dc.definition?.processDefinitionId);
+        },
+        /** 정의를 한 줄로: '접수 → [예산 검토 | 건너뜀] → 발주' */
+        flowLine(items) {
+            const one = (it) =>
+                it.step
+                    ? it.step
+                    : `[${(it.branches || [])
+                          .map((b) => (b.items.length ? this.flowLine(b.items) : '건너뜀'))
+                          .join(it.parallel ? ' + ' : ' | ')}]`;
+            return (items || []).map(one).join(' → ');
+        },
+        /** 사례 → 처음 요청. 범주를 판단할 때 저장한 요청을 먼저 쓴다(이번 세션에 판단한 건만 store.requests 에 있다) */
+        requestsOf(ids) {
+            const out = {};
+            for (const id of ids || []) {
+                const r = this.store.caseCategories[id]?.request || this.store.requests[id] || '';
+                if (r) out[id] = r;
+            }
+            return out;
+        },
+        /** 대화에 남은 사례 초안(가장 최근 것) */
+        draftFor(step) {
+            for (let i = this.talk.length - 1; i >= 0; i--) {
+                const d = (this.talk[i].change?.drafts || []).find((x) => x.step === step);
+                if (d) return d.text;
+            }
+            return '';
         },
         // ---------- 관리자 대화 ----------
         withLines(m) {
@@ -641,6 +715,22 @@ export default {
                           core: g.core_activities,
                           optional: g.optional_activities,
                           confirmed_steps: this.decision?.confirmed_steps || [],
+                          // 지금 정의가 말하는 것: 순서와 갈래([A | B] 는 택일), 단계마다 필수·옵션·택일과 조건
+                          definition_flow: this.flowLine(this.discovered?.flow || []),
+                          step_kinds: (this.discovered?.steps || []).map((x) => ({
+                              step: x.step,
+                              kind: x.kind,
+                              ...(x.skip_when ? { skipped_when: x.skip_when } : {}),
+                              ...(x.when ? { taken_when: x.when } : {}),
+                              ...(x.redo_when ? { done_again_when: x.redo_when } : {}),
+                              set_by: x.by === 'cases' ? 'cases' : x.by === 'admin' ? 'admin' : 'draft'
+                          })),
+                          to_decide: this.openSplits.map((u) => ({
+                              step: u.step,
+                              need: u.need,
+                              draft: this.draftFor(u.step),
+                              ...(u.alternatives?.length ? { instead_of: u.alternatives } : {})
+                          })),
                           case_count: g.case_count,
                           variants: g.variants,
                           cases: g.cases.map(asCase),
@@ -686,6 +776,67 @@ export default {
             if ((change.moves || []).some((m) => m.category || m.to)) this.store.caseCategories = await Decisions.loadCategories();
             await Ident.reloadGroups();
             await this.loadDiscovered();
+            this.askConditions();
+        },
+        /**
+         * 조건이 정해지지 않은 분기가 있으면, 사례(요청·분기 앞 단계 지시사항)에서 조건을 찾아 대화로 보여 준다.
+         * 모든 사례를 실제 간 흐름대로 가른 조건만 적용할 수 있는 결정으로 보이고(관리자가 적용해야 저장),
+         * 초안·근거 없는 분기는 관리자에게 묻는다. 같은 분기 묶음에는 한 번만 묻는다.
+         */
+        async askConditions() {
+            const open = this.openSplits;
+            if (!open.length || !this.group || this.asking) return;
+            // 같은 분기·같은 건수면 한 번만 묻는다(건이 늘면 근거가 달라지므로 다시 찾는다)
+            const sig = `${this.group.case_count}#${open
+                .map((u) => `${u.step}:${u.need}`)
+                .sort()
+                .join('|')}`;
+            if (this.talk.some((m) => m.role === 'assistant' && m.change?.ask === sig)) return;
+            this.asking = true;
+            try {
+                let found = {};
+                try {
+                    const r = await processMiner.conditions(
+                        Ident.tenantId(),
+                        this.key,
+                        Ident.categoriesForMiner(),
+                        Ident.decided(),
+                        this.decision?.step_rules || {},
+                        this.requestsOf(this.group.cases)
+                    );
+                    found = r.found || {};
+                } catch (e) {
+                    console.warn('[mining] 조건 찾기 실패:', e);
+                }
+                const { change, drafts } = Decisions.changeFromFound(found);
+                const decided = new Set((change?.steps || []).map((x) => x.step));
+                const lines = [];
+                if (change) lines.push('사례에서 분기 조건을 찾았어요. 모든 건이 실제 간 흐름과 맞아요. 맞으면 적용해 주세요.');
+                for (const d of drafts)
+                    lines.push(
+                        `'${d.step}': 사례에서 찾은 "${d.text}" 는 ${d.total}건 중 ${d.matched}건만 맞아요. 이 조건으로 할지, 다른 조건인지 말해 주세요.`
+                    );
+                const drafted = new Set(drafts.map((d) => d.step));
+                for (const u of open) {
+                    if (decided.has(u.step) || drafted.has(u.step)) continue;
+                    if (u.need === 'skip')
+                        lines.push(`'${u.step}' 단계는 어떤 경우에 건너뛰나요? 모든 건이 거쳐야 하면 필수라고 말해 주세요.`);
+                    else if (u.need === 'when') lines.push(`'${u.step}' 갈래로는 어떤 경우에 가나요?`);
+                    else lines.push(`'${u.step}' 단계는 어떤 경우에 다시 하나요?`);
+                }
+                const row = await Decisions.addTalk({
+                    process_key: this.key,
+                    role: 'assistant',
+                    text: lines.join('\n'),
+                    change: { ...(change || {}), ask: sig, ...(drafts.length ? { drafts } : {}) }
+                });
+                this.talk.push(this.withLines(row));
+                this.scrollTalk();
+            } catch (e) {
+                console.warn('[mining] 조건 묻기 실패:', e);
+            } finally {
+                this.asking = false;
+            }
         },
         async applyTalk(m) {
             if (!m?.change) return;
@@ -983,36 +1134,17 @@ export default {
             return lines.join('\n');
         },
         /**
-         * 단계마다 붙일 조건 표시 { 활동명: 표시 }.
-         * 마이너가 게이트웨이 properties.minedRole 에 도출 구조를 남긴다. 이름으로 짐작하면
-         * 반복 판정 게이트웨이 뒤의 필수 단계(예: 고객 발송)까지 '건너뜀'으로 읽힌다.
+         * 단계마다 붙일 진행 방식 { 활동명: 표시 } — 관리자·사례가 정한 규칙을 반영한 정의가 말하는 것(miner steps).
          */
-        conditionalActivityTags(d) {
-            const roleOf = (n) => {
-                try {
-                    return JSON.parse(n.properties || '{}').minedRole || '';
-                } catch (e) {
-                    return '';
-                }
-            };
-            const gwRole = {};
-            (d.gateways || []).forEach((g) => (gwRole[g.id] = roleOf(g)));
-            const actById = {};
-            (d.activities || []).forEach((a) => (actById[a.id] = a));
+        conditionalActivityTags() {
             const out = {};
-            const seqs = d.sequences || [];
-            seqs.forEach((s) => {
-                const target = actById[s.target];
-                if (!target) return;
-                const role = gwRole[s.source];
-                if (role === 'choice') {
-                    const hasSkip = seqs.some((x) => x.source === s.source && gwRole[x.target] === 'skip');
-                    out[target.name] = hasSkip ? '조건에 따라 건너뜀' : '조건에 따라 택일';
-                } else if (role === 'loop_exit' && roleOf(s) === 'redo') {
-                    // 반복 판정에서 빠져나가는 선에도 선택값('완료')이 붙으므로 선의 자리로 가른다
-                    out[target.name] = '반려 시 반복';
-                }
-            });
+            for (const x of this.discovered?.steps || []) {
+                const parts = [];
+                if (x.kind === 'optional') parts.push(`${x.skip_when} 건너뜀`);
+                if (x.kind === 'choice') parts.push(`${x.when} 이 갈래`);
+                if (x.redo_when) parts.push(`${x.redo_when} 다시 함`);
+                if (parts.length) out[x.step] = parts.join(' · ');
+            }
             return out;
         },
         /** 제안 창을 연다. 담당자는 기본으로 나다(본인이 검토해도 된다). */
@@ -1048,11 +1180,19 @@ export default {
             this.proposing = true;
             this.proposeError = '';
             try {
-                const d = this.discovered?.definition || {};
+                // 이미 정식 정의가 있으면(실행 전환·병합) 폼·입출력 같은 보강은 이어받고 흐름만 식별 결과로 바꾼다
+                const mined = this.discovered?.definition || {};
+                const { data: cur } = await window.$supabase
+                    .from('proc_def')
+                    .select('definition')
+                    .eq('id', mined.processDefinitionId)
+                    .maybeSingle();
+                const d = withSupplements(mined, cur?.definition);
+                const xml = cur?.definition ? this.markMultiInstance(this.toBpmn(d), this.discovered) : this.bpmnXml;
                 const r = await backend.proposeIdentifiedProcess({
                     procDefId: d.processDefinitionId,
                     name: d.processDefinitionName,
-                    xml: this.bpmnXml,
+                    xml,
                     definition: d,
                     ownerId: this.proposeOwnerId,
                     title: this.proposeTitle,
@@ -1195,6 +1335,20 @@ export default {
     background: rgb(var(--v-theme-surface));
     color: rgb(var(--v-theme-primary));
     border-color: rgba(var(--v-theme-primary), 0.5);
+}
+.mining-step.is-choice {
+    background: rgb(var(--v-theme-surface));
+    color: rgb(var(--v-theme-primary));
+    border: 1.5px solid rgba(var(--v-theme-primary), 0.5);
+}
+.mining-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    color: rgb(var(--v-theme-warning));
+    margin-right: 6px;
 }
 .mining-step.is-preview {
     background: rgba(var(--v-theme-warning), 0.1);

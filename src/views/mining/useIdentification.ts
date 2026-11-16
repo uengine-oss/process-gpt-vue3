@@ -201,6 +201,8 @@ export async function registeredDefs(keys: string[]): Promise<Record<string, str
             .select('id')
             .in('id', ids.slice(i, i + 100))
             .eq('isdeleted', false)
+            // 승인 전 제안이 만든 숨김(is_draft) 정의는 정식 프로세스가 아니다
+            .or('is_draft.is.null,is_draft.eq.false')
             // 휴지통으로 지운 정의(deleted_at)는 세지 않는다
             .is('deleted_at', null);
         for (const d of defs || []) {

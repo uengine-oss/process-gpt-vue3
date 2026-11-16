@@ -4658,19 +4658,24 @@ export default {
                 const flat = elementsToFlattenedDefinition(pd);
 
                 // 1) proc_def 저장 (definition=flattened, bpmn=null)
-                await backend.putObject(
-                    'proc_def',
-                    {
-                        id: procId,
-                        name: procName,
-                        definition: flat,
-                        bpmn: null,
-                        type: 'bpmn',
-                        isdeleted: false,
-                        tenant_id: tenantId
-                    },
-                    { onConflict: 'id,tenant_id' }
-                );
+                // 식별 화면에서 전환한 정의(mined_<업무 키>)는 그 업무의 정식 정의 하나에 버전으로 쌓는다
+                if (/^mined_/.test(procId)) {
+                    await backend.saveIdentifiedDefinition({ procDefId: procId, name: procName, definition: flat, message: '실행 전환' });
+                } else {
+                    await backend.putObject(
+                        'proc_def',
+                        {
+                            id: procId,
+                            name: procName,
+                            definition: flat,
+                            bpmn: null,
+                            type: 'bpmn',
+                            isdeleted: false,
+                            tenant_id: tenantId
+                        },
+                        { onConflict: 'id,tenant_id' }
+                    );
+                }
 
                 // 2) form_def 저장 (각 UserActivity 폼) — putRawDefinition 이 fields_json 추출 + tenant 처리
                 const forms = Array.isArray(contract.forms) ? contract.forms : [];
@@ -7918,20 +7923,31 @@ export default {
                 const bpmnXml = bpmnFile && bpmnFile.content ? bpmnFile.content : this._buildBpmnXmlFromDefinition(definition) || null;
 
                 // 1) proc_def 저장 — 최종 저장(사용자 클릭)이므로 draft 를 승격(is_draft=false)해 목록에 노출.
-                await backend.putObject(
-                    'proc_def',
-                    {
-                        id: procId,
+                // 식별 화면에서 전환한 정의(mined_<업무 키>)는 그 업무의 정식 정의 하나에 새 버전으로 쌓는다.
+                if (/^mined_/.test(procId)) {
+                    await backend.saveIdentifiedDefinition({
+                        procDefId: procId,
                         name: procName,
                         definition,
                         bpmn: bpmnXml,
-                        type: 'bpmn',
-                        isdeleted: false,
-                        is_draft: false,
-                        tenant_id: tenantId
-                    },
-                    { onConflict: 'id,tenant_id' }
-                );
+                        message: '실행 전환'
+                    });
+                } else {
+                    await backend.putObject(
+                        'proc_def',
+                        {
+                            id: procId,
+                            name: procName,
+                            definition,
+                            bpmn: bpmnXml,
+                            type: 'bpmn',
+                            isdeleted: false,
+                            is_draft: false,
+                            tenant_id: tenantId
+                        },
+                        { onConflict: 'id,tenant_id' }
+                    );
+                }
 
                 // 파일명(camelCase 등) → activity id 와 동일 규칙(snake)으로 정규화(매핑 일관성)
                 const toSnake = (s) =>

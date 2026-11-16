@@ -10,7 +10,7 @@
  * 관리자 확인 없이는 묶음이 바뀌지 않는다. 바뀌는 곳은 applyChange 하나이고, 화면은 관리자가
  * 적용을 누른 뒤에만 그것을 부른다.
  */
-import type { DecidedProcess, FeedbackChange, MinedProcessGroup, UnclassifiedCase } from '@/utils/processMiner';
+import type { DecidedProcess, FeedbackChange, MinedProcessGroup, StepRule, UnclassifiedCase } from '@/utils/processMiner';
 
 export interface CaseCategory {
     case_id: string;
@@ -30,6 +30,8 @@ export interface Decision {
     status: 'shown' | 'confirmed' | 'held';
     decided_at: string | null;
     created_at?: string;
+    // 단계 진행 방식 {단계: 규칙} — 정의의 게이트웨이·분기 조건이 된다(process-miner step_rules)
+    step_rules?: Record<string, StepRule>;
 }
 
 export interface TalkRow {
@@ -141,6 +143,7 @@ async function saveDecision(d: Decision) {
                 case_ids: uniq(d.case_ids),
                 exclude: uniq(d.exclude),
                 status: d.status,
+                step_rules: d.step_rules || {},
                 decided_at: d.decided_at,
                 decided_by: localStorage.getItem('uid') || null
             },
@@ -176,9 +179,11 @@ export async function applyChange(
     const touched = new Set<string>([group.process_key]);
 
     for (const s of change.steps || []) {
-        mine.core_activities =
-            s.kind === 'required' ? uniq([...mine.core_activities, s.step]) : mine.core_activities.filter((a) => a !== s.step);
+        // 택일 갈래·반복 판정은 업무 묶음의 필수 단계와 상관없다(묶음 경계는 필수 단계로만 정한다)
+        if (s.kind === 'required') mine.core_activities = uniq([...mine.core_activities, s.step]);
+        else if (s.kind === 'optional') mine.core_activities = mine.core_activities.filter((a) => a !== s.step);
         mine.confirmed_steps = uniq([...(mine.confirmed_steps || []), s.step]);
+        mine.step_rules = { ...(mine.step_rules || {}), [s.step]: ruleOfStep(s) };
         mine.decided_at = mine.decided_at || now;
     }
     if (change.proposal === 'accept') mine.case_ids = uniq([...mine.case_ids, ...(group.new_case_ids || [])]);
@@ -212,6 +217,41 @@ export async function applyChange(
     for (const k of touched) if (k !== '__unclassified') await saveDecision(byKey[k]);
 }
 
+const COND_KEY = { optional: 'skip_when', choice: 'when', loop: 'redo_when' } as const;
+
+/** 대화의 단계 결정 → 저장할 규칙. 조건 없는 옵션은 '옵션으로 정했지만 조건은 아직' — 분기가 정해지지 않은 채 남는다 */
+export function ruleOfStep(s: NonNullable<FeedbackChange['steps']>[number]): StepRule {
+    const by = s.by || 'admin';
+    if (s.kind === 'required') return { kind: 'required', by };
+    const key = COND_KEY[s.kind];
+    const extra = s.by === 'cases' ? { matched: s.matched, total: s.total } : {};
+    return { kind: s.kind, [key]: (s.when || '').trim(), by, ...extra, ...(s.opposite ? { opposite: s.opposite } : {}) } as StepRule;
+}
+
+/** 사례에서 찾은 조건(POST /conditions 의 found) → 관리자에게 보일 change. 초안은 조건이 아니라 빼고 따로 돌려준다 */
+export function changeFromFound(found: Record<string, any>) {
+    const steps: NonNullable<FeedbackChange['steps']> = [];
+    const drafts: { step: string; kind: string; text: string; matched?: number; total?: number }[] = [];
+    for (const [step, v] of Object.entries(found || {})) {
+        const key = COND_KEY[v?.kind as keyof typeof COND_KEY];
+        if (!key) continue;
+        if (v[key]) steps.push({ step, kind: v.kind, when: v[key], by: 'cases', matched: v.matched, total: v.total, opposite: v.opposite });
+        else if (v.draft?.[key]) drafts.push({ step, kind: v.kind, text: v.draft[key], matched: v.draft.matched, total: v.draft.total });
+    }
+    return { change: steps.length ? ({ steps } as FeedbackChange) : null, drafts };
+}
+
+function stepLine(s: NonNullable<FeedbackChange['steps']>[number]) {
+    const from = s.by === 'cases' ? ` (사례 ${s.total}건 중 ${s.matched}건 맞음)` : '';
+    if (s.kind === 'required') return `'${s.step}' 단계를 필수로 확정합니다`;
+    if (s.kind === 'optional')
+        return s.when
+            ? `'${s.step}' 단계는 "${s.when}" 건너뜁니다${from}`
+            : `'${s.step}' 단계를 옵션으로 확정합니다 — 언제 건너뛰는지는 아직 정하지 않았습니다`;
+    if (s.kind === 'choice') return `"${s.when}" '${s.step}' 갈래로 갑니다${from}`;
+    return `"${s.when}" '${s.step}' 단계를 다시 합니다${from}`;
+}
+
 /** 바뀐 내용을 정해진 문장으로 — 모델의 말로 쓰지 않는다. */
 export function describeChange(
     change: FeedbackChange,
@@ -220,7 +260,7 @@ export function describeChange(
     label: (id: string) => string
 ) {
     const out: string[] = [];
-    for (const s of change.steps || []) out.push(`'${s.step}' 단계를 ${s.kind === 'required' ? '필수' : '옵션'}로 확정합니다`);
+    for (const s of change.steps || []) out.push(stepLine(s));
     for (const m of change.moves || []) {
         if (m.to === 'out') out.push(`'${label(m.case_id)}' 건을 이 업무에서 뺍니다${m.category ? ` (범주: ${m.category})` : ''}`);
         else if (m.to) out.push(`'${label(m.case_id)}' 건을 '${names[m.to] || m.to}' 업무로 옮깁니다`);

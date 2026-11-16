@@ -79,7 +79,16 @@ export interface UnclassifiedCase {
 /** 관리자의 말에서 읽은 결정. 마이너가 사실과 맞춰 본 것만 온다 */
 export interface FeedbackChange {
     confirm?: boolean;
-    steps?: { step: string; kind: 'required' | 'optional' }[];
+    // kind 는 BPMN 의 뜻. when: 옵션이면 언제 건너뛰는지, 택일이면 언제 그 갈래로 가는지, 반복이면 언제 다시 하는지
+    steps?: {
+        step: string;
+        kind: 'required' | 'optional' | 'choice' | 'loop';
+        when?: string;
+        by?: 'admin' | 'cases';
+        matched?: number;
+        total?: number;
+        opposite?: string;
+    }[];
     moves?: { case_id: string; to: string; category?: string }[];
     proposal?: 'accept' | 'reject';
 }
@@ -102,7 +111,42 @@ export interface DiscoveredProcess {
     };
     tree: string;
     definition: any;
+    // 정의가 말하는 단계 진행 방식(규칙 반영 뒤)
+    steps?: StepShape[];
+    // 아직 조건이 정해지지 않은 분기 — 남아 있으면 제안·실행 전환을 할 수 없다
+    undecided?: OpenSplit[];
+    notes?: { step: string; reason: string }[];
 }
+
+export interface StepShape {
+    step: string;
+    kind: 'required' | 'optional' | 'choice';
+    skip_when: string;
+    when: string;
+    redo_when: string;
+    alternatives: string[];
+    by: '' | 'admin' | 'cases';
+    matched?: number;
+    total?: number;
+}
+
+export interface OpenSplit {
+    step: string;
+    need: 'skip' | 'when' | 'redo';
+    gateway: string;
+    draft: string;
+    matched?: number;
+    total?: number;
+    alternatives?: string[];
+}
+
+/** 단계 규칙 — handover_process_decisions.step_rules 의 값(process-miner step_rules) */
+export type StepRule =
+    | 'required'
+    | { kind: 'required'; by?: string }
+    | { kind: 'optional'; skip_when?: string; by?: string; matched?: number; total?: number; opposite?: string; draft?: any }
+    | { kind: 'choice'; when?: string; by?: string; matched?: number; total?: number; opposite?: string; draft?: any }
+    | { kind: 'loop'; redo_when?: string; by?: string; draft?: any };
 
 /** 업무 묶음 — 업무 범주가 같은 끝난 스레드. 관리자가 본 묶음은 경계로 고정된다 */
 export interface MinedProcessGroup {
@@ -167,7 +211,8 @@ export const processMiner = {
         categories: Record<string, string>,
         decided: DecidedProcess[],
         processId?: string,
-        name?: string
+        name?: string,
+        rules: Record<string, StepRule> = {}
     ) =>
         post<DiscoveredProcess>('/discovered', {
             tenant_id: tenantId,
@@ -175,7 +220,25 @@ export const processMiner = {
             categories,
             decided,
             process_id: processId,
-            name
+            name,
+            rules
+        }),
+    /** 정해지지 않은 분기의 조건을 사례에서 찾는다(LLM, 쓰기 없음). 관리자가 보고 적용한다 */
+    conditions: (
+        tenantId: string,
+        processKey: string,
+        categories: Record<string, string>,
+        decided: DecidedProcess[],
+        rules: Record<string, StepRule>,
+        requests: Record<string, string>
+    ) =>
+        post<{ found: Record<string, any>; undecided: OpenSplit[] }>('/conditions', {
+            tenant_id: tenantId,
+            process_key: processKey,
+            categories,
+            decided,
+            rules,
+            requests
         }),
     /** 관리자의 말을 결정으로 읽는다(쓰기 없음). 저장은 관리자가 적용을 누른 뒤 화면이 한다 */
     feedback: (tenantId: string, message: string, facts: Record<string, any>, lang?: string) =>
