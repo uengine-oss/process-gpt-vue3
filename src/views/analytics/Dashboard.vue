@@ -670,6 +670,16 @@ function formatDateTime(timestamp) {
     return dayjs(timestamp).format('MM/DD HH:mm');
 }
 
+// 인스턴스 id 는 「<정의 id>.<uuid>」 — 앞 8자는 정의 id 라 구분이 안 된다
+function instanceShortId(instance) {
+    const id = instance.proc_inst_id || instance.id || '';
+    return id.split('.').pop().slice(0, 8);
+}
+
+function instanceStart(instance) {
+    return instance.start_timestamp || instance.started_at || null;
+}
+
 function getBarWidth(count) {
     return (count / maxDomainCount.value) * 100;
 }
@@ -1167,15 +1177,23 @@ async function syncDepartments() {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="instance in store.instances" :key="instance.id" class="month-item">
-                                <td class="text-body-2 font-weight-medium text-textPrimary">{{ instance.id?.slice(0, 8) }}...</td>
+                            <!-- /api/analytics/instances 는 proc_inst_id · start_timestamp · 대문자 status(COMPLETED) 를 준다.
+                                 예전 이름(id · started_at · completed)으로 읽어 시작 시간이 늘 「지금」, ID 가 빈칸이었다. -->
+                            <tr v-for="instance in store.instances" :key="instance.proc_inst_id || instance.id" class="month-item">
+                                <td class="text-body-2 font-weight-medium text-textPrimary">{{ instanceShortId(instance) }}...</td>
                                 <td class="text-body-2 text-grey100">{{ instance.process_name || 'Unnamed Process' }}</td>
                                 <td>
-                                    <v-chip size="small" :color="instance.status === 'completed' ? 'success' : 'warning'" variant="tonal">
+                                    <v-chip
+                                        size="small"
+                                        :color="String(instance.status || '').toUpperCase() === 'COMPLETED' ? 'success' : 'warning'"
+                                        variant="tonal"
+                                    >
                                         {{ instance.status }}
                                     </v-chip>
                                 </td>
-                                <td class="text-body-2 text-grey100">{{ formatDateTime(instance.started_at) }}</td>
+                                <td class="text-body-2 text-grey100">
+                                    {{ instanceStart(instance) ? formatDateTime(instanceStart(instance)) : '-' }}
+                                </td>
                                 <td class="text-body-2 font-weight-medium text-textPrimary">
                                     {{ instance.duration_sec ? `${instance.duration_sec}${$t('analyticsDashboard.seconds')}` : '-' }}
                                 </td>
