@@ -707,6 +707,12 @@ const allRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/mining/HandoverMining.vue')
     },
     {
+        // 프로세스 식별 상세 — 업무 하나(업무 키)를 한 화면에서 판단한다
+        name: 'Handover Mining Detail',
+        path: '/mining/handover/:key',
+        component: () => import('@/views/mining/HandoverMiningDetail.vue')
+    },
+    {
         name: 'Strategy Board',
         path: '/strategy-board',
         component: () => import('@/views/strategy/StrategyBoard.vue')

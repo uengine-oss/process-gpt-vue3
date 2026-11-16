@@ -141,12 +141,10 @@ export async function openMining(page: Page, activity: string, shotName?: string
         const groups = (await (await groupsRes).json()).processes as any[];
         const group = groups.find((g) => g.activities.includes(activity));
         expect(group, `${activity} 가 든 업무 — ${JSON.stringify(groups.map((g) => g.activities))}`).toBeTruthy();
-        const select = page.locator('.e2e-process-select');
-        await expect(select).toBeVisible({ timeout: 30_000 });
-        if (!discovered.has(group.process_key)) {
-            await select.click();
-            await page.locator(`.e2e-process-option[data-key="${group.process_key}"]`).click();
-        }
+        // 목록(/mining/handover)에서 업무 줄을 누르면 상세(/mining/handover/:key)로 가고, 상세가 도출을 받는다
+        await expect(page.locator(`.e2e-work[data-key="${group.process_key}"]`)).toBeVisible({ timeout: 60_000 });
+        await page.locator(`.e2e-work[data-key="${group.process_key}"]`).click();
+        await page.waitForURL(`**/mining/handover/${group.process_key}`);
         await expect.poll(() => discovered.has(group.process_key), { timeout: 60_000 }).toBe(true);
         await page.waitForTimeout(1_500);
         if (shotName) await shot(page, shotName);
@@ -159,7 +157,7 @@ export async function openMining(page: Page, activity: string, shotName?: string
 /** 식별 화면이 모델러에 넘긴 BPMN XML. 그려진 도형의 종류(병렬/배타, 다중 인스턴스)를 확인한다. */
 export async function renderedXml(page: Page): Promise<string> {
     return page.evaluate(() => {
-        let c: any = (document.querySelector('.mining-threads') as any)?.__vueParentComponent;
+        let c: any = (document.querySelector('.mining-detail') as any)?.__vueParentComponent;
         while (c && !(c.proxy && typeof c.proxy.bpmnXml === 'string')) c = c.parent;
         return c?.proxy?.bpmnXml || '';
     });

@@ -1,13 +1,13 @@
 /**
- * 프로세스 식별 — 관리자가 확정한 업무에 같은 일의 새 건이 들어오면 제안으로 기다린다 (@agent, 느린 검증)
+ * 프로세스 식별 — 관리자가 본 업무에 같은 일의 새 건이 들어오면 제안으로 기다린다 (@agent, 느린 검증)
  * openspec: process-gpt-process-miner general-intent-grouping (2026-11-12)
  *
  * 사람이 실제로 하는 대로 한다. 업무를 시작한 사람이 방의 에이전트와 대화해 요청을 정리하고, 다음 사람에게 넘긴다.
  * 받은 사람도 방의 에이전트와 확인한 뒤 넘기고, 마지막 사람이 받은 일을 끝낸다.
  *
- *   1. 구매 요청 — 이미 확정해 둔 업무에 새 구매 건이 끝나면, 업무의 건수는 그대로이고 새 건은 제안으로 보인다.
+ *   1. 구매 요청 — 이미 본 업무에 새 구매 건이 끝나면, 업무의 건수는 그대로이고 새 건은 제안으로 보인다.
  *      관리자가 대화로 받아들이면 그때 업무에 들어가고, 다시 식별해도 그대로다.
- *   2. 교육 신청 — 단계 구성이 다른 새 업무. 세 건이 끝나면 업무 범주 이름으로 새 업무가 생기고, 관리자가 대화로 확정한다.
+ *   2. 교육 신청 — 단계 구성이 다른 새 업무. 세 건이 끝나면 업무 범주 이름으로 새 업무(추천)가 생긴다.
  *      넷째 건은 제안으로 기다리다 받아들이면 들어간다.
  *
  * DB 확인은 로그인한 사용자 권한(같은 테넌트)으로 한다. 서비스 키는 쓰지 않는다. 만든 데이터는 지우지 않는다.
@@ -61,7 +61,10 @@ async function until<T>(fn: () => Promise<T | null | undefined | false>, label: 
 async function askAgent(page: Page, roomId: string, text: string) {
     const answers = async () =>
         (await q(page, 'chats', `select=messages&id=eq.${roomId}`)).filter(
-            (r: any) => ['assistant', 'agent'].includes(r.messages?.role) && String(r.messages?.content || '').trim() && !/^생각 중/.test(String(r.messages.content).trim())
+            (r: any) =>
+                ['assistant', 'agent'].includes(r.messages?.role) &&
+                String(r.messages?.content || '').trim() &&
+                !/^생각 중/.test(String(r.messages.content).trim())
         ).length;
     const before = await answers();
     const input = page.locator('textarea:not([disabled]):visible').first();
@@ -111,7 +114,12 @@ async function finishOnBoard(page: Page, taskId: string, text: string) {
         .last();
     await card.scrollIntoViewIfNeeded();
     await card.dragTo(done, { targetPosition: { x: 120, y: 80 } });
-    await until(async () => (await q(page, 'todolist', `select=status&id=eq.${taskId}`))[0]?.status === 'DONE', `할 일 완료(${text})`, 30_000, 1_000);
+    await until(
+        async () => (await q(page, 'todolist', `select=status&id=eq.${taskId}`))[0]?.status === 'DONE',
+        `할 일 완료(${text})`,
+        30_000,
+        1_000
+    );
 }
 
 type Work = {
@@ -142,38 +150,50 @@ async function runWork(pages: Record<string, Page>, w: Work, receiver: 'lee' | '
 }
 
 // ---------- 식별 화면 ----------
-type Group = { process_key: string; name: string; category: string; activities: string[]; cases: string[]; new_case_ids: string[]; case_count: number };
+type Group = {
+    process_key: string;
+    name: string;
+    category: string;
+    activities: string[];
+    cases: string[];
+    new_case_ids: string[];
+    case_count: number;
+};
 
 async function openScreen(page: Page): Promise<Group[]> {
     for (let i = 0; i < 3; i++) {
         const th = page.waitForResponse((r) => r.url().includes('/process-miner/threads'), { timeout: 60_000 });
-        const groups = page.waitForResponse((r) => r.url().includes('/process-miner/processes') && r.request().method() === 'POST', { timeout: 300_000 });
+        const groups = page.waitForResponse((r) => r.url().includes('/process-miner/processes') && r.request().method() === 'POST', {
+            timeout: 300_000
+        });
         await page.goto(`${BASE}/mining/handover`, { waitUntil: 'domcontentloaded' });
         if (!(await th).ok()) {
             await page.waitForTimeout(3_000);
             continue;
         }
-        await (await groups).json();
-        await expect(page.locator('.e2e-process-select')).toBeVisible({ timeout: 300_000 });
-        // 처음 보인 업무를 경계로 남기면 한 번 더 받는다 — 화면이 가진 최종 목록을 읽는다
-        await page.waitForTimeout(1_500);
-        return page.evaluate(() => {
-            let c: any = (document.querySelector('.handover-mining') as any)?.__vueParentComponent;
-            while (c && !(c.proxy && Array.isArray(c.proxy.groups))) c = c.parent;
-            return JSON.parse(JSON.stringify(c?.proxy?.groups || []));
-        });
+        let body = await (await groups).json();
+        await expect(page.locator('.e2e-work').first()).toBeVisible({ timeout: 300_000 });
+        // 처음 보인 업무를 경계로 남기면 한 번 더 받는다 — 마지막 응답을 쓴다
+        const again = await page
+            .waitForResponse((r) => r.url().includes('/process-miner/processes') && r.request().method() === 'POST', { timeout: 3_000 })
+            .catch(() => null);
+        if (again) body = await again.json();
+        return body.processes as Group[];
     }
     throw new Error('식별 화면을 열지 못했다');
 }
 
 async function pick(page: Page, key: string) {
-    await page.locator('.e2e-process-select').click();
-    await page.locator(`.e2e-process-option[data-key="${key}"]`).click();
+    // 목록에서 업무 줄을 누르면 상세(/mining/handover/:key)로 간다
+    if (!page.url().endsWith(`/mining/handover/${key}`)) {
+        if (!page.url().endsWith('/mining/handover')) await page.goto(`${BASE}/mining/handover`, { waitUntil: 'domcontentloaded' });
+        await page.locator(`.e2e-work[data-key="${key}"]`).click();
+        await page.waitForURL(`**/mining/handover/${key}`);
+    }
     await expect(page.locator('.e2e-steps')).toBeVisible();
 }
 
 async function say(page: Page, text: string, expectLines: string[], shotName: string) {
-    if (!(await page.locator('.e2e-talk').isVisible())) await page.locator('.e2e-talk-toggle').click();
     const msgs = page.locator('.e2e-talk-msg[data-role="assistant"]');
     // 지난 대화를 다 불러온 뒤에 센다
     let n = -1;
@@ -200,8 +220,8 @@ async function people(browser: Browser) {
     return { hong: await login(browser, PEOPLE.hong), lee: await login(browser, PEOPLE.lee), park: await login(browser, PEOPLE.park) };
 }
 
-// ---------- 1. 구매 요청: 확정한 업무에 새 건 ----------
-test('@agent 확정한 구매 요청 업무에 새 구매 건이 끝나면 제안으로 기다리고, 관리자가 받아들이면 들어간다', async ({ browser }) => {
+// ---------- 1. 구매 요청: 관리자가 본 업무에 새 건 ----------
+test('@agent 관리자가 본 구매 요청 업무에 새 구매 건이 끝나면 제안으로 기다리고, 관리자가 받아들이면 들어간다', async ({ browser }) => {
     const pages = await people(browser);
     const hong = pages.hong;
     const before = await openScreen(hong);
@@ -213,10 +233,21 @@ test('@agent 확정한 구매 요청 업무에 새 구매 건이 끝나면 제�
         {
             room: '영업팀 모니터 구매 요청',
             ask: '영업팀 신규 입사자용 27인치 모니터 5대를 구매하려고 해요. 구매 요청서에 들어갈 품목·수량·예상 금액·필요 사유를 정리해 주세요.',
-            first: { by: 'hong', done: '구매 요청 접수', next: '예산 검토', to: PEOPLE.park.email, instruction: '영업팀 모니터 5대 구매 건입니다. 이번 분기 예산 안에서 가능한지 확인해 주세요.' },
+            first: {
+                by: 'hong',
+                done: '구매 요청 접수',
+                next: '예산 검토',
+                to: PEOPLE.park.email,
+                instruction: '영업팀 모니터 5대 구매 건입니다. 이번 분기 예산 안에서 가능한지 확인해 주세요.'
+            },
             second: {
                 askAgent: '넘겨받은 모니터 5대 구매 요청을 보고, 예산 검토 의견을 두세 줄로 정리해 주세요.',
-                pass: { done: '예산 검토', next: '발주 처리', to: PEOPLE.hong.email, instruction: '예산 안에서 가능합니다. 모니터 5대 발주를 진행해 주세요.' }
+                pass: {
+                    done: '예산 검토',
+                    next: '발주 처리',
+                    to: PEOPLE.hong.email,
+                    instruction: '예산 안에서 가능합니다. 모니터 5대 발주를 진행해 주세요.'
+                }
             },
             last: { askAgent: '모니터 5대 발주서에 들어갈 내용을 정리해 주세요.', finishText: '모니터 5대 발주' }
         },
@@ -229,12 +260,13 @@ test('@agent 확정한 구매 요청 업무에 새 구매 건이 끝나면 제�
     expect(g.case_count, '관리자 확인 없이 업무에 들어갔다').toBe(purchase!.case_count);
     expect(g.new_case_ids).toContain(room);
     await pick(hong, g.process_key);
+    await hong.locator('.e2e-tab-new').click();
     await expect(hong.locator(`.e2e-thread[data-room-id="${room}"] .e2e-thread-proposal`)).toBeVisible();
     await shot(hong, 'newcase-purchase-1-proposal');
 
-    const reply = await say(hong, '새로 들어온 영업팀 모니터 구매 건도 구매 요청 업무가 맞아. 업무에 넣어줘', [`새로 들어온 ${g.new_case_ids.length}건을 이 업무에 넣습니다`], 'newcase-purchase-2-talk');
+    // 새로 들어온 건 탭에서 그 건의 '이 업무에 넣기' 로 바로 받는다(대화의 change 와 같은 저장)
     expect((await decision(hong, g.process_key)).case_ids).not.toContain(room);
-    await reply.locator('.e2e-talk-apply').click();
+    await hong.locator(`.e2e-thread[data-room-id="${room}"] .e2e-accept-case`).click();
     await until(async () => (await decision(hong, g.process_key)).case_ids.includes(room), '받아들인 건 저장', 60_000, 2_000);
 
     const again = await openScreen(hong);
@@ -258,16 +290,29 @@ function trainingWork(t: (typeof TRAININGS)[number]): Work {
     return {
         room: `${t.team} ${t.course} 신청`,
         ask: `${t.team}에서 ${t.course}을 ${t.date}에 받고 싶다는 신청이 들어왔어요. 신청 내용(대상 팀, 과정, 희망 날짜, 인원)을 정리해 주세요.`,
-        first: { by: 'hong', done: '교육 신청 접수', next: '교육 일정 조율', to: PEOPLE.lee.email, instruction: `${t.team} ${t.course} 신청입니다. 강사와 교육장 일정을 맞춰 주세요.` },
+        first: {
+            by: 'hong',
+            done: '교육 신청 접수',
+            next: '교육 일정 조율',
+            to: PEOPLE.lee.email,
+            instruction: `${t.team} ${t.course} 신청입니다. 강사와 교육장 일정을 맞춰 주세요.`
+        },
         second: {
             askAgent: `${t.team} ${t.course} 일정을 ${t.date} 오후로 잡으려고 해요. 강사와 교육장 확인 사항을 정리해 주세요.`,
-            pass: { done: '교육 일정 조율', next: '참석 안내', to: PEOPLE.hong.email, instruction: `${t.date} 오후로 확정했습니다. ${t.team}에 참석 안내를 보내 주세요.` }
+            pass: {
+                done: '교육 일정 조율',
+                next: '참석 안내',
+                to: PEOPLE.hong.email,
+                instruction: `${t.date} 오후로 확정했습니다. ${t.team}에 참석 안내를 보내 주세요.`
+            }
         },
         last: { askAgent: `${t.team}에 보낼 ${t.course} 참석 안내문을 짧게 써 주세요.`, finishText: `${t.date} 오후로 확정했습니다` }
     };
 }
 
-test('@agent 교육 신청 — 세 건이 끝나면 범주 이름으로 새 업무가 생기고, 대화로 확정한 뒤 넷째 건은 제안으로 기다린다', async ({ browser }) => {
+test('@agent 교육 신청 — 세 건이 끝나면 범주 이름으로 새 업무가 생기고, 관리자가 본 뒤 넷째 건은 제안으로 기다린다', async ({
+    browser
+}) => {
     const pages = await people(browser);
     const hong = pages.hong;
     const rooms: string[] = [];
@@ -283,10 +328,6 @@ test('@agent 교육 신청 — 세 건이 끝나면 범주 이름으로 새 업�
     await pick(hong, g!.process_key);
     await shot(hong, 'newcase-training-1-group');
 
-    const confirm = await say(hong, `이 업무는 ${g!.name} 업무가 맞아. 확정해줘`, [`'${g!.name}' 업무를 확인합니다`], 'newcase-training-2-talk');
-    await confirm.locator('.e2e-talk-apply').click();
-    await until(async () => (await decision(hong, g!.process_key))?.status === 'confirmed', '업무 확정 저장', 60_000, 2_000);
-
     const fourth = await runWork(pages, trainingWork(TRAININGS[3]), 'lee');
     const after = await openScreen(hong);
     const g2 = after.find((x) => x.process_key === g!.process_key)!;
@@ -294,11 +335,16 @@ test('@agent 교육 신청 — 세 건이 끝나면 범주 이름으로 새 업�
     expect(g2.case_count).toBe(3);
     expect(g2.new_case_ids).toContain(fourth);
     await pick(hong, g2.process_key);
+    await hong.locator('.e2e-tab-new').click();
     await expect(hong.locator(`.e2e-thread[data-room-id="${fourth}"] .e2e-thread-proposal`)).toBeVisible();
-    await expect(hong.locator('.e2e-group-confirmed')).toBeVisible();
     await shot(hong, 'newcase-training-3-proposal');
 
-    const accept = await say(hong, '새로 들어온 인사팀 리더십 교육 신청도 이 업무가 맞아. 넣어줘', [`새로 들어온 ${g2.new_case_ids.length}건을 이 업무에 넣습니다`], 'newcase-training-4-talk');
+    const accept = await say(
+        hong,
+        '새로 들어온 인사팀 리더십 교육 신청도 이 업무가 맞아. 넣어줘',
+        [`새로 들어온 ${g2.new_case_ids.length}건을 이 업무에 넣습니다`],
+        'newcase-training-4-talk'
+    );
     await accept.locator('.e2e-talk-apply').click();
     await until(async () => (await decision(hong, g2.process_key)).case_ids.includes(fourth), '받아들인 건 저장', 60_000, 2_000);
     const again = await openScreen(hong);

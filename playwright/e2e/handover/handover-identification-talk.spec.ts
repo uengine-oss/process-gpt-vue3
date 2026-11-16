@@ -1,10 +1,10 @@
 /**
- * 프로세스 식별 — 관리자가 대화로 식별 결과를 확정한다 (general-intent-grouping, 2026-11-12).
+ * 프로세스 식별 — 관리자가 대화로 단계(필수·옵션)를 확정한다 (general-intent-grouping, 2026-11-12).
  *
  * 실제 ProcessGPT(8088) 식별 화면에서 관리자가 묶음을 열고 말한다. 확인하는 것:
  *   1. 묶음 이름은 업무 범주이고, 단계 이름 겹침으로 묶지 않는다(마이너 POST /processes 응답)
  *   2. 말하면 바뀔 내용이 정해진 문장으로 보이고, 적용하기 전에는 저장된 결정이 그대로다
- *   3. 적용하면 저장되고, 화면을 다시 열어 식별해도 확인 표시와 필수 확정이 그대로다
+ *   3. 적용하면 저장되고, 화면을 다시 열어 식별해도 필수 확정이 그대로다
  *   4. 단계 구성이 다른 업무 두 개에서 위가 같다
  *
  * 필요한 것: 실제 마이너(8015, LLM 설정 포함), 로그인 계정(HONG_EMAIL · HONG_PASSWORD).
@@ -39,7 +39,8 @@ async function openScreen(page: Page): Promise<Group[]> {
     await page.goto(`${BASE}/mining/handover`, { waitUntil: 'domcontentloaded' });
     // 처음 보인 묶음을 경계로 남기면 한 번 더 받는다 — 마지막 응답을 쓴다
     let body = await (await groupsRes).json();
-    await expect(page.locator('.e2e-process-select')).toBeVisible({ timeout: 180_000 });
+    // 목록(/mining/handover)이 업무 줄을 그릴 때까지
+    await expect(page.locator('.e2e-work').first()).toBeVisible({ timeout: 180_000 });
     const again = await page
         .waitForResponse((r) => r.url().includes('/process-miner/processes') && r.request().method() === 'POST', { timeout: 3_000 })
         .catch(() => null);
@@ -59,39 +60,54 @@ async function decisionOf(page: Page, key: string) {
 }
 
 async function pick(page: Page, key: string) {
-    await page.locator('.e2e-process-select').click();
-    await page.locator(`.e2e-process-option[data-key="${key}"]`).click();
+    // 목록에서 업무 줄을 누르면 상세(/mining/handover/:key)로 간다
+    if (!page.url().endsWith(`/mining/handover/${key}`)) {
+        if (!page.url().endsWith('/mining/handover')) await page.goto(`${BASE}/mining/handover`, { waitUntil: 'domcontentloaded' });
+        await page.locator(`.e2e-work[data-key="${key}"]`).click();
+        await page.waitForURL(`**/mining/handover/${key}`);
+    }
     await expect(page.locator('.e2e-steps')).toBeVisible();
 }
 
 async function talkAndApply(page: Page, g: Group, step: string, shotPrefix: string) {
     await pick(page, g.process_key);
-    if (!(await page.locator('.e2e-talk').isVisible())) await page.locator('.e2e-talk-toggle').click();
     await expect(page.locator('.e2e-talk')).toBeVisible();
     const before = await decisionOf(page, g.process_key);
 
     const msgs = page.locator('.e2e-talk-msg[data-role="assistant"]');
-    const n = await msgs.count();
-    await page.locator('.e2e-talk-input input').fill(`이 묶음은 ${g.name} 업무가 맞아. ${step} 단계는 필수로 확정해줘`);
+    // 지난 대화를 다 불러온 뒤에 센다
+    let n = -1;
+    for (let stable = 0; stable < 3; ) {
+        await page.waitForTimeout(1_000);
+        const c = await msgs.count();
+        stable = c === n ? stable + 1 : 0;
+        n = c;
+    }
+    await page.locator('.e2e-talk-input input').fill(`${step} 단계는 필수로 확정해줘`);
     await page.locator('.e2e-talk-input input').press('Enter');
     await expect(msgs).toHaveCount(n + 1, { timeout: 120_000 });
     const reply = msgs.nth(n);
-    await expect(reply.locator('.e2e-talk-change')).toContainText(`'${g.name}' 업무를 확인합니다`);
     await expect(reply.locator('.e2e-talk-change')).toContainText(`'${step}' 단계를 필수로 확정합니다`);
     await shot(page, `${shotPrefix}-1-proposed`);
 
-    // 적용하기 전에는 저장된 결정이 그대로다
+    // 적용하기 전에는 저장된 결정이 그대로이고, 단계 칩에 미리보기로만 보인다
     expect(await decisionOf(page, g.process_key)).toEqual(before);
+    await expect(page.locator(`.e2e-step[data-step="${step}"]`)).toHaveClass(/is-preview/);
+    const talkCount = await page.locator('.e2e-talk-msg').count();
 
     await reply.locator('.e2e-talk-apply').click();
-    await expect.poll(async () => (await decisionOf(page, g.process_key))?.status, { timeout: 60_000 }).toBe('confirmed');
+    await expect.poll(async () => (await decisionOf(page, g.process_key))?.confirmed_steps || [], { timeout: 60_000 }).toContain(step);
     const after = await decisionOf(page, g.process_key);
     expect(after.core_activities).toContain(step);
     expect(after.confirmed_steps).toContain(step);
+    // 화면 전체를 다시 불러오지 않는다 — 대화가 그대로 있고, 칩이 그 자리에서 필수·관리자 확정으로 바뀐다
+    await expect(page.locator('.e2e-talk-msg')).toHaveCount(talkCount);
+    await expect(page.locator(`.e2e-step[data-step="${step}"]`)).toHaveAttribute('data-kind', 'required');
+    await expect(page.locator(`.e2e-step[data-step="${step}"] .v-icon`)).toBeVisible();
     await shot(page, `${shotPrefix}-2-applied`);
 }
 
-test('관리자가 대화로 확정한 묶음과 필수 단계가 다시 식별해도 유지된다 — 단계 구성이 다른 업무 두 개', async ({ browser }) => {
+test('관리자가 대화로 확정한 필수 단계가 다시 식별해도 유지된다 — 단계 구성이 다른 업무 두 개', async ({ browser }) => {
     test.setTimeout(20 * 60 * 1000);
     const hong = await login(browser, PEOPLE.hong);
     const groups = await openScreen(hong);
@@ -109,7 +125,7 @@ test('관리자가 대화로 확정한 묶음과 필수 단계가 다시 식별�
     await talkAndApply(hong, a, steps[a.process_key], 'talk-a');
     await talkAndApply(hong, b, steps[b.process_key], 'talk-b');
 
-    // 다시 식별 — 묶음 키·확인 표시·필수 확정이 그대로다
+    // 다시 식별 — 묶음 키·필수 확정이 그대로다
     const again = await openScreen(hong);
     for (const g of [a, b]) {
         const now = again.find((x) => x.process_key === g.process_key);
@@ -117,7 +133,6 @@ test('관리자가 대화로 확정한 묶음과 필수 단계가 다시 식별�
         expect(now!.core_activities).toContain(steps[g.process_key]);
         expect(now!.cases.length).toBe(g.cases.length);
         await pick(hong, g.process_key);
-        await expect(hong.locator('.e2e-group-confirmed')).toBeVisible();
         await expect(hong.locator(`.e2e-step[data-step="${steps[g.process_key]}"]`)).toHaveAttribute('data-kind', 'required');
         await shot(hong, `talk-reload-${g === a ? 'a' : 'b'}`);
     }

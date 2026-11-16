@@ -26,7 +26,8 @@ export interface Decision {
     confirmed_steps: string[];
     case_ids: string[];
     exclude: string[];
-    status: 'shown' | 'confirmed';
+    // shown: 화면에 보임(추천) · held: 관리자가 보류. 예전 'confirmed' 는 추천으로 본다
+    status: 'shown' | 'confirmed' | 'held';
     decided_at: string | null;
     created_at?: string;
 }
@@ -67,18 +68,13 @@ export async function setAdminCategory(caseId: string, category: string, request
     if (error) throw new Error(`범주 저장 실패: ${error.message}`);
 }
 
-/** 결정 순서: 관리자가 확인한 묶음(확인한 순) → 화면에 보인 묶음(처음 보인 순). */
+/** 결정 순서: 화면에 처음 보인 순(같은 범주 업무끼리 새 건을 다툴 때 먼저 보인 쪽). */
 export async function loadDecisions(): Promise<Decision[]> {
     const { data, error } = await sb().from('handover_process_decisions').select('*');
     if (error) throw new Error(`결정 조회 실패: ${error.message}`);
     const rows: Decision[] = data || [];
-    const rank = (d: Decision) => (d.status === 'confirmed' ? 0 : 1);
     return rows.sort(
-        (a, b) =>
-            rank(a) - rank(b) ||
-            String(a.decided_at || '').localeCompare(String(b.decided_at || '')) ||
-            String(a.created_at || '').localeCompare(String(b.created_at || '')) ||
-            a.process_key.localeCompare(b.process_key)
+        (a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')) || a.process_key.localeCompare(b.process_key)
     );
 }
 
@@ -111,6 +107,26 @@ export async function rememberShown(groups: MinedProcessGroup[], decisions: Deci
         .upsert(rows, { onConflict: 'tenant_id,process_key', ignoreDuplicates: true });
     if (error) throw new Error(`결정 저장 실패: ${error.message}`);
     return true;
+}
+
+/** 보류하거나(held) 추천으로 되돌린다(shown). 보류한 업무는 목록 끝으로 가고, 새 건은 계속 제안으로 기다린다. */
+export async function setHold(group: MinedProcessGroup, decisions: Decision[], held: boolean) {
+    const d = decisions.find((x) => x.process_key === group.process_key);
+    const base: Decision = d
+        ? { ...d }
+        : {
+              process_key: group.process_key,
+              category: group.category || null,
+              core_activities: group.core_activities || [],
+              confirmed_steps: [],
+              case_ids: group.cases || [],
+              exclude: [],
+              status: 'shown',
+              decided_at: null
+          };
+    base.status = held ? 'held' : 'shown';
+    base.decided_at = new Date().toISOString();
+    await saveDecision(base);
 }
 
 async function saveDecision(d: Decision) {
@@ -159,10 +175,6 @@ export async function applyChange(
     byKey[group.process_key] = mine;
     const touched = new Set<string>([group.process_key]);
 
-    if (change.confirm) {
-        mine.status = 'confirmed';
-        mine.decided_at = mine.decided_at || now;
-    }
     for (const s of change.steps || []) {
         mine.core_activities =
             s.kind === 'required' ? uniq([...mine.core_activities, s.step]) : mine.core_activities.filter((a) => a !== s.step);
@@ -196,7 +208,8 @@ export async function applyChange(
             await setAdminCategory(m.case_id, m.category, requests[m.case_id]);
         }
     }
-    for (const k of touched) await saveDecision(byKey[k]);
+    // 확인 필요(업무가 아닌 목록)에서 한 대화는 그 자리를 결정으로 남기지 않는다
+    for (const k of touched) if (k !== '__unclassified') await saveDecision(byKey[k]);
 }
 
 /** 바뀐 내용을 정해진 문장으로 — 모델의 말로 쓰지 않는다. */
@@ -207,15 +220,16 @@ export function describeChange(
     label: (id: string) => string
 ) {
     const out: string[] = [];
-    if (change.confirm) out.push(`'${group.name}' 업무를 확인합니다`);
     for (const s of change.steps || []) out.push(`'${s.step}' 단계를 ${s.kind === 'required' ? '필수' : '옵션'}로 확정합니다`);
     for (const m of change.moves || []) {
         if (m.to === 'out') out.push(`'${label(m.case_id)}' 건을 이 업무에서 뺍니다${m.category ? ` (범주: ${m.category})` : ''}`);
         else if (m.to) out.push(`'${label(m.case_id)}' 건을 '${names[m.to] || m.to}' 업무로 옮깁니다`);
         else if (m.category) out.push(`'${label(m.case_id)}' 건의 업무 범주를 '${m.category}'로 정합니다`);
     }
-    if (change.proposal === 'accept') out.push(`새로 들어온 ${group.new_case_ids.length}건을 이 업무에 넣습니다`);
-    if (change.proposal === 'reject') out.push(`새로 들어온 ${group.new_case_ids.length}건은 이 업무가 아닙니다`);
+    // 지난 대화는 지금 건수가 아니라 그때의 결정이므로, 건수가 없으면 수를 쓰지 않는다
+    const n = (group.new_case_ids || []).length;
+    if (change.proposal === 'accept') out.push(`새로 들어온 ${n ? `${n}건을` : '건을'} 이 업무에 넣습니다`);
+    if (change.proposal === 'reject') out.push(`새로 들어온 ${n ? `${n}건은` : '건은'} 이 업무가 아닙니다`);
     return out;
 }
 
