@@ -570,7 +570,7 @@ export default {
             if (runsAsAgent(activity)) {
                 let agent = this.defaultSetting.getAgentById(activity.agent);
                 if (!agent) {
-                    agent = await this.backend.getUserById(activity.agent);
+                    agent = await backend.getUserById(activity.agent);
                 }
                 if (agent) assignee = { id: agent.id, name: agent.username };
             }
