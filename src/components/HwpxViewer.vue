@@ -392,6 +392,7 @@
 <script>
 import { marked } from 'marked';
 import { defineAsyncComponent } from 'vue';
+import { resolveStorageUrl } from '@/shared/storageUrl';
 
 export default {
     name: 'HwpxViewer',
@@ -704,7 +705,10 @@ export default {
         },
         async fetchHtml(url) {
             try {
-                const response = await fetch(url);
+                // office-mcp 가 돌려주는 미리보기 주소는 컨테이너 안 이름(http://kong:8000/storage/...)이라
+                // 브라우저가 못 연다 — 저장소 주소면 같은 버킷·경로를 이 세션으로 서명해 연다.
+                const target = (await resolveStorageUrl(url).catch(() => '')) || url;
+                const response = await fetch(target);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const htmlText = await response.text();
                 const parsed = this.parseHtml(htmlText);
