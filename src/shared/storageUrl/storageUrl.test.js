@@ -141,3 +141,25 @@ test('Supabase 가 없으면 조용히 빈 주소를 준다', async () => {
     clearSignedUrlCache();
     assert.equal(await createSignedStorageUrl('files', 'uploads/x.pdf', { client: null }), '');
 });
+
+test('서명에 실패하면 공개 주소로 대신한다 — 공개 버킷에 읽기 정책이 없는 설치본', async () => {
+    clearSignedUrlCache();
+    const client = {
+        storage: {
+            from(bucket) {
+                return {
+                    createSignedUrl: () => Promise.resolve({ data: null, error: { message: 'Object not found' } }),
+                    getPublicUrl: (path) => ({ data: { publicUrl: `${HOST}/storage/v1/object/public/${bucket}/${path}` } })
+                };
+            }
+        }
+    };
+    const url = await resolveStorageUrl({ path: 'uploads/a.png', bucket: 'chat-images' }, { client });
+    assert.equal(url, `${HOST}/storage/v1/object/public/chat-images/uploads/a.png`);
+});
+
+test('서명도 공개 주소도 없으면 빈 주소다', async () => {
+    clearSignedUrlCache();
+    const client = fakeClient(() => ({ data: null, error: { message: 'not found' } }));
+    assert.equal(await resolveStorageUrl('uploads/none.pdf', { client }), '');
+});
