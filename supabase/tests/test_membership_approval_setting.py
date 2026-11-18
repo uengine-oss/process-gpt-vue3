@@ -146,6 +146,10 @@ def main():
         check('new member: approved, role kept', add_user(member, tenant, 'editor', False) == 'approved/editor/false')
         check('new admin: approved, admin kept', add_user(admin, tenant, 'admin', True) == 'approved/admin/true')
         check('no signup request queued', one('SELECT count(*) FROM public.signup_requests WHERE tenant_id=%s', (tenant,)) == 0)
+        q.execute("INSERT INTO public.signup_requests (user_id, tenant_id, username, email, status) VALUES (%s,%s,'x',%s,'pending')",
+                  (member, tenant, f'{member}@approval-test.invalid'))
+        check('a pending signup request is closed at once',
+              one("SELECT status || '/' || reviewed_by FROM public.signup_requests WHERE user_id=%s", (member,)) == 'approved/system:approval-off')
         as_user(member, tenant)
         m = one('SELECT public.my_membership()')
         check('my_membership approved, approval_required false', m['status'] == 'approved' and m['approval_required'] is False, m)

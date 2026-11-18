@@ -14,6 +14,7 @@
 --            (새 테넌트를 만든 사람을 승인해 줄 관리자가 아직 없기 때문).
 --     false (데모 서버)      — 승인 기능이 들어오기 전과 똑같이 동작한다.
 --            · 새 가입자는 곧바로 승인 상태이고, 역할은 가입 흐름이 정한 그대로다.
+--              가입 신청(signup_requests)은 들어오는 즉시 승인으로 닫힌다(reviewed_by 'system:approval-off').
 --            · membership_access_gate · users_membership_read_gate 는 아무것도 막지 않는다(식이 true).
 --            · current_user_role() 은 승인 기능 이전의 판단을 그대로 쓴다.
 --            · 권한·가입 상태를 바꾸는 UPDATE 를 막는 검사도 하지 않는다(이전과 같다).
@@ -218,6 +219,23 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
         jsonb_build_object('status', 'missing', 'approval_required', public.membership_require_approval()));
 $$;
 
+-- 끔이면 가입 신청은 들어오는 즉시 승인으로 닫힌다. 아무도 기다리지 않는데 '대기' 가 쌓이면
+-- 관리자 화면의 신청 건수만 늘어난다(예전 가입 트리거가 신청을 늘 'pending' 으로 넣는 데이터베이스가 있다).
+CREATE OR REPLACE FUNCTION public.membership_close_signup_when_open() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+BEGIN
+    IF NEW.status = 'pending' AND NOT public.membership_require_approval() THEN
+        NEW.status := 'approved';
+        NEW.reviewed_by := 'system:approval-off';
+        NEW.reviewed_at := now();
+    END IF;
+    RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS membership_close_signup_when_open ON public.signup_requests;
+CREATE TRIGGER membership_close_signup_when_open BEFORE INSERT OR UPDATE ON public.signup_requests
+FOR EACH ROW EXECUTE FUNCTION public.membership_close_signup_when_open();
+
 -- 5. 게이트: 설정에 따라 정책 식 자체를 바꾼다 ------------------------------------------
 -- 끔: true(아무것도 막지 않는다). 켬: 20260908000001 의 식(users 는 20260911000011 의 tenant claim 폴백 포함).
 -- 나중 이주가 membership_access_gate 를 새로 만들어도 SELECT public.membership_apply_gates(); 한 번이면 맞춰진다.
@@ -276,6 +294,7 @@ SELECT public.membership_apply_gates();
 -- 7. 권한 ----------------------------------------------------------------------
 GRANT EXECUTE ON FUNCTION public.membership_require_approval(),
     public.membership_approved(), public.membership_admin() TO anon, authenticated, service_role;
-REVOKE ALL ON FUNCTION public.membership_settings_changed(), public.membership_apply_gates() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.membership_settings_changed(), public.membership_apply_gates(),
+    public.membership_close_signup_when_open() FROM PUBLIC, anon, authenticated;
 
 NOTIFY pgrst, 'reload schema';
