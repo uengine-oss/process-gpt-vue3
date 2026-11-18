@@ -10,6 +10,11 @@ spring:
             # Spring Cloud Gateway 4.3+ 에서 server.webflux 아래로 이동
             server:
                 webflux:
+                    # 웹소켓 프레임 한도 64MB (아래 docker 프로필의 설명과 같은 이유)
+                    httpclient:
+                        websocket:
+                            max-frame-payload-length: 67108864
+
                     # CORS 헤더가 두 번 실리는 것을 막는다.
                     #
                     # 게이트웨이도 붙이고 뒤의 서비스도 붙여서, 브라우저가
@@ -166,6 +171,11 @@ spring:
                     httpclient:
                         connect-timeout: 10000
                         response-timeout: 600000 # 기본 응답 타임아웃: 600초
+                        # 웹소켓 프레임 한도. 기본(64KB)이면 이음오피스(/lite/office/__ipc: 파일 바이트를 메시지 하나로
+                        # 주고받음)가 48KB 넘는 파일을 열거나 저장할 때 사유 없이(1005) 끊기고, Lite 의 ArtCraft 실시간
+                        # 연결(/lite/api/craft/live, 서버 한도 64MB)도 같다. 브라우저 쪽·서비스 쪽 모두에 적용된다.
+                        websocket:
+                            max-frame-payload-length: 67108864 # 64MB
                         pool:
                             type: ELASTIC
                             max-connections: 100
